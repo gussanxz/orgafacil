@@ -13,10 +13,13 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.SelecionarCategoriaActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
@@ -38,6 +41,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private final FirebaseAuth autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
     private double valorAnterior;
     private String tipoAnterior;
+    private ActivityResultLauncher<Intent> launcherCategoria;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +88,8 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             editData.setOnClickListener(v -> abrirDataPicker());
             editHora.setOnClickListener(v -> abrirTimePicker());
 
+            abrirCategoras();
+
         }
     }
 
@@ -117,6 +123,22 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             String horaSelecionada = String.format("%02d:%02d", hourOfDay, minute1);
             editHora.setText(horaSelecionada);
         }, hora, minuto, true).show();
+    }
+
+    public void abrirCategoras() {
+        launcherCategoria = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        String categoria = result.getData().getStringExtra("categoriaSelecionada");
+                        editCategoria.setText(categoria);
+                    }
+                });
+
+        editCategoria.setOnClickListener(v -> {
+            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaActivity.class);
+            launcherCategoria.launch(intent);
+        });
     }
 
     public void salvarDespesa(View view) {
