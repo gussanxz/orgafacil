@@ -45,8 +45,11 @@ import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class PrincipalActivity extends AppCompatActivity {
 
@@ -263,6 +266,22 @@ public class PrincipalActivity extends AppCompatActivity {
                     movimentacoes.add( movimentacao );
 
                 }
+
+                movimentacoes.sort((m1, m2) -> {
+                    try {
+                        String dataHora1 = m1.getData() + " " + m1.getHora(); // "01/05/2025 14:30"
+                        String dataHora2 = m2.getData() + " " + m2.getHora();
+
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+                        Date dt1 = sdf.parse(dataHora1);
+                        Date dt2 = sdf.parse(dataHora2);
+
+                        return dt2.compareTo(dt1); // ordem decrescente (mais novo primeiro)
+
+                    } catch (Exception e) {
+                        return 0; // fallback se algo der errado
+                    }
+                });
 
                 adapterMovimentacao.notifyDataSetChanged();
 
