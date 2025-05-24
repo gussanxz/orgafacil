@@ -13,9 +13,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
         android:text="Selecione uma categoria"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textAlignment="center"/>
 
     <ListView
         android:id="@+id/listViewCategorias"
