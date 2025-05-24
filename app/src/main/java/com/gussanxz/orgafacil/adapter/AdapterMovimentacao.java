@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.model.Movimentacao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,6 +26,11 @@ public class AdapterMovimentacao extends RecyclerView.Adapter<AdapterMovimentaca
     public AdapterMovimentacao(List<Movimentacao> movimentacoes, Context context) {
         this.movimentacoes = movimentacoes;
         this.context = context;
+    }
+
+    public void atualizarLista(List<Movimentacao> novaLista) {
+        this.movimentacoes = new ArrayList<>(novaLista);
+        notifyDataSetChanged();
     }
 
     @Override

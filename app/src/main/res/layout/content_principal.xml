@@ -49,6 +49,14 @@
         style="@style/calendarTheme"
         app:mcv_tileSize="50dp"/>
 
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchViewEventos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:queryHint="Buscar por categoria ou descrição"
+        android:iconifiedByDefault="false"
+        android:layout_margin="8dp" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclesMovimentos"
         android:layout_width="match_parent"

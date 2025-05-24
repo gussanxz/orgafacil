@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.SearchView;
+import androidx.appcompat.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.Canvas;
@@ -71,6 +71,9 @@ public class PrincipalActivity extends AppCompatActivity {
     private DatabaseReference movimentacaoRef;
     private String mesAnoSelecionado;
     private ActivityResultLauncher<Intent> launcher;
+    private SearchView searchView;
+    private List<Movimentacao> listaFiltrada = new ArrayList<>();
+
 
 
     @Override
@@ -90,6 +93,22 @@ public class PrincipalActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclesMovimentos);
         configuraCalendarView();
         swipe();
+
+        searchView = findViewById(R.id.searchViewEventos);
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filtrarMovimentacoes(newText);
+                return true;
+            }
+        });
+
 
         //Configurar adapter recyclerview
         adapterMovimentacao = new AdapterMovimentacao(movimentacoes, this);
@@ -111,6 +130,24 @@ public class PrincipalActivity extends AppCompatActivity {
         );
 
     }
+
+    private void filtrarMovimentacoes(String texto) {
+        listaFiltrada.clear();
+
+        if (texto.isEmpty()) {
+            listaFiltrada.addAll(movimentacoes);
+        } else {
+            for (Movimentacao m : movimentacoes) {
+                if (m.getCategoria().toLowerCase().contains(texto.toLowerCase()) ||
+                        m.getDescricao().toLowerCase().contains(texto.toLowerCase())) {
+                    listaFiltrada.add(m);
+                }
+            }
+        }
+
+        adapterMovimentacao.atualizarLista(listaFiltrada);
+    }
+
 
     public void swipe(){
 
