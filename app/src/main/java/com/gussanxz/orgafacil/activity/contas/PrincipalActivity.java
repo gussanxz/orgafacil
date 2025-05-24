@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.Canvas;
@@ -189,9 +190,20 @@ public class PrincipalActivity extends AppCompatActivity {
 
 
     public void excluirMovimentacao(RecyclerView.ViewHolder viewHolder){
+        int position = viewHolder.getAdapterPosition();
+        movimentacao = movimentacoes.get(position);
+
+        String tipo = movimentacao.getTipo(); // "d" ou "r"
+        String tipoTexto = tipo.equals("d") ? "despesa" : "provento";
+
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setTitle("Excluir Movimentacao da Conta");
-        alertDialog.setTitle("Voce tem certeza que deseja excluir a sua movimentacao da conta?");
+        alertDialog.setTitle("Excluir " + tipoTexto);
+        if (tipoTexto == "despesa"){
+            alertDialog.setMessage("Você deseja excluir esta despesa?");
+        }else{
+            alertDialog.setMessage("Você deseja excluir este provento?");
+        }
+        alertDialog.setCancelable(false);
         alertDialog.setCancelable(false);
         alertDialog.setPositiveButton("Confirmar", new DialogInterface.OnClickListener() {
             @Override
