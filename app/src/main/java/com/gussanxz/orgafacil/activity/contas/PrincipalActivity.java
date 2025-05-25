@@ -134,7 +134,17 @@ public class PrincipalActivity extends AppCompatActivity {
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
                         atualizarSaldo(); // ✅ atualiza saldo ao voltar
-                        adapterMovimentacao.notifyDataSetChanged(); // força atualizar lista
+                        if (dataInicialSelecionada != null || dataFinalSelecionada != null) {
+                            recuperarMovimentacoesComFiltro(); // ✅ se filtro por data estiver ativo
+                        } else {
+                            recuperarMovimentacoes(); // ✅ se nenhum filtro de data estiver definido
+                        }
+
+                        // reexecutar filtro por texto (se houver texto na searchView)
+                        String textoBusca = searchView.getQuery().toString();
+                        if (!textoBusca.isEmpty()) {
+                            filtrarMovimentacoes(textoBusca);
+                        }
                     }
                 }
         );
@@ -144,10 +154,15 @@ public class PrincipalActivity extends AppCompatActivity {
     private void filtrarMovimentacoes(String texto) {
         listaFiltrada.clear();
 
+        // Qual base usar: toda a lista ou lista filtrada por data
+        List<Movimentacao> base = (dataInicialSelecionada != null || dataFinalSelecionada != null)
+                ? movimentacoes // já filtradas por data
+                : movimentacoes; // se quiser usar lista original completa separadamente, crie uma cópia inicial.
+
         if (texto.isEmpty()) {
-            listaFiltrada.addAll(movimentacoes);
+            listaFiltrada.addAll(base);
         } else {
-            for (Movimentacao m : movimentacoes) {
+            for (Movimentacao m : base) {
                 if (m.getCategoria().toLowerCase().contains(texto.toLowerCase()) ||
                         m.getDescricao().toLowerCase().contains(texto.toLowerCase())) {
                     listaFiltrada.add(m);
@@ -157,6 +172,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
         adapterMovimentacao.atualizarLista(listaFiltrada);
     }
+
 
     private void abrirDatePicker(boolean isInicial) {
         Calendar calendar = Calendar.getInstance();
@@ -329,44 +345,35 @@ public class PrincipalActivity extends AppCompatActivity {
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setTitle("Excluir " + tipoTexto);
-        if (tipoTexto == "despesa"){
-            alertDialog.setMessage("Você deseja excluir esta despesa?");
-        }else{
-            alertDialog.setMessage("Você deseja excluir este provento?");
-        }
+        alertDialog.setMessage("Você deseja excluir este " + tipoTexto + "?");
         alertDialog.setCancelable(false);
-        alertDialog.setCancelable(false);
-        alertDialog.setPositiveButton("Confirmar", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                int position = viewHolder.getAdapterPosition();
-                movimentacao = movimentacoes.get( position );
 
-                String emailUsuario = autenticacao.getCurrentUser().getEmail();
-                String idUsuario = Base64Custom.codificarBase64( emailUsuario );
-                movimentacaoRef = firebaseRef.child("movimentacao")
-                        .child(idUsuario)
-                        .child(mesAnoSelecionado);
-                movimentacaoRef.child(movimentacao.getKey()).removeValue();
-                adapterMovimentacao.notifyItemRemoved(position);
-                atualizarSaldo();
+        alertDialog.setPositiveButton("Confirmar", (dialogInterface, i) -> {
+            String emailUsuario = autenticacao.getCurrentUser().getEmail();
+            String idUsuario = Base64Custom.codificarBase64(emailUsuario);
 
-            }
-        });
-        alertDialog.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Toast.makeText(PrincipalActivity.this,
-                        "Cancelado",
-                        Toast.LENGTH_SHORT).show();
-                adapterMovimentacao.notifyDataSetChanged();
-            }
+            // ✅ Usa a data da movimentação para calcular o mesAno
+            String data = movimentacao.getData(); // ex: 25/05/2025
+            String mesAno = data.substring(3, 5) + data.substring(6); // "052025"
+
+            movimentacaoRef = firebaseRef.child("movimentacao")
+                    .child(idUsuario)
+                    .child(mesAno);
+
+            movimentacaoRef.child(movimentacao.getKey()).removeValue();
+            movimentacoes.remove(position);
+            adapterMovimentacao.notifyItemRemoved(position);
+            atualizarSaldo();
         });
 
-        AlertDialog alert = alertDialog.create();
-        alert.show();
+        alertDialog.setNegativeButton("Cancelar", (dialogInterface, i) -> {
+            Toast.makeText(PrincipalActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
+            adapterMovimentacao.notifyDataSetChanged(); // restaura visual do item
+        });
 
+        alertDialog.show();
     }
+
 
     public void atualizarSaldo(){
 
