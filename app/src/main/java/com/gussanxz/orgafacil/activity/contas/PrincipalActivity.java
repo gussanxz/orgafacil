@@ -54,7 +54,7 @@ import java.util.Locale;
 
 public class PrincipalActivity extends AppCompatActivity {
 
-    private MaterialCalendarView calendarView;
+//    private MaterialCalendarView calendarView;
     private TextView textoSaudacao, textoSaldo;
     private Double despesaTotal = 0.0;
     private Double proventosTotal = 0.0;
@@ -89,9 +89,9 @@ public class PrincipalActivity extends AppCompatActivity {
 
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
-        calendarView = findViewById(R.id.calendarView);
+//        calendarView = findViewById(R.id.calendarView);
         recyclerView = findViewById(R.id.recyclesMovimentos);
-        configuraCalendarView();
+//        configuraCalendarView();
         swipe();
 
         searchView = findViewById(R.id.searchViewEventos);
@@ -412,26 +412,26 @@ public class PrincipalActivity extends AppCompatActivity {
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    public void configuraCalendarView(){
-        CharSequence meses[] = {"Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
-        calendarView.setTitleMonths( meses );
-
-        CalendarDay dataAtual = calendarView.getCurrentDate();
-        String mesSelecionado = String.format("%02d", (dataAtual.getMonth() + 1) );
-        mesAnoSelecionado = String.valueOf( mesSelecionado + "" + dataAtual.getYear() );
-
-        calendarView.setOnMonthChangedListener(new OnMonthChangedListener() {
-            @Override
-            public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
-                String mesSelecionado = String.format("%02d", (date.getMonth() + 1) );
-                mesAnoSelecionado = String.valueOf( mesSelecionado + "" + date.getYear() );
-                Log.i("MES", "mes: " + mesAnoSelecionado);
-
-                movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
-                recuperarMovimentacoes();
-            }
-        });
-    }
+//    public void configuraCalendarView(){
+//        CharSequence meses[] = {"Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
+//        calendarView.setTitleMonths( meses );
+//
+//        CalendarDay dataAtual = calendarView.getCurrentDate();
+//        String mesSelecionado = String.format("%02d", (dataAtual.getMonth() + 1) );
+//        mesAnoSelecionado = String.valueOf( mesSelecionado + "" + dataAtual.getYear() );
+//
+//        calendarView.setOnMonthChangedListener(new OnMonthChangedListener() {
+//            @Override
+//            public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
+//                String mesSelecionado = String.format("%02d", (date.getMonth() + 1) );
+//                mesAnoSelecionado = String.valueOf( mesSelecionado + "" + date.getYear() );
+//                Log.i("MES", "mes: " + mesAnoSelecionado);
+//
+//                movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
+//                recuperarMovimentacoes();
+//            }
+//        });
+//    }
 
     @Override
     protected void onStart() {

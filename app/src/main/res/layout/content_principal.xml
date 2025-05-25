@@ -40,14 +40,14 @@
             android:textColor="@android:color/white" />
     </LinearLayout>
 
-    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-        android:id="@+id/calendarView"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        app:mcv_selectionColor="#00F"
-        app:mcv_showOtherDates="all"
-        style="@style/calendarTheme"
-        app:mcv_tileSize="50dp"/>
+<!--    <com.prolificinteractive.materialcalendarview.MaterialCalendarView-->
+<!--        android:id="@+id/calendarView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="50dp"-->
+<!--        app:mcv_selectionColor="#00F"-->
+<!--        app:mcv_showOtherDates="all"-->
+<!--        style="@style/calendarTheme"-->
+<!--        app:mcv_tileSize="50dp"/>-->
 
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewEventos"
