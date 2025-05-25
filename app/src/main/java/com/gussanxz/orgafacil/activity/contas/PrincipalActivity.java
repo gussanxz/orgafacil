@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.activity.contas;
 
+import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,6 +9,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import androidx.appcompat.widget.SearchView;
+
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.Canvas;
@@ -48,6 +51,7 @@ import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -73,8 +77,8 @@ public class PrincipalActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> launcher;
     private SearchView searchView;
     private List<Movimentacao> listaFiltrada = new ArrayList<>();
-
-
+    private EditText editDataInicial, editDataFinal;
+    private String dataInicialSelecionada, dataFinalSelecionada;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +96,12 @@ public class PrincipalActivity extends AppCompatActivity {
 //        calendarView = findViewById(R.id.calendarView);
         recyclerView = findViewById(R.id.recyclesMovimentos);
 //        configuraCalendarView();
+        editDataInicial = findViewById(R.id.editDataInicial);
+        editDataFinal = findViewById(R.id.editDataFinal);
+
+        editDataInicial.setOnClickListener(v -> abrirDatePicker(true));
+        editDataFinal.setOnClickListener(v -> abrirDatePicker(false));
+
         swipe();
 
         searchView = findViewById(R.id.searchViewEventos);
@@ -146,6 +156,90 @@ public class PrincipalActivity extends AppCompatActivity {
         }
 
         adapterMovimentacao.atualizarLista(listaFiltrada);
+    }
+
+    private void abrirDatePicker(boolean isInicial) {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePicker = new DatePickerDialog(
+                this,
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    String dataSelecionada = String.format("%02d/%02d/%04d", selectedDay, selectedMonth + 1, selectedYear);
+                    if (isInicial) {
+                        dataInicialSelecionada = dataSelecionada;
+                        editDataInicial.setText(dataSelecionada);
+                    } else {
+                        dataFinalSelecionada = dataSelecionada;
+                        editDataFinal.setText(dataSelecionada);
+                    }
+
+                    // Reaplica filtro após cada seleção
+                    recuperarMovimentacoesComFiltro();
+                },
+                year, month, day
+        );
+        datePicker.show();
+    }
+
+    private void recuperarMovimentacoesComFiltro() {
+        String emailUsuario = autenticacao.getCurrentUser().getEmail();
+        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
+
+        valueEventListenerMovimentacoes = movimentacaoRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                movimentacoes.clear();
+
+                for (DataSnapshot mesAnoSnap : snapshot.getChildren()) {
+                    for (DataSnapshot movSnap : mesAnoSnap.getChildren()) {
+                        Movimentacao mov = movSnap.getValue(Movimentacao.class);
+                        mov.setKey(movSnap.getKey());
+
+                        if (mov != null && estaDentroDoIntervalo(mov)) {
+                            movimentacoes.add(mov);
+                        }
+                    }
+                }
+
+                // Ordenar por data/hora
+                movimentacoes.sort((m1, m2) -> {
+                    try {
+                        String dataHora1 = m1.getData() + " " + m1.getHora();
+                        String dataHora2 = m2.getData() + " " + m2.getHora();
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+                        Date dt1 = sdf.parse(dataHora1);
+                        Date dt2 = sdf.parse(dataHora2);
+                        return dt2.compareTo(dt1);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
+
+                adapterMovimentacao.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private boolean estaDentroDoIntervalo(Movimentacao mov) {
+        if (dataInicialSelecionada == null || dataFinalSelecionada == null) return true;
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            Date dataMov = sdf.parse(mov.getData());
+            Date dataInicial = sdf.parse(dataInicialSelecionada);
+            Date dataFinal = sdf.parse(dataFinalSelecionada);
+
+            return dataMov != null && !dataMov.before(dataInicial) && !dataMov.after(dataFinal);
+        } catch (Exception e) {
+            return true; // fallback: inclui por segurança
+        }
     }
 
 
@@ -437,7 +531,7 @@ public class PrincipalActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         recuperarResumo();
-        recuperarMovimentacoes();
+        recuperarMovimentacoesComFiltro();
     }
 
 
