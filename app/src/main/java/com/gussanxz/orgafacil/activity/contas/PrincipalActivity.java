@@ -11,6 +11,7 @@ import android.view.View;
 import androidx.appcompat.widget.SearchView;
 
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.Canvas;
@@ -79,6 +80,8 @@ public class PrincipalActivity extends AppCompatActivity {
     private List<Movimentacao> listaFiltrada = new ArrayList<>();
     private EditText editDataInicial, editDataFinal;
     private String dataInicialSelecionada, dataFinalSelecionada;
+    private ImageView imgLimparFiltroData;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,6 +104,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
         editDataInicial.setOnClickListener(v -> abrirDatePicker(true));
         editDataFinal.setOnClickListener(v -> abrirDatePicker(false));
+        limparFiltroData();
 
         swipe();
 
@@ -256,6 +260,20 @@ public class PrincipalActivity extends AppCompatActivity {
         } catch (Exception e) {
             return true; // fallback: inclui por segurança
         }
+    }
+
+    public void limparFiltroData() {
+        imgLimparFiltroData = findViewById(R.id.imgLimparFiltroData);
+
+        imgLimparFiltroData.setOnClickListener(v -> {
+            editDataInicial.setText("");
+            editDataFinal.setText("");
+            dataInicialSelecionada = null;
+            dataFinalSelecionada = null;
+
+            recuperarMovimentacoes(); // mostra todos os eventos
+        });
+
     }
 
 
