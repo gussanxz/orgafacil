@@ -49,13 +49,43 @@
 <!--        style="@style/calendarTheme"-->
 <!--        app:mcv_tileSize="50dp"/>-->
 
-    <androidx.appcompat.widget.SearchView
-        android:id="@+id/searchViewEventos"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:queryHint="Buscar por categoria ou descrição"
-        android:iconifiedByDefault="false"
-        android:layout_margin="8dp" />
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchViewEventos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
+            android:iconifiedByDefault="false"
+            android:queryHint="categoria ou descrição" />
+
+        <EditText
+            android:id="@+id/editDataInicial"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="false"
+            android:hint="Data Inicial" />
+
+        <EditText
+            android:id="@+id/editDataFinal"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="false"
+            android:hint="Data Final" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclesMovimentos"
