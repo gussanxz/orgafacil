@@ -6,9 +6,12 @@ import android.view.View;
 import androidx.activity.EdgeToEdge;
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
+
+import java.security.Principal;
 
 public class MainActivity extends IntroActivity {
 
@@ -76,7 +79,7 @@ public class MainActivity extends IntroActivity {
     }
 
     public void abrirTelaPrincipal() {
-        startActivity(new Intent(this, HomeActivity.class));
+        startActivity(new Intent(this, PrincipalActivity.class));
     }
 
 

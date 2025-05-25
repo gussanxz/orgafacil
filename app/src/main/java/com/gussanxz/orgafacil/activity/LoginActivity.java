@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.gussanxz.orgafacil.model.Usuario;
 
@@ -117,7 +118,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public void abrirTelaHome() {
-        startActivity(new Intent(this, HomeActivity.class));
+        startActivity(new Intent(this, PrincipalActivity.class));
         finish();
     }
 

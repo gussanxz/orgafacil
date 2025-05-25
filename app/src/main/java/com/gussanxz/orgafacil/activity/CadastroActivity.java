@@ -23,9 +23,12 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.Usuario;
+
+import java.security.Principal;
 
 public class CadastroActivity extends AppCompatActivity {
 
@@ -142,7 +145,7 @@ public class CadastroActivity extends AppCompatActivity {
 
 
     public void abrirTelaHome() {
-        startActivity(new Intent(this, HomeActivity.class));
+        startActivity(new Intent(this, PrincipalActivity.class));
         finish();
     }
 
