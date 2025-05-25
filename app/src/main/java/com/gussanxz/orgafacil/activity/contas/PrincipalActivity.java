@@ -294,27 +294,32 @@ public class PrincipalActivity extends AppCompatActivity {
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
         String idUsuario = Base64Custom.codificarBase64( emailUsuario );
         movimentacaoRef = firebaseRef.child("movimentacao")
-                .child(idUsuario)
-                .child(mesAnoSelecionado);
+                .child(idUsuario);
 
-        Log.i("MES", "mes: " + mesAnoSelecionado);
         valueEventListenerMovimentacoes  =  movimentacaoRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-
                 movimentacoes.clear();
 
-                for (DataSnapshot dados: snapshot.getChildren() ){
-
-                    Log.i("dadosRetorno", "dados: " + dados.toString() );
-                    Movimentacao movimentacao = dados.getValue( Movimentacao.class );
-
-                    Log.i("dadosRetorno", "dados: " + movimentacao.getCategoria() );
-                    movimentacao.setKey(dados.getKey());
-
-                    movimentacoes.add( movimentacao );
-
+                for (DataSnapshot mesAnoSnap : snapshot.getChildren()) {
+                    for (DataSnapshot movSnap : mesAnoSnap.getChildren()) {
+                        Movimentacao mov = movSnap.getValue(Movimentacao.class);
+                        mov.setKey(movSnap.getKey());
+                        movimentacoes.add(mov);
+                    }
                 }
+//            public void onDataChange(@NonNull DataSnapshot snapshot) {
+//
+//                movimentacoes.clear();
+//
+//                for (DataSnapshot dados: snapshot.getChildren() ){
+//                    for (DataSnapshot movSnap : mesAno)
+//                    Movimentacao movimentacao = dados.getValue( Movimentacao.class );
+//                    movimentacao.setKey(dados.getKey());
+//
+//                    movimentacoes.add( movimentacao );
+//
+//                }
 
                 movimentacoes.sort((m1, m2) -> {
                     try {
