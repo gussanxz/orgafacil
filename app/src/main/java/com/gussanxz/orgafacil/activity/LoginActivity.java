@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -29,6 +30,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText campoEmail, campoSenha;
     private Button botaoEntrar;
+    private TextView recuperarSenha;
     private Usuario usuario;
     private FirebaseAuth autenticacao;
     private RadioButton acessarTelaCadastro;
@@ -48,6 +50,7 @@ public class LoginActivity extends AppCompatActivity {
         campoSenha = findViewById(R.id.editSenha);
         botaoEntrar = findViewById(R.id.buttonEntrar);
         acessarTelaCadastro = findViewById(R.id.radioButtonCadastreSe);
+        recuperarSenha = findViewById(R.id.textViewRecuperarSenha);
 
         botaoEntrar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,6 +82,13 @@ public class LoginActivity extends AppCompatActivity {
 
                 abrirTelaCadastro();
 
+            }
+        });
+
+        recuperarSenha.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                recuperarSenha();
             }
         });
     }
@@ -125,4 +135,24 @@ public class LoginActivity extends AppCompatActivity {
     public void abrirTelaCadastro(){
         startActivity(new Intent(this, CadastroActivity.class));
     }
+
+    public void recuperarSenha() {
+        EditText campoEmail = findViewById(R.id.editEmail);
+        String email = campoEmail.getText().toString().trim();
+
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Digite o e-mail", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Link de redefinição enviado para " + email, Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "Erro ao enviar o link. Verifique o e-mail.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
 }
