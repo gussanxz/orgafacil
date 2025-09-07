@@ -42,7 +42,6 @@ import com.gussanxz.orgafacil.activity.MainActivity;
 import com.gussanxz.orgafacil.activity.vendas.VendasActivity;
 import com.gussanxz.orgafacil.adapter.AdapterMovimentacao;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.Usuario;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
@@ -90,6 +89,12 @@ public class PrincipalActivity extends AppCompatActivity {
         setContentView(R.layout.activity_principal);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : "null";
+
+        Log.i("DEBUG_FIREBASE", "UID atual: " + uid);
+
 
         toolbar.setTitle("OrgaFácil");
 
@@ -206,7 +211,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
     private void recuperarMovimentacoesComFiltro() {
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
 
         valueEventListenerMovimentacoes = movimentacaoRef.addValueEventListener(new ValueEventListener() {
@@ -368,7 +373,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
         alertDialog.setPositiveButton("Confirmar", (dialogInterface, i) -> {
             String emailUsuario = autenticacao.getCurrentUser().getEmail();
-            String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+            String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
             // ✅ Usa a data da movimentação para calcular o mesAno
             String data = movimentacao.getData(); // ex: 25/05/2025
@@ -396,7 +401,7 @@ public class PrincipalActivity extends AppCompatActivity {
     public void atualizarSaldo(){
 
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64( emailUsuario );
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         if (movimentacao.getTipo().equals("r")){
@@ -411,7 +416,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
     public void recuperarMovimentacoes(){
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64( emailUsuario );
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         movimentacaoRef = firebaseRef.child("movimentacao")
                 .child(idUsuario);
 
@@ -470,7 +475,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
     public void recuperarResumo(){
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64( emailUsuario );
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         Log.i("onStart", "Evento exibir dados adicionado");

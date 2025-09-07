@@ -23,7 +23,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.SelecionarCategoriaActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.Usuario;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
@@ -175,7 +174,7 @@ public class DespesasActivity extends AppCompatActivity {
     public void recuperarDespesaTotal() {
 
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64( emailUsuario );
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child( idUsuario );
 
         usuarioRef.addValueEventListener(new ValueEventListener() {
@@ -196,7 +195,7 @@ public class DespesasActivity extends AppCompatActivity {
     public void atualizarDespesa(Double despesa) {
 
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         usuarioRef.child("despesaTotal").setValue(despesa);

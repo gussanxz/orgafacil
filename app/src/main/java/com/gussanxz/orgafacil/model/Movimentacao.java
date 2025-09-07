@@ -3,7 +3,6 @@ package com.gussanxz.orgafacil.model;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 
 import java.io.Serializable;
 
@@ -23,7 +22,7 @@ public class Movimentacao implements Serializable {
     public void salvar( String dataEscolhida ){
 
         FirebaseAuth autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
-        String idUsuario = Base64Custom.codificarBase64( autenticacao.getCurrentUser().getEmail() );
+        String idUsuario = autenticacao.getCurrentUser().getUid();
         String mesAno = DatePickerHelper.mesAnoDataEscolhida(dataEscolhida);
         DatabaseReference firebase = ConfiguracaoFirebase.getFirebaseDatabase();
         firebase.child( "movimentacao" )

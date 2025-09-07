@@ -25,7 +25,6 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.Usuario;
 
 import java.security.Principal;
@@ -117,9 +116,10 @@ public class CadastroActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if ( task.isSuccessful() ){
 
-                    String idUsuario = Base64Custom.codificarBase64( usuario.getEmail());
+                    String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     usuario.setIdUsuario( idUsuario );
                     usuario.salvar();
+                    Toast.makeText(CadastroActivity.this, "Sucesso ao cadastrar usuario!", Toast.LENGTH_SHORT).show();
                     abrirTelaHome();
 
                 }else {

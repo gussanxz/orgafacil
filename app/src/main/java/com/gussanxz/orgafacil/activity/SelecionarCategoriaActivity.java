@@ -20,7 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.adapter.AdapterCategoria;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -80,8 +79,8 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
     }
 
     private void salvarCategoriaNoFirebase(String nomeCategoria) {
-        String emailUsuario = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
 
         DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
         String novaChave = categoriasRef.push().getKey();
@@ -108,8 +107,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
     }
 
     private void carregarCategoriasDoFirebase() {
-        String emailUsuario = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
 
@@ -176,8 +174,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
     }
 
     private void verificarEExcluirCategoria(String categoria, int posicaoNaLista) {
-        String emailUsuario = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference movimentacoesRef = firebaseRef.child("movimentacao").child(idUsuario);
 
         movimentacoesRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -212,8 +209,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
     }
 
     private void excluirDoFirebaseELista(String categoria, int posicaoNaLista) {
-        String emailUsuario = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
 
         categoriasRef.orderByValue().equalTo(categoria)

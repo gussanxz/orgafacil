@@ -21,7 +21,6 @@ import com.github.clans.fab.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.SelecionarCategoriaActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.google.firebase.auth.FirebaseAuth;
@@ -159,7 +158,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private void atualizarMovimentacaoExistente() {
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         String mesAno = DatePickerHelper.mesAnoDataEscolhida(movimentacao.getData());
         ; // dd/MM/yyyy
 
@@ -195,7 +194,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private void ajustarTotais() {
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         usuarioRef.get().addOnSuccessListener(snapshot -> {

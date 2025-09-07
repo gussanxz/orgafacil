@@ -24,7 +24,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.SelecionarCategoriaActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.Base64Custom;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
@@ -173,7 +172,7 @@ public class ProventosActivity extends AppCompatActivity {
     public void recuperarProventosTotal() {
 
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         usuarioRef.addValueEventListener(new ValueEventListener() {
@@ -194,7 +193,7 @@ public class ProventosActivity extends AppCompatActivity {
     public void atualizarProventos(Double proventos) {
 
         String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = Base64Custom.codificarBase64(emailUsuario);
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
         usuarioRef.child("proventosTotal").setValue(proventos);
