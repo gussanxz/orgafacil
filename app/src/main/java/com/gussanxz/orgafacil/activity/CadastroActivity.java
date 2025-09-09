@@ -25,6 +25,7 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.helper.SenhaVisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
 import java.security.Principal;
@@ -103,6 +104,11 @@ public class CadastroActivity extends AppCompatActivity {
 
             }
         });
+
+        EditText campoSenha = findViewById(R.id.editSenha);
+        SenhaVisibilidadeHelper.ativarAlternancia(campoSenha);
+        EditText campoSenhaConfirmacao = findViewById(R.id.editSenhaConfirmacao);
+        SenhaVisibilidadeHelper.ativarAlternancia(campoSenhaConfirmacao);
 
     }
 

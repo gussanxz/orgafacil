@@ -82,6 +82,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:drawableLeft="@drawable/ic_cadeado_cinza_24"
+        android:drawableRight="@drawable/ic_visibility_off_24"
         android:drawablePadding="5dp"
         android:ems="10"
         android:hint="Senha"
