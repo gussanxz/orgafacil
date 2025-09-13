@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cores gerais para o modo escuro -->
+    <color name="background">#121212</color>
+    <color name="black">#FFFFFFFF</color> <!-- texto primário branco -->
+    <color name="white">#FF000000</color> <!-- fundo de botões ou textos escuros -->
+    <color name="colorPrimary">#01C7D2</color>
+    <color name="colorPrimaryDark">#00b2bc</color>
+    <color name="colorAccent">#ff7706a</color>
+    <color name="transparent">#00000000</color>
+    <color name="softGreen">#A8E6CF</color>
+
+    <!-- Cores para despesas -->
+    <color name="colorPrimaryDespesa">#FF706A</color>
+    <color name="colorPrimaryDarkDespesa">#B34D49</color>
+    <color name="colorAccentDespesa">@color/colorPrimaryDespesa</color>
+
+    <!-- Cores para proventos -->
+    <color name="colorPrimaryProventos">#00D39E</color>
+    <color name="colorPrimaryDarkProventos">#008965</color>
+    <color name="colorAccentProventos">@color/colorPrimaryProventos</color>
+
+    <!-- Cores adicionais para dark theme -->
+    <color name="background_dark">#121212</color>
+    <color name="textColor_dark">#FFFFFF</color>
+    <color name="mcv_arrowColor">#FFFFFF</color> <!-- usado em calendário -->
+</resources>

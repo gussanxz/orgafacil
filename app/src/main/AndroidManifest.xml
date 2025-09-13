@@ -62,7 +62,7 @@
         <activity
             android:name=".activity.MainActivity"
             android:exported="true"
-            android:theme="@style/Base.Theme.OrgaFacil">
+            android:theme="@style/Theme.OrgaFacil">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
