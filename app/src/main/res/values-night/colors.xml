@@ -9,6 +9,7 @@
     <color name="colorAccent">#ff7706a</color>
     <color name="transparent">#00000000</color>
     <color name="softGreen">#A8E6CF</color>
+    <color name="background_google">#131314</color>
 
     <!-- Cores para despesas -->
     <color name="colorPrimaryDespesa">#FF706A</color>
@@ -21,7 +22,7 @@
     <color name="colorAccentProventos">@color/colorPrimaryProventos</color>
 
     <!-- Cores adicionais para dark theme -->
-    <color name="background_dark">#121212</color>
+    <color name="background_dark">#293141</color>
     <color name="textColor_dark">#FFFFFF</color>
     <color name="mcv_arrowColor">#FFFFFF</color> <!-- usado em calendário -->
 </resources>

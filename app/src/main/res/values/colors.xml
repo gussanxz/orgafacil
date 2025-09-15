@@ -8,6 +8,7 @@
     <color name="colorAccent">#ff706a</color>
     <color name="transparent">#00000000</color>
     <color name="softGreen">#A8E6CF</color>
+    <color name="background_google">#F2F2F2</color>
 
     <!-- Cores despesas!-->
     <color name="colorPrimaryDespesa">#FF706A</color>

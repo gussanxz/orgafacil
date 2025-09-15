@@ -123,14 +123,33 @@
         android:id="@+id/buttonCadastrar"
         android:layout_width="347dp"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
         android:text="Cadastrar"
-        android:textStyle="bold"
         android:textColor="@color/black"
         android:textColorLink="@color/mi_icon_color_dark"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/btnCadastrarGoogle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCadastrarGoogle"
+        android:layout_width="347dp"
+        android:layout_height="48dp"
+        android:backgroundTint="@color/background_google"
+        android:drawableLeft="@drawable/ic_google_24"
+        android:drawablePadding="12dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="Cadastrar com Google"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:cornerRadius="100dp"
+        app:iconGravity="textStart"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonCadastrar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
