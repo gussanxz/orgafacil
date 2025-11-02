@@ -12,8 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
-        <activity android:name=".activity.contas.EditarMovimentacaoActivity"
-            android:exported="false"/>
+        <activity
+            android:name=".activity.configuracoes.SegurancaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.contas.EditarMovimentacaoActivity"
+            android:exported="false" />
         <activity
             android:name=".activity.SelecionarCategoriaActivity"
             android:exported="false" />
