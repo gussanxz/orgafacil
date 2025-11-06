@@ -59,7 +59,7 @@ import java.util.Locale;
 public class PrincipalActivity extends AppCompatActivity {
 
 //    private MaterialCalendarView calendarView;
-    private TextView textoSaudacao, textoSaldo;
+    private TextView textoSaudacao, textoSaldo, textoSaldoLegenda;
     private Double despesaTotal = 0.0;
     private Double proventosTotal = 0.0;
     private Double resumoUsuario = 0.0;
@@ -101,6 +101,7 @@ public class PrincipalActivity extends AppCompatActivity {
 
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
+        textoSaldoLegenda = findViewById(R.id.textView16);
 //        calendarView = findViewById(R.id.calendarView);
         recyclerView = findViewById(R.id.recyclesMovimentos);
 //        configuraCalendarView();
@@ -245,6 +246,35 @@ public class PrincipalActivity extends AppCompatActivity {
                 });
 
                 adapterMovimentacao.notifyDataSetChanged();
+
+                // === Recalcular saldo do intervalo e atualizar legenda ===
+                if (dataInicialSelecionada != null && dataFinalSelecionada != null) {
+                    double totalReceitas = 0.0;
+                    double totalDespesas = 0.0;
+
+                    for (Movimentacao m : movimentacoes) {
+                        if (m == null) continue;
+                        if ("r".equals(m.getTipo())) {
+                            totalReceitas += m.getValor();
+                        } else if ("d".equals(m.getTipo())) {
+                            totalDespesas += m.getValor();
+                        }
+                    }
+
+                    double saldoIntervalo = totalReceitas - totalDespesas;
+
+                    java.text.DecimalFormat decimalFormat = new java.text.DecimalFormat("0.##");
+                    String resultadoFormatado = decimalFormat.format(saldoIntervalo);
+
+                    // atualiza o valor
+                    textoSaldo.setText("R$ " + resultadoFormatado);
+
+                    // atualiza a legenda “Saldo entre X e Y”
+                    textoSaldoLegenda.setText("Saldo entre " + dataInicialSelecionada + " e " + dataFinalSelecionada);
+                } else {
+                    // Se o intervalo ainda não está completo, mantém “Saldo atual”
+                    textoSaldoLegenda.setText("Saldo atual");
+                }
             }
 
             @Override
@@ -275,6 +305,8 @@ public class PrincipalActivity extends AppCompatActivity {
             editDataFinal.setText("");
             dataInicialSelecionada = null;
             dataFinalSelecionada = null;
+
+            textoSaldoLegenda.setText("Saldo atual");
 
             recuperarMovimentacoes(); // mostra todos os eventos
         });
