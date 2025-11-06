@@ -10,6 +10,11 @@ import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
+import android.content.SharedPreferences;
+import androidx.biometric.BiometricPrompt;
+import androidx.biometric.BiometricManager;
+import androidx.core.content.ContextCompat;
+import androidx.annotation.NonNull;
 
 import java.security.Principal;
 
@@ -79,7 +84,46 @@ public class MainActivity extends IntroActivity {
     }
 
     public void abrirTelaPrincipal() {
-        startActivity(new Intent(this, PrincipalActivity.class));
+        if (isPinObrigatorio()) {
+            autenticarComDispositivo(() -> {
+                startActivity(new Intent(this, PrincipalActivity.class));
+                finish();
+            });
+        } else {
+            startActivity(new Intent(this, PrincipalActivity.class));
+            finish();
+        }
+    }
+
+    private void autenticarComDispositivo(Runnable onSuccess) {
+        BiometricManager bm = BiometricManager.from(this);
+        int can = bm.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG
+                        | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Desbloquear OrgaFácil")
+                .setSubtitle("Use biometria ou a credencial do dispositivo")
+                .setAllowedAuthenticators(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG
+                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                .build();
+
+        BiometricPrompt prompt = new BiometricPrompt(
+                this,
+                ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                        if (onSuccess != null) onSuccess.run();
+                    }
+                });
+        prompt.authenticate(promptInfo);
+    }
+
+    private boolean isPinObrigatorio() {
+        SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
+        return prefs.getBoolean("pin_obrigatorio", true);
     }
 
 
