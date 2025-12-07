@@ -28,10 +28,6 @@ import com.gussanxz.orgafacil.model.Usuario;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
 public class DespesasActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
@@ -63,25 +59,15 @@ public class DespesasActivity extends AppCompatActivity {
 
         campoData.setFocusable(false);
         campoData.setClickable(true);
-
-        campoData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DatePickerHelper.showDatePickerDialog(DespesasActivity.this, campoData);
-            }
-        });
+        campoData.setOnClickListener(v ->
+                DatePickerHelper.showDatePickerDialog(DespesasActivity.this, campoData));
 
         campoHora.setText(TimePickerHelper.setHoraAtual());
 
         campoHora.setFocusable(false);
         campoHora.setClickable(true);
-
-        campoHora.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TimePickerHelper.showTimePickerDialog(DespesasActivity.this, campoHora);
-            }
-        });
+        campoHora.setOnClickListener(v ->
+                TimePickerHelper.showTimePickerDialog(DespesasActivity.this, campoHora));
 
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -173,7 +159,6 @@ public class DespesasActivity extends AppCompatActivity {
 
     public void recuperarDespesaTotal() {
 
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child( idUsuario );
 
@@ -194,7 +179,6 @@ public class DespesasActivity extends AppCompatActivity {
 
     public void atualizarDespesa(Double despesa) {
 
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
