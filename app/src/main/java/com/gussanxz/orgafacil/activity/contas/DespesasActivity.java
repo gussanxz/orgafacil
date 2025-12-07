@@ -1,8 +1,10 @@
 package com.gussanxz.orgafacil.activity.contas;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -85,6 +87,8 @@ public class DespesasActivity extends AppCompatActivity {
 
         recuperarDespesaTotal();
 
+        // 🔹 NOVO: buscar no Firebase a última despesa e oferecer para reaproveitar
+        recuperarUltimaDespesaDoFirebase();
     }
 
     public void retornarPrincipal(View view){
@@ -186,4 +190,108 @@ public class DespesasActivity extends AppCompatActivity {
 
     }
 
+    // =========================
+    // 🔹 NOVO: BUSCAR ÚLTIMA DESPESA NO FIREBASE E MOSTRAR POPUP
+    // =========================
+    private void recuperarUltimaDespesaDoFirebase() {
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        // Agora buscamos em movimentacao/idUsuario (todos os meses)
+        DatabaseReference movUsuarioRef = firebaseRef
+                .child("movimentacao")
+                .child(idUsuario);
+
+        movUsuarioRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+
+                Movimentacao ultimaDespesa = null;
+                java.util.Date ultimaDataHora = null;
+
+                // Nível 1: nós de mesAno (ex: "122025", "112025" etc.)
+                for (DataSnapshot mesSnapshot : snapshot.getChildren()) {
+
+                    // Nível 2: cada movimentação dentro daquele mesAno
+                    for (DataSnapshot movSnapshot : mesSnapshot.getChildren()) {
+                        Movimentacao m = movSnapshot.getValue(Movimentacao.class);
+                        if (m != null && "d".equals(m.getTipo())) {
+
+                            java.util.Date dataHoraMov = parseDataHora(m.getData(), m.getHora());
+
+                            if (ultimaDespesa == null) {
+                                // primeira despesa encontrada
+                                ultimaDespesa = m;
+                                ultimaDataHora = dataHoraMov;
+                            } else {
+                                if (dataHoraMov != null && ultimaDataHora != null) {
+                                    if (dataHoraMov.after(ultimaDataHora)) {
+                                        ultimaDespesa = m;
+                                        ultimaDataHora = dataHoraMov;
+                                    }
+                                } else {
+                                    // se não conseguir parsear data/hora, usa última encontrada
+                                    // ou se quiser, pode assumir essa como mais recente
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (ultimaDespesa != null) {
+                    mostrarPopupAproveitarUltimaDespesa(ultimaDespesa);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Se der erro na leitura, apenas não mostra popup
+            }
+        });
+    }
+
+    private java.util.Date parseDataHora(String dataStr, String horaStr) {
+        try {
+            if (dataStr == null || dataStr.isEmpty()) return null;
+            if (horaStr == null || horaStr.isEmpty()) horaStr = "00:00";
+
+            // Seu formato de data/hora: "dd/MM/yyyy" e "HH:mm"
+            String texto = dataStr + " " + horaStr;
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
+            return sdf.parse(texto);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void mostrarPopupAproveitarUltimaDespesa(Movimentacao ultima) {
+        String categoria = ultima.getCategoria();
+        String descricao = ultima.getDescricao();
+
+        String categoriaLabel = TextUtils.isEmpty(categoria)
+                ? "sem categoria"
+                : categoria;
+
+        String descricaoLabel = TextUtils.isEmpty(descricao)
+                ? "sem descrição"
+                : descricao;
+
+        String mensagem = "Deseja aproveitar as informações da última despesa?\n\n"
+                + "Categoria: " + categoriaLabel + "\n"
+                + "Descrição do produto ou serviço: " + descricaoLabel
+                + "\n\nOu prefere começar do zero?";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Aproveitar último lançamento")
+                .setMessage(mensagem)
+                .setPositiveButton("Aproveitar", (dialog, which) -> {
+                    if (!TextUtils.isEmpty(categoria)) {
+                        campoCategoria.setText(categoria);
+                    }
+                    if (!TextUtils.isEmpty(descricao)) {
+                        campoDescricao.setText(descricao);
+                    }
+                })
+                .setNegativeButton("Começar do zero", null)
+                .show();
+    }
 }
