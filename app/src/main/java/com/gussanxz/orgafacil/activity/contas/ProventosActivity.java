@@ -61,25 +61,15 @@ public class ProventosActivity extends AppCompatActivity {
 
         campoData.setFocusable(false);
         campoData.setClickable(true);
-
-        campoData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DatePickerHelper.showDatePickerDialog(ProventosActivity.this, campoData);
-            }
-        });
+        campoData.setOnClickListener(v ->
+                DatePickerHelper.showDatePickerDialog(ProventosActivity.this, campoData));
 
         campoHora.setText(TimePickerHelper.setHoraAtual());
 
         campoHora.setFocusable(false);
         campoHora.setClickable(true);
-
-        campoHora.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TimePickerHelper.showTimePickerDialog(ProventosActivity.this, campoHora);
-            }
-        });
+        campoHora.setOnClickListener(v ->
+                TimePickerHelper.showTimePickerDialog(ProventosActivity.this, campoHora));
 
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -171,7 +161,6 @@ public class ProventosActivity extends AppCompatActivity {
 
     public void recuperarProventosTotal() {
 
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
@@ -192,7 +181,6 @@ public class ProventosActivity extends AppCompatActivity {
 
     public void atualizarProventos(Double proventos) {
 
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
 
