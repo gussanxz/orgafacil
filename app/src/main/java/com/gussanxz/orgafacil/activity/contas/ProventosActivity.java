@@ -112,7 +112,7 @@ public class ProventosActivity extends AppCompatActivity {
             atualizarProventos(proventosAtualizada);
 
             movimentacao.salvar(data);
-            Toast.makeText(this, "Proventos adicionada!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Provento adicionado!", Toast.LENGTH_SHORT).show();
 
             finish();
         }
