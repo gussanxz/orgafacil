@@ -6,9 +6,10 @@
     android:orientation="vertical"
     app:layout_behavior="@string/appbar_scrolling_view_behavior" >
 
+    <!-- HEADER AZUL COM SAUDAÇÃO / SALDO -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="160dp"
+        android:layout_height="130dp"
         android:background="@color/colorPrimary"
         android:gravity="center"
         android:orientation="vertical">
@@ -17,10 +18,10 @@
             android:id="@+id/textSaudacao"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Caregando..."
+            android:text="Carregando..."
             android:textAlignment="center"
             android:textColor="@android:color/white"
-            android:textSize="18dp" />
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/textSaldo"
@@ -29,6 +30,7 @@
             android:text="R$ 0,00"
             android:textAlignment="center"
             android:textColor="@android:color/white"
+            android:textStyle="bold"
             android:textSize="24sp" />
 
         <TextView
@@ -40,67 +42,68 @@
             android:textColor="@android:color/white" />
     </LinearLayout>
 
-<!--    <com.prolificinteractive.materialcalendarview.MaterialCalendarView-->
-<!--        android:id="@+id/calendarView"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="50dp"-->
-<!--        app:mcv_selectionColor="#00F"-->
-<!--        app:mcv_showOtherDates="all"-->
-<!--        style="@style/calendarTheme"-->
-<!--        app:mcv_tileSize="50dp"/>-->
-
+    <!-- BARRA DE FILTROS (BUSCA + INTERVALO DE DATAS) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:gravity="center_vertical">
 
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchViewEventos"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:iconifiedByDefault="false"
-            android:queryHint="categoria ou descrição" />
+            android:queryHint="Categoria ou descrição" />
 
         <EditText
             android:id="@+id/editDataInicial"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginTop="8dp"
+            android:layout_height="36dp"
             android:layout_marginEnd="4dp"
-            android:layout_marginBottom="8dp"
             android:clickable="true"
             android:focusable="false"
-            android:hint="Data Inicial" />
+            android:paddingHorizontal="12dp"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_chip_filtro"
+            android:hint="Data Inicial"
+            android:textSize="14sp"
+            android:textColor="#222222"
+            android:textColorHint="#888888" />
 
         <EditText
             android:id="@+id/editDataFinal"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="8dp"
+            android:layout_height="36dp"
             android:layout_marginEnd="4dp"
-            android:layout_marginBottom="8dp"
             android:clickable="true"
             android:focusable="false"
-            android:hint="Data Final" />
+            android:paddingHorizontal="12dp"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_chip_filtro"
+            android:hint="Data Final"
+            android:textSize="14sp"
+            android:textColor="#222222"
+            android:textColorHint="#888888" />
 
         <ImageView
             android:id="@+id/imgLimparFiltroData"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="4dp"
-            android:layout_marginBottom="8dp"
-            android:backgroundTint="@color/transparent"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="4dp"
+            android:background="@drawable/bg_chip_clear"
             android:src="@drawable/ic_x_24"
-            android:textColor="@color/black" />
+            app:tint="@android:color/white" />
     </LinearLayout>
 
+    <!-- LISTA DE MOVIMENTAÇÕES -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclesMovimentos"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
 </LinearLayout>

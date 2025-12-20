@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="2dp"
+    card_view:cardUseCompatPadding="true"
+    card_view:cardElevation="2dp"
+    card_view:cardCornerRadius="12dp"
+    card_view:cardBackgroundColor="@color/cardDiaBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header colorido do dia -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:background="@color/cardDiaHeaderBackground">
+
+            <TextView
+                android:id="@+id/textDiaTitulo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Hoje - 08/12/2025"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@color/cardDiaTextPrimary" />
+
+            <TextView
+                android:id="@+id/textSaldoDia"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Saldo do dia: R$ 0,00"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/cardDiaTextSecondary" />
+        </LinearLayout>
+
+        <!-- Linha separadora (opcional)  -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/cardDiaDivider" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

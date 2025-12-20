@@ -10,6 +10,12 @@
     <color name="transparent">#000000</color>
     <color name="softGreen">#A8E6CF</color>
     <color name="background_google">#131314</color>
+    <color name="movCardBackground">#151821</color>
+    <color name="cardDiaBackground">#262A35</color>
+    <color name="cardDiaHeaderBackground">#303544</color>
+    <color name="cardDiaTextPrimary">#FFFFFF</color>
+    <color name="cardDiaTextSecondary">#DDDDDD</color>
+    <color name="cardDiaDivider">#444A55</color>
 
     <!-- Cores para despesas -->
     <color name="colorPrimaryDespesa">#FF706A</color>
