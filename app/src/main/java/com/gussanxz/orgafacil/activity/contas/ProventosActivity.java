@@ -119,7 +119,7 @@ public class ProventosActivity extends AppCompatActivity {
     }
 
     public void retornarPrincipal(View view) {
-        startActivity(new Intent(this, PrincipalActivity.class));
+        startActivity(new Intent(this, ContasActivity.class));
     }
 
     public Boolean validarCamposProventos() {

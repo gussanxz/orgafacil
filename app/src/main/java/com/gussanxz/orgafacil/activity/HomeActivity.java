@@ -15,7 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.boletos.BoletosActivity;
 import com.gussanxz.orgafacil.activity.configuracoes.ConfigsActivity;
-import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
+import com.gussanxz.orgafacil.activity.contas.ContasActivity;
 import com.gussanxz.orgafacil.activity.mercado.ResumoListaMercadoActivity;
 import com.gussanxz.orgafacil.activity.todo.ListaAtividadesActivity;
 import com.gussanxz.orgafacil.activity.vendas.ResumoVendasActivity;
@@ -44,9 +44,9 @@ public class HomeActivity extends AppCompatActivity {
 
     }
 
-    public void acessarPrincipalActivity(View view) {
-        startActivity(new Intent(this, PrincipalActivity.class));
-        Log.i(TAG, "acessou PrincipalActivity");
+    public void acessarContasActivity(View view) {
+        startActivity(new Intent(this, ContasActivity.class));
+        Log.i(TAG, "acessou ContasActivity");
     }
 
     public void acessarResumoVendasAcitivity(View view) {

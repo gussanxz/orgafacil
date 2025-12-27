@@ -6,7 +6,7 @@ import android.view.View;
 import androidx.activity.EdgeToEdge;
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
+import com.gussanxz.orgafacil.activity.contas.ContasActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
@@ -15,8 +15,6 @@ import androidx.biometric.BiometricPrompt;
 import androidx.biometric.BiometricManager;
 import androidx.core.content.ContextCompat;
 import androidx.annotation.NonNull;
-
-import java.security.Principal;
 
 public class MainActivity extends IntroActivity {
 
@@ -79,18 +77,29 @@ public class MainActivity extends IntroActivity {
         autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
         //autenticacao.signOut();
         if ( autenticacao.getCurrentUser() != null ){
-            abrirTelaPrincipal();
+            abrirTelaHome();
         }
     }
 
-    public void abrirTelaPrincipal() {
+    public void abrirTelaContas() {
         if (isPinObrigatorio()) {
             autenticarComDispositivo(() -> {
-                startActivity(new Intent(this, PrincipalActivity.class));
+                startActivity(new Intent(this, ContasActivity.class));
                 finish();
             });
         } else {
-            startActivity(new Intent(this, PrincipalActivity.class));
+            startActivity(new Intent(this, ContasActivity.class));
+            finish();
+        }
+    }
+    public void abrirTelaHome() {
+        if (isPinObrigatorio()) {
+            autenticarComDispositivo(() -> {
+                startActivity(new Intent(this, HomeActivity.class));
+                finish();
+            });
+        } else {
+            startActivity(new Intent(this, HomeActivity.class));
             finish();
         }
     }

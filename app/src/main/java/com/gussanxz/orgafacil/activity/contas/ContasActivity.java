@@ -51,7 +51,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class PrincipalActivity extends AppCompatActivity {
+public class ContasActivity extends AppCompatActivity {
 
     private TextView textoSaudacao, textoSaldo, textoSaldoLegenda;
     private Double despesaTotal = 0.0;
@@ -87,7 +87,7 @@ public class PrincipalActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_principal);
+        setContentView(R.layout.activity_contas);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -397,7 +397,7 @@ public class PrincipalActivity extends AppCompatActivity {
     public void editarMovimentacao(int position, Movimentacao mov) {
         movimentacao = mov; // guarda referência se precisar
 
-        Intent intent = new Intent(PrincipalActivity.this, EditarMovimentacaoActivity.class);
+        Intent intent = new Intent(ContasActivity.this, EditarMovimentacaoActivity.class);
         intent.putExtra("movimentacaoSelecionada", movimentacao);
         intent.putExtra("keyFirebase", movimentacao.getKey());
         launcher.launch(intent);
@@ -444,7 +444,7 @@ public class PrincipalActivity extends AppCompatActivity {
         });
 
         alertDialog.setNegativeButton("Cancelar", (dialogInterface, i) -> {
-            Toast.makeText(PrincipalActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(ContasActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
             adapterAgrupado.notifyDataSetChanged(); // restaura visual do item
         });
 

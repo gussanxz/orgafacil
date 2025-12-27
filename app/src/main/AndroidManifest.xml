@@ -63,7 +63,7 @@
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".activity.contas.PrincipalActivity"
+            android:name=".activity.contas.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity

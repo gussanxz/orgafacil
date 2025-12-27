@@ -92,7 +92,7 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     public void retornarPrincipal(View view){
-        startActivity(new Intent(this, PrincipalActivity.class));
+        startActivity(new Intent(this, ContasActivity.class));
     }
 
     public void salvarDespesa(View view) {

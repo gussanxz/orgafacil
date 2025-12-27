@@ -4,20 +4,16 @@ import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.github.clans.fab.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.SelecionarCategoriaActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
@@ -25,7 +21,6 @@ import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
-import com.gussanxz.orgafacil.activity.contas.PrincipalActivity;
 
 import java.util.Calendar;
 
@@ -93,7 +88,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     public void retornarPrincipal(View view) {
-        startActivity(new Intent(this, PrincipalActivity.class));
+        startActivity(new Intent(this, ContasActivity.class));
     }
 
     private void abrirDataPicker() {
