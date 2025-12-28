@@ -6,54 +6,92 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#C4FFEB3B"
+    android:background="@color/colorPrimary"
     tools:context=".activity.vendas.ResumoVendasActivity">
 
-    <!-- Header com Valor Pendente -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:titleTextColor="@color/white">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="@string/app_name"
+            android:textSize="18sp"
+            android:gravity="center_vertical|start"
+            android:padding="12dp"
+            android:textColor="@color/white"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/headerResumoVendas"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_height="80dp"
+        android:background="@color/colorPrimary"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:flow_horizontalAlign="start"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-        <TextView
-            android:id="@+id/textTituloResumoVendas"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:text="Valor pendente"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/textVendasHoje"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vendas Hoje"
+                android:textAlignment="center"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
+            <TextView
+                android:id="@+id/textSaldo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="R$ 0,00"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:drawableLeft="@drawable/ic_visibility_24"
+                android:drawablePadding="8dp"/>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/textTipoMoeda"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:text="R$: "
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintBaseline_toBaselineOf="@+id/textValorPendente"
-            app:layout_constraintEnd_toStartOf="@+id/textValorPendente"
-            app:layout_constraintHorizontal_chainStyle="packed"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <TextView
-            android:id="@+id/textValorPendente"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:text="0,00"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/textTipoMoeda"
-            app:layout_constraintTop_toBottomOf="@id/textTituloResumoVendas" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/textCaixa"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Status do caixa"
+                android:textAlignment="center"
+                android:textStyle="bold"
+                android:textColor="@android:color/white" />
+            <TextView
+                android:id="@+id/textStatusCaixa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aberto"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:drawableLeft="@drawable/ic_lock_open_28"
+                android:drawablePadding="8dp" />
+        </LinearLayout>
+    </LinearLayout>
 
     <!-- Cartões abaixo do Header -->
     <ScrollView
@@ -69,81 +107,128 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNovoPedido"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="NOVO PEDIDO"
+                android:textAllCaps="true"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                app:icon="@drawable/ic_shopping_cart_checkout_24"
+                app:iconTint="@android:color/white"
+                app:iconSize="22dp"
+                app:iconPadding="12dp"
+                app:iconGravity="textStart"
+                app:cornerRadius="16dp"
+                app:elevation="6dp"
+                android:background="@drawable/fundo_arredondado"/>
+
             <!-- Cartão Visão Geral -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:background="@drawable/fundo_arredondado"
-                android:elevation="5dp"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingTop="12dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Visao Geral"
+                    android:text="OPERAÇÕES DIÁRIAS"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black"
+                    android:layout_marginBottom="10dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@android:color/white"
                     android:orientation="horizontal">
 
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_cadeado_cinza_24" />
-
-                    <TextView
+                    <LinearLayout
+                        android:id="@+id/cardCadastros"
                         android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:text="Vendas pendentes"
-                        android:textColor="@android:color/black" />
-
-                    <TextView
-                        android:id="@+id/textVendasPendentes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:text="0"
-                        android:textColor="@android:color/black" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@android:color/white"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-
-                    <ImageView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_cadeado_cinza_24" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:text="Vendas pagas"
-                        android:textColor="@android:color/black" />
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
 
-                    <TextView
-                        android:id="@+id/textVendasPagas"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:text="0"
-                        android:textColor="@android:color/black" />
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_tune_24"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="CADASTROS"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardPedidosAbertos"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_receipt_long_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="PEDIDOS\nABERTOS"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardCatalogo"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_inventory_2_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="CATÁLOGO"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
@@ -151,241 +236,201 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/fundo_arredondado"
-                android:elevation="5dp"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingTop="12dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Vendas pendentes recentes"
+                    android:text="GESTÃO &amp; RELATÓRIOS"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textDataVenda"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingLeft="40dp"
-                    android:text="Data da venda"
+                    android:textStyle="bold"
                     android:textColor="@android:color/black"
-                    android:textSize="16sp" />
+                    android:layout_marginBottom="10dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_cadeado_cinza_24" />
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:id="@+id/cardVendas"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
 
-                        <LinearLayout
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_monitoring_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textDescricaoVenda"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Descricao venda"
-                                android:textColor="@android:color/black" />
-
-                            <TextView
-                                android:id="@+id/textTituloValorRestante"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Restante"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textValorVenda"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="@integer/material_motion_duration_long_1"
-                                android:text="R$ 100,00"
-                                android:textColor="@android:color/black" />
-
-                            <TextView
-                                android:id="@+id/textValorPendenteRestante"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 50,00"
-                                android:textColor="#FF0000" />
-                        </LinearLayout>
+                            android:text="VENDAS"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
                     </LinearLayout>
 
+                    <LinearLayout
+                        android:id="@+id/cardEstoque"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_inventory_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="ESTOQUE"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardDevolucoes"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_assignment_return_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="DEVOLUÇÕES"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <Button
-                    android:id="@+id/btnVerVendas"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="@color/colorAccent"
-                    android:text="Ver Vendas"
-                    android:textColor="@color/black"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Cartão Pagamentos Recentes -->
-            <!-- Cartão Vendas Pendentes Recentes -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/fundo_arredondado"
-                android:elevation="5dp"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pagamentos recentes"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textDataPagamento"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingLeft="40dp"
-                    android:text="Data da venda"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="8dp">
-
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_cadeado_cinza_24" />
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:id="@+id/cardRelatorios"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
 
-                        <LinearLayout
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_analytics_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textDescricaoVendaPaga"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Descricao venda"
-                                android:textColor="@android:color/black" />
-
-                            <TextView
-                                android:id="@+id/textTituloValorPago"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Pago"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textValorTotalVendaPaga"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="@integer/material_motion_duration_long_1"
-                                android:text="R$ 100,00"
-                                android:textColor="@android:color/black" />
-
-                            <TextView
-                                android:id="@+id/textValorPagamento"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 100,00"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
+                            android:text="RELATÓRIOS"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
                     </LinearLayout>
 
+                    <LinearLayout
+                        android:id="@+id/cardControleCaixa"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_point_of_sale_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="CONTROLE\nDE CAIXA"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardFinanceiro"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/fundo_arredondado"
+                        android:orientation="vertical"
+                        android:layout_margin="4dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_paid_28"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="FINANCEIRO"
+                            android:textColor="@android:color/black"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:lines="3" />
+                    </LinearLayout>
                 </LinearLayout>
-
-                <Button
-                    android:id="@+id/btnVerPagamentos"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginTop="8dp"
-                    android:text="Ver Pagamentos"
-                    android:textStyle="bold" />
-
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
-    <com.github.clans.fab.FloatingActionMenu
-        android:id="@+id/floatingActionMenu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="9dp"
-        android:layout_marginRight="9dp"
-        android:layout_marginBottom="9dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:menu_colorNormal="@color/colorAccent"
-        app:menu_colorPressed="@color/colorAccent"
-        fab:menu_icon="@drawable/ic_adicionar_branco_24">
-
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/menuCadastroCliente"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="cadastroCliente"
-            android:src="@drawable/ic_adicionar_branco_24"
-            app:fab_colorPressed="@color/colorPrimaryDarkProventos"
-            fab:fab_colorNormal="@color/colorPrimaryProventos"
-            fab:fab_label="Cadastrar cliente"
-            fab:fab_size="mini" />
-
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/menuNovaVenda"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="novaVenda"
-            android:src="@drawable/ic_adicionar_branco_24"
-            app:fab_colorPressed="@color/colorPrimaryDarkProventos"
-            fab:fab_colorNormal="@color/colorPrimaryProventos"
-            fab:fab_label="Registrar Venda"
-            fab:fab_size="mini" />
-
-
-    </com.github.clans.fab.FloatingActionMenu>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -16,6 +16,8 @@
     <color name="cardDiaTextPrimary">#000000</color>
     <color name="cardDiaTextSecondary">#555555</color>
     <color name="cardDiaDivider">#FFE0E0E0</color>
+    <color name="teal_pdv">#00B7C3</color>
+    <color name="teal_pdv_ripple">#3300B7C3</color>
 
     <!-- Cores despesas!-->
     <color name="colorPrimaryDespesa">#FF706A</color>
