@@ -57,7 +57,7 @@
         android:layout_width="347dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/ic_pessoa_cinza_24"
+        android:drawableLeft="@drawable/ic_person_cinza_24"
         android:drawablePadding="5dp"
         android:ems="10"
         android:hint="Nome"
