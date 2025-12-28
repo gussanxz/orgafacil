@@ -17,6 +17,8 @@ import android.widget.TextView;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.contas.ContasActivity;
+import com.gussanxz.orgafacil.activity.vendas.VendasCadastrosActivity;
 
 public class ResumoVendasActivity extends AppCompatActivity {
     private final String TAG = "ResumoVendasActivity";
@@ -34,12 +36,10 @@ public class ResumoVendasActivity extends AppCompatActivity {
 
 
     }
-
-
-//    public void cadastroCliente(View view){
-//        floatingActionMenu.close(true);
-//        startActivity(new Intent(this, CadastroClienteActivity.class));
-//    }
+    public void acessarVendasCadastrosActivity(View view) {
+        startActivity(new Intent(this, VendasCadastrosActivity.class));
+        Log.i(TAG, "acessou ContasActivity");
+    }
 
 
 
