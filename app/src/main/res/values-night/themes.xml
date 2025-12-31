@@ -15,8 +15,6 @@
         <item name="android:statusBarColor">@color/background_dark</item>
         <item name="android:navigationBarColor">@color/background_dark</item>
 
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
     <!-- Tema nas despesas -->
@@ -26,14 +24,6 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDarkDespesa</item>
         <item name="colorAccent">@color/colorAccentDespesa</item>
 
-        <item name="android:windowBackground">@color/background_dark</item>
-        <item name="android:textColor">@color/textColor_dark</item>
-
-        <item name="android:statusBarColor">@color/background_dark</item>
-        <item name="android:navigationBarColor">@color/background_dark</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
-
     </style>
 
     <!-- Tema nos proventos -->
@@ -42,14 +32,6 @@
         <item name="colorPrimary">@color/colorPrimaryProventos</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkProventos</item>
         <item name="colorAccent">@color/colorAccentProventos</item>
-
-        <item name="android:windowBackground">@color/background_dark</item>
-        <item name="android:textColor">@color/textColor_dark</item>
-
-        <item name="android:statusBarColor">@color/background_dark</item>
-        <item name="android:navigationBarColor">@color/background_dark</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
 
     </style>
 
