@@ -28,7 +28,6 @@ public class MainActivity extends IntroActivity {
         a barra de navegacao fica por cima do app */
         //EdgeToEdge.enable(this);
 
-
         //setContentView(R.layout.activity_main);
 
         verificarUsuarioLogado();

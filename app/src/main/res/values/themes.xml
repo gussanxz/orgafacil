@@ -1,9 +1,16 @@
 <resources>
     <!-- Base application theme. -->
     <style name="Base.Theme.OrgaFacil" parent="Theme.Material3.DayNight.NoActionBar">
+
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
         <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
     </style>
 
     <!-- Tema nas despesas !-->
@@ -11,6 +18,12 @@
         <item name="colorPrimary">@color/colorPrimaryDespesa</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkDespesa</item>
         <item name="colorAccent">@color/colorAccentDespesa</item>
+
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <!-- Tema nas proventoss !-->
@@ -18,16 +31,20 @@
         <item name="colorPrimary">@color/colorPrimaryProventos</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkProventos</item>
         <item name="colorAccent">@color/colorAccentProventos</item>
+
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
-    <!-- Tema action bar-->
+    <style name="Theme.OrgaFacil" parent="Base.Theme.OrgaFacil" />
+
     <style name="principalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="backgroundColor">@color/colorPrimary</item>
         <item name="colorPrimary">@color/colorPrimaryProventos</item>
     </style>
-
-
-    <style name="Theme.OrgaFacil" parent="Base.Theme.OrgaFacil" />
 
     <style name="NoElevationFab" parent="Widget.MaterialComponents.FloatingActionButton">
         <item name="elevation">0dp</item>
