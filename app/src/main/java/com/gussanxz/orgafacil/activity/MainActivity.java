@@ -23,7 +23,11 @@ public class MainActivity extends IntroActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
+        /* Serve pra deixar a tela cheia mas acaba fazendo com que
+        a barra de navegacao fica por cima do app */
+        //EdgeToEdge.enable(this);
+
         //setContentView(R.layout.activity_main);
 
         verificarUsuarioLogado();

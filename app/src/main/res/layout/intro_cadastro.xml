@@ -39,7 +39,7 @@
 
     <RadioGroup
         android:id="@+id/meuToggleGroup"
-        android:layout_width="match_parent"
+        android:layout_width="215dp"
         android:layout_height="wrap_content"
         android:layout_marginLeft="60dp"
         android:layout_marginRight="60dp"
@@ -55,7 +55,7 @@
 
         <RadioButton
             android:id="@+id/radioButtonLogin"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/selector_toggle_button_background"
@@ -63,13 +63,14 @@
             android:gravity="center"
             android:onClick="btEntrar"
             android:text="Login"
+            android:textAlignment="center"
             android:textColor="@color/selector_toggle_button_text_color"
             android:textSize="16sp"
             android:textStyle="bold" />
 
         <RadioButton
             android:id="@+id/radioButtonCadastreSe"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/selector_toggle_button_background"
@@ -77,6 +78,7 @@
             android:gravity="center"
             android:onClick="btCadastrar"
             android:text="Cadastre-se"
+            android:textAlignment="center"
             android:textColor="@color/selector_toggle_button_text_color"
             android:textSize="16sp"
             android:textStyle="bold" />

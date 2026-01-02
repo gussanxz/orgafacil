@@ -1,33 +1,39 @@
 <resources>
     <!-- Base application theme. -->
     <style name="Base.Theme.OrgaFacil" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <!-- Modo Claro -->
         <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@color/colorPrimary</item>
+        <item name="android:navigationBarColor">@color/colorPrimary</item>
+
     </style>
 
     <!-- Tema nas despesas !-->
     <style name="despesaTheme" parent="Theme.Material3.DayNight.NoActionBar">
+
         <item name="colorPrimary">@color/colorPrimaryDespesa</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkDespesa</item>
         <item name="colorAccent">@color/colorAccentDespesa</item>
+
     </style>
 
     <!-- Tema nas proventoss !-->
     <style name="proventosTheme" parent="Theme.Material3.DayNight.NoActionBar">
+
         <item name="colorPrimary">@color/colorPrimaryProventos</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDarkProventos</item>
         <item name="colorAccent">@color/colorAccentProventos</item>
+
     </style>
 
-    <!-- Tema action bar-->
+    <style name="Theme.OrgaFacil" parent="Base.Theme.OrgaFacil" />
+
     <style name="principalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="backgroundColor">@color/colorPrimary</item>
         <item name="colorPrimary">@color/colorPrimaryProventos</item>
     </style>
-
-
-    <style name="Theme.OrgaFacil" parent="Base.Theme.OrgaFacil" />
 
     <style name="NoElevationFab" parent="Widget.MaterialComponents.FloatingActionButton">
         <item name="elevation">0dp</item>
