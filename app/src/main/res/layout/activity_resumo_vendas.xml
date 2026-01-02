@@ -128,7 +128,7 @@
                 android:id="@+id/btnNovoPedido"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:text="NOVO PEDIDO"
+                android:text="NOVA VENDA"
                 android:textAllCaps="true"
                 android:textSize="24sp"
                 android:textStyle="bold"
