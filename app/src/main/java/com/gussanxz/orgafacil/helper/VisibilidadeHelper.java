@@ -65,7 +65,7 @@ public class VisibilidadeHelper {
 
         //Se o saldo esta visivel, torna invisivel
         if (saldoEstaVisivel) {
-            txtSaldo.setText("R$ ****** "); //mascara o valor
+            txtSaldo.setText("R$ **** "); //mascara o valor
             imgOlho.setImageResource(R.drawable.ic_visibility_off_24);
             imgOlho.setTag(false);
         } else {
