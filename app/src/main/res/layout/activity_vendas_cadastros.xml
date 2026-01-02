@@ -57,15 +57,17 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:background="@drawable/fundo_arredondado"
+                android:clickable="true"
+                android:gravity="center_vertical"
+                android:onClick="exibirCadastroCategorias"
                 android:orientation="horizontal"
-                android:padding="4dp"
-                android:gravity="center_vertical">
+                android:padding="4dp">
 
                 <ImageView
-                    android:layout_marginStart="10dp"
                     android:id="@+id/iconCategorias"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
+                    android:layout_marginStart="10dp"
                     android:src="@drawable/ic_category_24"
                     app:tint="#3A3A3A" />
 

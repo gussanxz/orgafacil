@@ -40,12 +40,12 @@
             android:textSize="20dp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fabSalvarHeader"
+            app:layout_constraintEnd_toStartOf="@id/fabSalvarCategoria"
             app:layout_constraintStart_toEndOf="@+id/fabVoltar"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabSalvarHeader"
+            android:id="@+id/fabSalvarCategoria"
             style="@style/NoElevationFab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
