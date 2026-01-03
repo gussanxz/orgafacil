@@ -42,4 +42,9 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    public void exibirCadastroCombos(View view) {
+        Intent intent = new Intent(this, CadastroComboActivity.class);
+        startActivity(intent);
+    }
+
 }

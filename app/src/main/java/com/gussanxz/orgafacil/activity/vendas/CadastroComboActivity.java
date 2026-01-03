@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.activity.vendas;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -13,7 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
 
-public class CadastroProdutosServicosActivity extends AppCompatActivity {
+public class CadastroComboActivity extends AppCompatActivity {
 
     //Criando os objetos dos elementos de Fab (FloatingActionButton)
     FloatingActionButton fabVoltar;
@@ -27,7 +28,7 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
 
         //Definimos o xml/layout que iremos apresentar na activity
-        setContentView(R.layout.activity_cadastro_produtos_servicos);
+        setContentView(R.layout.activity_cadastro_combos);
 
         //Define a area de conteudo segura do app sem a barra de status e navegacao ficar por cima do conteudo
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -41,7 +42,6 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
     }
 
     private void inicializarComponentes() {
-
         fabVoltar = findViewById(R.id.fabVoltar);
         fabSuperiorSalvarCategoria = findViewById(R.id.fabSuperiorSalvarCategoria);
         fabInferiorSalvarCategoria = findViewById(R.id.fabInferiorSalvarCategoria);
@@ -55,11 +55,10 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
     }
 
     //É interessante adicionar uma lógica pra identificar se é um produto ou serviço e salvar de acordo
-    public void salvarProdutoOuServico(View view) {
-        Toast toast = Toast.makeText(this, "Produto/serviço salva com sucesso!\nApenas mensagem de Teste", Toast.LENGTH_SHORT);
+    public void salvarCombo(View view) {
+        Toast toast = Toast.makeText(this, "Combo salvo com sucesso!\nApenas mensagem de Teste", Toast.LENGTH_SHORT);
         toast.show();
 
         finish(); //retorna para tela anterior
     }
-
 }

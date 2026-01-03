@@ -77,6 +77,10 @@
             android:name=".activity.vendas.CadastroProdutosServicosActivity"
             android:exported="false">
         </activity>
+        <activity
+            android:name=".activity.vendas.CadastroComboActivity"
+            android:exported="false">
+        </activity>
 
         <activity
             android:name=".activity.MainActivity"
