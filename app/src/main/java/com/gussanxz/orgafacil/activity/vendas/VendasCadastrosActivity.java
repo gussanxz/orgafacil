@@ -47,4 +47,9 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    public void exibirCadastroModificadores(View view) {
+        Intent intent = new Intent(this, CadastroModificadorActivity.class);
+        startActivity(intent);
+    }
+
 }

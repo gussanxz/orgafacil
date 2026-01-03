@@ -215,7 +215,9 @@
                 android:background="@drawable/fundo_arredondado"
                 android:orientation="horizontal"
                 android:padding="4dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:onClick="exibirCadastroModificadores">
 
                 <ImageView
                     android:layout_marginStart="10dp"

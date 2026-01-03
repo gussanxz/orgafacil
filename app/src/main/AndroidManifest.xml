@@ -81,6 +81,10 @@
             android:name=".activity.vendas.CadastroComboActivity"
             android:exported="false">
         </activity>
+        <activity
+            android:name=".activity.vendas.CadastroModificadorActivity"
+            android:exported="false">
+        </activity>
 
         <activity
             android:name=".activity.MainActivity"
