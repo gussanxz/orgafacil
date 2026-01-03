@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1087596331300-ab79cehu488u6gh0dfaljng2khvsh1ct.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gussanxz.orgafacil",
+            "certificate_hash": "69d8b560503a426d0b9c51712aab3454b6eff99e"
+          }
+        },
+        {
           "client_id": "1087596331300-4j35fef3mad1dtailhv55e0feno4m3kk.apps.googleusercontent.com",
           "client_type": 3
         }
