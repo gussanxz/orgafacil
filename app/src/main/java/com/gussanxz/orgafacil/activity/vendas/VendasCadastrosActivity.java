@@ -36,4 +36,10 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         Intent intent = new Intent(this, CadastroCategoriaActivity.class);
         startActivity(intent);
     }
+
+    public void exibirCadastroProdutosServicos(View view) {
+        Intent intent = new Intent(this, CadastroProdutosServicosActivity.class);
+        startActivity(intent);
+    }
+
 }
