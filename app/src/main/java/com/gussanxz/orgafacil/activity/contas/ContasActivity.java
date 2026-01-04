@@ -295,7 +295,6 @@ public class ContasActivity extends AppCompatActivity {
             dataInicialSelecionada = null;
             dataFinalSelecionada = null;
 
-            textoSaldoLegenda.setText("Saldo atual");
             removerListenerMovimentacoesSeExistir();
             recuperarMovimentacoes();
             recuperarResumo();
@@ -530,6 +529,7 @@ public class ContasActivity extends AppCompatActivity {
 
                 textoSaudacao.setText("Ola, " + usuario.getNome() + "!");
                 textoSaldo.setText( "R$ " + resultadoFormatado );
+                textoSaldoLegenda.setText("Saldo atual");
             }
 
             @Override
