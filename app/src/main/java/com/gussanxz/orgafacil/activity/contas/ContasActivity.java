@@ -220,6 +220,7 @@ public class ContasActivity extends AppCompatActivity {
 
     private void recuperarMovimentacoesComFiltro() {
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        removerListenerMovimentacoesSeExistir();
         movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
 
         valueEventListenerMovimentacoes = movimentacaoRef.addValueEventListener(new ValueEventListener() {
@@ -294,9 +295,9 @@ public class ContasActivity extends AppCompatActivity {
             dataInicialSelecionada = null;
             dataFinalSelecionada = null;
 
-            textoSaldoLegenda.setText("Saldo atual");
-
-            recuperarMovimentacoes(); // reexibe tudo
+            removerListenerMovimentacoesSeExistir();
+            recuperarMovimentacoes();
+            recuperarResumo();
         });
     }
 
@@ -473,6 +474,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     public void recuperarMovimentacoes(){
+        removerListenerMovimentacoesSeExistir();
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
 
@@ -499,6 +501,13 @@ public class ContasActivity extends AppCompatActivity {
 
     }
 
+    private void removerListenerMovimentacoesSeExistir() {
+        if (movimentacaoRef != null && valueEventListenerMovimentacoes != null) {
+            movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
+            valueEventListenerMovimentacoes = null;
+        }
+    }
+
     public void recuperarResumo(){
         String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
         usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
@@ -520,6 +529,7 @@ public class ContasActivity extends AppCompatActivity {
 
                 textoSaudacao.setText("Ola, " + usuario.getNome() + "!");
                 textoSaldo.setText( "R$ " + resultadoFormatado );
+                textoSaldoLegenda.setText("Saldo atual");
             }
 
             @Override
@@ -572,7 +582,12 @@ public class ContasActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         recuperarResumo();
-        recuperarMovimentacoesComFiltro();
+
+        if (dataInicialSelecionada != null && dataFinalSelecionada != null) {
+            recuperarMovimentacoesComFiltro();
+        } else {
+            recuperarMovimentacoes();
+        }
     }
 
     @Override
