@@ -33,4 +33,7 @@
     <color name="background_dark">#121212</color>
     <color name="textColor_dark">#FFFFFF</color>
     <color name="mcv_arrowColor">#FFFFFF</color>
+
+    <color name ="cor_background">#FFFFFF</color> <!-- Utilizado no drawable fundo_arredondado -->
+    <color name="cor_texto">#FF000000</color>
 </resources>

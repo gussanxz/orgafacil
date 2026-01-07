@@ -31,4 +31,7 @@
     <color name="background_dark">#293141</color>
     <color name="textColor_dark">#FFFFFF</color>
     <color name="mcv_arrowColor">#FFFFFF</color> <!-- usado em calendário -->
+
+    <color name ="cor_background">#293141</color> <!-- Utilizado no drawable fundo_arredondado -->
+    <color name="cor_texto">#FFFFFFFF</color>
 </resources>

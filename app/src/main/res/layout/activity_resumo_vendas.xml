@@ -157,7 +157,7 @@
                     android:text="OPERAÇÕES DIÁRIAS"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/cor_texto"
                     android:layout_marginBottom="10dp"/>
 
                 <LinearLayout
@@ -266,7 +266,7 @@
                     android:text="GESTÃO &amp; RELATÓRIOS"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/cor_texto"
                     android:layout_marginBottom="10dp"/>
 
                 <LinearLayout
