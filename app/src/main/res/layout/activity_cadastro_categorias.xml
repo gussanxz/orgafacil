@@ -24,18 +24,18 @@
             android:clickable="true"
             android:onClick="retornarParaVendasCadastros"
             app:backgroundTint="@color/cardview_dark_background"
+            app:fabCustomSize="45dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_arrow_back_48"
-            app:fabCustomSize="45dp"/>
+            app:srcCompat="@drawable/ic_arrow_back_48" />
 
         <TextView
             android:id="@+id/textViewHeader"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:text="Adicionar Categorias"
+            android:text="Nova Categoria"
             android:textAlignment="gravity"
             android:textColor="@color/white"
             android:textSize="20dp"
@@ -54,11 +54,11 @@
             android:clickable="true"
             android:onClick="salvarCategoria"
             app:backgroundTint="@color/colorAccentProventos"
+            app:fabCustomSize="45dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_confirmar_branco_48"
-            app:fabCustomSize="45dp"/>
+            app:srcCompat="@drawable/ic_confirmar_branco_48" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -71,29 +71,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/header">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputValor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textInputDescricao"
-            app:startIconDrawable="@drawable/ic_moeda_real_24"
-            tools:layout_editor_absoluteX="0dp"
-            tools:layout_editor_absoluteY="174dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editValor"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Informe um valor"
-                android:inputType="numberDecimal"
-                android:text="0.00" />
-        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputCategoria"
@@ -116,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="false"
-                android:hint="Categoria"
+                android:hint="Nome da Categoria"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -127,19 +104,16 @@
             android:layout_marginTop="8dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            app:layout_constraintBottom_toTopOf="@id/textInputValor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
-            app:startIconDrawable="@drawable/ic_description_24"
-            tools:layout_editor_absoluteX="0dp"
-            tools:layout_editor_absoluteY="113dp">
+            app:startIconDrawable="@drawable/ic_description_24">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editDescricao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Descricao do produto ou servico"
+                android:hint="Descrição da Categoria"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -156,6 +130,152 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@drawable/ic_confirmar_branco_24" />
+
+        <FrameLayout
+            android:id="@+id/containerToggle"
+            android:layout_width="140dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/fundo_arredondado"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao">
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:checked="true"
+                android:text="Ativa"
+                android:textSize="20sp"
+
+
+                />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="377dp"
+            android:layout_height="150dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintTop_toBottomOf="@id/containerToggle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <LinearLayout
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:background="@android:color/white"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:layout_gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ícone de Exibição"
+                    android:textSize="14sp"
+                    android:textColor="#616161"
+                    android:layout_marginBottom="12dp"/>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:clipToPadding="false">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="25dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="#E0E0E0"
+                            app:cardBackgroundColor="#F5F5F5"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_launcher_foreground"
+                                app:tint="#9E9E9E"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="25dp"
+                            app:cardElevation="2dp"
+                            app:strokeWidth="0dp"
+                            app:cardBackgroundColor="#25D366"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_launcher_foreground"
+                                app:tint="#FFFFFF"/> </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="25dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="#E0E0E0"
+                            app:cardBackgroundColor="#F5F5F5"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_launcher_foreground"
+                                app:tint="#9E9E9E"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="12dp"
+                            app:cardCornerRadius="25dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="#E0E0E0"
+                            app:cardBackgroundColor="#F5F5F5"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_launcher_foreground"
+                                app:tint="#9E9E9E"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+                </HorizontalScrollView>
+            </LinearLayout>
+
+        </FrameLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
