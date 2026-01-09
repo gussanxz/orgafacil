@@ -43,27 +43,46 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginTop="0.5dp"
             android:gravity="center"
             android:layout_weight="1"
             android:orientation="vertical">
+
             <TextView
                 android:id="@+id/textVendasHoje"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="0.5dp"
                 android:text="Vendas Hoje"
                 android:textAlignment="center"
-                android:textStyle="bold"
-                android:textColor="@android:color/white" />
+                android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imgOlhoSaldo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="5dp"
+                android:src="@drawable/ic_visibility_24" />
+
             <TextView
                 android:id="@+id/textSaldo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
                 android:text="R$ 0,00"
                 android:textColor="@android:color/white"
                 android:textSize="24sp"
-                android:textStyle="bold"
-                android:drawableLeft="@drawable/ic_visibility_24"
-                android:drawablePadding="8dp"/>
+                android:textStyle="bold" />
+                </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -111,7 +130,7 @@
                 android:id="@+id/btnNovoPedido"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:text="NOVO PEDIDO"
+                android:text="NOVA VENDA"
                 android:textAllCaps="true"
                 android:textSize="24sp"
                 android:textStyle="bold"
@@ -138,7 +157,7 @@
                     android:text="OPERAÇÕES DIÁRIAS"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/cor_texto"
                     android:layout_marginBottom="10dp"/>
 
                 <LinearLayout
@@ -193,14 +212,15 @@
                             android:layout_marginBottom="8dp" />
 
                         <TextView
+                            android:id="@+id/tex"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="PEDIDOS\nABERTOS"
-                            android:textColor="@android:color/black"
-                            android:textStyle="bold"
-                            android:textSize="12sp"
                             android:gravity="center"
-                            android:lines="3" />
+                            android:lines="3"
+                            android:text="VENDAS EM\nABERTO"
+                            android:textColor="@android:color/black"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -246,7 +266,7 @@
                     android:text="GESTÃO &amp; RELATÓRIOS"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/black"
+                    android:textColor="@color/cor_texto"
                     android:layout_marginBottom="10dp"/>
 
                 <LinearLayout

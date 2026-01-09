@@ -4,18 +4,17 @@ import android.annotation.SuppressLint;
 import android.graphics.drawable.Drawable;
 import android.text.InputType;
 import android.view.MotionEvent;
-import android.view.View;
 import android.widget.EditText;
-
+import android.widget.ImageView;
+import android.widget.TextView;
 import androidx.core.content.ContextCompat;
-
 import com.gussanxz.orgafacil.R;
 
-public class SenhaVisibilidadeHelper {
+public class VisibilidadeHelper {
 
 
     @SuppressLint("ClickableViewAccessibility")
-    public static void ativarAlternancia(EditText campoSenha) {
+    public static void ativarAlternanciaSenha(EditText campoSenha) {
         final boolean[] senhaVisivel = {false};
 
         Drawable olhoAberto = ContextCompat.getDrawable(campoSenha.getContext(), R.drawable.ic_visibility_24);
@@ -51,5 +50,28 @@ public class SenhaVisibilidadeHelper {
             return false;
         });
 
+    }
+
+    public static void alternarVisibilidadeSaldo(TextView txtSaldo, ImageView imgOlho, String valorReal) {
+
+        boolean saldoEstaVisivel;
+
+        if (imgOlho.getTag() == null) {
+            saldoEstaVisivel = true;
+
+        } else {
+            saldoEstaVisivel = (boolean) imgOlho.getTag();
+        }
+
+        //Se o saldo esta visivel, torna invisivel
+        if (saldoEstaVisivel) {
+            txtSaldo.setText("R$ **** "); //mascara o valor
+            imgOlho.setImageResource(R.drawable.ic_visibility_off_24);
+            imgOlho.setTag(false);
+        } else {
+            txtSaldo.setText(valorReal);
+            imgOlho.setImageResource(R.drawable.ic_visibility_24);
+            imgOlho.setTag(true);
+        }
     }
 }

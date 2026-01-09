@@ -5,8 +5,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimaryDespesa"
-    tools:context=".activity.contas.DespesasActivity">
+    android:background="@color/colorPrimary"
+    tools:context=".activity.vendas.CadastroModificadorActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -22,22 +22,23 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:clickable="true"
-            android:onClick="retornarPrincipal"
-            app:backgroundTint="@color/colorAccentDespesa"
+            android:onClick="retornarParaVendasCadastros"
+            app:backgroundTint="@color/cardview_dark_background"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_arrow_back_48" />
+            app:srcCompat="@drawable/ic_arrow_back_48"
+            app:fabCustomSize="45dp"/>
 
         <TextView
             android:id="@+id/textViewHeader"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:text="Adicionar Despesa"
+            android:text="Adicionar Modificador"
             android:textAlignment="gravity"
             android:textColor="@color/white"
-            android:textSize="20dp"
+            android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
@@ -51,8 +52,9 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:clickable="true"
-            android:onClick="salvarDespesa"
-            app:backgroundTint="@color/colorAccentDespesa"
+            android:onClick="salvarModificador"
+            app:backgroundTint="@color/colorAccentProventos"
+            app:fabCustomSize="45dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -74,84 +76,39 @@
             android:id="@+id/textInputValor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            app:startIconDrawable="@drawable/ic_moeda_real_24"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/textInputDescricao"
+            app:startIconDrawable="@drawable/ic_moeda_real_24"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="174dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editValor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Informe um valor"
-                android:text="0.00"
-                android:inputType="numberDecimal"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputData"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingLeft="16dp"
-            android:paddingRight="4dp"
-            app:layout_constraintEnd_toStartOf="@id/textInputHora"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputValor"
-            app:startIconDrawable="@drawable/ic_calendar_month_24">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editData"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Selecione uma data"
-                android:text="01/01/2025"
-                android:clickable="true"
-                android:inputType="none"
-                android:paddingStart="44dp"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputHora"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingLeft="4dp"
-            android:paddingRight="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/textInputData"
-            app:layout_constraintTop_toBottomOf="@id/textInputValor"
-            app:startIconDrawable="@drawable/ic_relogio_24">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editHora"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Selecione uma hora"
-                android:text="00:00"
-                android:clickable="true"
-                android:focusable="false"
-                android:inputType="none"
-                android:paddingStart="44dp"/>
+                android:inputType="numberDecimal"
+                android:text="0.00" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputCategoria"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="24dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
+            app:layout_constraintBottom_toTopOf="@id/textInputDescricao"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputData"
-            app:startIconDrawable="@drawable/ic_label_24">
+            app:layout_constraintTop_toTopOf="parent"
+            app:startIconDrawable="@drawable/ic_label_24"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editCategoria"
@@ -170,10 +127,13 @@
             android:layout_marginTop="8dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
+            app:layout_constraintBottom_toTopOf="@id/textInputValor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
-            app:startIconDrawable="@drawable/ic_description_24">
+            app:startIconDrawable="@drawable/ic_description_24"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="113dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editDescricao"
@@ -189,13 +149,14 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
             android:clickable="true"
-            android:onClick="salvarDespesa"
-            app:backgroundTint="@color/colorAccentDespesa"
+            android:onClick="salvarModificador"
+            app:backgroundTint="@color/colorAccentProventos"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@drawable/ic_confirmar_branco_24" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

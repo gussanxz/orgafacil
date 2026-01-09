@@ -37,8 +37,9 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.GoogleAuthProvider;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.contas.ContasActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.SenhaVisibilidadeHelper;
+import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
 public class LoginActivity extends AppCompatActivity {
@@ -177,7 +178,8 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        SenhaVisibilidadeHelper.ativarAlternancia(campoSenha);
+        EditText campoSenha = findViewById(R.id.editSenha);
+        VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
 
         configurarLoginGoogle();
     }

@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.activity.vendas;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -18,6 +19,7 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_vendas_cadastros);
+
         View main = findViewById(R.id.rootCadastros); // 2) precisa existir no layout
         if (main == null) {
             throw new IllegalStateException("View R.id.main não existe em activity_vendas_cadastros.xml");
@@ -29,4 +31,25 @@ public class VendasCadastrosActivity extends AppCompatActivity {
             return insets;
         });
     }
+
+    public void exibirCadastroCategorias(View view) {
+        Intent intent = new Intent(this, CadastroCategoriaActivity.class);
+        startActivity(intent);
+    }
+
+    public void exibirCadastroProdutosServicos(View view) {
+        Intent intent = new Intent(this, CadastroProdutosServicosActivity.class);
+        startActivity(intent);
+    }
+
+    public void exibirCadastroCombos(View view) {
+        Intent intent = new Intent(this, CadastroComboActivity.class);
+        startActivity(intent);
+    }
+
+    public void exibirCadastroModificadores(View view) {
+        Intent intent = new Intent(this, CadastroModificadorActivity.class);
+        startActivity(intent);
+    }
+
 }

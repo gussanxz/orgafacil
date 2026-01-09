@@ -22,9 +22,8 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.contas.ContasActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.helper.SenhaVisibilidadeHelper;
+import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
 public class CadastroActivity extends AppCompatActivity {
@@ -103,9 +102,9 @@ public class CadastroActivity extends AppCompatActivity {
         });
 
         EditText campoSenha = findViewById(R.id.editSenha);
-        SenhaVisibilidadeHelper.ativarAlternancia(campoSenha);
+        VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
         EditText campoSenhaConfirmacao = findViewById(R.id.editSenhaConfirmacao);
-        SenhaVisibilidadeHelper.ativarAlternancia(campoSenhaConfirmacao);
+        VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
 
     }
 

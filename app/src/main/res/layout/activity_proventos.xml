@@ -17,10 +17,10 @@
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabVoltar"
+            style="@style/NoElevationFab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            style="@style/NoElevationFab"
             android:clickable="true"
             android:onClick="retornarPrincipal"
             app:backgroundTint="@color/colorAccentProventos"
@@ -40,12 +40,12 @@
             android:textSize="20dp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fabSalvarHeader"
+            app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
             app:layout_constraintStart_toEndOf="@+id/fabVoltar"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabSalvarHeader"
+            android:id="@+id/fabSuperiorSalvarCategoria"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
@@ -184,7 +184,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabSalvar"
+            android:id="@+id/fabInferiorSalvarCategoria"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
