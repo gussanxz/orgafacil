@@ -47,7 +47,19 @@ public class ConfigsActivity extends AppCompatActivity {
         itemPerfil.setOnClickListener(v -> {
             // TODO startActivity(new Intent(this, PerfilActivity.class));
             String userEmail = user.getEmail();
+            String userUid = user.getUid();
+            String userName = user.getDisplayName();
+
+
+            // Imprime no console (filtre por "System.out" ou "DEBUG_PERFIL" no Logcat)
+            System.out.println("--- DEBUG PERFIL ---");
+            System.out.println("Status: LOGADO");
+            System.out.println("UID (Importante): " + userUid);
             System.out.println("Email: " + userEmail);
+            System.out.println("Nome Google: " + userName);
+            System.out.println("--------------------");
+            
+            
             textUserEmail.setText(userEmail);
             textUserEmail.setVisibility(TextView.VISIBLE);
         });

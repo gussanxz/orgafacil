@@ -37,7 +37,7 @@
             android:gravity="center"
             android:text="Nova Categoria"
             android:textAlignment="gravity"
-            android:textColor="@color/white"
+            android:textColor="@color/cor_texto"
             android:textSize="20dp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -172,7 +172,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp"
-                android:background="@android:color/white"
+                android:background="@color/cor_background"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="10dp"
                 android:layout_gravity="center_vertical">
@@ -192,6 +192,7 @@
                     android:clipToPadding="false">
 
                     <LinearLayout
+                        android:id="@+id/containerIcones"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
