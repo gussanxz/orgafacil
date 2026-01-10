@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.activity.configuracoes;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,12 +12,14 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.LoginActivity;
 
 public class ConfigsActivity extends AppCompatActivity {
 
     private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSair;
+    private TextView textUserEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,9 +37,19 @@ public class ConfigsActivity extends AppCompatActivity {
         itemPreferencias = findViewById(R.id.itemPreferencias);
         itemSeguranca    = findViewById(R.id.itemSeguranca);
         itemSair         = findViewById(R.id.itemSair);
+        textUserEmail    = findViewById(R.id.textUserEmail);
+
+        textUserEmail.setVisibility(TextView.INVISIBLE);
+
+        //Criando instancia de usuario
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         itemPerfil.setOnClickListener(v -> {
             // TODO startActivity(new Intent(this, PerfilActivity.class));
+            String userEmail = user.getEmail();
+            System.out.println("Email: " + userEmail);
+            textUserEmail.setText(userEmail);
+            textUserEmail.setVisibility(TextView.VISIBLE);
         });
         itemPreferencias.setOnClickListener(v -> {
             // TODO startActivity(new Intent(this, PreferenciasActivity.class));
