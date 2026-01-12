@@ -13,6 +13,9 @@
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
         <activity
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity"
+            android:exported="false" />
+        <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity"
             android:exported="false" />
         <activity
@@ -71,31 +74,26 @@
             android:theme="@style/principalTheme" />
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity"
-            android:exported="false" >
-        </activity>
+            android:exported="false"></activity>
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity"
-            android:exported="false">
-        </activity>
+            android:exported="false"></activity>
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity"
-            android:exported="false">
-        </activity>
+            android:exported="false"></activity>
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity"
-            android:exported="false">
-        </activity>
-
+            android:exported="false"></activity>
         <activity
             android:name=".activity.main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.OrgaFacil">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".activity.main.CadastroActivity"
             android:exported="true" />

@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity;
@@ -37,7 +38,7 @@ public class VendasCadastrosActivity extends AppCompatActivity {
     }
 
     public void exibirCadastroCategorias(View view) {
-        Intent intent = new Intent(this, CadastroCategoriaActivity.class);
+        Intent intent = new Intent(this, ListaCategoriasActivity.class);
         startActivity(intent);
     }
 
