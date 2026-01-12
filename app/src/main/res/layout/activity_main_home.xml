@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.main.HomeActivity">
+
+    <ImageView
+        android:id="@+id/imageViewLogoHome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/logo_orgafacil_96x96" />
+
+    <ImageView
+        android:id="@+id/imageViewContas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="acessarContasActivity"
+        app:layout_constraintEnd_toStartOf="@+id/imageViewVendas"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/imageViewVendas"
+        app:srcCompat="@drawable/ic_wallet_96" />
+
+    <TextView
+        android:id="@+id/textViewContas"
+        android:layout_width="wrap_content"
+        android:layout_height="19dp"
+        android:text="Contas"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewContas"
+        app:layout_constraintStart_toStartOf="@+id/imageViewContas"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewContas" />
+
+    <TextView
+        android:id="@+id/textViewStatusContas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em teste"
+        app:layout_constraintEnd_toEndOf="@+id/textViewContas"
+        app:layout_constraintStart_toStartOf="@+id/textViewContas"
+        app:layout_constraintTop_toBottomOf="@+id/textViewContas" />
+
+    <ImageView
+        android:id="@+id/imageViewVendas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        app:layout_constraintBottom_toTopOf="@+id/imageViewTodo"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:onClick="acessarResumoVendasAcitivity"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/imageViewContas"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:srcCompat="@drawable/ic_sale_96" />
+
+    <TextView
+        android:id="@+id/textViewVendas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vendas"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewVendas"
+        app:layout_constraintStart_toStartOf="@+id/imageViewVendas"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas" />
+
+    <TextView
+        android:id="@+id/textViewStatusVendas"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em desenvolvimento"
+        app:layout_constraintEnd_toEndOf="@+id/textViewVendas"
+        app:layout_constraintStart_toStartOf="@+id/textViewVendas"
+        app:layout_constraintTop_toBottomOf="@+id/textViewVendas" />
+
+    <ImageView
+        android:id="@+id/imageViewMercado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toStartOf="@+id/imageViewTodo"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        android:onClick="acessarResumoListaMercado"
+        app:layout_constraintTop_toTopOf="@+id/imageViewTodo"
+        app:srcCompat="@drawable/ic_shopping_cart_96" />
+
+    <TextView
+        android:id="@+id/textViewMercado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lista Mercado"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
+        app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewMercado" />
+
+    <TextView
+        android:id="@+id/textViewStatusMercado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em breve"
+        app:layout_constraintEnd_toEndOf="@+id/textViewMercado"
+        app:layout_constraintStart_toStartOf="@+id/textViewMercado"
+        app:layout_constraintTop_toBottomOf="@+id/textViewMercado" />
+
+    <ImageView
+        android:id="@+id/imageViewTodo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        android:onClick="acessarListaAtividades"
+        app:layout_constraintBottom_toTopOf="@+id/imageViewConfigs"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/imageViewMercado"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas"
+        app:srcCompat="@drawable/ic_checklist_96" />
+
+    <TextView
+        android:id="@+id/textViewAtividades"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lista atividades"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewTodo"
+        app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewTodo" />
+
+    <TextView
+        android:id="@+id/textViewStatusTodo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em breve"
+        app:layout_constraintEnd_toEndOf="@+id/textViewAtividades"
+        app:layout_constraintHorizontal_bias="0.35"
+        app:layout_constraintStart_toStartOf="@+id/textViewAtividades"
+        app:layout_constraintTop_toBottomOf="@+id/textViewAtividades" />
+
+    <ImageView
+        android:id="@+id/imageViewBoletoCPF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toStartOf="@+id/imageViewConfigs"
+        android:onClick="acessarBoletos"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/imageViewConfigs"
+        app:srcCompat="@drawable/ic_barcode_96" />
+
+    <TextView
+        android:id="@+id/textViewBoletoCPF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Boleto por CPF"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewBoletoCPF" />
+
+    <TextView
+        android:id="@+id/textViewStatusBoletoCPF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em breve"
+        app:layout_constraintEnd_toEndOf="@+id/textViewBoletoCPF"
+        app:layout_constraintStart_toStartOf="@+id/textViewBoletoCPF"
+        app:layout_constraintTop_toBottomOf="@+id/textViewBoletoCPF" />
+
+    <ImageView
+        android:id="@+id/imageViewConfigs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:onClick="acessarConfigs"
+        app:layout_constraintStart_toEndOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewTodo"
+        app:srcCompat="@drawable/ic_manage_accounts_96" />
+
+    <TextView
+        android:id="@+id/textViewConfigs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Minha Conta"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewConfigs"
+        app:layout_constraintStart_toStartOf="@+id/imageViewConfigs"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewConfigs" />
+
+    <TextView
+        android:id="@+id/textViewStatusConfigs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Em desenvolvimento"
+        app:layout_constraintEnd_toEndOf="@+id/textViewConfigs"
+        app:layout_constraintStart_toStartOf="@+id/textViewConfigs"
+        app:layout_constraintTop_toBottomOf="@+id/textViewConfigs" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
