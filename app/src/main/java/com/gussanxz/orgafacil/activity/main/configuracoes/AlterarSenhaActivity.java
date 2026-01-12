@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.activity.configuracoes;
+package com.gussanxz.orgafacil.activity.main.configuracoes;
 
 import android.os.Bundle;
 import android.widget.Button;
