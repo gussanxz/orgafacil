@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.main.CadastroActivity">
+
+    <RadioGroup
+        android:id="@+id/meuToggleGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="60dp"
+        android:layout_marginRight="60dp"
+        android:layout_marginTop="100dp"
+        android:background="@drawable/toggle_container_background"
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <RadioButton
+            android:id="@+id/radioButtonLogin"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/selector_toggle_button_background"
+            android:button="@null"
+            android:checked="true"
+            android:gravity="center"
+            android:text="Login"
+            android:textColor="@color/selector_toggle_button_text_color"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <RadioButton
+            android:id="@+id/radioButtonCadastreSe"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/selector_toggle_button_background"
+            android:button="@null"
+            android:gravity="center"
+            android:text="Cadastre-se"
+            android:textColor="@color/selector_toggle_button_text_color"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/editEmail"
+        android:layout_width="347dp"
+        android:layout_height="wrap_content"
+        android:drawableLeft="@drawable/ic_email_cinza_24"
+        android:drawablePadding="5dp"
+        android:ems="10"
+        android:hint="E-mail"
+        android:inputType="text|textEmailAddress"
+        app:layout_constraintBottom_toTopOf="@+id/textViewRecuperarSenha"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/textViewRecuperarSenha"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Esqueceu sua senha?"
+        app:layout_constraintBottom_toTopOf="@+id/editSenha"
+        app:layout_constraintEnd_toEndOf="@id/editSenha"
+        app:layout_constraintTop_toBottomOf="@+id/editEmail" />
+
+    <EditText
+        android:id="@+id/editSenha"
+        android:layout_width="347dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:drawableLeft="@drawable/ic_cadeado_cinza_24"
+        android:drawableRight="@drawable/ic_visibility_off_24"
+        android:drawablePadding="5dp"
+        android:ems="10"
+        android:hint="Senha"
+        android:inputType="text|textPassword"
+        app:layout_constraintBottom_toTopOf="@+id/buttonEntrar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewRecuperarSenha" />
+
+    <Button
+        android:id="@+id/buttonEntrar"
+        android:layout_width="347dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:textColor="@color/black"
+        android:text="Fazer Login"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/btnLoginGoogle"
+        app:layout_constraintEnd_toEndOf="@+id/editSenha"
+        app:layout_constraintStart_toStartOf="@+id/editSenha"
+        app:layout_constraintTop_toBottomOf="@+id/editSenha" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoginGoogle"
+        android:layout_width="347dp"
+        android:layout_height="48dp"
+        android:backgroundTint="@color/background_google"
+        android:drawableLeft="@drawable/ic_google_24"
+        android:drawablePadding="12dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="Login com Google"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        app:cornerRadius="100dp"
+        app:iconGravity="textStart"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/buttonEntrar"
+        app:layout_constraintStart_toStartOf="@+id/buttonEntrar"
+        app:layout_constraintTop_toBottomOf="@+id/buttonEntrar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

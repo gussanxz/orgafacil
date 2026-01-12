@@ -13,94 +13,92 @@
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
         <activity
-            android:name=".activity.vendas.VendasCadastrosActivity"
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.configuracoes.AlterarSenhaActivity"
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.configuracoes.SegurancaActivity"
+            android:name=".activity.main.configuracoes.AlterarSenhaActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.contas.EditarMovimentacaoActivity"
+            android:name=".activity.main.configuracoes.SegurancaActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.SelecionarCategoriaActivity"
+            android:name=".activity.main.contas.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.vendas.ListaVendasActivity"
+            android:name=".activity.main.contas.SelecionarCategoriaActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.vendas.ListaPagamentosActivity"
+            android:name=".activity.main.vendas.ListaVendasActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.configuracoes.ConfigsActivity"
+            android:name=".activity.main.vendas.ListaPagamentosActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.boletos.BoletosActivity"
+            android:name=".activity.main.configuracoes.ConfigsActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.todo.ListaAtividadesActivity"
+            android:name=".activity.main.boletos.BoletosActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.mercado.ResumoListaMercadoActivity"
+            android:name=".activity.main.todo.ListaAtividadesActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.HomeActivity"
+            android:name=".activity.main.mercado.ResumoListaMercadoActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.vendas.CadastroClienteActivity"
+            android:name=".activity.main.HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.vendas.ResumoVendasActivity"
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.pessoas.cliente.CadastroClienteActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.vendas.VendasActivity"
+            android:name=".activity.main.vendas.ResumoVendasActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.contas.DespesasActivity"
+            android:name=".activity.main.vendas.novavenda.RegistrarVendasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.main.contas.DespesasActivity"
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".activity.contas.ProventosActivity"
+            android:name=".activity.main.contas.ProventosActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".activity.contas.ContasActivity"
+            android:name=".activity.main.contas.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
-            android:name=".activity.vendas.CadastroCategoriaActivity"
-            android:exported="false" >
-        </activity>
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity"
+            android:exported="false"></activity>
         <activity
-            android:name=".activity.vendas.CadastroProdutosServicosActivity"
-            android:exported="false">
-        </activity>
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity"
+            android:exported="false"></activity>
         <activity
-            android:name=".activity.vendas.CadastroComboActivity"
-            android:exported="false">
-        </activity>
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity"
+            android:exported="false"></activity>
         <activity
-            android:name=".activity.vendas.CadastroModificadorActivity"
-            android:exported="false">
-        </activity>
-
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity"
+            android:exported="false"></activity>
         <activity
-            android:name=".activity.MainActivity"
+            android:name=".activity.main.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.OrgaFacil">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
-            android:name=".activity.CadastroActivity"
+            android:name=".activity.main.CadastroActivity"
             android:exported="true" />
         <activity
-            android:name=".activity.LoginActivity"
+            android:name=".activity.main.LoginActivity"
             android:exported="true" />
     </application>
 
