@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.activity.vendas;
+package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria;
 
 import android.graphics.Color; // Importante para as cores
 import android.os.Bundle;
@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -23,6 +24,9 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     private FloatingActionButton fabVoltar;
     private FloatingActionButton fabSalvarCategoria;
     private LinearLayout containerIcones; // O container que segura os cards
+    private MaterialCardView cardBtnSelecionarIcones; // O card que está selecionado
+    private LinearLayout layoutSelecao; // O layout que mostra os ícones
+
 
     // Variável para guardar qual ícone o usuário escolheu (0, 1, 2...)
     // -1 significa que nenhum foi escolhido ainda
@@ -47,12 +51,15 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
         // Chama o método que busca os IDs e configura os cliques
         inicializarComponentes();
+
     }
 
     private void inicializarComponentes() {
         // IDs que você já tinha
         fabVoltar = findViewById(R.id.fabVoltar);
         fabSalvarCategoria = findViewById(R.id.fabSuperiorSalvarCategoria);
+        cardBtnSelecionarIcones = findViewById(R.id.cardBtnSelecionarIcones);
+        layoutSelecao = findViewById(R.id.layoutSelecao);
 
         // NOVO: Buscando o container dos ícones no XML
         containerIcones = findViewById(R.id.containerIcones);
@@ -146,5 +153,21 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         toast.show();
 
         finish(); // Retorna para tela anterior
+    }
+
+    public void exibeSelecaoDeIcones(View view) {
+
+
+
+        if (layoutSelecao.getVisibility() == View.INVISIBLE) {
+
+            layoutSelecao.setVisibility(View.VISIBLE);
+            // Mostra um Toast para informar que o ícone foi selecionado
+            Toast.makeText(this, "Selecione o Ícone!", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            layoutSelecao.setVisibility(View.INVISIBLE);
+        }
+
     }
 }
