@@ -17,13 +17,14 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.card.MaterialCardView; // Importante para os cards
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.gussanxz.orgafacil.R;
+import android.widget.GridLayout;
 
 public class CadastroCategoriaActivity extends AppCompatActivity {
 
     // Componentes da tela
     private FloatingActionButton fabVoltar;
     private FloatingActionButton fabSalvarCategoria;
-    private LinearLayout containerIcones; // O container que segura os cards
+    private GridLayout containerIcones; // O container que segura os cards
     private MaterialCardView cardBtnSelecionarIcones; // O card que está selecionado
     private LinearLayout layoutSelecao; // O layout que mostra os ícones
 
@@ -97,9 +98,10 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     private void atualizarCores(MaterialCardView cardClicado) {
 
         // Definição das cores
-        int corVerde = Color.parseColor("#25D366");
-        int corFundoCinza = Color.parseColor("#F5F5F5");
-        int corIconeCinza = Color.parseColor("#9E9E9E");
+        int corVerde = Color.parseColor("#25D366"); // Cor de seleção
+        int corFundoCinza = Color.parseColor("#F5F5F5"); // Cor desmarcado
+        int corIconeCinza = Color.parseColor("#9E9E9E"); // Icone desmarcado
+        int corBranco = Color.WHITE;
         int corBorda = Color.parseColor("#E0E0E0");
 
         // Loop novamente para pintar todos corretamente
@@ -111,6 +113,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
                 // Pega a imagem (ícone) dentro do card
                 ImageView icone = null;
+
                 if (cardAtual.getChildCount() > 0 && cardAtual.getChildAt(0) instanceof ImageView) {
                     icone = (ImageView) cardAtual.getChildAt(0);
                 }
@@ -120,7 +123,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
                     // SELECIONADO (Verde)
                     cardAtual.setCardBackgroundColor(corVerde);
                     cardAtual.setStrokeWidth(0);
-                    if (icone != null) icone.setColorFilter(Color.WHITE);
+                    if (icone != null) icone.setColorFilter(corBranco);
                 } else {
                     // NÃO SELECIONADO (Cinza)
                     cardAtual.setCardBackgroundColor(corFundoCinza);
@@ -159,14 +162,14 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
 
 
-        if (layoutSelecao.getVisibility() == View.INVISIBLE) {
+        if (layoutSelecao.getVisibility() == View.GONE) {
 
             layoutSelecao.setVisibility(View.VISIBLE);
             // Mostra um Toast para informar que o ícone foi selecionado
             Toast.makeText(this, "Selecione o Ícone!", Toast.LENGTH_SHORT).show();
         }
         else {
-            layoutSelecao.setVisibility(View.INVISIBLE);
+            layoutSelecao.setVisibility(View.GONE);
         }
 
     }
