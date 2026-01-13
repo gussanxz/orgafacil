@@ -19,10 +19,14 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.card.MaterialCardView; // Importante para os cards
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.gussanxz.orgafacil.R;
 import android.widget.GridLayout;
 import android.util.Log;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.gussanxz.orgafacil.model.Categoria;
 
 public class CadastroCategoriaActivity extends AppCompatActivity {
 
@@ -32,6 +36,10 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     private GridLayout containerIcones; // O container que segura os cards
     private MaterialCardView cardBtnSelecionarIcones; // O card que está selecionado
     private LinearLayout layoutSelecao; // O layout que mostra os ícones
+
+    //Firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
 
 
     // Variável para guardar qual ícone o usuário escolheu (0, 1, 2...)
@@ -58,6 +66,9 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         // Chama o método que busca os IDs e configura os cliques
         inicializarComponentes();
 
+        //Inicializar o firebase
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        mAuth = FirebaseAuth.getInstance();
     }
 
     private void inicializarComponentes() {
@@ -146,23 +157,6 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         finish(); // Retorna para tela anterior
     }
 
-    public void salvarCategoria(View view) {
-
-        // Verificação simples: O usuário escolheu um ícone?
-        if (iconeSelecionadoIndex == -1) {
-            Toast.makeText(this, "Por favor, selecione um ícone para a categoria.", Toast.LENGTH_SHORT).show();
-            return; // Para o código aqui e não salva
-        }
-
-        // Se chegou aqui, está tudo certo
-        Toast toast = Toast.makeText(this,
-                "Categoria salva! Ícone escolhido: " + iconeSelecionadoIndex,
-                Toast.LENGTH_SHORT);
-        toast.show();
-
-        finish(); // Retorna para tela anterior
-    }
-
     public void exibeSelecaoDeIcones(View view) {
 
         if (layoutSelecao.getVisibility() == View.GONE) {
@@ -186,30 +180,79 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         }
 
         // 2. Pegar os textos dos Inputs
-        // Supondo que você já tenha mapeado: editCategoria e editDescricao
         TextInputEditText editNome = findViewById(R.id.editCategoria);
         TextInputEditText editDesc = findViewById(R.id.editDescricao);
 
         String nomeCategoria = editNome.getText().toString();
         String descCategoria = editDesc.getText().toString();
 
-        // 3. SALVAR LOCALMENTE (SharedPreferences)
-        // "MinhasPreferencias" é o nome do arquivo interno onde vai salvar
-        SharedPreferences sharedPref = getSharedPreferences("DadosCategoria", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
+        //3. Verificação se o nome da categoria esta vazia
+        if (nomeCategoria.isEmpty()) {
+            editNome.setError("Nome da categoria é obrigatório.");
+            return;
+        }
 
-        //Pegar valor boolean do switch
+        //4. Verificando usuário logado (segurança)
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "Usuário não está logado.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        //5. Pegando ID do Usuario
+        String idUsuario = mAuth.getCurrentUser().getUid();
+
+        //6. Preparando objeto para salvar no Firebase
         MaterialSwitch switchAtiva = findViewById(R.id.switchAtiva);
         boolean estaAtiva = switchAtiva.isChecked();
 
-        editor.putString("ultimo_nome_salvo", nomeCategoria);
-        editor.putString("ultima_desc_salva", descCategoria);
-        editor.putInt("ultimo_icone_index", iconeSelecionadoIndex);
-        editor.putBoolean("esta_ativa", estaAtiva);
+        Categoria novaCategoria = new Categoria(idUsuario, nomeCategoria, descCategoria, iconeSelecionadoIndex, estaAtiva);
 
-        editor.apply(); // Salva de verdade (assíncrono)
+        //7. Definindo caminho do firebase: vendas -> uid -> cadastros -> categorias
+        DatabaseReference categoriasRef = mDatabase
+                .child("vendas")
+                .child("uid")
+                .child(idUsuario)
+                .child("cadastros")
+                .child("categorias");
 
-        // 4. EXIBIR NO TERMINAL (Logcat)
+        //8. Gera um ID único para a categoria (push)
+        DatabaseReference novaCategoriaRef = categoriasRef.push();
+        String idGerado = novaCategoriaRef.getKey(); //Pega id gerado pelo firebase
+        novaCategoria.setId(idGerado);
+
+        //9. Salva no firebase
+        novaCategoriaRef.setValue(novaCategoria)
+            .addOnSuccessListener(aVoid -> {
+
+                // 1. Mensagem de sucesso pro usuário
+                Toast.makeText(this, "Categoria salva com sucesso!", Toast.LENGTH_SHORT).show();
+
+                // 2. LOGS PARA CONFERÊNCIA (Filtrar por: APP_DEBUG)
+                Log.d("APP_DEBUG", "\n"); // Pula linha
+                Log.d("APP_DEBUG", "🟢 === SUCESSO NO FIREBASE ===");
+
+                // MOSTRA O CAMINHO EXATO (Isso facilita muito achar no console)
+                String caminho = "vendas/" + idUsuario + "/cadastros/categorias/" + idGerado;
+                Log.d("APP_DEBUG", "📂 CAMINHO: " + caminho);
+                Log.d("APP_DEBUG", "-----------------------------------");
+
+                // MOSTRA OS DADOS SALVOS
+                Log.d("APP_DEBUG", "🏷️ Nome:      " + novaCategoria.getNome());
+                Log.d("APP_DEBUG", "📝 Descrição: " + novaCategoria.getDescricao());
+                Log.d("APP_DEBUG", "🎨 Ícone IDX: " + novaCategoria.getIndexIcone());
+                Log.d("APP_DEBUG", "🔌 Ativa:     " + novaCategoria.isAtiva());
+                Log.d("APP_DEBUG", "🔑 ID Gerado: " + novaCategoria.getId());
+                Log.d("APP_DEBUG", "===================================\n");
+                Log.d("APP_DEBUG", "\n"); // Pula linha
+
+                finish();
+            })
+            .addOnFailureListener(e -> {
+                Log.e("APP_DEBUG", "🔴 ERRO AO SALVAR: " + e.getMessage());
+                Toast.makeText(this, "Erro ao salvar categoria: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+
+       /* //  4. EXIBIR NO TERMINAL (Logcat)
         // Use a Tag "APP_DEBUG" para filtrar fácil depois
         Log.d("APP_DEBUG", "=== CATEGORIA SALVA COM SUCESSO ===");
         Log.d("APP_DEBUG", "Nome: " + nomeCategoria);
@@ -219,6 +262,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         Log.d("APP_DEBUG", "===================================");
 
         Toast.makeText(this, "Salvo e exibido no Logcat!", Toast.LENGTH_SHORT).show();
-        finish();
+        finish();*/
     }
 }
+
