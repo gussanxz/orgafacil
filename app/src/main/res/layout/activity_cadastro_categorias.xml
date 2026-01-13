@@ -300,17 +300,18 @@
                             android:layout_margin="8dp"
                             android:clickable="true"
                             android:focusable="true"
-                            app:cardBackgroundColor="#25D366"
+                            app:cardBackgroundColor="#F5F5F5"
                             app:cardCornerRadius="25dp"
-                            app:cardElevation="2dp"
-                            app:strokeWidth="0dp">
+                            app:cardElevation="0dp"
+                            app:strokeColor="#E0E0E0"
+                            app:strokeWidth="1dp">
 
                             <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_categorias_roupas_24"
-                                app:tint="#FFFFFF" />
+                                app:tint="#9E9E9E" />
                         </com.google.android.material.card.MaterialCardView>
 
                         <com.google.android.material.card.MaterialCardView
