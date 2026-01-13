@@ -279,7 +279,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/ic_launcher_foreground"
+                                android:src="@drawable/ic_categorias_mercado_24"
                                 app:tint="#9E9E9E" />
                         </com.google.android.material.card.MaterialCardView>
 
@@ -298,7 +298,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/ic_launcher_foreground"
+                                android:src="@drawable/ic_categorias_roupas_24"
                                 app:tint="#FFFFFF" />
                         </com.google.android.material.card.MaterialCardView>
 
@@ -318,7 +318,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/ic_launcher_foreground"
+                                android:src="@drawable/ic_categorias_comida_24"
                                 app:tint="#9E9E9E" />
                         </com.google.android.material.card.MaterialCardView>
 
@@ -338,7 +338,7 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/ic_launcher_foreground"
+                                android:src="@drawable/ic_categorias_bebidas_24"
                                 app:tint="#9E9E9E" />
                         </com.google.android.material.card.MaterialCardView>
 
@@ -358,7 +358,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_eletronicos_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -378,7 +378,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_spa_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -398,7 +398,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_fitness_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -418,7 +418,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_geral_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -438,7 +438,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_ferramentas_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -458,7 +458,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_papelaria_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -478,7 +478,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_casa_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
@@ -498,7 +498,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:layout_gravity="center"
-                            android:src="@drawable/ic_launcher_foreground"
+                            android:src="@drawable/ic_categorias_brinquedos_24"
                             app:tint="#9E9E9E" />
                     </com.google.android.material.card.MaterialCardView>
 
