@@ -1,5 +1,7 @@
 package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color; // Importante para as cores
 import android.os.Bundle;
 import android.view.View;
@@ -16,8 +18,11 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.card.MaterialCardView; // Importante para os cards
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
 import android.widget.GridLayout;
+import android.util.Log;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 public class CadastroCategoriaActivity extends AppCompatActivity {
 
@@ -160,8 +165,6 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
     public void exibeSelecaoDeIcones(View view) {
 
-
-
         if (layoutSelecao.getVisibility() == View.GONE) {
 
             layoutSelecao.setVisibility(View.VISIBLE);
@@ -172,5 +175,50 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             layoutSelecao.setVisibility(View.GONE);
         }
 
+    }
+
+    public void salvarCategoriaTeste(View view) {
+
+        // 1. Verificação básica
+        if (iconeSelecionadoIndex == -1) {
+            Toast.makeText(this, "Por favor, selecione um ícone.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 2. Pegar os textos dos Inputs
+        // Supondo que você já tenha mapeado: editCategoria e editDescricao
+        TextInputEditText editNome = findViewById(R.id.editCategoria);
+        TextInputEditText editDesc = findViewById(R.id.editDescricao);
+
+        String nomeCategoria = editNome.getText().toString();
+        String descCategoria = editDesc.getText().toString();
+
+        // 3. SALVAR LOCALMENTE (SharedPreferences)
+        // "MinhasPreferencias" é o nome do arquivo interno onde vai salvar
+        SharedPreferences sharedPref = getSharedPreferences("DadosCategoria", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+
+        //Pegar valor boolean do switch
+        MaterialSwitch switchAtiva = findViewById(R.id.switchAtiva);
+        boolean estaAtiva = switchAtiva.isChecked();
+
+        editor.putString("ultimo_nome_salvo", nomeCategoria);
+        editor.putString("ultima_desc_salva", descCategoria);
+        editor.putInt("ultimo_icone_index", iconeSelecionadoIndex);
+        editor.putBoolean("esta_ativa", estaAtiva);
+
+        editor.apply(); // Salva de verdade (assíncrono)
+
+        // 4. EXIBIR NO TERMINAL (Logcat)
+        // Use a Tag "APP_DEBUG" para filtrar fácil depois
+        Log.d("APP_DEBUG", "=== CATEGORIA SALVA COM SUCESSO ===");
+        Log.d("APP_DEBUG", "Nome: " + nomeCategoria);
+        Log.d("APP_DEBUG", "Descrição: " + descCategoria);
+        Log.d("APP_DEBUG", "ID do Ícone: " + iconeSelecionadoIndex);
+        Log.d("APP_DEBUG", "Ativa: " + estaAtiva);
+        Log.d("APP_DEBUG", "===================================");
+
+        Toast.makeText(this, "Salvo e exibido no Logcat!", Toast.LENGTH_SHORT).show();
+        finish();
     }
 }
