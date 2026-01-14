@@ -94,6 +94,12 @@ public class ListaCategoriasActivity extends AppCompatActivity {
                 for (DataSnapshot ds : snapshot.getChildren()) {
                     Categoria cat = ds.getValue(Categoria.class);
                     if (cat != null) {
+
+                        // Fallback: se o id não veio do objeto, usa a key do Firebase
+                        if (cat.getId() == null || cat.getId().trim().isEmpty()) {
+                            cat.setId(ds.getKey());
+                        }
+
                         listaCategoriasTotal.add(cat);
                     }
                 }
