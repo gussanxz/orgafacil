@@ -11,7 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
+//import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity;

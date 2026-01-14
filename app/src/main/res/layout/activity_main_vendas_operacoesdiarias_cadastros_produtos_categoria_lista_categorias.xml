@@ -98,6 +98,7 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipTodas"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="true"
@@ -105,12 +106,14 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipAtivas"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ativas" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipInativas"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Inativas" />

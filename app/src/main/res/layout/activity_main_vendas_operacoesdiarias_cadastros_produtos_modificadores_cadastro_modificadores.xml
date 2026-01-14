@@ -37,7 +37,7 @@
             android:gravity="center"
             android:text="Adicionar Modificador"
             android:textAlignment="gravity"
-            android:textColor="@color/white"
+            android:textColor="@color/cor_texto"
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
