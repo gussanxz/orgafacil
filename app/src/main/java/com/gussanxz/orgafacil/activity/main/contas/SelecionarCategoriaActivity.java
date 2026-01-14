@@ -17,14 +17,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterCategoria;
+import com.gussanxz.orgafacil.adapter.AdapterCategoriaContas;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.gussanxz.orgafacil.model.Categoria;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,83 +32,206 @@ import java.util.List;
 public class SelecionarCategoriaActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    private AdapterCategoria adapter;
-    private List<Categoria> listaCategorias = new ArrayList<>();
+    private AdapterCategoriaContas adapter;
+    private final List<String> categorias = new ArrayList<>();
     private DatabaseReference firebaseRef;
-    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_categoria_lista_categorias);
+        setContentView(R.layout.activity_main_contas_selecionar_categoria);
 
-        //Inicializar o firebase
-        firebaseRef = FirebaseDatabase.getInstance().getReference();
-        mAuth = FirebaseAuth.getInstance();
-
-        //Configura o recyclerView
-        recyclerView = findViewById(R.id.recyclerCategorias);
+        recyclerView = findViewById(R.id.recyclerViewCategorias);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
-        //Configurando Adapter (passando a lista de Objetos)
-        adapter = new AdapterCategoria(listaCategorias, this);
+        adapter = new AdapterCategoriaContas(categorias, this);
         recyclerView.setAdapter(adapter);
 
-        //Buscar os dados
+        firebaseRef = FirebaseDatabase.getInstance().getReference();
         carregarCategoriasDoFirebase();
+
+        findViewById(R.id.btnNovaCategoria).setOnClickListener(v -> mostrarDialogNovaCategoria());
+        configurarSwipeParaExcluir();
     }
 
-    private void carregarCategoriasDoFirebase() {
+    private void mostrarDialogNovaCategoria() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Nova Categoria");
 
-        if (mAuth.getCurrentUser() == null) return;
+        final EditText input = new EditText(this);
+        input.setHint("Digite o nome da categoria");
+        builder.setView(input);
 
-        String idUsuario = mAuth.getCurrentUser().getUid();
-
-        // CAMINHO
-        // vendas -> uid -> idUsuario -> cadastros -> categorias
-        DatabaseReference categoriasRef = firebaseRef
-                .child("vendas")
-                .child("uid")
-                .child(idUsuario)
-                .child("cadastros")
-                .child("categorias");
-
-        //Listener para ler os dados
-        categoriasRef.addValueEventListener(new ValueEventListener() {
-
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                listaCategorias.clear(); // Limpa a lista antes de adicionar para não duplicar
-
-                for (DataSnapshot ds : snapshot.getChildren()) {
-
-                    //Converte JSON do Firebase para Objeto Categoria
-                    Categoria categoria = ds.getValue(Categoria.class);
-
-                    //Verifica se a categoria não está vazia
-                    if (categoria != null) {
-                        listaCategorias.add(categoria);
-                    }
-                }
-
-                //Notifica o adapter que os dados foram atualizados
-                adapter.notifyDataSetChanged();
-
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
+            String novaCategoria = input.getText().toString().trim();
+            if (!TextUtils.isEmpty(novaCategoria)) {
+                salvarCategoriaNoFirebase(novaCategoria);
+            } else {
+                Toast.makeText(this, "Digite uma categoria válida", Toast.LENGTH_SHORT).show();
             }
+        });
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(SelecionarCategoriaActivity.this,
-                        "Erro ao carregar: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
 
+    private void salvarCategoriaNoFirebase(String nomeCategoria) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
+        String novaChave = categoriasRef.push().getKey();
+
+        if (novaChave == null) return;
+
+        categoriasRef.child(novaChave).setValue(nomeCategoria).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Toast.makeText(this, "Categoria adicionada!", Toast.LENGTH_SHORT).show();
+                categorias.add(nomeCategoria);
+                adapter.notifyItemInserted(categorias.size() - 1);
+            } else {
+                Toast.makeText(this, "Erro ao salvar categoria", Toast.LENGTH_SHORT).show();
             }
         });
     }
+
+    private void inicializarCategoriasPadrao() {
+        List<String> padroes = Arrays.asList(
+                "Alimentação", "Aluguel", "Pets", "Contas", "Doações e caridades",
+                "Educação", "Investimento", "Lazer", "Mercado", "Moradia"
+        );
+
+        for (String cat : padroes) {
+            salvarCategoriaNoFirebase(cat);
+        }
+    }
+
+    private void carregarCategoriasDoFirebase() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
+
+        categoriasRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                categorias.clear();
+
+                for (DataSnapshot catSnap : snapshot.getChildren()) {
+                    String categoria = catSnap.getValue(String.class);
+                    if (categoria != null && !categorias.contains(categoria)) {
+                        categorias.add(categoria);
+                    }
+                }
+
+                if (categorias.isEmpty()) {
+                    inicializarCategoriasPadrao();
+                } else {
+                    categorias.sort(String::compareToIgnoreCase);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void configurarSwipeParaExcluir() {
+        ItemTouchHelper.SimpleCallback itemTouch = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int pos = viewHolder.getAdapterPosition();
+                String categoria = categorias.get(pos);
+                verificarEExcluirCategoria(categoria, pos);
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
+                                    int actionState, boolean isCurrentlyActive) {
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+
+                Paint paint = new Paint();
+                paint.setColor(Color.RED);
+
+                c.drawRect(viewHolder.itemView.getRight() + dX, viewHolder.itemView.getTop(),
+                        viewHolder.itemView.getRight(), viewHolder.itemView.getBottom(), paint);
+
+                paint.setColor(Color.WHITE);
+                paint.setTextSize(40);
+                c.drawText("Excluir", viewHolder.itemView.getRight() - 150,
+                        viewHolder.itemView.getTop() + viewHolder.itemView.getHeight() / 2f + 15, paint);
+            }
+        };
+
+        new ItemTouchHelper(itemTouch).attachToRecyclerView(recyclerView);
+    }
+
+    private void verificarEExcluirCategoria(String categoria, int posicaoNaLista) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        DatabaseReference movimentacoesRef = firebaseRef.child("movimentacao").child(idUsuario);
+
+        movimentacoesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                boolean categoriaEmUso = false;
+
+                for (DataSnapshot mesAnoSnap : snapshot.getChildren()) {
+                    for (DataSnapshot movSnap : mesAnoSnap.getChildren()) {
+                        String catMov = movSnap.child("categoria").getValue(String.class);
+                        if (categoria.equalsIgnoreCase(catMov)) {
+                            categoriaEmUso = true;
+                            break;
+                        }
+                    }
+                    if (categoriaEmUso) break;
+                }
+
+                if (categoriaEmUso) {
+                    Toast.makeText(SelecionarCategoriaActivity.this,
+                            "Categoria em uso — não pode ser excluída.", Toast.LENGTH_SHORT).show();
+                    adapter.notifyItemChanged(posicaoNaLista);
+                } else {
+                    excluirDoFirebaseELista(categoria, posicaoNaLista);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void excluirDoFirebaseELista(String categoria, int posicaoNaLista) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        DatabaseReference categoriasRef = firebaseRef.child("usuarios").child(idUsuario).child("categorias");
+
+        categoriasRef.orderByValue().equalTo(categoria)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        for (DataSnapshot catSnap : snapshot.getChildren()) {
+                            catSnap.getRef().removeValue();
+                        }
+
+                        categorias.remove(posicaoNaLista);
+                        adapter.notifyItemRemoved(posicaoNaLista);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) { }
+                });
+    }
 }
-
-
-
-
-

@@ -7,24 +7,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.model.Categoria;
 
 import java.util.List;
 
-public class AdapterCategoria extends RecyclerView.Adapter<AdapterCategoria.MyViewHolder> {
+public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategoriaVendas.MyViewHolder> {
 
     private List<Categoria> listaCategorias;
-    private Context context;
+    private final Context context;
 
-    public AdapterCategoria(List<Categoria> listaCategorias, Context context) {
+    public AdapterCategoriaVendas(List<Categoria> listaCategorias, Context context) {
         this.listaCategorias = listaCategorias;
         this.context = context;
     }
 
-    // Método para atualizar a lista quando filtrar
     public void setListaFiltrada(List<Categoria> listaFiltrada) {
         this.listaCategorias = listaFiltrada;
         notifyDataSetChanged();
@@ -43,32 +44,28 @@ public class AdapterCategoria extends RecyclerView.Adapter<AdapterCategoria.MyVi
         Categoria categoria = listaCategorias.get(position);
 
         holder.nome.setText(categoria.getNome());
-        holder.descricao.setText(categoria.getDescricao());
 
-        // Lógica de Status (Verde ou Vermelho)
+        String desc = categoria.getDescricao() == null ? "" : categoria.getDescricao();
+        holder.descricao.setText(desc);
+
         if (categoria.isAtiva()) {
             holder.status.setText("Ativa");
-            holder.status.setTextColor(Color.parseColor("#4CAF50")); // Verde
+            holder.status.setTextColor(Color.parseColor("#4CAF50"));
         } else {
             holder.status.setText("Inativa");
-            holder.status.setTextColor(Color.parseColor("#F44336")); // Vermelho
+            holder.status.setTextColor(Color.parseColor("#F44336"));
         }
 
-        // Lógica do Ícone (Você precisa mapear seus ícones aqui)
         int iconRes = getIconePorIndex(categoria.getIndexIcone());
         holder.icone.setImageResource(iconRes);
     }
 
     @Override
     public int getItemCount() {
-        return listaCategorias.size();
+        return listaCategorias == null ? 0 : listaCategorias.size();
     }
 
-    // --- Mapeamento dos Ícones ---
-    // --- Mapeamento dos Ícones ---
     private int getIconePorIndex(int index) {
-
-
         switch (index) {
             case 0: return R.drawable.ic_categorias_mercado_24;
             case 1: return R.drawable.ic_categorias_roupas_24;
@@ -82,17 +79,15 @@ public class AdapterCategoria extends RecyclerView.Adapter<AdapterCategoria.MyVi
             case 9: return R.drawable.ic_categorias_papelaria_24;
             case 10: return R.drawable.ic_categorias_casa_24;
             case 11: return R.drawable.ic_categorias_brinquedos_24;
-
-            // Se der algum erro, mostra o ícone Geral
             default: return R.drawable.ic_categorias_geral_24;
         }
     }
 
-    public class MyViewHolder extends RecyclerView.ViewHolder {
+    static class MyViewHolder extends RecyclerView.ViewHolder {
         TextView nome, descricao, status;
         ImageView icone;
 
-        public MyViewHolder(@NonNull View itemView) {
+        MyViewHolder(@NonNull View itemView) {
             super(itemView);
             nome = itemView.findViewById(R.id.textNomeCategoria);
             descricao = itemView.findViewById(R.id.textDescCategoria);
