@@ -27,7 +27,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterCategoria;
+import com.gussanxz.orgafacil.adapter.AdapterCategoriaVendas;
 import com.gussanxz.orgafacil.model.Categoria;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ import java.util.List;
 public class ListaCategoriasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerCategorias;
-    private AdapterCategoria adapter;
+    private AdapterCategoriaVendas adapter;
     private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
     private List<Categoria> listaFiltrada = new ArrayList<>();
     private LinearLayout emptyState;
@@ -94,6 +94,12 @@ public class ListaCategoriasActivity extends AppCompatActivity {
                 for (DataSnapshot ds : snapshot.getChildren()) {
                     Categoria cat = ds.getValue(Categoria.class);
                     if (cat != null) {
+
+                        // Fallback: se o id não veio do objeto, usa a key do Firebase
+                        if (cat.getId() == null || cat.getId().trim().isEmpty()) {
+                            cat.setId(ds.getKey());
+                        }
+
                         listaCategoriasTotal.add(cat);
                     }
                 }
@@ -312,7 +318,7 @@ public class ListaCategoriasActivity extends AppCompatActivity {
     private void configurarRecyclerView() {
 
         // Começa com lista vazia, mas tipada corretamente
-        adapter = new AdapterCategoria(new ArrayList<>(), this);
+        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
     }

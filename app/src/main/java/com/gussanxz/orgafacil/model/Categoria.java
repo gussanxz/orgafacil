@@ -54,4 +54,12 @@ public class Categoria {
     public boolean isAtiva() {
         return ativa;
     }
+
+    public void setIndexIcone(int indexIcone) {
+        this.indexIcone = indexIcone;
+    }
+
+    public void setAtiva(boolean ativa) {
+        this.ativa = ativa;
+    }
 }
