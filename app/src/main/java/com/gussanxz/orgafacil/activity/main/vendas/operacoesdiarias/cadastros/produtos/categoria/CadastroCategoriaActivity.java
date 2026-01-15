@@ -5,8 +5,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.graphics.Color; // Importante para as cores
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ImageView; // Importante para o ícone dentro do card
 import android.widget.LinearLayout; // Importante para o container
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -47,6 +49,8 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     // Variável para guardar qual ícone o usuário escolheu (0, 1, 2...)
     // -1 significa que nenhum foi escolhido ainda
     private int iconeSelecionadoIndex = -1;
+    private TextView textViewHeader;
+    private ImageButton imgBtnSelecionarIcones;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,10 +88,38 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
         // NOVO: Buscando o container dos ícones no XML
         containerIcones = findViewById(R.id.containerIcones);
+        // Novo: se isEdicao, muda textView "Nova categoria"->"Editar categoria"
+        textViewHeader = findViewById(R.id.textViewHeader);
+
+        imgBtnSelecionarIcones = findViewById(R.id.imgBtnSelecionarIcones);
 
         // NOVO: Chama a função que configura o clique nos ícones
         configurarSelecaoIcones();
     }
+
+    private int getIconePorIndex(int index) {
+        switch (index) {
+            case 0: return R.drawable.ic_categorias_mercado_24;
+            case 1: return R.drawable.ic_categorias_roupas_24;
+            case 2: return R.drawable.ic_categorias_comida_24;
+            case 3: return R.drawable.ic_categorias_bebidas_24;
+            case 4: return R.drawable.ic_categorias_eletronicos_24;
+            case 5: return R.drawable.ic_categorias_spa_24;
+            case 6: return R.drawable.ic_categorias_fitness_24;
+            case 7: return R.drawable.ic_categorias_geral_24;
+            case 8: return R.drawable.ic_categorias_ferramentas_24;
+            case 9: return R.drawable.ic_categorias_papelaria_24;
+            case 10: return R.drawable.ic_categorias_casa_24;
+            case 11: return R.drawable.ic_categorias_brinquedos_24;
+            default: return R.drawable.ic_categorias_geral_24;
+        }
+    }
+    private void atualizarPreviewIconeSelecionado(int index) {
+        if (imgBtnSelecionarIcones != null) {
+            imgBtnSelecionarIcones.setImageResource(getIconePorIndex(index));
+        }
+    }
+
 
     // --- NOVA LÓGICA DE SELEÇÃO DE ÍCONES ---
 
@@ -109,6 +141,8 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
                 card.setOnClickListener(v -> {
                     iconeSelecionadoIndex = indexAtual; // Salva qual foi escolhido
                     atualizarCores(card); // Atualiza o visual (verde/cinza)
+                    atualizarPreviewIconeSelecionado(indexAtual); // atualiza o ImageButton em tempo real
+
                 });
             }
         }
@@ -201,10 +235,14 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             editDesc.setText(descRecuperado);
             switchAtiva.setChecked(ativaRecuperado);
 
+            textViewHeader.setText("Editar Categoria");
+
             // 4. Lógica para selecionar o ícone visualmente
             if (iconeIndexRecuperado >= 0 && containerIcones != null) {
                 // Atualiza a variável global para o botão salvar saber qual é
                 iconeSelecionadoIndex = iconeIndexRecuperado;
+
+                atualizarPreviewIconeSelecionado(iconeIndexRecuperado); // mostra no botão ao abrir em modo edição
 
                 // Pega o CardView correspondente dentro do Grid
                 View view = containerIcones.getChildAt(iconeIndexRecuperado);
