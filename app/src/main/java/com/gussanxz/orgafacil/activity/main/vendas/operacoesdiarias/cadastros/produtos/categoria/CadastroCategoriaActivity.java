@@ -1,7 +1,7 @@
 package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria;
 
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.view.inputmethod.InputMethodManager;
 import android.graphics.Color; // Importante para as cores
 import android.os.Bundle;
 import android.view.View;
@@ -163,6 +163,9 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
     public void exibeSelecaoDeIcones(View view) {
 
+        // 1. Esconde o teclado antes de abrir a seleção
+        esconderTeclado();
+
         if (layoutSelecao.getVisibility() == View.GONE) {
 
             layoutSelecao.setVisibility(View.VISIBLE);
@@ -312,6 +315,14 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             Log.e("APP_DEBUG", "🔴 ERRO AO SALVAR: " + e.getMessage());
             Toast.makeText(this, "Erro ao salvar categoria: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void esconderTeclado() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 }
 
