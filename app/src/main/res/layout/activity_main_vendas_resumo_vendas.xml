@@ -169,7 +169,7 @@
                     android:insetBottom="0dp"
                     android:insetLeft="0dp"
                     android:insetRight="0dp"
-                    android:onClick="acessarVendasRegistrarVendasActivity"/>
+                    android:onClick="acessarRegistrarVendasActivity"/>
             </FrameLayout>
 
             <LinearLayout
@@ -200,7 +200,7 @@
                         android:background="@drawable/fundo_arredondado"
                         android:orientation="vertical"
                         android:layout_margin="4dp"
-                        android:onClick="acessarRegistrarVendasActivity">
+                        android:onClick="acessarVendasCadastrosActivity">
 
                         <ImageView
                             android:layout_width="28dp"

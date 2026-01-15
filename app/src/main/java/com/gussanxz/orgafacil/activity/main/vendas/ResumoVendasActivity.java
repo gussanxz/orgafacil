@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 
 public class ResumoVendasActivity extends AppCompatActivity {
@@ -85,16 +86,13 @@ public class ResumoVendasActivity extends AppCompatActivity {
         }
     }
 
-    public void acessarVendasRegistrarVendasActivity(View view) {
-        startActivity(new Intent(this, RegistrarVendasActivity.class));
+    public void acessarVendasCadastrosActivity(View view) {
+        startActivity(new Intent(this, VendasCadastrosActivity.class));
         Log.i(TAG, "acessou RegistrarVendasActivity");
     }
     public void acessarRegistrarVendasActivity(View view) {
         startActivity(new Intent(this, RegistrarVendasActivity.class));
         Log.i(TAG, "acessou RegistrarVendasActivity");
     }
-
-
-
 
 }
