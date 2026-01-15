@@ -200,7 +200,7 @@
                         android:background="@drawable/fundo_arredondado"
                         android:orientation="vertical"
                         android:layout_margin="4dp"
-                        android:onClick="acessarVendasCadastrosActivity">
+                        android:onClick="acessarRegistrarVendasActivity">
 
                         <ImageView
                             android:layout_width="28dp"
