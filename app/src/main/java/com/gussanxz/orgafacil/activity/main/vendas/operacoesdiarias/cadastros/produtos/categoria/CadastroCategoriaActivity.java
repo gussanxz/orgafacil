@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView; // Importante para o ícone dentro do card
 import android.widget.LinearLayout; // Importante para o container
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -47,6 +48,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     // Variável para guardar qual ícone o usuário escolheu (0, 1, 2...)
     // -1 significa que nenhum foi escolhido ainda
     private int iconeSelecionadoIndex = -1;
+    private TextView textViewHeader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +86,8 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
 
         // NOVO: Buscando o container dos ícones no XML
         containerIcones = findViewById(R.id.containerIcones);
+        // Novo: se isEdicao, muda textView "Nova categoria"->"Editar categoria"
+        textViewHeader = findViewById(R.id.textViewHeader);
 
         // NOVO: Chama a função que configura o clique nos ícones
         configurarSelecaoIcones();
@@ -200,6 +204,8 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             editNome.setText(nomeRecuperado);
             editDesc.setText(descRecuperado);
             switchAtiva.setChecked(ativaRecuperado);
+
+            textViewHeader.setText("Editar Categoria");
 
             // 4. Lógica para selecionar o ícone visualmente
             if (iconeIndexRecuperado >= 0 && containerIcones != null) {
