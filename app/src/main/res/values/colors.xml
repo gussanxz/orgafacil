@@ -36,4 +36,5 @@
 
     <color name ="cor_background">#FFFFFF</color> <!-- Utilizado no drawable fundo_arredondado -->
     <color name="cor_texto">#FF000000</color>
+    <color name="cor_fundo_bloqueado">#99000000</color>
 </resources>

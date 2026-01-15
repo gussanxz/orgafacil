@@ -33,7 +33,7 @@ import com.gussanxz.orgafacil.model.Categoria;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListaCategoriasActivity extends AppCompatActivity {
+public class ListaCategoriasActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
 
     private RecyclerView recyclerCategorias;
     private AdapterCategoriaVendas adapter;
@@ -54,14 +54,13 @@ public class ListaCategoriasActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_categoria_lista_categorias); // Nome do seu layout XML
+        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_categoria_lista_categorias);
 
         // Configurações iniciais
         inicializarComponentes();
         configurarFirebase();
         configurarRecyclerView();
         configurarListenerDeFiltro();
-        swipe();
 
     }
 
@@ -116,86 +115,20 @@ public class ListaCategoriasActivity extends AppCompatActivity {
     }
 
     // --- LÓGICA DO SWIPE (IGUAL CONTAS ACTIVITY) ---
-    public void swipe() {
-        ItemTouchHelper.Callback itemTouch = new ItemTouchHelper.Callback() {
-
-            @Override // Desenha o fundo Vermelho/Verde
-            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
-                                    @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
-                                    int actionState, boolean isCurrentlyActive) {
-
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-
-                View itemView = viewHolder.itemView;
-                Paint backgroundPaint = new Paint();
-                Paint textPaint = new Paint();
-
-                textPaint.setColor(Color.WHITE);
-                textPaint.setTextSize(40f);
-                textPaint.setAntiAlias(true);
-
-                float textY = itemView.getTop() + itemView.getHeight() / 2f + 15;
-
-                if (dX > 0) { // Direita -> Editar (Verde)
-                    backgroundPaint.setColor(Color.parseColor("#4CAF50"));
-                    c.drawRect((float) itemView.getLeft(), (float) itemView.getTop(), dX,
-                            (float) itemView.getBottom(), backgroundPaint);
-                    c.drawText("Editar", itemView.getLeft() + 50, textY, textPaint);
-
-                } else if (dX < 0) { // Esquerda -> Excluir (Vermelho)
-                    backgroundPaint.setColor(Color.parseColor("#F44336"));
-                    c.drawRect((float) itemView.getRight() + dX, (float) itemView.getTop(),
-                            (float) itemView.getRight(), (float) itemView.getBottom(), backgroundPaint);
-                    c.drawText("Excluir", itemView.getRight() - 200, textY, textPaint);
-                }
-            }
-
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                // Permite arrastar para esquerda e direita
-                int dragFlags = ItemTouchHelper.ACTION_STATE_IDLE;
-                int swipeFlags = ItemTouchHelper.START | ItemTouchHelper.END;
-                return makeMovementFlags(dragFlags, swipeFlags);
-            }
-
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getAdapterPosition();
-
-                // --- CORREÇÃO DE SEGURANÇA AQUI ---
-                // Verifica se a lista está vazia ou se a posição é inválida
-                if (listaFiltrada.isEmpty() || position >= listaFiltrada.size()) {
-                    // Se der erro, manda a lista se redesenhar para desfazer o swipe visualmente
-                    adapter.notifyDataSetChanged();
-                    return; // Para o código aqui para não crashar
-                }
-                // ----------------------------------
-
-                // Pega a categoria correta da lista atual (mesmo se estiver filtrada)
-                Categoria categoriaSelecionada = listaFiltrada.get(position);
-
-                if (direction == ItemTouchHelper.START) {
-                    // Swipe Esquerda -> Excluir
-                    excluirCategoria(categoriaSelecionada, position);
-                } else if (direction == ItemTouchHelper.END) {
-                    // Swipe Direita -> Editar
-                    editarCategoria(categoriaSelecionada, position);
-                }
-            }
-        };
-
-        new ItemTouchHelper(itemTouch).attachToRecyclerView(recyclerCategorias);
+    @Override
+    public void onEditarClick(Categoria categoria) {
+        Intent intent = new Intent(this, CadastroCategoriaActivity.class);
+        intent.putExtra("modoEditar", true);
+        intent.putExtra("idCategoria", categoria.getId());
+        intent.putExtra("nome", categoria.getNome());
+        intent.putExtra("descricao", categoria.getDescricao());
+        intent.putExtra("iconeIndex", categoria.getIndexIcone());
+        intent.putExtra("ativa", categoria.isAtiva());
+        startActivity(intent);
     }
 
-
-    // --- AÇÕES DO SWIPE ---
-
-    private void excluirCategoria(Categoria categoria, int position) {
+    @Override
+    public void onExcluirClick(Categoria categoria) {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setTitle("Excluir Categoria");
         alertDialog.setMessage("Tem certeza que deseja excluir a categoria: " + categoria.getNome() + "?");
@@ -205,39 +138,24 @@ public class ListaCategoriasActivity extends AppCompatActivity {
             // Remove do Firebase
             if (mAuth.getCurrentUser() != null && categoria.getId() != null) {
                 String uid = mAuth.getCurrentUser().getUid();
-                mDatabase.child("vendas").child("uid").child(uid)
-                        .child("cadastros").child("categorias")
-                        .child(categoria.getId())
-                        .removeValue();
+                mDatabase.child("vendas")
+                          .child("uid")
+                          .child(uid)
+                          .child("cadastros")
+                          .child("categorias")
+                          .child(categoria.getId())
+                          .removeValue();
 
                 Toast.makeText(this, "Categoria excluída!", Toast.LENGTH_SHORT).show();
             }
         });
 
-        alertDialog.setNegativeButton("Cancelar", (dialog, which) -> {
-            Toast.makeText(this, "Cancelado", Toast.LENGTH_SHORT).show();
-            adapter.notifyItemChanged(position); // Restaura o item na tela
-        });
-
+        alertDialog.setNegativeButton("Cancelar", null);
         alertDialog.show();
-    }
-    private void editarCategoria(Categoria categoria, int position) {
-        // Envia os dados para a tela de Cadastro para edição
-        Intent intent = new Intent(this, CadastroCategoriaActivity.class);
-        intent.putExtra("modoEditar", true); // Avisa que é edição
-        intent.putExtra("idCategoria", categoria.getId());
-        intent.putExtra("nome", categoria.getNome());
-        intent.putExtra("descricao", categoria.getDescricao());
-        intent.putExtra("iconeIndex", categoria.getIndexIcone());
-        intent.putExtra("ativa", categoria.isAtiva());
 
-        startActivity(intent);
-
-        // Restaura o visual do item (remove o verde do fundo)
-        adapter.notifyItemChanged(position);
     }
 
-    // --- Lógica de Filtros (Poderosa!) ---
+    // --- Lógica de Filtros  ---
     private void filtrarDados() {
 
         // 1. Pega o texto digitado (minúsculo para facilitar a busca)
@@ -318,7 +236,7 @@ public class ListaCategoriasActivity extends AppCompatActivity {
     private void configurarRecyclerView() {
 
         // Começa com lista vazia, mas tipada corretamente
-        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this);
+        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this,this);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
     }

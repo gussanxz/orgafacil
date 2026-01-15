@@ -145,10 +145,10 @@
             android:orientation="vertical"
             android:padding="24dp"
             android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/recyclerCategorias"
-            app:layout_constraintEnd_toEndOf="@id/recyclerCategorias"
-            app:layout_constraintStart_toStartOf="@id/recyclerCategorias"
-            app:layout_constraintTop_toTopOf="@id/recyclerCategorias"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             tools:visibility="visible">
 
             <ImageView
@@ -169,7 +169,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Toque em “Nova categoria” para criar."
+                android:text="Toque em + para criar."
                 android:textSize="14sp"
                 android:textColor="#616161" />
         </LinearLayout>

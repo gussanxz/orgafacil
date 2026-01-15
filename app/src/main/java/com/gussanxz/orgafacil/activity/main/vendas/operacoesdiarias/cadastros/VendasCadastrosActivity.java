@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,6 +36,31 @@ public class VendasCadastrosActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Chamada do método para configurar os bloqueios
+        configurarBotoesBloqueados();
+    }
+
+    private void configurarBotoesBloqueados() {
+        // Listener único reaproveitado
+        View.OnClickListener listenerBloqueio = view -> {
+            Toast.makeText(VendasCadastrosActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
+        };
+
+        // IDs dos overlays definidos no seu XML
+        int[] idsBloqueados = {
+                R.id.overlayClientes,
+                R.id.overlayFornecedores,
+                R.id.overlayVendedores
+        };
+
+        // Loop para aplicar o listener em todos
+        for (int id : idsBloqueados) {
+            View overlay = findViewById(id);
+            if (overlay != null) {
+                overlay.setOnClickListener(listenerBloqueio);
+            }
+        }
     }
 
     public void exibirCadastroCategorias(View view) {

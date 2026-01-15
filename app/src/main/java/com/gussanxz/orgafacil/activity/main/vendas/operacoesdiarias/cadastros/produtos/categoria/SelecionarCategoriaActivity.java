@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria;
 
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class SelecionarCategoriaActivity extends AppCompatActivity {
+public class SelecionarCategoriaActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
 
     private RecyclerView recyclerView;
     private AdapterCategoriaVendas adapter;
@@ -53,7 +54,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
         //Configurando Adapter (passando a lista de Objetos)
-        adapter = new AdapterCategoriaVendas(listaCategorias, this);
+        adapter = new AdapterCategoriaVendas(listaCategorias, this, this);
         recyclerView.setAdapter(adapter);
 
         //Buscar os dados
@@ -107,7 +108,34 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
             }
         });
     }
+
+    // --- 3. IMPLEMENTAÇÃO DOS CLIQUES (Obrigatório por causa da Interface) ---
+
+    @Override
+    public void onEditarClick(Categoria categoria) {
+        // LÓGICA DE SELEÇÃO:
+        // Como essa tela é "SelecionarCategoria", ao clicar no item (que no adapter chama onEditarClick),
+        // nós devolvemos o resultado para a tela anterior em vez de abrir a edição.
+
+        Intent intent = new Intent();
+        intent.putExtra("categoriaSelecionada", categoria); // Sua classe Categoria precisa ser Serializable ou Parcelable
+        intent.putExtra("idCategoria", categoria.getId());
+        intent.putExtra("nomeCategoria", categoria.getNome());
+
+        setResult(RESULT_OK, intent);
+        finish(); // Fecha a tela e volta
+    }
+
+    @Override
+    public void onExcluirClick(Categoria categoria) {
+        // Como é uma tela de SELEÇÃO, talvez você não queira permitir excluir por aqui.
+        // Se quiser bloquear, mostre apenas um Toast:
+        Toast.makeText(this, "Para excluir, vá ao menu Cadastros", Toast.LENGTH_SHORT).show();
+
+        // Se quiser permitir excluir mesmo assim, copie a lógica do AlertDialog da outra Activity para cá.
+    }
 }
+
 
 
 

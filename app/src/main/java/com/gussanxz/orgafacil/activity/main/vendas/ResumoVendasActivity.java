@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
@@ -33,26 +34,62 @@ public class ResumoVendasActivity extends AppCompatActivity {
             return insets;
         });
 
-        //Encontrar componentes na tela/xml
-        TextView textSaldo = findViewById(R.id.textSaldo);
-        ImageView imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
 
-        //Definir estado inicial
-        textSaldo.setText(saldoOriginal); //VAi puxar o valor atual de vendas do dia
-        imgOlhoSaldo.setTag(true); //vamos definir que a imgOlho eh o de visivel TRUE
+        // 1. Configuração do Saldo
+        configurarSaldo();
 
-        //Chamada do helper
-        imgOlhoSaldo.setOnClickListener (view -> {
-            VisibilidadeHelper.alternarVisibilidadeSaldo(textSaldo, imgOlhoSaldo, saldoOriginal); //passa dos parametros para o helper
-        });
+        // 2. Configuração dos botões bloqueados
+        configurarBotoesBloqueados();
 
     }
 
+
+    private void configurarSaldo() {
+        TextView textSaldo = findViewById(R.id.textSaldo);
+        ImageView imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
+
+        textSaldo.setText(saldoOriginal);
+        imgOlhoSaldo.setTag(true);
+
+        imgOlhoSaldo.setOnClickListener(view -> {
+            VisibilidadeHelper.alternarVisibilidadeSaldo(textSaldo, imgOlhoSaldo, saldoOriginal);
+        });
+    }
+
+    private void configurarBotoesBloqueados() {
+        // Criamos um listener único para economizar memória e código
+        View.OnClickListener listenerBloqueio = view -> {
+            Toast.makeText(ResumoVendasActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
+        };
+
+        // Lista com todos os IDs dos overlays que criamos no XML
+        int[] idsBloqueados = {
+                R.id.overlayStatusCaixa,
+                R.id.overlayNovoPedido,
+                R.id.overlayPedidosAbertos,
+                R.id.overlayCatalogo,
+                R.id.overlayVendas,
+                R.id.overlayEstoque,
+                R.id.overlayDevolucoes,
+                R.id.overlayRelatorios,
+                R.id.overlayControleCaixa,
+                R.id.overlayFinanceiro
+        };
+
+        // Loop que percorre a lista e aplica o click em cada um
+        for (int id : idsBloqueados) {
+            View overlay = findViewById(id);
+            if (overlay != null) {
+                overlay.setOnClickListener(listenerBloqueio);
+            }
+        }
+    }
 
     public void acessarVendasCadastrosActivity(View view) {
         startActivity(new Intent(this, VendasCadastrosActivity.class));
         Log.i(TAG, "acessou ContasActivity");
     }
+
 
 
 

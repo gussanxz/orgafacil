@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -20,10 +21,18 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
 
     private List<Categoria> listaCategorias;
     private final Context context;
+    private final OnCategoriaActionListener listener; // 1. Variável para ouvir os cliques
 
-    public AdapterCategoriaVendas(List<Categoria> listaCategorias, Context context) {
+    // 2. Interface para comunicação com a Activity
+    public interface OnCategoriaActionListener {
+        void onEditarClick(Categoria categoria);
+        void onExcluirClick(Categoria categoria);
+    }
+
+    public AdapterCategoriaVendas(List<Categoria> listaCategorias, Context context, OnCategoriaActionListener listener) {
         this.listaCategorias = listaCategorias;
         this.context = context;
+        this.listener = listener;
     }
 
     public void setListaFiltrada(List<Categoria> listaFiltrada) {
@@ -43,8 +52,8 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         Categoria categoria = listaCategorias.get(position);
 
+        // Configuração visual (Texto e Icones)
         holder.nome.setText(categoria.getNome());
-
         String desc = categoria.getDescricao() == null ? "" : categoria.getDescricao();
         holder.descricao.setText(desc);
 
@@ -53,11 +62,23 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
             holder.status.setTextColor(Color.parseColor("#4CAF50"));
         } else {
             holder.status.setText("Inativa");
-            holder.status.setTextColor(Color.parseColor("#F44336"));
+            holder.status.setTextColor(Color.parseColor("#9E9E9E"));
         }
 
         int iconRes = getIconePorIndex(categoria.getIndexIcone());
         holder.icone.setImageResource(iconRes);
+
+        // --- 4. NOVOS EVENTOS DE CLIQUE ---
+
+        // A. Clicar no CARD INTEIRO -> Editar
+        holder.itemView.setOnClickListener(v -> {
+            listener.onEditarClick(categoria);
+        });
+
+        // B. Clicar na LIXEIRA -> Excluir
+        holder.btnExcluirCategoria.setOnClickListener(v -> {
+            listener.onExcluirClick(categoria);
+        });
     }
 
     @Override
@@ -86,6 +107,7 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
     static class MyViewHolder extends RecyclerView.ViewHolder {
         TextView nome, descricao, status;
         ImageView icone;
+        ImageButton btnExcluirCategoria;
 
         MyViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -93,6 +115,7 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
             descricao = itemView.findViewById(R.id.textDescCategoria);
             status = itemView.findViewById(R.id.textStatus);
             icone = itemView.findViewById(R.id.imageIconeCategoria);
+            btnExcluirCategoria = itemView.findViewById(R.id.btnExcluirCategoria);
         }
     }
 }
