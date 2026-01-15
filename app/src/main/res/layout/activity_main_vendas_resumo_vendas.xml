@@ -168,19 +168,8 @@
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
                     android:insetLeft="0dp"
-                    android:insetRight="0dp"/>
-
-                <ImageView
-                    android:id="@+id/overlayNovoPedido"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="#CC000000"
-                    android:backgroundTintMode="src_in"
-                    android:src="@drawable/ic_lock_24"
-                    android:scaleType="center"
-                    app:tint="@android:color/white"
-                    android:visibility="visible"
-                    android:elevation="10dp"/>
+                    android:insetRight="0dp"
+                    android:onClick="acessarVendasRegistrarVendasActivity"/>
             </FrameLayout>
 
             <LinearLayout
