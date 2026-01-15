@@ -9,7 +9,6 @@
     android:orientation="vertical"
     tools:context=".activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity">
 
-    <!-- HEADER (segue sua identidade visual) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="80dp"
@@ -39,7 +38,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- SEÇÃO: Estrutura de Produtos -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -50,7 +48,6 @@
                 android:layout_marginBottom="10dp"
                 android:layout_marginTop="12dp" />
 
-            <!-- 1) CATEGORIAS -->
             <LinearLayout
                 android:id="@+id/itemCategorias"
                 android:layout_width="match_parent"
@@ -102,7 +99,6 @@
                     app:tint="#9A9A9A" />
             </LinearLayout>
 
-            <!-- 2) PRODUTOS E SERVIÇOS -->
             <LinearLayout
                 android:id="@+id/itemProdutosServicos"
                 android:layout_width="match_parent"
@@ -154,59 +150,64 @@
                     app:tint="#9A9A9A" />
             </LinearLayout>
 
-            <!-- 3) COMBOS -->
-            <LinearLayout
-                android:id="@+id/itemCombos"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:background="@drawable/fundo_arredondado"
-                android:orientation="horizontal"
-                android:padding="4dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:onClick="exibirCadastroCombos">
-
-                <ImageView
-                    android:layout_marginStart="10dp"
-                    android:id="@+id/iconCombos"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_layers_24"
-                    app:tint="#3A3A3A" />
+                android:clipToOutline="true">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/itemCombos"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:onClick="exibirCadastroCombos">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Combos"
-                        android:textColor="@android:color/black"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                    <ImageView
+                        android:layout_marginStart="10dp"
+                        android:id="@+id/iconCombos"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_layers_24"
+                        app:tint="#3A3A3A" />
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Crie kits de produtos para vender mais rápido e com preço especial."
-                        android:textColor="#666666"
-                        android:textSize="13sp" />
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Combos"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Crie kits de produtos para vender mais rápido e com preço especial."
+                            android:textColor="#666666"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right_24"
+                        app:tint="#9A9A9A" />
                 </LinearLayout>
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right_24"
-                    app:tint="#9A9A9A" />
-            </LinearLayout>
+            </FrameLayout>
 
-            <!-- 4) MODIFICADORES -->
             <LinearLayout
                 android:id="@+id/itemModificadores"
                 android:layout_width="match_parent"
@@ -258,7 +259,6 @@
                     app:tint="#9A9A9A" />
             </LinearLayout>
 
-            <!-- SEÇÃO: Pessoas -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -268,156 +268,204 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="10dp" />
 
-            <!-- 5) CLIENTES -->
-            <LinearLayout
-                android:id="@+id/itemClientes"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:background="@drawable/fundo_arredondado"
-                android:orientation="horizontal"
-                android:padding="4dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_marginStart="10dp"
-                    android:id="@+id/iconClientes"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_person_24"
-                    app:tint="#3A3A3A" />
+                android:clipToOutline="true">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/itemClientes"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Clientes"
-                        android:textColor="@android:color/black"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                    <ImageView
+                        android:layout_marginStart="10dp"
+                        android:id="@+id/iconClientes"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_person_24"
+                        app:tint="#3A3A3A" />
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Gerencie clientes, histórico de compras e vendas no fiado/parcelado."
-                        android:textColor="#666666"
-                        android:textSize="13sp" />
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Clientes"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Gerencie clientes, histórico de compras e vendas no fiado/parcelado."
+                            android:textColor="#666666"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right_24"
+                        app:tint="#9A9A9A" />
                 </LinearLayout>
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right_24"
-                    app:tint="#9A9A9A" />
-            </LinearLayout>
+                    android:id="@+id/overlayClientes"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#CC000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"/>
+            </FrameLayout>
 
-            <!-- 6) FORNECEDORES -->
-            <LinearLayout
-                android:id="@+id/itemFornecedores"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:background="@drawable/fundo_arredondado"
-                android:orientation="horizontal"
-                android:padding="4dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_marginStart="10dp"
-                    android:id="@+id/iconFornecedores"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_local_shipping_24"
-                    app:tint="#3A3A3A" />
+                android:clipToOutline="true">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/itemFornecedores"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Fornecedores"
-                        android:textColor="@android:color/black"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                    <ImageView
+                        android:layout_marginStart="10dp"
+                        android:id="@+id/iconFornecedores"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_local_shipping_24"
+                        app:tint="#3A3A3A" />
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Cadastre fornecedores para entradas, reposição e controle de compra."
-                        android:textColor="#666666"
-                        android:textSize="13sp" />
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fornecedores"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Cadastre fornecedores para entradas, reposição e controle de compra."
+                            android:textColor="#666666"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right_24"
+                        app:tint="#9A9A9A" />
                 </LinearLayout>
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right_24"
-                    app:tint="#9A9A9A" />
-            </LinearLayout>
+                    android:id="@+id/overlayFornecedores"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#CC000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"/>
+            </FrameLayout>
 
-            <!-- 7) VENDEDORES -->
-            <LinearLayout
-                android:id="@+id/itemVendedores"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
                 android:background="@drawable/fundo_arredondado"
-                android:orientation="horizontal"
-                android:padding="4dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_marginStart="10dp"
-                    android:id="@+id/iconVendedores"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_badge_24"
-                    app:tint="#3A3A3A" />
+                android:clipToOutline="true">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/itemVendedores"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Vendedores"
-                        android:textColor="@android:color/black"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                    <ImageView
+                        android:layout_marginStart="10dp"
+                        android:id="@+id/iconVendedores"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_badge_24"
+                        app:tint="#3A3A3A" />
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Controle vendedores, permissões e comissões (se aplicável)."
-                        android:textColor="#666666"
-                        android:textSize="13sp" />
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Vendedores"
+                            android:textColor="@android:color/black"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Controle vendedores, permissões e comissões (se aplicável)."
+                            android:textColor="#666666"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right_24"
+                        app:tint="#9A9A9A" />
                 </LinearLayout>
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right_24"
-                    app:tint="#9A9A9A" />
-            </LinearLayout>
+                    android:id="@+id/overlayVendedores"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#CC000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"/>
+            </FrameLayout>
 
-            <!-- Espaço final -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
