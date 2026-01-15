@@ -89,9 +89,9 @@ public class ResumoVendasActivity extends AppCompatActivity {
         startActivity(new Intent(this, RegistrarVendasActivity.class));
         Log.i(TAG, "acessou RegistrarVendasActivity");
     }
-    public void acessarVendasCadastrosActivity(View view) {
-        startActivity(new Intent(this, VendasCadastrosActivity.class));
-        Log.i(TAG, "acessou VendasCadastrosActivity");
+    public void acessarRegistrarVendasActivity(View view) {
+        startActivity(new Intent(this, RegistrarVendasActivity.class));
+        Log.i(TAG, "acessou RegistrarVendasActivity");
     }
 
 
