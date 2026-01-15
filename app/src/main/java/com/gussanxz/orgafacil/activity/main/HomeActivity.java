@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,7 @@ import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
 import com.gussanxz.orgafacil.activity.main.mercado.ResumoListaMercadoActivity;
 import com.gussanxz.orgafacil.activity.main.todo.ListaAtividadesActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.ResumoVendasActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
 
 public class HomeActivity extends AppCompatActivity {
     private static final String TAG = "HomeActivity";
@@ -42,6 +44,7 @@ public class HomeActivity extends AppCompatActivity {
         textoAtividades = findViewById(R.id.textViewAtividades);
         textoConfigs = findViewById(R.id.textViewConfigs);
 
+        configurarBotoesBloqueados();
     }
 
     public void acessarContasActivity(View view) {
@@ -55,19 +58,40 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void acessarResumoListaMercado(View view) {
-        startActivity(new Intent(this, ResumoListaMercadoActivity.class));
-        Log.i(TAG, "acessou ResumoListaMercadoActivity");
+//        startActivity(new Intent(this, ResumoListaMercadoActivity.class));
+//        Log.i(TAG, "acessou ResumoListaMercadoActivity");
     }
-
+//
     public void acessarListaAtividades(View view) {
-        startActivity(new Intent(this, ListaAtividadesActivity.class));
-        Log.i(TAG, "acessou ListaAtividadesActivity");
+//        startActivity(new Intent(this, ListaAtividadesActivity.class));
+//        Log.i(TAG, "acessou ListaAtividadesActivity");
     }
-
+//
     public void acessarBoletos(View view) {
-        startActivity(new Intent(this, BoletosActivity.class));
-        Log.i(TAG, "acessou BoletosActivity");
+//        startActivity(new Intent(this, BoletosActivity.class));
+//        Log.i(TAG, "acessou BoletosActivity");
     }
+private void configurarBotoesBloqueados() {
+    // Listener único reaproveitado
+    View.OnClickListener listenerBloqueio = view -> {
+        Toast.makeText(HomeActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
+    };
+
+    // IDs dos overlays definidos no seu XML
+    int[] idsBloqueados = {
+            R.id.imageViewMercado,
+            R.id.imageViewTodo,
+            R.id.imageViewBoletoCPF
+    };
+
+    // Loop para aplicar o listener em todos
+    for (int id : idsBloqueados) {
+        View overlay = findViewById(id);
+        if (overlay != null) {
+            overlay.setOnClickListener(listenerBloqueio);
+        }
+    }
+}
 
     public void acessarConfigs(View view) {
         startActivity(new Intent(this, ConfigsActivity.class));

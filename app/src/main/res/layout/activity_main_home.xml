@@ -79,6 +79,19 @@
         app:layout_constraintTop_toBottomOf="@+id/textViewVendas" />
 
     <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="1dp"
+        android:src="@drawable/ic_lock_24"
+        app:layout_constraintBottom_toBottomOf="@+id/imageViewMercado"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
+        app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
+        app:layout_constraintTop_toTopOf="@id/imageViewMercado"
+        app:tint="@android:color/white" />
+        
+    <ImageView
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
         android:id="@+id/imageViewMercado"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -108,6 +121,19 @@
         app:layout_constraintTop_toBottomOf="@+id/textViewMercado" />
 
     <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="1dp"
+        android:src="@drawable/ic_lock_24"
+        app:layout_constraintBottom_toBottomOf="@+id/imageViewTodo"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewTodo"
+        app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
+        app:layout_constraintTop_toTopOf="@id/imageViewTodo"
+        app:tint="@android:color/white" />
+
+    <ImageView
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
         android:id="@+id/imageViewTodo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -140,6 +166,19 @@
         app:layout_constraintTop_toBottomOf="@+id/textViewAtividades" />
 
     <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="1dp"
+        android:src="@drawable/ic_lock_24"
+        app:layout_constraintBottom_toBottomOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintEnd_toEndOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
+        app:layout_constraintTop_toTopOf="@id/imageViewBoletoCPF"
+        app:tint="@android:color/white" />
+
+    <ImageView
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
         android:id="@+id/imageViewBoletoCPF"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
