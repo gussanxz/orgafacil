@@ -62,7 +62,7 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
             holder.status.setTextColor(Color.parseColor("#4CAF50"));
         } else {
             holder.status.setText("Inativa");
-            holder.status.setTextColor(Color.parseColor("#F44336"));
+            holder.status.setTextColor(Color.parseColor("#9E9E9E"));
         }
 
         int iconRes = getIconePorIndex(categoria.getIndexIcone());
