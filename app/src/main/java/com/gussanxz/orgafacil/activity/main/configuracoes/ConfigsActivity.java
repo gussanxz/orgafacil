@@ -1,9 +1,11 @@
 package com.gussanxz.orgafacil.activity.main.configuracoes;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +22,7 @@ public class ConfigsActivity extends AppCompatActivity {
 
     private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSair;
     private TextView textUserEmail;
+    private FirebaseUser user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,44 +36,83 @@ public class ConfigsActivity extends AppCompatActivity {
             return insets;
         });
 
+        inicializarComponentes();
+
+        // Pega o usuário atual do Firebase
+        user = FirebaseAuth.getInstance().getCurrentUser();
+
+        // Configura todos os cliques
+        configurarCliques();
+    }
+
+    private void inicializarComponentes() {
         itemPerfil       = findViewById(R.id.itemPerfil);
         itemPreferencias = findViewById(R.id.itemPreferencias);
         itemSeguranca    = findViewById(R.id.itemSeguranca);
         itemSair         = findViewById(R.id.itemSair);
-        textUserEmail    = findViewById(R.id.textUserEmail);
+    }
 
-        textUserEmail.setVisibility(TextView.INVISIBLE);
+    private void configurarCliques() {
+        configurarClickPerfil();
+        configurarClickPreferencias();
+        configurarClickSeguranca();
+        configurarClickSair();
+    }
 
-        //Criando instancia de usuario
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
+    private void configurarClickPerfil() {
         itemPerfil.setOnClickListener(v -> {
-            // TODO startActivity(new Intent(this, PerfilActivity.class));
-            String userEmail = user.getEmail();
-            String userUid = user.getUid();
-            String userName = user.getDisplayName();
+            if (user != null) {
+                // 1. Recupera dados para Debug e Envio
+                String userEmail = user.getEmail();
+                String userUid = user.getUid();
+                String userName = user.getDisplayName();
 
+                // 2. SEUS LOGS DE DEBUG (Solicitado)
+                System.out.println("--- DEBUG PERFIL ---");
+                System.out.println("Status: LOGADO");
+                System.out.println("UID (Importante): " + userUid);
+                System.out.println("Email: " + userEmail);
+                System.out.println("Nome Google: " + userName);
+                System.out.println("--------------------");
 
-            // Imprime no console (filtre por "System.out" ou "DEBUG_PERFIL" no Logcat)
-            System.out.println("--- DEBUG PERFIL ---");
-            System.out.println("Status: LOGADO");
-            System.out.println("UID (Importante): " + userUid);
-            System.out.println("Email: " + userEmail);
-            System.out.println("Nome Google: " + userName);
-            System.out.println("--------------------");
-            
-            
-            textUserEmail.setText(userEmail);
-            textUserEmail.setVisibility(TextView.VISIBLE);
+                // 3. Prepara a navegação enviando os dados
+                Intent intent = new Intent(ConfigsActivity.this, PerfilActivity.class);
+                intent.putExtra("nomeUsuario", userName);
+                intent.putExtra("emailUsuario", userEmail);
+
+                // Verifica se tem foto antes de passar
+                Uri fotoUrl = user.getPhotoUrl();
+                if (fotoUrl != null) {
+                    intent.putExtra("fotoUsuario", fotoUrl.toString());
+                }
+
+                startActivity(intent);
+            } else {
+                System.out.println("--- DEBUG PERFIL: USUARIO NULO ---");
+            }
         });
+    }
+
+    private void configurarClickPreferencias() {
         itemPreferencias.setOnClickListener(v -> {
-            // TODO startActivity(new Intent(this, PreferenciasActivity.class));
+            // TODO: Criar PreferenciasActivity e descomentar abaixo
+            // startActivity(new Intent(ConfigsActivity.this, PreferenciasActivity.class));
+            Toast.makeText(ConfigsActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void configurarClickSeguranca() {
         itemSeguranca.setOnClickListener(v -> {
             startActivity(new Intent(ConfigsActivity.this, SegurancaActivity.class));
         });
+    }
+
+    private void configurarClickSair() {
         itemSair.setOnClickListener(v -> {
+            // Desloga do Firebase
             FirebaseAuth.getInstance().signOut();
+
+            // Volta para o Login e limpa o histórico de navegação
             Intent i = new Intent(ConfigsActivity.this, LoginActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(i);
