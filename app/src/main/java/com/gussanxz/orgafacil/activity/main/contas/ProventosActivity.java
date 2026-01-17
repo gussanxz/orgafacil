@@ -99,6 +99,7 @@ public class ProventosActivity extends AppCompatActivity {
             movimentacao = new Movimentacao();
             String data = campoData.getText().toString();
             Double valorRecuperado = Double.parseDouble(campoValor.getText().toString());
+            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
             movimentacao.setValor(valorRecuperado);
             movimentacao.setCategoria(campoCategoria.getText().toString());
@@ -110,7 +111,7 @@ public class ProventosActivity extends AppCompatActivity {
             Double proventosAtualizada = proventosTotal + valorRecuperado;
             atualizarProventos(proventosAtualizada);
 
-            movimentacao.salvar(data);
+            movimentacao.salvar(uid, data, movimentacao);
             Toast.makeText(this, "Provento adicionado!", Toast.LENGTH_SHORT).show();
 
             finish();

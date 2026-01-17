@@ -101,6 +101,7 @@ public class DespesasActivity extends AppCompatActivity {
             movimentacao = new Movimentacao();
             String data = campoData.getText().toString();
             Double valorRecuperado = Double.parseDouble(campoValor.getText().toString());
+            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
             movimentacao.setValor( valorRecuperado );
             movimentacao.setCategoria(campoCategoria.getText().toString());
@@ -112,7 +113,7 @@ public class DespesasActivity extends AppCompatActivity {
             Double despesaAtualizada = despesaTotal + valorRecuperado;
             atualizarDespesa( despesaAtualizada );
 
-            movimentacao.salvar(data);
+            movimentacao.salvar(uid, data, movimentacao);
             Toast.makeText(this, "Despesa adicionada!", Toast.LENGTH_SHORT).show();
 
             finish();

@@ -3,8 +3,17 @@ package com.gussanxz.orgafacil.config;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ConfiguracaoFirebase {
+    private static FirebaseFirestore firestore;
+
+    public static FirebaseFirestore getFirestore() {
+        if (firestore == null) {
+            firestore = FirebaseFirestore.getInstance();
+        }
+        return firestore;
+    }
 
     private static FirebaseAuth autenticacao;
     private static DatabaseReference firebase;
