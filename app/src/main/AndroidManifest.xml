@@ -84,7 +84,11 @@
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity"
             android:exported="false"></activity>
-        <activity android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity"
+        <activity
+            android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity"
+            android:exported="false"></activity>
+        <activity
+            android:name=".activity.main.configuracoes.PerfilActivity"
             android:exported="false"></activity>
         <activity
             android:name=".activity.main.MainActivity"
