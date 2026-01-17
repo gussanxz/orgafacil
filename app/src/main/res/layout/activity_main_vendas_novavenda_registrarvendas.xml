@@ -11,7 +11,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
         android:padding="16dp">
@@ -22,11 +22,11 @@
             android:layout_height="wrap_content"
             android:text="Nova Venda"
             android:textColor="@android:color/white"
-            android:textSize="28sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -42,42 +42,40 @@
                 android:id="@+id/itemVendedorCliente"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="8dp"
                 android:background="@drawable/fundo_arredondado"
-                android:clickable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="4dp">
+                android:baselineAligned="false"
+                android:orientation="horizontal">
 
                 <LinearLayout
                     android:id="@+id/itemVendedores"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:padding="4dp"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_marginStart="10dp"
-                        android:id="@+id/iconVendedores"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
                         android:src="@drawable/ic_badge_24"
                         app:tint="#3A3A3A" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
+                        android:layout_marginStart="8dp"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Vendedor"
-                            android:textSize="12sp"
+                            android:textSize="10sp"
                             android:textColor="#757575" />
 
                         <TextView
@@ -85,152 +83,190 @@
                             android:layout_height="wrap_content"
                             android:text="Selecionar"
                             android:textStyle="bold"
-                            android:textColor="#333333"/>
+                            android:textColor="#333333"
+                            android:ellipsize="end"
+                            android:maxLines="1"/>
                     </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_chevron_right_24"
-                        app:tint="#9A9A9A" />
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="40dp"
+                        android:background="#E0E0E0"
+                        android:layout_marginEnd="4dp"/>
                 </LinearLayout>
-
-
 
                 <LinearLayout
                     android:id="@+id/itemClientes"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:padding="4dp"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_marginStart="10dp"
-                        android:id="@+id/iconClientes"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
                         android:src="@drawable/ic_person_24"
                         app:tint="#3A3A3A" />
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
+                        android:layout_marginStart="8dp"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Cliente"
-                            android:textSize="12sp"
+                            android:textSize="10sp"
                             android:textColor="#757575"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Selecionar"
                             android:textStyle="bold"
-                            android:textColor="#333333" />
+                            android:textColor="#333333"
+                            android:ellipsize="end"
+                            android:maxLines="1"/>
                     </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_chevron_right_24"
-                        app:tint="#9A9A9A" />
                 </LinearLayout>
             </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/fundo_arredondado"
-            android:layout_marginBottom="4dp"
-            >
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical"
-                android:clickable="true">
+                android:orientation="vertical"
+                android:background="@drawable/fundo_arredondado"
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:gravity="center_vertical">
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:background="#EEEEEE"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="4dp"
+                                android:text="0"
+                                android:textStyle="bold"
+                                android:textSize="14sp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sacola vazia"
+                                android:textStyle="bold"
+                                android:textColor="#333"/>
+                        </LinearLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:background="#EEEEEE"
-                            android:paddingHorizontal="6dp"
-                            android:paddingVertical="2dp"
-                            android:text="0"
-                            android:textStyle="bold" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sacola vazia"
-                            android:textStyle="bold"
-                            android:textColor="#333"/>
+                            android:text="R$ 0,00"
+                            android:textSize="14sp"
+                            android:layout_marginTop="4dp"
+                            android:textColor="#757575"/>
                     </LinearLayout>
 
-                    <TextView
+                    <LinearLayout
+                        android:id="@+id/btnCobrar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="R$ 0,00"
-                        android:textSize="12sp"
-                        android:layout_marginTop="2dp"
-                        android:textColor="#757575"/>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/btnCobrar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/fundo_arredondado"
-                    android:backgroundTint="@color/colorPrimary"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="24dp"
-                    android:paddingVertical="10dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="COBRAR"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp"
-                        android:textStyle="bold"/>
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="R$ 0,00"
-                        android:textColor="#FFFFFF"
-                        android:textSize="16sp"
-                        android:textStyle="bold"/>
+                        android:background="@drawable/fundo_arredondado"
+                        android:backgroundTint="@color/colorPrimary"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="COBRAR"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$ 0,00"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-            <ImageView
-                android:layout_width="wrap_content"
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/fundo_arredondado"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_search_24"
+                    app:tint="#9E9E9E"/>
+
+                <EditText
+                    android:id="@+id/etBuscarProduto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@null"
+                    android:hint="Buscar produtos..."
+                    android:inputType="text"
+                    android:paddingStart="12dp"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCategorias"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_chevron_right_24"
-                android:rotation="90"
-                app:tint="#9A9A9A"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="-26dp"/>
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp"
+                tools:listitem="@layout/item_categoria_chip"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:requiresFadingEdge="horizontal"
+                android:fadingEdgeLength="30dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvGradeProdutos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="3"
+                tools:itemCount="9"
+                tools:listitem="@layout/item_visualizacao_produto_grid" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

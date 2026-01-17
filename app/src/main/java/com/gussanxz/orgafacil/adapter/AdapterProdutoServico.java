@@ -63,20 +63,20 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
 
         switch (viewType) {
             case VIEW_PRODUTO_GRADE:
-                view = inflater.inflate(R.layout.item_produto_grid, parent, false);
+                view = inflater.inflate(R.layout.item_visualizacao_produto_grid, parent, false);
                 return new ProdutoGradeViewHolder(view);
 
             case VIEW_SERVICO_GRADE:
-                view = inflater.inflate(R.layout.item_servico_grid, parent, false);
+                view = inflater.inflate(R.layout.item_visualizacao_servico_grid, parent, false);
                 return new ServicoGradeViewHolder(view);
 
             case VIEW_SERVICO_LISTA:
-                view = inflater.inflate(R.layout.item_servico_lista, parent, false);
+                view = inflater.inflate(R.layout.item_visualizacao_servico_lista, parent, false);
                 return new ServicoListaViewHolder(view);
 
             case VIEW_PRODUTO_LISTA:
             default:
-                view = inflater.inflate(R.layout.item_produto_lista, parent, false);
+                view = inflater.inflate(R.layout.item_visualizacao_produto_lista, parent, false);
                 return new ProdutoListaViewHolder(view);
         }
     }
