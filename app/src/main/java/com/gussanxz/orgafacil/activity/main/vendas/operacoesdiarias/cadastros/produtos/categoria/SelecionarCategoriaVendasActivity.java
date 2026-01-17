@@ -23,7 +23,7 @@ import com.gussanxz.orgafacil.model.Categoria;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SelecionarCategoriaActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
+public class SelecionarCategoriaVendasActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
 
     private RecyclerView recyclerView;
     private AdapterCategoriaVendas adapter;
@@ -94,7 +94,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity implements Ad
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(SelecionarCategoriaActivity.this,
+                Toast.makeText(SelecionarCategoriaVendasActivity.this,
                         "Erro ao carregar: " + error.getMessage(), Toast.LENGTH_SHORT).show();
 
             }

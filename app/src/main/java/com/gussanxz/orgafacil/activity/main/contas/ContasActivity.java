@@ -29,10 +29,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.Query;
+
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.LoginActivity;
 import com.gussanxz.orgafacil.activity.main.MainActivity;
@@ -41,7 +42,6 @@ import com.gussanxz.orgafacil.adapter.MovimentosAgrupadosAdapter;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.gussanxz.orgafacil.adapter.MovimentacoesGrouper;
 import com.gussanxz.orgafacil.model.Movimentacao;
-import com.gussanxz.orgafacil.model.Usuario;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -59,12 +59,8 @@ public class ContasActivity extends AppCompatActivity {
     private Double resumoUsuario = 0.0;
 
     private FirebaseAuth autenticacao  = ConfiguracaoFirebase.getFirebaseAutenticacao();
-    private DatabaseReference firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
-    private DatabaseReference usuarioRef = ConfiguracaoFirebase.getFirebaseDatabase();
-    private DatabaseReference movimentacaoRef;
-
-    private ValueEventListener valueEventListenerUsuario;
-    private ValueEventListener valueEventListenerMovimentacoes;
+    private FirebaseFirestore fs;
+    private String uid;
 
     private RecyclerView recyclerView;
 
@@ -93,9 +89,17 @@ public class ContasActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         toolbar.setTitle("OrgaFácil");
 
-        String uid = FirebaseAuth.getInstance().getCurrentUser() != null ?
-                FirebaseAuth.getInstance().getCurrentUser().getUid() : "null";
+        uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+
+        if (uid == null) {
+            finish();
+            return;
+        }
+
         Log.i("DEBUG_FIREBASE", "UID atual: " + uid);
+        fs = ConfiguracaoFirebase.getFirestore();
 
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
@@ -135,7 +139,7 @@ public class ContasActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        atualizarSaldo(); // atualiza totais do usuário
+                        recuperarResumo(); // atualiza totais do usuário
                         if (dataInicialSelecionada != null || dataFinalSelecionada != null) {
                             recuperarMovimentacoesComFiltro();
                         } else {
@@ -219,58 +223,85 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void recuperarMovimentacoesComFiltro() {
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        removerListenerMovimentacoesSeExistir();
-        movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
+        if (uid == null) return;
 
-        valueEventListenerMovimentacoes = movimentacaoRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                movimentacoes.clear();
+        movimentacoes.clear();
 
-                for (DataSnapshot mesAnoSnap : snapshot.getChildren()) {
-                    for (DataSnapshot movSnap : mesAnoSnap.getChildren()) {
-                        Movimentacao mov = movSnap.getValue(Movimentacao.class);
-                        if (mov == null) continue;
-                        mov.setKey(movSnap.getKey());
-
-                        if (estaDentroDoIntervalo(mov)) {
-                            movimentacoes.add(mov);
-                        }
-                    }
-                }
-
-                // Recalcula o saldo do intervalo (se datas definidas)
-                if (dataInicialSelecionada != null && dataFinalSelecionada != null) {
-                    double totalReceitas = 0.0;
-                    double totalDespesas = 0.0;
-
-                    for (Movimentacao m : movimentacoes) {
-                        if (m == null) continue;
-                        if ("r".equals(m.getTipo())) {
-                            totalReceitas += m.getValor();
-                        } else if ("d".equals(m.getTipo())) {
-                            totalDespesas += m.getValor();
-                        }
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("movimentacoes")
+                .get()
+                .addOnSuccessListener(mesesSnap -> {
+                    if (mesesSnap.isEmpty()) {
+                        aplicarFiltroTextoEAtualizarLista();
+                        return;
                     }
 
-                    double saldoIntervalo = totalReceitas - totalDespesas;
-                    DecimalFormat decimalFormat = new DecimalFormat("0.##");
-                    String resultadoFormatado = decimalFormat.format(saldoIntervalo);
+                    final int totalMeses = mesesSnap.size();
+                    final int[] done = {0};
 
-                    textoSaldo.setText("R$ " + resultadoFormatado);
-                    textoSaldoLegenda.setText("Saldo entre " + dataInicialSelecionada + " e " + dataFinalSelecionada);
-                } else {
-                    textoSaldoLegenda.setText("Saldo atual");
-                }
+                    for (QueryDocumentSnapshot mesDoc : mesesSnap) {
+                        String mesAno = mesDoc.getId();
 
-                // Monta lista agrupada (respeitando filtro de texto, se houver)
-                aplicarFiltroTextoEAtualizarLista();
-            }
+                        mesDoc.getReference()
+                                .collection("itens")
+                                .get()
+                                .addOnSuccessListener(itensSnap -> {
+                                    for (QueryDocumentSnapshot d : itensSnap) {
+                                        Movimentacao m = new Movimentacao();
+                                        m.setKey(d.getId());
+                                        m.setMesAno(mesAno);
+                                        m.setCategoria(d.getString("categoria"));
+                                        m.setDescricao(d.getString("descricao"));
+                                        m.setData(d.getString("data"));
+                                        m.setHora(d.getString("hora"));
+                                        m.setTipo(d.getString("tipo"));
+                                        Double val = d.getDouble("valor");
+                                        if (val != null) m.setValor(val);
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
+                                        if (estaDentroDoIntervalo(m)) {
+                                            movimentacoes.add(m);
+                                        }
+                                    }
+
+                                    done[0]++;
+                                    if (done[0] == totalMeses) {
+                                        // saldo do intervalo (como você já fazia)
+                                        if (dataInicialSelecionada != null && dataFinalSelecionada != null) {
+                                            double totalProventos = 0.0;
+                                            double totalDespesas = 0.0;
+
+
+                                            for (Movimentacao m2 : movimentacoes) {
+                                                if (m2 == null) continue;
+                                                if ("r".equals(m2.getTipo())) totalProventos += m2.getValor();
+                                                else if ("d".equals(m2.getTipo())) totalDespesas += m2.getValor();
+                                            }
+
+                                            double saldoIntervalo = totalProventos - totalDespesas;
+                                            DecimalFormat decimalFormat = new DecimalFormat("0.##");
+                                            String resultadoFormatado = decimalFormat.format(saldoIntervalo);
+
+                                            textoSaldo.setText("R$ " + resultadoFormatado);
+                                            textoSaldoLegenda.setText("Saldo entre " + dataInicialSelecionada + " e " + dataFinalSelecionada);
+                                        } else {
+                                            textoSaldoLegenda.setText("Saldo atual");
+                                        }
+
+                                        aplicarFiltroTextoEAtualizarLista();
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    done[0]++;
+                                    if (done[0] == totalMeses) {
+                                        aplicarFiltroTextoEAtualizarLista();
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao carregar movimentações", Toast.LENGTH_SHORT).show()
+                );
     }
 
     private boolean estaDentroDoIntervalo(Movimentacao mov) {
@@ -295,7 +326,7 @@ public class ContasActivity extends AppCompatActivity {
             dataInicialSelecionada = null;
             dataFinalSelecionada = null;
 
-            removerListenerMovimentacoesSeExistir();
+//            removerListenerMovimentacoesSeExistir();
             recuperarMovimentacoes();
             recuperarResumo();
         });
@@ -420,29 +451,64 @@ public class ContasActivity extends AppCompatActivity {
 
         alertDialog.setPositiveButton("Confirmar", (dialogInterface, i) -> {
 
-            String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            if (uid == null || movimentacao == null) return;
 
-            String data = movimentacao.getData(); // ex: 25/05/2025
-            String mesAno = data.substring(3, 5) + data.substring(6); // "052025"
-
-            movimentacaoRef = firebaseRef.child("movimentacao")
-                    .child(idUsuario)
-                    .child(mesAno);
-
-            movimentacaoRef.child(movimentacao.getKey()).removeValue();
-
-            // Remove da lista base de movimentações
-            for (int idx = 0; idx < movimentacoes.size(); idx++) {
-                Movimentacao mBase = movimentacoes.get(idx);
-                if (mBase.getKey().equals(movimentacao.getKey())) {
-                    movimentacoes.remove(idx);
-                    break;
+            String mesAno = movimentacao.getMesAno();
+            if (mesAno == null || mesAno.trim().isEmpty()) {
+                // fallback se ainda não tiver mesAno preenchido
+                String data = movimentacao.getData();
+                if (data != null && data.length() >= 10) {
+                    mesAno = data.substring(3, 5) + data.substring(6);
                 }
             }
 
-            atualizarSaldo();
-            aplicarFiltroTextoEAtualizarLista();
+            if (mesAno == null || mesAno.trim().isEmpty()) {
+                Toast.makeText(this, "Não foi possível identificar o mês/ano da movimentação.", Toast.LENGTH_SHORT).show();
+                adapterAgrupado.notifyDataSetChanged();
+                return;
+            }
+
+            String movId = movimentacao.getKey();
+
+            // 1) deletar doc da movimentação
+            fs.collection("users").document(uid)
+                    .collection("contas").document("main")
+                    .collection("movimentacoes").document(mesAno)
+                    .collection("itens").document(movId)
+                    .delete()
+                    .addOnSuccessListener(unused -> {
+
+                        // 2) decrementar total
+                        double valor = movimentacao.getValor();
+                        if ("r".equals(movimentacao.getTipo())) {
+                            fs.collection("users").document(uid)
+                                    .collection("contas").document("main")
+                                    .update("proventosTotal", FieldValue.increment(-valor));
+                        } else if ("d".equals(movimentacao.getTipo())) {
+                            fs.collection("users").document(uid)
+                                    .collection("contas").document("main")
+                                    .update("despesaTotal", FieldValue.increment(-valor));
+                        }
+
+                        // 3) remove da lista base
+                        for (int idx = 0; idx < movimentacoes.size(); idx++) {
+                            Movimentacao mBase = movimentacoes.get(idx);
+                            if (mBase != null && movId.equals(mBase.getKey())) {
+                                movimentacoes.remove(idx);
+                                break;
+                            }
+                        }
+
+                        // 4) atualiza UI
+                        recuperarResumo(); // recalc saldo atual (Proventos - Despesas)
+                        aplicarFiltroTextoEAtualizarLista();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(ContasActivity.this, "Erro ao excluir", Toast.LENGTH_SHORT).show();
+                        adapterAgrupado.notifyDataSetChanged();
+                    });
         });
+
 
         alertDialog.setNegativeButton("Cancelar", (dialogInterface, i) -> {
             Toast.makeText(ContasActivity.this, "Cancelado", Toast.LENGTH_SHORT).show();
@@ -456,85 +522,128 @@ public class ContasActivity extends AppCompatActivity {
     // SALDO DO USUÁRIO
     // ===============================
 
-    public void atualizarSaldo(){
+//    public void atualizarSaldo(){
+//
+//        if (movimentacao == null) return;
+//
+//        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+//        usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
+//
+//        if ("r".equals(movimentacao.getTipo())) {
+//            proventosTotal = proventosTotal - movimentacao.getValor();
+//            usuarioRef.child("proventosTotal").setValue(proventosTotal);
+//        }
+//        if ("d".equals(movimentacao.getTipo())) {
+//            despesaTotal = despesaTotal - movimentacao.getValor();
+//            usuarioRef.child("despesaTotal").setValue(despesaTotal);
+//        }
+//    }
 
-        if (movimentacao == null) return;
+    public void recuperarMovimentacoes() {
+        if (uid == null) return;
 
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
+        movimentacoes.clear();
 
-        if ("r".equals(movimentacao.getTipo())) {
-            proventosTotal = proventosTotal - movimentacao.getValor();
-            usuarioRef.child("proventosTotal").setValue(proventosTotal);
-        }
-        if ("d".equals(movimentacao.getTipo())) {
-            despesaTotal = despesaTotal - movimentacao.getValor();
-            usuarioRef.child("despesaTotal").setValue(despesaTotal);
-        }
-    }
-
-    public void recuperarMovimentacoes(){
-        removerListenerMovimentacoesSeExistir();
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        movimentacaoRef = firebaseRef.child("movimentacao").child(idUsuario);
-
-        valueEventListenerMovimentacoes = movimentacaoRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                movimentacoes.clear();
-
-                for (DataSnapshot mesAnoSnap : snapshot.getChildren()) {
-                    for (DataSnapshot movSnap : mesAnoSnap.getChildren()) {
-                        Movimentacao mov = movSnap.getValue(Movimentacao.class);
-                        if (mov == null) continue;
-                        mov.setKey(movSnap.getKey());
-                        movimentacoes.add(mov);
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("movimentacoes")
+                .get()
+                .addOnSuccessListener(mesesSnap -> {
+                    if (mesesSnap.isEmpty()) {
+                        aplicarFiltroTextoEAtualizarLista();
+                        return;
                     }
-                }
 
-                aplicarFiltroTextoEAtualizarLista();
-            }
+                    final int totalMeses = mesesSnap.size();
+                    final int[] done = {0};
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+                    for (QueryDocumentSnapshot mesDoc : mesesSnap) {
+                        String mesAno = mesDoc.getId();
 
+                        mesDoc.getReference()
+                                .collection("itens")
+                                .orderBy("createdAt", Query.Direction.DESCENDING)
+                                .get()
+                                .addOnSuccessListener(itensSnap -> {
+                                    for (QueryDocumentSnapshot d : itensSnap) {
+                                        Movimentacao m = new Movimentacao();
+                                        m.setKey(d.getId());
+                                        m.setMesAno(mesAno);
+                                        m.setCategoria(d.getString("categoria"));
+                                        m.setDescricao(d.getString("descricao"));
+                                        m.setData(d.getString("data"));
+                                        m.setHora(d.getString("hora"));
+                                        m.setTipo(d.getString("tipo"));
+                                        Double val = d.getDouble("valor");
+                                        if (val != null) m.setValor(val);
+
+                                        movimentacoes.add(m);
+                                    }
+
+                                    done[0]++;
+                                    if (done[0] == totalMeses) {
+                                        aplicarFiltroTextoEAtualizarLista();
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    done[0]++;
+                                    if (done[0] == totalMeses) {
+                                        aplicarFiltroTextoEAtualizarLista();
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao carregar movimentações", Toast.LENGTH_SHORT).show()
+                );
     }
 
-    private void removerListenerMovimentacoesSeExistir() {
-        if (movimentacaoRef != null && valueEventListenerMovimentacoes != null) {
-            movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
-            valueEventListenerMovimentacoes = null;
-        }
-    }
+//    private void removerListenerMovimentacoesSeExistir() {
+//        if (movimentacaoRef != null && valueEventListenerMovimentacoes != null) {
+//            movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
+//            valueEventListenerMovimentacoes = null;
+//        }
+//    }
 
-    public void recuperarResumo(){
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
+    public void recuperarResumo() {
+        if (uid == null) return;
 
-        Log.i("onStart", "Evento exibir dados adicionado");
-        valueEventListenerUsuario = usuarioRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+        // 1) Nome no perfil: users/{uid}.perfil.nome
+        fs.collection("users").document(uid)
+                .get()
+                .addOnSuccessListener(userDoc -> {
+                    String nome = null;
+                    if (userDoc.exists() && userDoc.get("perfil") instanceof java.util.Map) {
+                        java.util.Map perfil = (java.util.Map) userDoc.get("perfil");
+                        Object n = perfil.get("nome");
+                        if (n != null) nome = n.toString();
+                    }
+                    if (nome == null || nome.trim().isEmpty()) nome = "usuário";
+                    textoSaudacao.setText("Ola, " + nome + "!");
+                });
 
-                Usuario usuario = snapshot.getValue( Usuario.class );
-                if (usuario == null) return;
+        // 2) Totais: users/{uid}/contas/main
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    Double d = doc.getDouble("despesaTotal");
+                    Double p = doc.getDouble("proventosTotal");
 
-                despesaTotal = usuario.getDespesaTotal();
-                proventosTotal = usuario.getProventosTotal();
-                resumoUsuario = proventosTotal - despesaTotal;
+                    despesaTotal = (d != null) ? d : 0.0;
+                    proventosTotal = (p != null) ? p : 0.0;
 
-                DecimalFormat decimalFormat = new DecimalFormat("0.##");
-                String resultadoFormatado = decimalFormat.format( resumoUsuario );
+                    resumoUsuario = proventosTotal - despesaTotal;
 
-                textoSaudacao.setText("Ola, " + usuario.getNome() + "!");
-                textoSaldo.setText( "R$ " + resultadoFormatado );
-                textoSaldoLegenda.setText("Saldo atual");
-            }
+                    DecimalFormat decimalFormat = new DecimalFormat("0.##");
+                    String resultadoFormatado = decimalFormat.format(resumoUsuario);
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+                    textoSaldo.setText("R$ " + resultadoFormatado);
+                    textoSaldoLegenda.setText("Saldo atual");
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao carregar resumo", Toast.LENGTH_SHORT).show()
+                );
     }
 
     // ===============================
@@ -594,11 +703,11 @@ public class ContasActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.i("onStop", "Evento exibir dados removido");
-        if (usuarioRef != null && valueEventListenerUsuario != null) {
-            usuarioRef.removeEventListener(valueEventListenerUsuario);
-        }
-        if (movimentacaoRef != null && valueEventListenerMovimentacoes != null) {
-            movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
-        }
+//        if (usuarioRef != null && valueEventListenerUsuario != null) {
+//            usuarioRef.removeEventListener(valueEventListenerUsuario);
+//        }
+//        if (movimentacaoRef != null && valueEventListenerMovimentacoes != null) {
+//            movimentacaoRef.removeEventListener(valueEventListenerMovimentacoes);
+//        }
     }
 }
