@@ -28,7 +28,7 @@
             android:name=".activity.main.contas.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.main.contas.SelecionarCategoriaActivity"
+            android:name=".activity.main.contas.SelecionarCategoriaContasActivity"
             android:exported="false" />
         <activity
             android:name=".activity.main.vendas.ListaVendasActivity"

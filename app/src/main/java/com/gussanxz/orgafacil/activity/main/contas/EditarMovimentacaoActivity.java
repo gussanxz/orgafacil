@@ -129,7 +129,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 });
 
         editCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaActivity.class);
+            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
     }

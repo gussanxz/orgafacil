@@ -19,24 +19,24 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
-import com.gussanxz.orgafacil.model.Usuario;
+
+import java.util.Map;
 
 public class ProventosActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private Movimentacao movimentacao;
-    private DatabaseReference firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
-    private FirebaseAuth autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+    private FirebaseFirestore fs;
     private Double proventosTotal;
 
     private ActivityResultLauncher<Intent> launcherCategoria;
@@ -51,6 +51,8 @@ public class ProventosActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        fs = ConfiguracaoFirebase.getFirestore();
 
         campoValor = findViewById(R.id.editValor);
         campoData = findViewById(R.id.editData);
@@ -82,7 +84,7 @@ public class ProventosActivity extends AppCompatActivity {
                 });
 
         campoCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(ProventosActivity.this, SelecionarCategoriaActivity.class);
+            Intent intent = new Intent(ProventosActivity.this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
 
@@ -108,10 +110,9 @@ public class ProventosActivity extends AppCompatActivity {
             movimentacao.setHora(campoHora.getText().toString());
             movimentacao.setTipo("r");
 
-            Double proventosAtualizada = proventosTotal + valorRecuperado;
-            atualizarProventos(proventosAtualizada);
+            atualizarProventosIncrement(valorRecuperado);
 
-            movimentacao.salvar(uid, data, movimentacao);
+            movimentacao.salvar(uid, data);
             Toast.makeText(this, "Provento adicionado!", Toast.LENGTH_SHORT).show();
 
             finish();
@@ -164,33 +165,32 @@ public class ProventosActivity extends AppCompatActivity {
     }
 
     public void recuperarProventosTotal() {
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
-
-        usuarioRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                Usuario usuario = dataSnapshot.getValue(Usuario.class);
-                proventosTotal = usuario.getProventosTotal();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    Double v = doc.getDouble("proventosTotal");
+                    proventosTotal = (v != null) ? v : 0.0;
+                })
+                .addOnFailureListener(e -> {
+                    proventosTotal = 0.0;
+                    Toast.makeText(this, "Erro ao carregar proventosTotal", Toast.LENGTH_SHORT).show();
+                });
     }
 
-    public void atualizarProventos(Double proventos) {
+    public void atualizarProventosIncrement(double valor) {
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
-
-        usuarioRef.child("proventosTotal").setValue(proventos);
-
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .update("proventosTotal", FieldValue.increment(valor))
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao atualizar proventosTotal", Toast.LENGTH_SHORT).show()
+                );
     }
+
 
     // =========================
     // 🔹 NOVO: BUSCAR ÚLTIMO PROVENTO NO FIREBASE E MOSTRAR POPUP
@@ -202,55 +202,32 @@ public class ProventosActivity extends AppCompatActivity {
      * perguntando se quer reaproveitar Categoria + Descrição.
      */
     private void recuperarUltimoProventoDoFirebase() {
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        DatabaseReference movUsuarioRef = firebaseRef
-                .child("movimentacao")
-                .child(idUsuario);
+        fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("_meta").document("ultimos")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
 
-        movUsuarioRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
+                    Map<String, Object> ultimo = (Map<String, Object>) doc.get("ultimoProvento");
+                    if (ultimo == null) return;
 
-                Movimentacao ultimoProvento = null;
-                java.util.Date ultimaDataHora = null;
+                    Movimentacao m = new Movimentacao();
+                    m.setCategoria((String) ultimo.get("categoria"));
+                    m.setDescricao((String) ultimo.get("descricao"));
+                    m.setData((String) ultimo.get("data"));
+                    m.setHora((String) ultimo.get("hora"));
+                    m.setTipo("r");
 
-                // Nível 1: nós de mesAno (ex: "122025", "112025", etc.)
-                for (DataSnapshot mesSnapshot : snapshot.getChildren()) {
-
-                    // Nível 2: cada movimentação dentro daquele mesAno
-                    for (DataSnapshot movSnapshot : mesSnapshot.getChildren()) {
-                        Movimentacao m = movSnapshot.getValue(Movimentacao.class);
-                        if (m != null && "r".equals(m.getTipo())) {
-
-                            java.util.Date dataHoraMov = parseDataHora(m.getData(), m.getHora());
-
-                            if (ultimoProvento == null) {
-                                // primeiro provento encontrado
-                                ultimoProvento = m;
-                                ultimaDataHora = dataHoraMov;
-                            } else {
-                                if (dataHoraMov != null && ultimaDataHora != null) {
-                                    if (dataHoraMov.after(ultimaDataHora)) {
-                                        ultimoProvento = m;
-                                        ultimaDataHora = dataHoraMov;
-                                    }
-                                }
-                            }
-                        }
+                    if (m.getCategoria() != null || m.getDescricao() != null) {
+                        mostrarPopupAproveitarUltimoProvento(m);
                     }
-                }
-
-                if (ultimoProvento != null) {
-                    mostrarPopupAproveitarUltimoProvento(ultimoProvento);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                // Se der erro na leitura, apenas não mostra popup
-            }
-        });
+                })
+                .addOnFailureListener(e -> {
+                    // silencioso
+                });
     }
 
     private java.util.Date parseDataHora(String dataStr, String horaStr) {
