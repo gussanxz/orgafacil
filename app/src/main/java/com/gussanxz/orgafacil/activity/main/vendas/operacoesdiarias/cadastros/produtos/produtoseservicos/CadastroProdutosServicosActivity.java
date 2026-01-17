@@ -16,16 +16,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
 
-// Se você tiver a classe ItemVenda criada, descomente a linha abaixo:
-// import com.gussanxz.orgafacil.model.ItemVenda;
-
 public class CadastroProdutosServicosActivity extends AppCompatActivity {
 
-    // Constantes para controle
     private static final int TIPO_PRODUTO = 1;
     private static final int TIPO_SERVICO = 2;
 
-    // Elementos da Interface
     private FloatingActionButton fabVoltar;
     private FloatingActionButton fabSuperiorSalvarCategoria;
     private FloatingActionButton fabInferiorSalvarCategoria;
@@ -34,15 +29,12 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
     private TextInputLayout textInputCategoria, textInputDescricao, textInputValor;
     private TextView textViewHeader;
 
-    // Variável para saber o que estamos salvando (Começa como Produto)
     private int tipoSelecionado = TIPO_PRODUTO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-
-        // Verifique se o nome do layout abaixo está correto com o nome do arquivo XML criado
         setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_produtos_e_servicos_cadastro_produtos_servicos);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -53,26 +45,67 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
 
         inicializarComponentes();
 
-        // Configura o comportamento do clique nos botões de Produto/Serviço
-        configurarToggleListener();
-
-        // Garante que a tela comece com os textos de "Produto"
-        configurarModoProduto();
+        // --- LÓGICA NOVA AQUI ---
+        // Verifica se veio da lista (Modo Edição)
+        Bundle extras = getIntent().getExtras();
+        if (extras != null && extras.getBoolean("modo_edicao", false)) {
+            // Se for edição, prepara a tela para editar
+            prepararModoEdicao(extras);
+        } else {
+            // Se for novo, prepara a tela padrão (com toggle)
+            configurarToggleListener();
+            configurarModoProduto(); // Padrão
+        }
     }
 
     private void inicializarComponentes() {
         fabVoltar = findViewById(R.id.fabVoltar);
         fabSuperiorSalvarCategoria = findViewById(R.id.fabSuperiorSalvarCategoria);
         fabInferiorSalvarCategoria = findViewById(R.id.fabInferiorSalvarCategoria);
-
         toggleTipoCadastro = findViewById(R.id.toggleTipoCadastro);
-
         textInputCategoria = findViewById(R.id.textInputCategoria);
         textInputDescricao = findViewById(R.id.textInputDescricao);
         textInputValor = findViewById(R.id.textInputValor);
-
         textViewHeader = findViewById(R.id.textViewHeader);
     }
+
+    // --- LÓGICA DE EDIÇÃO ---
+    private void prepararModoEdicao(Bundle dados) {
+        // 1. Esconde o Toggle (Não pode mudar o tipo na edição)
+        toggleTipoCadastro.setVisibility(View.GONE);
+
+        // 2. Recupera os dados
+        int tipo = dados.getInt("tipo");
+        String nome = dados.getString("nome");
+        String descricao = dados.getString("descricao"); // Usamos descricao como categoria as vezes, ajuste conforme seu uso
+        double preco = dados.getDouble("preco");
+
+        // 3. Atualiza a variável global para saber o que estamos salvando
+        this.tipoSelecionado = tipo;
+
+        // 4. Preenche os campos com os dados existentes
+        // (Nota: getEditText() pode ser null, ideal verificar, mas direto assim funciona na maioria dos casos)
+        if(textInputDescricao.getEditText() != null) textInputDescricao.getEditText().setText(nome);
+        // Assumindo que o campo categoria recebe a descrição ou vice-versa, ajuste conforme sua lógica de Intent
+        if(textInputCategoria.getEditText() != null) textInputCategoria.getEditText().setText(descricao);
+        if(textInputValor.getEditText() != null) textInputValor.getEditText().setText(String.valueOf(preco));
+
+        // 5. Ajusta Textos e Hints baseado no Tipo
+        if (tipo == TIPO_PRODUTO) {
+            textViewHeader.setText("Editar Produto");
+            textInputCategoria.setHint("Categoria do Produto");
+            textInputDescricao.setHint("Nome do Produto");
+            textInputValor.setHint("Preço de Venda");
+        } else {
+            textViewHeader.setText("Editar Serviço");
+            textInputCategoria.setHint("Categoria do Serviço");
+            textInputDescricao.setHint("Descrição do Serviço");
+            textInputValor.setHint("Valor do Serviço");
+        }
+    }
+
+    // --- LÓGICA DE NOVO CADASTRO ---
+    private void configuringToggleListener() { /* ... */ } // Mantido abaixo para clareza
 
     private void configurarToggleListener() {
         toggleTipoCadastro.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
@@ -88,10 +121,7 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
 
     private void configurarModoProduto() {
         tipoSelecionado = TIPO_PRODUTO;
-
         textViewHeader.setText("Novo Produto");
-
-        // Altera as dicas (Hints) dos campos
         textInputCategoria.setHint("Categoria do Produto");
         textInputDescricao.setHint("Nome do Produto");
         textInputValor.setHint("Preço de Venda");
@@ -99,10 +129,7 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
 
     private void configurarModoServico() {
         tipoSelecionado = TIPO_SERVICO;
-
         textViewHeader.setText("Novo Serviço");
-
-        // Altera as dicas (Hints) dos campos
         textInputCategoria.setHint("Categoria do Serviço");
         textInputDescricao.setHint("Descrição do Serviço");
         textInputValor.setHint("Valor do Serviço");
@@ -113,19 +140,10 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
     }
 
     public void salvarProdutoOuServico(View view) {
-        String mensagem;
+        String acao = (toggleTipoCadastro.getVisibility() == View.GONE) ? "editado" : "salvo";
+        String tipo = (tipoSelecionado == TIPO_PRODUTO) ? "Produto" : "Serviço";
 
-        if (tipoSelecionado == TIPO_PRODUTO) {
-            // Lógica para salvar Produto
-            // ItemVenda produto = new ItemVenda(..., TIPO_PRODUTO);
-            mensagem = "Produto salvo com sucesso!";
-        } else {
-            // Lógica para salvar Serviço
-            // ItemVenda servico = new ItemVenda(..., TIPO_SERVICO);
-            mensagem = "Serviço salvo com sucesso!";
-        }
-
-        Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, tipo + " " + acao + " com sucesso!", Toast.LENGTH_SHORT).show();
         finish();
     }
 }

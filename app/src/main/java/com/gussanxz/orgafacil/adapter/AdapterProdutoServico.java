@@ -16,6 +16,11 @@ import java.util.Locale;
 
 public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    // 1. Interface para o clique
+    public interface OnItemClickListener {
+        void onItemClick(ItemVenda item);
+    }
+
     // Constantes dos Tipos de Visualização
     private static final int VIEW_PRODUTO_LISTA = 1;
     private static final int VIEW_PRODUTO_GRADE = 2;
@@ -24,12 +29,15 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
 
     private List<ItemVenda> listaItens;
     private boolean isGridMode = false;
+    private final OnItemClickListener listener; // Variável do listener
 
     // Formatador de moeda para R$ (Brasil)
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    public AdapterProdutoServico(List<ItemVenda> listaItens) {
+    // 2. Construtor Atualizado recebendo o listener
+    public AdapterProdutoServico(List<ItemVenda> listaItens, OnItemClickListener listener) {
         this.listaItens = listaItens;
+        this.listener = listener;
     }
 
     public void setModoGrade(boolean ativarGrade) {
@@ -53,7 +61,6 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         View view;
 
-        // AQUI CARREGAMOS OS 4 XMLS DIFERENTES
         switch (viewType) {
             case VIEW_PRODUTO_GRADE:
                 view = inflater.inflate(R.layout.item_produto_grid, parent, false);
@@ -78,6 +85,10 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ItemVenda item = listaItens.get(position);
 
+        // 3. Configurar o clique no item inteiro
+        holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
+
+        // Configurar os dados visuais
         if (holder instanceof ProdutoGradeViewHolder) {
             ((ProdutoGradeViewHolder) holder).bind(item);
         } else if (holder instanceof ProdutoListaViewHolder) {
@@ -95,7 +106,7 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
     }
 
     // =================================================================================
-    // VIEWHOLDERS - PRODUTOS (Usam textNomeProduto, textDescProduto, textStatus)
+    // VIEWHOLDERS - PRODUTOS
     // =================================================================================
 
     class ProdutoGradeViewHolder extends RecyclerView.ViewHolder {
@@ -104,7 +115,7 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         public ProdutoGradeViewHolder(@NonNull View itemView) {
             super(itemView);
             textNome = itemView.findViewById(R.id.textNomeProduto);
-            textPreco = itemView.findViewById(R.id.textDescProduto); // Na grade, usamos o campo Desc para por o preço
+            textPreco = itemView.findViewById(R.id.textDescProduto);
             textStatus = itemView.findViewById(R.id.textStatus);
         }
 
@@ -112,13 +123,10 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
             if(textNome != null) textNome.setText(item.getNome());
             if(textPreco != null) textPreco.setText(formatadorMoeda.format(item.getPreco()));
 
-            // MUDANÇA AQUI:
             if(textStatus != null) {
-                textStatus.setText("Produto"); // Texto fixo
-                textStatus.setTextColor(0xFF2196F3); // Opcional: Cor Azul para Produto
-                // Ou use: textStatus.setTextColor(Color.parseColor("#2196F3"));
+                textStatus.setText("Produto");
+                textStatus.setTextColor(0xFF2196F3); // Azul
             }
-
         }
     }
 
@@ -136,7 +144,6 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
             if(textNome != null) textNome.setText(item.getNome());
             if(textDescricao != null) textDescricao.setText(item.getDescricao());
 
-            // MUDANÇA AQUI:
             if(textStatus != null) {
                 textStatus.setText("Produto");
                 textStatus.setTextColor(0xFF2196F3); // Azul
@@ -145,15 +152,14 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
     }
 
     // =================================================================================
-    // VIEWHOLDERS - SERVIÇOS (Usam textNomeServico, textDescServico)
+    // VIEWHOLDERS - SERVIÇOS
     // =================================================================================
 
     class ServicoGradeViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textPreco, textStatus; // Serviços na grade não usam status no seu pedido
+        TextView textNome, textPreco, textStatus;
 
         public ServicoGradeViewHolder(@NonNull View itemView) {
             super(itemView);
-            // ATENÇÃO: IDs específicos de SERVIÇO
             textNome = itemView.findViewById(R.id.textNomeServico);
             textPreco = itemView.findViewById(R.id.textDescServico);
             textStatus = itemView.findViewById(R.id.textStatus);
@@ -165,13 +171,7 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
 
             if (textStatus != null) {
                 textStatus.setText("Serviço");
-                // Escolha uma das cores abaixo:
-
-                // Opção 1: Laranja (Bem diferente do azul)
-                textStatus.setTextColor(0xFFFF9800);
-
-                // Opção 2: Roxo (Fica elegante)
-                // textStatus.setTextColor(0xFF673AB7);
+                textStatus.setTextColor(0xFFFF9800); // Laranja
             }
         }
     }
@@ -181,7 +181,6 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
 
         public ServicoListaViewHolder(@NonNull View itemView) {
             super(itemView);
-            // ATENÇÃO: IDs específicos de SERVIÇO
             textNome = itemView.findViewById(R.id.textNomeServico);
             textDescricao = itemView.findViewById(R.id.textDescServico);
             textStatus = itemView.findViewById(R.id.textStatus);
@@ -192,18 +191,11 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
             if(textDescricao != null) textDescricao.setText(item.getDescricao());
             if (textStatus != null) {
                 textStatus.setText("Serviço");
-                // Escolha uma das cores abaixo:
-
-                // Opção 1: Laranja (Bem diferente do azul)
-                textStatus.setTextColor(0xFFFF9800);
-
-                // Opção 2: Roxo (Fica elegante)
-                // textStatus.setTextColor(0xFF673AB7);
+                textStatus.setTextColor(0xFFFF9800); // Laranja
             }
         }
     }
 
-    // Adicione este método para permitir filtrar
     public void atualizarLista(List<ItemVenda> novaLista) {
         this.listaItens = novaLista;
         notifyDataSetChanged();

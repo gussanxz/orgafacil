@@ -66,8 +66,28 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     }
 
     private void configurarRecyclerView() {
-        adapter = new AdapterProdutoServico(listaFiltrada);
+        // CORREÇÃO: Agora passamos a lista E o listener (ação do clique)
+        adapter = new AdapterProdutoServico(listaFiltrada, itemClicado -> {
+
+            // 1. Criar a intenção de ir para a tela de cadastro
+            Intent intent = new Intent(this, CadastroProdutosServicosActivity.class);
+
+            // 2. Passar os dados do item clicado para a próxima tela
+            // (Certifique-se que sua classe ItemVenda tem esses getters)
+            intent.putExtra("modo_edicao", true); // Avisa que é edição
+            intent.putExtra("tipo", itemClicado.getTipo());
+            intent.putExtra("nome", itemClicado.getNome());
+            intent.putExtra("descricao", itemClicado.getDescricao());
+            intent.putExtra("preco", itemClicado.getPreco());
+            // intent.putExtra("categoria", itemClicado.getCategoria()); // Se tiver categoria no model
+
+            // 3. Iniciar a tela
+            startActivity(intent);
+        });
+
         recyclerProdutos.setAdapter(adapter);
+
+        // Mantém o layout manager padrão (Lista)
         recyclerProdutos.setLayoutManager(new LinearLayoutManager(this));
     }
 
