@@ -32,7 +32,7 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_label_24"
+                android:src="@drawable/ic_camera_alt_120"
                 app:tint="#616161" />
         </androidx.cardview.widget.CardView>
 
@@ -61,7 +61,7 @@
             app:layout_constraintTop_toBottomOf="@id/textStatus" />
 
         <TextView
-            android:id="@+id/textNomeCategoria"
+            android:id="@+id/textNomeProduto"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -72,13 +72,13 @@
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintVertical_chainStyle="packed"
-            app:layout_constraintBottom_toTopOf="@id/textDescCategoria"
+            app:layout_constraintBottom_toTopOf="@id/textDescProduto"
             app:layout_constraintEnd_toStartOf="@+id/textStatus"
             app:layout_constraintStart_toEndOf="@id/cardIcone"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/textDescCategoria"
+            android:id="@+id/textDescProduto"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -91,7 +91,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btnExcluirCategoria"
             app:layout_constraintStart_toEndOf="@id/cardIcone"
-            app:layout_constraintTop_toBottomOf="@id/textNomeCategoria" />
+            app:layout_constraintTop_toBottomOf="@id/textNomeProduto" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
