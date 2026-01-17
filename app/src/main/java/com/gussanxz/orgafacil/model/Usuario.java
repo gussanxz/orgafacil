@@ -9,9 +9,12 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Usuario {
 
@@ -45,6 +48,40 @@ public class Usuario {
                 Log.e("Firebase", "Erro ao verificar categorias", error.toException());
             }
         });
+        // =========================
+        // 2) Firestore (novo)
+        // =========================
+        FirebaseFirestore fs = ConfiguracaoFirebase.getFirestore();
+
+        Map<String, Object> doc = new HashMap<>();
+        doc.put("nome", getNome());
+        doc.put("email", getEmail());
+        doc.put("proventosTotal", getProventosTotal() != null ? getProventosTotal() : 0.0);
+        doc.put("despesaTotal", getDespesaTotal() != null ? getDespesaTotal() : 0.0);
+        doc.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        fs.collection("users").document(getIdUsuario())
+                .set(doc, SetOptions.merge())
+                .addOnSuccessListener(unused ->
+                        Log.d("FS", "User criado/atualizado: users/" + getIdUsuario())
+                )
+                .addOnFailureListener(e ->
+                        Log.e("FS", "Erro ao criar/atualizar user", e)
+                );
+
+        // "Criar espaço categorias" (Firestore só mostra coleção se houver documento)
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        fs.collection("users").document(getIdUsuario())
+                .collection("categorias").document("_meta")
+                .set(meta, SetOptions.merge())
+                .addOnSuccessListener(unused ->
+                        Log.d("FS", "Categorias _meta OK: users/" + getIdUsuario() + "/categorias/_meta")
+                )
+                .addOnFailureListener(e ->
+                        Log.e("FS", "Erro ao criar _meta categorias", e)
+                );
     }
 
     public Double getProventosTotal() {
