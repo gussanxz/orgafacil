@@ -17,6 +17,7 @@ import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.pr
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity;
 
 public class VendasCadastrosActivity extends AppCompatActivity {
 
@@ -68,8 +69,8 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void exibirCadastroProdutosServicos(View view) {
-        Intent intent = new Intent(this, CadastroProdutosServicosActivity.class);
+    public void exibirListaProdutosServicos(View view) {
+        Intent intent = new Intent(this, ListaProdutosEServicosActivity.class);
         startActivity(intent);
     }
 

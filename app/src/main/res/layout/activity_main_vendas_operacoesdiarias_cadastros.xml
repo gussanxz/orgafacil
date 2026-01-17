@@ -108,8 +108,8 @@
                 android:orientation="horizontal"
                 android:padding="4dp"
                 android:gravity="center_vertical"
-                android:clickable="true"
-                android:onClick="exibirCadastroProdutosServicos">
+                android:onClick="exibirListaProdutosServicos"
+                android:clickable="true">
 
                 <ImageView
                     android:layout_marginStart="10dp"
