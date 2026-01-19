@@ -19,11 +19,9 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
@@ -36,7 +34,6 @@ public class DespesasActivity extends AppCompatActivity {
     private EditText campoValor, campoCategoria;
     private Movimentacao movimentacao;
     private FirebaseFirestore fs;
-    private Double despesaTotal;
     private ActivityResultLauncher<Intent> launcherCategoria;
 
     @Override
@@ -50,7 +47,7 @@ public class DespesasActivity extends AppCompatActivity {
             return insets;
         });
 
-        fs = ConfiguracaoFirebase.getFirestore();
+        fs = ConfiguracaoFirestore.getFirestore();
 
         campoValor = findViewById(R.id.editValor);
         campoData = findViewById(R.id.editData);
@@ -59,14 +56,12 @@ public class DespesasActivity extends AppCompatActivity {
         campoHora = findViewById(R.id.editHora);
 
         campoData.setText(DatePickerHelper.setDataAtual());
-
         campoData.setFocusable(false);
         campoData.setClickable(true);
         campoData.setOnClickListener(v ->
                 DatePickerHelper.showDatePickerDialog(DespesasActivity.this, campoData));
 
         campoHora.setText(TimePickerHelper.setHoraAtual());
-
         campoHora.setFocusable(false);
         campoHora.setClickable(true);
         campoHora.setOnClickListener(v ->
@@ -86,14 +81,12 @@ public class DespesasActivity extends AppCompatActivity {
             launcherCategoria.launch(intent);
         });
 
-        recuperarDespesaTotal();
-
         // 🔹 NOVO: buscar no Firebase a última despesa e oferecer para reaproveitar
         recuperarUltimaDespesaDoFirebase();
     }
 
     public void retornarPrincipal(View view){
-        startActivity(new Intent(this, ContasActivity.class));
+        finish(); // Apenas fecha a activity atual, voltando para a anterior (ContasActivity)
     }
 
     public void salvarDespesa(View view) {
@@ -112,11 +105,9 @@ public class DespesasActivity extends AppCompatActivity {
             movimentacao.setHora(campoHora.getText().toString());
             movimentacao.setTipo("d");
 
-            atualizarDespesaIncrement( valorRecuperado );
-
             movimentacao.salvar(uid, data);
-            Toast.makeText(this, "Despesa adicionada!", Toast.LENGTH_SHORT).show();
 
+            Toast.makeText(this, "Despesa adicionada!", Toast.LENGTH_SHORT).show();
             finish();
         }
     }
@@ -135,58 +126,29 @@ public class DespesasActivity extends AppCompatActivity {
 
                         return true;
 
-                    }else {
+                    } else {
                         Toast.makeText(DespesasActivity.this,
                                 "Descrição não foi preenchida!", Toast.LENGTH_SHORT).show();
                         return false;
 
                     }
-                }else {
+                } else {
                     Toast.makeText(DespesasActivity.this,
                             "Categoria não foi preenchida!", Toast.LENGTH_SHORT).show();
                     return false;
                 }
-            }else {
+            } else {
                 Toast.makeText(DespesasActivity.this,
                         "Data não foi preenchida!", Toast.LENGTH_SHORT).show();
                 return false;
 
             }
-
-        }else {
+        } else {
             Toast.makeText(DespesasActivity.this,
                     "Valor não foi preenchido!", Toast.LENGTH_SHORT).show();
             return false;
 
         }
-
-    }
-
-    public void recuperarDespesaTotal() {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .get()
-                .addOnSuccessListener(doc -> {
-                    Double v = doc.getDouble("despesaTotal");
-                    despesaTotal = (v != null) ? v : 0.0;
-                })
-                .addOnFailureListener(e -> {
-                    despesaTotal = 0.0;
-                    Toast.makeText(this, "Erro ao carregar despesaTotal", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    public void atualizarDespesaIncrement(double valor) {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .update("despesaTotal", FieldValue.increment(valor))
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao atualizar despesaTotal", Toast.LENGTH_SHORT).show()
-                );
     }
 
     // =========================
@@ -208,9 +170,6 @@ public class DespesasActivity extends AppCompatActivity {
                     Movimentacao m = new Movimentacao();
                     m.setCategoria((String) ultima.get("categoria"));
                     m.setDescricao((String) ultima.get("descricao"));
-                    m.setData((String) ultima.get("data"));
-                    m.setHora((String) ultima.get("hora"));
-                    m.setTipo("d");
 
                     if (m.getCategoria() != null || m.getDescricao() != null) {
                         mostrarPopupAproveitarUltimaDespesa(m);
