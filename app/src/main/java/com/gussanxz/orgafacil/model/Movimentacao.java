@@ -3,9 +3,13 @@ package com.gussanxz.orgafacil.model;
 import android.util.Log;
 
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.Exclude;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.google.firebase.firestore.WriteBatch;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.helper.DateCustom;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -25,18 +29,29 @@ public class Movimentacao implements Serializable {
     public Movimentacao() {}
 
     public void salvar(String uid, String dataEscolhida) {
-        String mesAnoLocal = DatePickerHelper.mesAnoDataEscolhida(dataEscolhida);
 
+        String mesAnoLocal = DateCustom.mesAnoDataEscolhida(dataEscolhida);
         this.setData(dataEscolhida);
         this.setMesAno(mesAnoLocal);
 
-        FirebaseFirestore fs = ConfiguracaoFirebase.getFirestore();
+        FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
+        WriteBatch batch = fs.batch(); // Inicia o pacote de gravação atômica
 
-        String movId = (this.getKey() != null && !this.getKey().trim().isEmpty())
-                ? this.getKey()
-                : fs.collection("_").document().getId();
-
-        this.setKey(movId);
+        DocumentReference movRef;
+        if (this.getKey() != null && !this.getKey().isEmpty()) {
+            // É uma edição
+            movRef = fs.collection("users").document(uid)
+                    .collection("contas").document("main")
+                    .collection("movimentacoes").document(mesAnoLocal)
+                    .collection("itens").document(this.getKey());
+        } else {
+            // É novo: Gera ID automático
+            movRef = fs.collection("users").document(uid)
+                    .collection("contas").document("main")
+                    .collection("movimentacoes").document(mesAnoLocal)
+                    .collection("itens").document();
+            this.setKey(movRef.getId());
+        }
 
         Map<String, Object> doc = new HashMap<>();
         doc.put("data", this.getData());
@@ -47,29 +62,40 @@ public class Movimentacao implements Serializable {
         doc.put("valor", this.getValor());
         doc.put("key", this.getKey());
         doc.put("mesAno", mesAnoLocal);
-        doc.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        doc.put("createdAt", FieldValue.serverTimestamp()); // Usa Timestamp do servidor
 
-        DocumentReference ref = fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("movimentacoes").document(mesAnoLocal)
-                .collection("itens").document(movId);
+        // Adiciona a gravação da movimentação no Batch
+        batch.set(movRef, doc, SetOptions.merge());
 
-        ref.set(doc, SetOptions.merge())
-                .addOnSuccessListener(unused -> {
-                    Log.d("FS", "Mov gravada: " + mesAnoLocal + "/" + movId);
-                    atualizarUltimosLancamentos(fs, uid);
-                })
-                .addOnFailureListener(e -> Log.e("FS", "Erro ao gravar movimentacao", e));
+        // Atualizar o Saldo (users/{uid}/contas/main)
+        // Isso é CRUCIAL: O incremento acontece direto no servidor.
+        DocumentReference contaMainRef = fs.collection("users").document(uid)
+                .collection("contas").document("main");
+
+        if ("r".equals(getTipo())) {
+            batch.update(contaMainRef, "proventosTotal", FieldValue.increment(getValor()));
+        } else if ("d".equals(getTipo())) {
+            batch.update(contaMainRef, "despesaTotal", FieldValue.increment(getValor()));
+        }
+
+        adicionarUltimosLancamentosNoBatch(batch, fs, uid);
+
+        // COMMIT: Envia tudo de uma vez
+        batch.commit()
+                .addOnSuccessListener(unused -> Log.d("FireStore", "Movimentação, Saldo e Meta salvos com sucesso!"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Erro crítico ao salvar batch", e));
     }
 
-    private void atualizarUltimosLancamentos(FirebaseFirestore fs, String uid) {
-        String tipoMov = this.getTipo(); // "d" ou "r"
+    // Metodo auxiliar para organizar o código (agora recebe o batch)
+    private void adicionarUltimosLancamentosNoBatch(WriteBatch batch, FirebaseFirestore fs, String uid) {
+        String tipoMov = this.getTipo();
 
         Map<String, Object> info = new HashMap<>();
         info.put("categoria", this.getCategoria());
         info.put("descricao", this.getDescricao());
         info.put("data", this.getData());
         info.put("hora", this.getHora());
+        info.put("valor", this.getValor()); // Adicionei valor, geralmente é útil exibir no resumo
 
         Map<String, Object> payload = new HashMap<>();
         if ("d".equals(tipoMov)) {
@@ -79,16 +105,17 @@ public class Movimentacao implements Serializable {
         } else {
             return;
         }
-        payload.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        payload.put("updatedAt", FieldValue.serverTimestamp());
 
-        fs.collection("users").document(uid)
+        DocumentReference metaRef = fs.collection("users").document(uid)
                 .collection("contas").document("main")
-                .collection("_meta").document("ultimos")
-                .set(payload, SetOptions.merge())
-                .addOnFailureListener(e -> Log.e("FS", "Erro ao atualizar ultimos", e));
+                .collection("_meta").document("ultimos");
+
+        // Adiciona ao pacote
+        batch.set(metaRef, payload, SetOptions.merge());
     }
 
-    // getters/setters...
+// --- GETTERS E SETTERS ---
 
     public String getMesAno() { return mesAno; }
     public void setMesAno(String mesAno) { this.mesAno = mesAno; }
