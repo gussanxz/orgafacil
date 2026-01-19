@@ -35,7 +35,7 @@ public class CadastroProdutosServicosActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_produtos_e_servicos_cadastro_produtos_servicos);
+        setContentView(R.layout.ac_main_vendas_opd_cadastro_produtos_e_servicos);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());

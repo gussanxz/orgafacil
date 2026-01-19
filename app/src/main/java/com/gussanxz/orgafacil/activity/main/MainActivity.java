@@ -57,7 +57,7 @@ public class MainActivity extends IntroActivity {
 //        );
 //        addSlide(new FragmentSlide.Builder()
                 .background(android.R.color.white)
-                .fragment(R.layout.intro_cadastro)
+                .fragment(R.layout.ac_main_intro_comece_agora)
                 .canGoForward(false)
                 .build()
         );

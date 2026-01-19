@@ -14,13 +14,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.main.boletos.BoletosActivity;
 import com.gussanxz.orgafacil.activity.main.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
-import com.gussanxz.orgafacil.activity.main.mercado.ResumoListaMercadoActivity;
-import com.gussanxz.orgafacil.activity.main.todo.ListaAtividadesActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.ResumoVendasActivity;
-import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
 
 public class HomeActivity extends AppCompatActivity {
     private static final String TAG = "HomeActivity";
@@ -31,7 +27,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main_home);
+        setContentView(R.layout.ac_main_intro_home);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);

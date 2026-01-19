@@ -1,19 +1,12 @@
 package com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria;
 
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.os.Bundle;
-import android.text.TextUtils;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,7 +21,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.gussanxz.orgafacil.model.Categoria;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SelecionarCategoriaActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
@@ -42,7 +34,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity implements Ad
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_categoria_lista_categorias);
+        setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
         //Inicializar o firebase
         firebaseRef = FirebaseDatabase.getInstance().getReference();

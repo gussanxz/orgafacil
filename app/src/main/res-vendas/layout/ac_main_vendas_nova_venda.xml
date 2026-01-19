@@ -252,7 +252,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginBottom="12dp"
-                tools:listitem="@layout/item_categoria_chip"
+                tools:listitem="@layout/item_nova_venda_categoria_chip"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 android:requiresFadingEdge="horizontal"
                 android:fadingEdgeLength="30dp"/>
