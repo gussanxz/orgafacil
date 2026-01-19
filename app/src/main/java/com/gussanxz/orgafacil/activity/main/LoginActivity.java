@@ -37,7 +37,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.GoogleAuthProvider;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
@@ -51,6 +51,8 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth autenticacao;
     private RadioButton acessarTelaCadastro;
     private Button btnLoginGoogle;
+
+    // Google Sign In
     private SignInClient oneTapClient;
     private BeginSignInRequest signInRequest;
 
@@ -64,54 +66,50 @@ public class LoginActivity extends AppCompatActivity {
                 try {
                     SignInCredential credential = oneTapClient.getSignInCredentialFromIntent(result.getData());
                     String idToken = credential.getGoogleIdToken();
-                    String email = credential.getId(); // geralmente é o e-mail
 
-                    if (email == null || email.trim().isEmpty()) {
-                        Toast.makeText(LoginActivity.this, "Não foi possível obter o e-mail da conta.", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    // Regra do seu fluxo: só permite login se e-mail já existir no Firebase Auth
-                    autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
-                    Log.d(TAG, "FirebaseApp name: " + com.google.firebase.FirebaseApp.getInstance().getName());
+                    autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
                     AuthCredential firebaseCredential = GoogleAuthProvider.getCredential(idToken, null);
-                    autenticacao = FirebaseAuth.getInstance();
+                    Log.d(TAG, "FirebaseApp name: " + com.google.firebase.FirebaseApp.getInstance().getName());
 
                     autenticacao.signInWithCredential(firebaseCredential)
                             .addOnSuccessListener(authResult -> {
 
+                                // Verifica se é um usuário novo
                                 boolean isNewUser = authResult.getAdditionalUserInfo() != null
                                         && authResult.getAdditionalUserInfo().isNewUser();
 
                                 if (isNewUser) {
-                                    // Conta não era cadastrada: foi criada agora. Deleta e bloqueia.
-                                    if (autenticacao.getCurrentUser() != null) {
-                                        autenticacao.getCurrentUser().delete()
-                                                .addOnCompleteListener(t -> {
-                                                    autenticacao.signOut();
-                                                    Toast.makeText(LoginActivity.this,
-                                                            "Essa conta Google não está cadastrada.",
-                                                            Toast.LENGTH_LONG).show();
-                                                });
-                                    } else {
-                                        autenticacao.signOut();
-                                        Toast.makeText(LoginActivity.this,
-                                                "Essa conta Google não está cadastrada.",
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                    return;
+
+                                    // CADASTRO AUTOMÁTICO VIA GOOGLE
+                                    // Precisamos criar a estrutura do banco (Users + Contas) agora
+
+                                    String uid = authResult.getUser().getUid();
+                                    String email = authResult.getUser().getEmail();
+                                    String nome = authResult.getUser().getDisplayName(); // O Google já nos dá o nome!
+
+                                    Usuario novoUsuario = new Usuario();
+                                    novoUsuario.setIdUsuario(uid);
+                                    novoUsuario.setEmail(email);
+                                    novoUsuario.setNome(nome != null ? nome : "Usuário Google");
+
+                                    // 1. Salva o perfil
+                                    novoUsuario.salvar();
+
+                                    // 2. CRUCIAL: Inicializa o financeiro (Saldo 0 e Categorias)
+                                    // Sem isso, o app travaria na Home
+                                    novoUsuario.inicializarNovosDados();
+
+                                    Toast.makeText(LoginActivity.this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show();
                                 }
 
-                                // Usuário já existia
+                                // Seja novo ou antigo, redireciona para a Home
                                 abrirTelaHome();
 
                             })
                             .addOnFailureListener(e -> {
                                 Log.e(TAG, "Falha no login Google", e);
-
-                                // Caso comum: conta existe, mas com outro método (ex: email/senha) e não está vinculada ao Google
                                 Toast.makeText(LoginActivity.this,
-                                        "Não foi possível entrar com Google. Use e-mail e senha (ou vincule o Google na conta).",
+                                        "Erro ao entrar com Google: " + e.getMessage(),
                                         Toast.LENGTH_LONG).show();
                             });
 
@@ -155,27 +153,17 @@ public class LoginActivity extends AppCompatActivity {
                         validarLogin();
 
                     } else {
-                        Toast.makeText(LoginActivity.this, "Preencha a senha", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(LoginActivity.this, "Preencha o email", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "Preencha o email.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        acessarTelaCadastro.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                abrirTelaCadastro();
-            }
-        });
+        acessarTelaCadastro.setOnClickListener(view -> abrirTelaCadastro());
 
-        recuperarSenha.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                recuperarSenha();
-            }
-        });
+        recuperarSenha.setOnClickListener(view -> recuperarSenha());
 
         EditText campoSenha = findViewById(R.id.editSenha);
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
@@ -183,8 +171,8 @@ public class LoginActivity extends AppCompatActivity {
         configurarLoginGoogle();
     }
     private void configurarLoginGoogle() {
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
 
+        // Apenas prepara o cliente, não loga ainda
         oneTapClient = Identity.getSignInClient(this);
 
         signInRequest = BeginSignInRequest.builder()
@@ -199,21 +187,20 @@ public class LoginActivity extends AppCompatActivity {
                 .build();
 
         if (btnLoginGoogle != null) {
-            btnLoginGoogle.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    iniciarLoginGoogle();
-                }
-            });
+            btnLoginGoogle.setOnClickListener(v -> iniciarLoginGoogle());
         }
     }
 
     private void iniciarLoginGoogle() {
         oneTapClient.beginSignIn(signInRequest)
                 .addOnSuccessListener(result -> {
-                    PendingIntent pendingIntent = result.getPendingIntent();
-                    IntentSenderRequest request = new IntentSenderRequest.Builder(pendingIntent.getIntentSender()).build();
-                    oneTapLauncher.launch(request);
+                    try {
+                        PendingIntent pendingIntent = result.getPendingIntent();
+                        IntentSenderRequest request = new IntentSenderRequest.Builder(pendingIntent.getIntentSender()).build();
+                        oneTapLauncher.launch(request);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Erro ao lançar intent do Google", e);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "beginSignIn falhou", e);
@@ -223,7 +210,7 @@ public class LoginActivity extends AppCompatActivity {
 
     public void validarLogin(){
 
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         autenticacao.signInWithEmailAndPassword(
                 usuario.getEmail(),
                 usuario.getSenha()
@@ -235,17 +222,17 @@ public class LoginActivity extends AppCompatActivity {
 
                     abrirTelaHome();
 
-                }else {
+                } else {
 
                     String excecao = "";
                     try {
                         throw task.getException();
-                    }catch (FirebaseAuthInvalidUserException e) {
-                        excecao = "Usuario nao esta cadastrado";
-                    }catch (FirebaseAuthInvalidCredentialsException e) {
-                        excecao = "E-mail e/ou senha nao correspondem a um usuario cadastrado";
-                    }catch (Exception e) {
-                        excecao = "Erro ao cadastrar usuario: " + e.getMessage();
+                    } catch (FirebaseAuthInvalidUserException e) {
+                        excecao = "Usuario não está cadastrado";
+                    } catch (FirebaseAuthInvalidCredentialsException e) {
+                        excecao = "E-mail e/ou senha não correspondem a um usuário cadastrado";
+                    } catch (Exception e) {
+                        excecao = "Erro ao logar: " + e.getMessage();
                         e.printStackTrace();
                     }
                     Toast.makeText(LoginActivity.this, excecao, Toast.LENGTH_SHORT).show();
