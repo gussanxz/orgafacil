@@ -19,7 +19,7 @@ public class PerfilActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // IMPORTANTE: O nome do layout deve ser o mesmo do arquivo XML que criamos
-        setContentView(R.layout.activity_perfil);
+        setContentView(R.layout.ac_main_configs_meu_perfil);
 
         inicializarComponentes();
         recuperarDadosUsuario();

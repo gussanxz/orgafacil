@@ -18,7 +18,6 @@ import android.widget.Toast;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
-import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 
 public class ResumoVendasActivity extends AppCompatActivity {
@@ -29,7 +28,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main_vendas_resumo_vendas);
+        setContentView(R.layout.ac_main_vendas);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);

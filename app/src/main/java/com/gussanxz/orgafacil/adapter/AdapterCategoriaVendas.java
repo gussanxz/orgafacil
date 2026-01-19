@@ -44,7 +44,7 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemLista = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_categoria, parent, false);
+                .inflate(R.layout.item_vendas_lista_categorias, parent, false);
         return new MyViewHolder(itemLista);
     }
 

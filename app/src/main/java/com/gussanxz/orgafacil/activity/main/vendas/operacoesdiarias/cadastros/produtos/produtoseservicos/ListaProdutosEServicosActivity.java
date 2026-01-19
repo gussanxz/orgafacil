@@ -35,7 +35,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_lista_produtos_e_servicos);
+        setContentView(R.layout.ac_main_vendas_opd_lista_produtos_e_servicos);
 
         setupWindowInsets();
         inicializarComponentes();

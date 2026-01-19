@@ -39,7 +39,7 @@ public class SelecionarCategoriaActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_contas_selecionar_categoria);
+        setContentView(R.layout.ac_main_contas_selecao_categoria);
 
         recyclerView = findViewById(R.id.recyclerViewCategorias);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

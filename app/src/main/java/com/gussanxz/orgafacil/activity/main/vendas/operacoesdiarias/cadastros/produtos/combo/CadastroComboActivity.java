@@ -27,7 +27,7 @@ public class CadastroComboActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
 
         //Definimos o xml/layout que iremos apresentar na activity
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros_produtos_combo_cadastro_combos);
+        setContentView(R.layout.act_main_vendas_opd_cadastro_combos);
 
         //Define a area de conteudo segura do app sem a barra de status e navegacao ficar por cima do conteudo
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

@@ -44,10 +44,10 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (viewType == MovimentoItem.TYPE_HEADER) {
-            View v = inflater.inflate(R.layout.item_header_dia, parent, false);
+            View v = inflater.inflate(R.layout.item_contas_header_dia, parent, false);
             return new HeaderViewHolder(v);
         } else {
-            View v = inflater.inflate(R.layout.adapter_movimentacao, parent, false);
+            View v = inflater.inflate(R.layout.adapter_contas_movimentacao, parent, false);
             // use aqui o mesmo layout que você já usa hoje para uma linha de movimentação
             return new MovimentoViewHolder(v);
         }

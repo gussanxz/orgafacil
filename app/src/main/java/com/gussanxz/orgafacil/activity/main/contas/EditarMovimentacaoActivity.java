@@ -44,9 +44,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         movimentacao = (Movimentacao) getIntent().getSerializableExtra("movimentacaoSelecionada");
         if (movimentacao != null) {
             if (movimentacao.getTipo().equals("d")) {
-                setContentView(R.layout.activity_main_contas_despesas);
+                setContentView(R.layout.ac_main_contas_add_despesa);
             } else if (movimentacao.getTipo().equals("r")) {
-                setContentView(R.layout.activity_main_contas_proventos);
+                setContentView(R.layout.ac_main_contas_add_provento);
             }
         }
 

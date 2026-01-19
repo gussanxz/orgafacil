@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -60,7 +59,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
 
         // Definimos o xml/layout que iremos apresentar na activity
-        setContentView(R.layout.activity_cadastro_categorias);
+        setContentView(R.layout.ac_cadastro_categoria);
 
         // Ajuste de insets (barra de status, etc)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

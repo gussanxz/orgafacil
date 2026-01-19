@@ -39,7 +39,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main_vendas_novavenda_registrarvendas);
+        setContentView(R.layout.ac_main_vendas_nova_venda);
 
         // Configuração de Padding
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.novaVenda), (v, insets) -> {

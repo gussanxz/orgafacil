@@ -16,7 +16,6 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity;
-import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity;
 
 public class VendasCadastrosActivity extends AppCompatActivity {
@@ -25,7 +24,7 @@ public class VendasCadastrosActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main_vendas_operacoesdiarias_cadastros);
+        setContentView(R.layout.ac_main_vendas_opd_cadastros);
 
         View main = findViewById(R.id.rootCadastros); // 2) precisa existir no layout
         if (main == null) {
