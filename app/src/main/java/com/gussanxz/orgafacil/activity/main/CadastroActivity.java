@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +23,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
@@ -39,12 +40,14 @@ public class CadastroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_cadastro);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        //Inicializar componentes
         campoNome = findViewById(R.id.editNome);
         campoEmail = findViewById(R.id.editEmail);
         campoSenha = findViewById(R.id.editSenha);
@@ -67,50 +70,47 @@ public class CadastroActivity extends AppCompatActivity {
                         if (!textoSenha.isEmpty()) {
                             if (!textoSenhaConfirmacao.isEmpty()){
                                 if (textoSenha.equals(textoSenhaConfirmacao)) {
+
+                                    // Configura objeto usuário
                                     usuario = new Usuario();
                                     usuario.setNome(textoNome);
                                     usuario.setEmail(textoEmail);
                                     usuario.setSenha(textoSenha);
+
+                                    // Chama o metodo de cadastro
                                     cadastrarUsuario();
+
                                 } else {
-                                    Toast.makeText(CadastroActivity.this, "Senhas nao conferem!", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(CadastroActivity.this, "Senhas não conferem!", Toast.LENGTH_SHORT).show();
                                 }
                             } else {
-                                Toast.makeText(CadastroActivity.this, "Confirme sua senha", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(CadastroActivity.this, "Confirme sua senha!", Toast.LENGTH_SHORT).show();
                             }
                         } else {
-                            Toast.makeText(CadastroActivity.this, "Preencha a senha", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(CadastroActivity.this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(CadastroActivity.this, "Preencha o email", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(CadastroActivity.this, "Preencha o email.", Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(CadastroActivity.this, "Preencha o nome!", Toast.LENGTH_SHORT).show();
-
+                    Toast.makeText(CadastroActivity.this, "Preencha o nome.", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
 
-        acessarTelaLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        acessarTelaLogin.setOnClickListener(view -> abrirTelaLogin());
 
-                abrirTelaLogin();
-
-            }
-        });
-
-        EditText campoSenha = findViewById(R.id.editSenha);
+        // Helpers de visibilidade de senha
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
-        EditText campoSenhaConfirmacao = findViewById(R.id.editSenhaConfirmacao);
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
 
     }
 
     public void cadastrarUsuario() {
 
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
+
+        // Cria o usuário no Firebase Auth (Login/Senha)
         autenticacao.createUserWithEmailAndPassword(
                 usuario.getEmail(), usuario.getSenha()
         ).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -118,9 +118,17 @@ public class CadastroActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if ( task.isSuccessful() ){
 
+                    // 1. Recupera o ID único gerado pelo Auth
                     String idUsuario = task.getResult().getUser().getUid();
                     usuario.setIdUsuario( idUsuario );
+
+                    // 2. Salva os dados básicos (Nome, Email) na coleção users/{uid}
                     usuario.salvar();
+
+                    // 3. CRUCIAL: Inicializa a conta financeira (Saldo 0.00 e Categorias Padrão)
+                    // Isso garante que o usuário tenha um documento em users/{uid}/contas/main
+                    usuario.inicializarNovosDados();
+
                     Toast.makeText(CadastroActivity.this, "Sucesso ao cadastrar usuario!", Toast.LENGTH_SHORT).show();
                     abrirTelaHome();
 
@@ -132,11 +140,11 @@ public class CadastroActivity extends AppCompatActivity {
                     }catch ( FirebaseAuthWeakPasswordException e){
                         excecao = "Digite uma senha mais forte!";
                     }catch (FirebaseAuthInvalidCredentialsException e){
-                        excecao = "Por favor, digite um e-mail valido";
+                        excecao = "Por favor, digite um e-mail válido";
                     }catch (FirebaseAuthUserCollisionException e){
-                        excecao = "Essa conta ja foi cadastrada!";
+                        excecao = "Essa conta já foi cadastrada!";
                     }catch (Exception e) {
-                        excecao = "Erro ao cadastrar usuario: " + e.getMessage();
+                        excecao = "Erro ao cadastrar usuário: " + e.getMessage();
                         e.printStackTrace();
                     }
                     Toast.makeText(CadastroActivity.this, excecao, Toast.LENGTH_SHORT).show();
@@ -144,7 +152,6 @@ public class CadastroActivity extends AppCompatActivity {
             }
         });
     }
-
 
     public void abrirTelaHome() {
         startActivity(new Intent(this, HomeActivity.class));
