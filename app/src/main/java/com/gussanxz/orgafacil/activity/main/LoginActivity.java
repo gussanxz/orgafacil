@@ -74,36 +74,10 @@ public class LoginActivity extends AppCompatActivity {
                     autenticacao.signInWithCredential(firebaseCredential)
                             .addOnSuccessListener(authResult -> {
 
-                                // Verifica se é um usuário novo
-                                boolean isNewUser = authResult.getAdditionalUserInfo() != null
-                                        && authResult.getAdditionalUserInfo().isNewUser();
-
-                                if (isNewUser) {
-
-                                    // CADASTRO AUTOMÁTICO VIA GOOGLE
-                                    // Precisamos criar a estrutura do banco (Users + Contas) agora
-
-                                    String uid = authResult.getUser().getUid();
-                                    String email = authResult.getUser().getEmail();
-                                    String nome = authResult.getUser().getDisplayName(); // O Google já nos dá o nome!
-
-                                    Usuario novoUsuario = new Usuario();
-                                    novoUsuario.setIdUsuario(uid);
-                                    novoUsuario.setEmail(email);
-                                    novoUsuario.setNome(nome != null ? nome : "Usuário Google");
-
-                                    // 1. Salva o perfil
-                                    novoUsuario.salvar();
-
-                                    // 2. CRUCIAL: Inicializa o financeiro (Saldo 0 e Categorias)
-                                    // Sem isso, o app travaria na Home
-                                    novoUsuario.inicializarNovosDados();
-
-                                    Toast.makeText(LoginActivity.this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show();
-                                }
-
-                                // Seja novo ou antigo, redireciona para a Home
-                                abrirTelaHome();
+                                // LOGIN COM SUCESSO!
+                                // Agora verificamos se os dados existem no banco,
+                                // independente se a conta é nova ou antiga.
+                                verificarSeUsuarioTemDadosNoFirestore();
 
                             })
                             .addOnFailureListener(e -> {
@@ -220,7 +194,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 if ( task.isSuccessful() ) {
 
-                    abrirTelaHome();
+                    verificarSeUsuarioTemDadosNoFirestore();
 
                 } else {
 
@@ -240,6 +214,48 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private void verificarSeUsuarioTemDadosNoFirestore() {
+        if (autenticacao.getCurrentUser() == null) return;
+
+        String uid = autenticacao.getUid();
+        String email = autenticacao.getCurrentUser().getEmail();
+        String nome = autenticacao.getCurrentUser().getDisplayName(); // Tenta pegar do Google
+
+        // Verifica se existe o documento users/{uid}
+        ConfiguracaoFirestore.getFirestore()
+                .collection("users").document(uid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // [CENÁRIO 1] Usuário já tem dados no Firestore. Tudo certo.
+                        abrirTelaHome();
+                    } else {
+                        // [CENÁRIO 2] MIGRAÇÃO:
+                        // Usuário existe no Auth (Login funcionou), mas NÃO tem dados no Firestore.
+                        // Criamos agora para ele não ver uma tela vazia.
+
+                        Usuario usuarioMigrado = new Usuario();
+                        usuarioMigrado.setIdUsuario(uid);
+                        usuarioMigrado.setEmail(email);
+                        usuarioMigrado.setNome(nome != null ? nome : "Usuário");
+
+                        // 1. Cria o perfil
+                        usuarioMigrado.salvar();
+
+                        // 2. Cria o financeiro (Saldo 0 e Categorias)
+                        usuarioMigrado.inicializarNovosDados();
+
+                        Toast.makeText(LoginActivity.this, "Bem-vindo de volta! Dados atualizados.", Toast.LENGTH_LONG).show();
+                        abrirTelaHome();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Erro crítico ao verificar Firestore", e);
+                    // Se der erro de rede, tentamos abrir a home assim mesmo
+                    abrirTelaHome();
+                });
     }
 
     public void abrirTelaHome() {
