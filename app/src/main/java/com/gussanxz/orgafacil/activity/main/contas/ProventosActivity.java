@@ -20,11 +20,10 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.model.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
@@ -52,7 +51,7 @@ public class ProventosActivity extends AppCompatActivity {
             return insets;
         });
 
-        fs = ConfiguracaoFirebase.getFirestore();
+        fs = ConfiguracaoFirestore.getFirestore();
 
         campoValor = findViewById(R.id.editValor);
         campoData = findViewById(R.id.editData);

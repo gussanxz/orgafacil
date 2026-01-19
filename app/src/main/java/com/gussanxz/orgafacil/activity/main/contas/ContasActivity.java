@@ -39,7 +39,7 @@ import com.gussanxz.orgafacil.activity.main.LoginActivity;
 import com.gussanxz.orgafacil.activity.main.MainActivity;
 import com.gussanxz.orgafacil.adapter.MovimentoItem;
 import com.gussanxz.orgafacil.adapter.MovimentosAgrupadosAdapter;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.adapter.MovimentacoesGrouper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 
@@ -58,7 +58,7 @@ public class ContasActivity extends AppCompatActivity {
     private Double proventosTotal = 0.0;
     private Double resumoUsuario = 0.0;
 
-    private FirebaseAuth autenticacao  = ConfiguracaoFirebase.getFirebaseAutenticacao();
+    private FirebaseAuth autenticacao  = ConfiguracaoFirestore.getFirebaseAutenticacao();
     private FirebaseFirestore fs;
     private String uid;
 
@@ -99,7 +99,7 @@ public class ContasActivity extends AppCompatActivity {
         }
 
         Log.i("DEBUG_FIREBASE", "UID atual: " + uid);
-        fs = ConfiguracaoFirebase.getFirestore();
+        fs = ConfiguracaoFirestore.getFirestore();
 
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
@@ -678,7 +678,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     public void deslogarUsuario(View view){
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         autenticacao.signOut();
         startActivity(new Intent(this, LoginActivity.class));
     }

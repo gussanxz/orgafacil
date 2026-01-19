@@ -14,117 +14,221 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
-import com.gussanxz.orgafacil.model.DatePickerHelper;
-import com.gussanxz.orgafacil.model.Movimentacao;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
+import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.helper.DateCustom;
+import com.gussanxz.orgafacil.model.Movimentacao;
 
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
     private TextView textViewHeader;
-    private Movimentacao movimentacao;
-    private boolean isModoEdicao = false;
+    private Movimentacao movimentacaoAntiga; // Dados originais
     private String keyFirebase;
-    private final DatabaseReference firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
-    private final FirebaseAuth autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
     private double valorAnterior;
-    private String tipoAnterior;
+
+    private FirebaseFirestore fs;
+    private String uid;
+
     private ActivityResultLauncher<Intent> launcherCategoria;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        isModoEdicao = true;
         super.onCreate(savedInstanceState);
 
-        movimentacao = (Movimentacao) getIntent().getSerializableExtra("movimentacaoSelecionada");
-        if (movimentacao != null) {
-            if (movimentacao.getTipo().equals("d")) {
+        // Recupera objeto vindo da ContasActivity
+        movimentacaoAntiga = (Movimentacao) getIntent().getSerializableExtra("movimentacaoSelecionada");
+        keyFirebase = getIntent().getStringExtra("keyFirebase");
+
+        // Define layout baseado no tipo
+        if (movimentacaoAntiga != null) {
+            if ("d".equals(movimentacaoAntiga.getTipo())) {
                 setContentView(R.layout.ac_main_contas_add_despesa);
-            } else if (movimentacao.getTipo().equals("r")) {
+            } else {
                 setContentView(R.layout.ac_main_contas_add_provento);
             }
+        } else {
+            finish(); // Segurança
+            return;
         }
 
-        textViewHeader = findViewById(R.id.textViewHeader);
+        // Configurações Iniciais
+        fs = ConfiguracaoFirestore.getFirestore();
+        uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        textViewHeader = findViewById(R.id.textViewHeader); // Verifique se existe no layout, ou remova
         editData = findViewById(R.id.editData);
         editHora = findViewById(R.id.editHora);
         editDescricao = findViewById(R.id.editDescricao);
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
 
-        keyFirebase = getIntent().getStringExtra("keyFirebase");
-
-        if (movimentacao != null) {
-            if (textViewHeader != null) {
-                if (movimentacao.getTipo().equals("d")) {
-                    textViewHeader.setText("Editar Despesa");
-                } else if (movimentacao.getTipo().equals("r")) {
-                    textViewHeader.setText("Editar Provento");
-                }
+        if (textViewHeader != null) {
+            if ("d".equals(movimentacaoAntiga.getTipo())) {
+                textViewHeader.setText("Editar Despesa");
+            } else {
+                textViewHeader.setText("Editar Receita");
             }
-
-            valorAnterior = movimentacao.getValor();
-            tipoAnterior = movimentacao.getTipo();
-
-            // Preenche os campos
-            editData.setText(movimentacao.getData());
-            editHora.setText(movimentacao.getHora());
-            editDescricao.setText(movimentacao.getDescricao());
-            editValor.setText(String.valueOf(valorAnterior));
-            editCategoria.setText(movimentacao.getCategoria());
-
-            editData.setOnClickListener(v -> abrirDataPicker());
-            editHora.setOnClickListener(v -> abrirTimePicker());
-
-            abrirCategoras();
-
         }
+
+        // Preenche os campos com os valores ANTIGOS
+        valorAnterior = movimentacaoAntiga.getValor();
+
+        editData.setText(movimentacaoAntiga.getData());
+        editHora.setText(movimentacaoAntiga.getHora());
+        editDescricao.setText(movimentacaoAntiga.getDescricao());
+        editValor.setText(String.valueOf(valorAnterior));
+        editCategoria.setText(movimentacaoAntiga.getCategoria());
+
+        // Listeners
+        editData.setFocusable(false);
+        editData.setClickable(true);
+        editData.setOnClickListener(v -> abrirDataPicker());
+
+        editHora.setFocusable(false);
+        editHora.setClickable(true);
+        editHora.setOnClickListener(v -> abrirTimePicker());
+
+        configurarLauncherCategoria();
     }
 
     public void retornarPrincipal(View view) {
-        startActivity(new Intent(this, ContasActivity.class));
+        finish();
     }
+
+    // Como o layout é reaproveitado, ambos os botões chamam métodos aqui.
+    // Você pode ligar o "onClick" do botão Salvar no XML para um desses métodos.
+    public void salvarDespesa(View view) {
+        confirmarEdicao();
+    }
+
+    public void salvarProvento(View view) {
+        confirmarEdicao();
+    }
+
+    // Método único para processar a edição
+    private void confirmarEdicao() {
+        String novaData = editData.getText().toString();
+        String novaDescricao = editDescricao.getText().toString();
+        String novaCategoria = editCategoria.getText().toString();
+        String novoValorStr = editValor.getText().toString();
+        String novaHora = editHora.getText().toString();
+
+        if (novaData.isEmpty() || novaDescricao.isEmpty() || novaCategoria.isEmpty() || novoValorStr.isEmpty()) {
+            Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        double novoValor = Double.parseDouble(novoValorStr);
+
+        // 1. Calcula a diferença para ajustar o saldo
+        // Ex: Era 100, virou 120. Diferença = 20. (Soma 20 no total)
+        // Ex: Era 100, virou 80. Diferença = -20. (Subtrai 20 no total)
+        double diferencaValor = novoValor - valorAnterior;
+
+        // 2. Prepara referências e Batch
+        WriteBatch batch = fs.batch();
+
+        String mesAnoAntigo = movimentacaoAntiga.getMesAno();
+        if (mesAnoAntigo == null) mesAnoAntigo = DateCustom.mesAnoDataEscolhida(movimentacaoAntiga.getData());
+
+        String mesAnoNovo = DateCustom.mesAnoDataEscolhida(novaData);
+
+        // Referência do documento antigo
+        DocumentReference refAntiga = fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("movimentacoes").document(mesAnoAntigo)
+                .collection("itens").document(keyFirebase);
+
+        Map<String, Object> dadosAtualizados = new HashMap<>();
+        dadosAtualizados.put("data", novaData);
+        dadosAtualizados.put("hora", novaHora);
+        dadosAtualizados.put("descricao", novaDescricao);
+        dadosAtualizados.put("categoria", novaCategoria);
+        dadosAtualizados.put("valor", novoValor);
+        dadosAtualizados.put("tipo", movimentacaoAntiga.getTipo()); // Tipo geralmente não muda
+        dadosAtualizados.put("mesAno", mesAnoNovo);
+        dadosAtualizados.put("key", keyFirebase);
+
+        // --- LÓGICA DE MOVIMENTAÇÃO DE COLEÇÃO (MUDANÇA DE MÊS) ---
+        if (!mesAnoNovo.equals(mesAnoAntigo)) {
+            // Se mudou o mês, precisamos mover o documento para a nova coleção
+            DocumentReference refNova = fs.collection("users").document(uid)
+                    .collection("contas").document("main")
+                    .collection("movimentacoes").document(mesAnoNovo)
+                    .collection("itens").document(keyFirebase); // Mantém o mesmo ID
+
+            batch.delete(refAntiga); // Deleta do mês antigo
+            batch.set(refNova, dadosAtualizados); // Cria no mês novo
+        } else {
+            // Se é o mesmo mês, apenas atualiza
+            batch.update(refAntiga, dadosAtualizados);
+        }
+
+        // 3. Atualiza o Saldo Total (Atomicamente)
+        DocumentReference contaMainRef = fs.collection("users").document(uid)
+                .collection("contas").document("main");
+
+        String campoParaAtualizar = "d".equals(movimentacaoAntiga.getTipo()) ? "despesaTotal" : "proventosTotal";
+
+        // Incrementa a diferença (pode ser positiva ou negativa)
+        if (diferencaValor != 0) {
+            batch.update(contaMainRef, campoParaAtualizar, FieldValue.increment(diferencaValor));
+        }
+
+        // 4. Executa
+        batch.commit()
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK); // Avisa a ContasActivity para recarregar
+                    finish();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao atualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    // --- Helpers de UI ---
 
     private void abrirDataPicker() {
         Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        // Tenta parsear a data atual do campo para abrir o calendário nela
+        try {
+            String[] parts = editData.getText().toString().split("/");
+            calendar.set(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]) - 1, Integer.parseInt(parts[0]));
+        } catch (Exception e) { /* fallback para hoje */ }
 
-        DatePickerDialog datePicker = new DatePickerDialog(
-                this,
-                (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String dataSelecionada = String.format("%02d/%02d/%d", selectedDay, selectedMonth + 1, selectedYear);
-                    editData.setText(dataSelecionada);
-                },
-                year, month, day
-        );
-        datePicker.show();
+        new DatePickerDialog(this, (view, year, month, day) -> {
+            String dataStr = String.format(Locale.getDefault(), "%02d/%02d/%04d", day, month + 1, year);
+            editData.setText(dataStr);
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void abrirTimePicker() {
         Calendar calendar = Calendar.getInstance();
-        int hora = calendar.get(Calendar.HOUR_OF_DAY);
-        int minuto = calendar.get(Calendar.MINUTE);
-
-        new TimePickerDialog(this, (view, hourOfDay, minute1) -> {
-            String horaSelecionada = String.format("%02d:%02d", hourOfDay, minute1);
-            editHora.setText(horaSelecionada);
-        }, hora, minuto, true).show();
+        new TimePickerDialog(this, (view, hour, minute) -> {
+            String horaStr = String.format(Locale.getDefault(), "%02d:%02d", hour, minute);
+            editHora.setText(horaStr);
+        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show();
     }
 
-    public void abrirCategoras() {
+    private void configurarLauncherCategoria() {
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        String categoria = result.getData().getStringExtra("categoriaSelecionada");
-                        editCategoria.setText(categoria);
+                        String cat = result.getData().getStringExtra("categoriaSelecionada");
+                        editCategoria.setText(cat);
                     }
                 });
 
@@ -133,89 +237,4 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             launcherCategoria.launch(intent);
         });
     }
-
-    public void salvarDespesa(View view) {
-        if (isModoEdicao) {
-            atualizarMovimentacaoExistente();
-        } else {
-            salvarNovaMovimentacao(); // opcional, se quiser aproveitar a mesma activity
-        }
-    }
-
-    public void salvarProventos(View view) {
-        if (isModoEdicao) {
-            atualizarMovimentacaoExistente();
-        } else {
-            salvarNovaMovimentacao(); // opcional, se quiser aproveitar a mesma activity
-        }
-    }
-
-    private void atualizarMovimentacaoExistente() {
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        String mesAno = DatePickerHelper.mesAnoDataEscolhida(movimentacao.getData());
-        ; // dd/MM/yyyy
-
-        DatabaseReference ref = firebaseRef
-                .child("movimentacao")
-                .child(idUsuario)
-                .child(mesAno)
-                .child(keyFirebase);
-
-        movimentacao.setData(editData.getText().toString());
-        movimentacao.setHora(editHora.getText().toString());
-        movimentacao.setDescricao(editDescricao.getText().toString());
-        movimentacao.setCategoria(editCategoria.getText().toString());
-        movimentacao.setValor(Double.parseDouble(editValor.getText().toString()));
-
-        ref.setValue(movimentacao).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                ajustarTotais(); // ✅ Corrige proventos/despesas
-                setResult(RESULT_OK);
-                finish();
-            }
-        });
-
-
-        Toast.makeText(this, "Movimentação atualizada", Toast.LENGTH_SHORT).show();
-        finish();
-    }
-
-    private void salvarNovaMovimentacao() {
-        // opcional: se quiser permitir inserções nesta mesma tela
-        Toast.makeText(this, "Função de nova movimentação não implementada aqui.", Toast.LENGTH_SHORT).show();
-    }
-
-    private void ajustarTotais() {
-        String emailUsuario = autenticacao.getCurrentUser().getEmail();
-        String idUsuario = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference usuarioRef = firebaseRef.child("usuarios").child(idUsuario);
-
-        usuarioRef.get().addOnSuccessListener(snapshot -> {
-            if (snapshot.exists()) {
-                double proventos = snapshot.child("proventosTotal").getValue(Double.class);
-                double despesas = snapshot.child("despesaTotal").getValue(Double.class);
-
-                // Subtrai o valor anterior
-                if (tipoAnterior.equals("r")) {
-                    proventos -= valorAnterior;
-                } else if (tipoAnterior.equals("d")) {
-                    despesas -= valorAnterior;
-                }
-
-                // Adiciona o novo valor
-                if (movimentacao.getTipo().equals("r")) {
-                    proventos += movimentacao.getValor();
-                } else if (movimentacao.getTipo().equals("d")) {
-                    despesas += movimentacao.getValor();
-                }
-
-                // Atualiza no Firebase
-                usuarioRef.child("proventosTotal").setValue(proventos);
-                usuarioRef.child("despesaTotal").setValue(despesas);
-            }
-        });
-    }
-
 }
-

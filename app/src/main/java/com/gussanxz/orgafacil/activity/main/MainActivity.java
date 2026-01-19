@@ -7,7 +7,7 @@ import android.view.View;
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 import android.content.SharedPreferences;
@@ -78,7 +78,7 @@ public class MainActivity extends IntroActivity {
     }
 
     public void verificarUsuarioLogado(){
-        autenticacao = ConfiguracaoFirebase.getFirebaseAutenticacao();
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         //autenticacao.signOut();
         if ( autenticacao.getCurrentUser() != null ){
             abrirTelaHome();

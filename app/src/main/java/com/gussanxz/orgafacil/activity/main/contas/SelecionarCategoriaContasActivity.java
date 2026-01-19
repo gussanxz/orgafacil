@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.adapter.AdapterCategoriaContas;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirebase;
+import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
@@ -45,7 +44,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_contas_selecionar_categoria);
+        setContentView(R.layout.ac_main_contas_selecao_categoria);
 
         recyclerView = findViewById(R.id.recyclerViewCategorias);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -60,7 +59,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         }
 
         uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        fs = ConfiguracaoFirebase.getFirestore();
+        fs = ConfiguracaoFirestore.getFirestore();
 
         carregarCategoriasDoFirestore();
 
