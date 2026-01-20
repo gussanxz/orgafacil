@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.model;
+package com.gussanxz.orgafacil.helper;
 
 import java.util.Locale;
 

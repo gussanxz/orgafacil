@@ -16,7 +16,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.combo.CadastroComboActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.modificador.CadastroModificadorActivity;
-import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.ListaProdutosEServicosActivity;
 
 public class VendasCadastrosActivity extends AppCompatActivity {
 

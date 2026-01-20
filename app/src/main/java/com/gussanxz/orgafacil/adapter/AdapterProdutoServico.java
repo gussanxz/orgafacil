@@ -1,10 +1,16 @@
 package com.gussanxz.orgafacil.adapter;
 
+import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
@@ -16,25 +22,18 @@ import java.util.Locale;
 
 public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    // 1. Interface para o clique
+    private static final int TYPE_LISTA = 1;
+    private static final int TYPE_GRADE = 2;
+
+    private List<ItemVenda> listaItens;
+    private boolean isGridMode = false;
+    private final OnItemClickListener listener;
+    private Context context;
+
     public interface OnItemClickListener {
         void onItemClick(ItemVenda item);
     }
 
-    // Constantes dos Tipos de Visualização
-    private static final int VIEW_PRODUTO_LISTA = 1;
-    private static final int VIEW_PRODUTO_GRADE = 2;
-    private static final int VIEW_SERVICO_LISTA = 3;
-    private static final int VIEW_SERVICO_GRADE = 4;
-
-    private List<ItemVenda> listaItens;
-    private boolean isGridMode = false;
-    private final OnItemClickListener listener; // Variável do listener
-
-    // Formatador de moeda para R$ (Brasil)
-    private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-
-    // 2. Construtor Atualizado recebendo o listener
     public AdapterProdutoServico(List<ItemVenda> listaItens, OnItemClickListener listener) {
         this.listaItens = listaItens;
         this.listener = listener;
@@ -45,58 +44,40 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         notifyDataSetChanged();
     }
 
+    public void atualizarLista(List<ItemVenda> novaLista) {
+        this.listaItens = novaLista;
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemViewType(int position) {
-        ItemVenda item = listaItens.get(position);
-        if (item.getTipo() == ItemVenda.TIPO_PRODUTO) {
-            return isGridMode ? VIEW_PRODUTO_GRADE : VIEW_PRODUTO_LISTA;
-        } else {
-            return isGridMode ? VIEW_SERVICO_GRADE : VIEW_SERVICO_LISTA;
-        }
+        return isGridMode ? TYPE_GRADE : TYPE_LISTA;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view;
+        this.context = parent.getContext();
+        LayoutInflater inflater = LayoutInflater.from(context);
 
-        switch (viewType) {
-            case VIEW_PRODUTO_GRADE:
-                view = inflater.inflate(R.layout.item_visualizacao_produto_grid, parent, false);
-                return new ProdutoGradeViewHolder(view);
-
-            case VIEW_SERVICO_GRADE:
-                view = inflater.inflate(R.layout.item_visualizacao_servico_grid, parent, false);
-                return new ServicoGradeViewHolder(view);
-
-            case VIEW_SERVICO_LISTA:
-                view = inflater.inflate(R.layout.item_visualizacao_servico_lista, parent, false);
-                return new ServicoListaViewHolder(view);
-
-            case VIEW_PRODUTO_LISTA:
-            default:
-                view = inflater.inflate(R.layout.item_visualizacao_produto_lista, parent, false);
-                return new ProdutoListaViewHolder(view);
+        if (viewType == TYPE_GRADE) {
+            View view = inflater.inflate(R.layout.item_venda_grade, parent, false);
+            return new GradeViewHolder(view);
+        } else {
+            View view = inflater.inflate(R.layout.item_venda_lista, parent, false);
+            return new ListaViewHolder(view);
         }
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ItemVenda item = listaItens.get(position);
-
-        // 3. Configurar o clique no item inteiro
         holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
 
-        // Configurar os dados visuais
-        if (holder instanceof ProdutoGradeViewHolder) {
-            ((ProdutoGradeViewHolder) holder).bind(item);
-        } else if (holder instanceof ProdutoListaViewHolder) {
-            ((ProdutoListaViewHolder) holder).bind(item);
-        } else if (holder instanceof ServicoGradeViewHolder) {
-            ((ServicoGradeViewHolder) holder).bind(item);
-        } else if (holder instanceof ServicoListaViewHolder) {
-            ((ServicoListaViewHolder) holder).bind(item);
+        if (holder instanceof GradeViewHolder) {
+            ((GradeViewHolder) holder).bind(item);
+        } else if (holder instanceof ListaViewHolder) {
+            ((ListaViewHolder) holder).bind(item);
         }
     }
 
@@ -105,99 +86,88 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         return listaItens != null ? listaItens.size() : 0;
     }
 
-    // =================================================================================
-    // VIEWHOLDERS - PRODUTOS
-    // =================================================================================
+    // --- VIEWHOLDER PARA MODO GRADE (CARD QUADRADO) ---
+    class GradeViewHolder extends RecyclerView.ViewHolder {
+        TextView textNome, textDescricao, textPreco, textTipoTag;
+        ImageView imageIcone;
+        CardView cardIcone;
 
-    class ProdutoGradeViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textPreco, textStatus;
-
-        public ProdutoGradeViewHolder(@NonNull View itemView) {
+        public GradeViewHolder(@NonNull View itemView) {
             super(itemView);
-            textNome = itemView.findViewById(R.id.textNomeProduto);
-            textPreco = itemView.findViewById(R.id.textDescProduto);
-            textStatus = itemView.findViewById(R.id.textStatus);
+            textNome = itemView.findViewById(R.id.textNomeItem);
+            textDescricao = itemView.findViewById(R.id.textDescricaoItem); // Categoria
+            textPreco = itemView.findViewById(R.id.textPrecoItem); // Onde era status
+            textTipoTag = itemView.findViewById(R.id.textTipoTag); // Onde era o botão excluir
+            imageIcone = itemView.findViewById(R.id.imageIcone);
+            cardIcone = itemView.findViewById(R.id.cardIcone);
         }
 
         void bind(ItemVenda item) {
-            if(textNome != null) textNome.setText(item.getNome());
-            if(textPreco != null) textPreco.setText(formatadorMoeda.format(item.getPreco()));
+            textNome.setText(item.getNome());
+            textDescricao.setText(item.getDescricao());
+            String precoStr = NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco());
+            textPreco.setText(precoStr);
 
-            if(textStatus != null) {
-                textStatus.setText("Produto");
-                textStatus.setTextColor(0xFF2196F3); // Azul
+            // Lógica para aplicar o Background e Cores
+            if (item.getTipo() == ItemVenda.TIPO_PRODUTO) {
+                // Configuração PRODUTO (Azul)
+                textTipoTag.setText("PRODUTO");
+                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorPrimary));
+                textTipoTag.setBackgroundResource(R.drawable.bg_tag_produto); // <--- AQUI APLICA O BG AZUL
+
+                imageIcone.setImageResource(R.drawable.ic_categorias_mercado_24);
+                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorPrimary));
+                cardIcone.setCardBackgroundColor(Color.parseColor("#E3F2FD"));
+
+            } else {
+                // Configuração SERVIÇO (Laranja)
+                textTipoTag.setText("SERVIÇO");
+                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorAccentProventos));
+                textTipoTag.setBackgroundResource(R.drawable.bg_tag_servico); // <--- AQUI APLICA O BG LARANJA
+
+                imageIcone.setImageResource(R.drawable.ic_categorias_ferramentas_24);
+                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorAccentProventos));
+                cardIcone.setCardBackgroundColor(Color.parseColor("#FFF3E0"));
             }
         }
     }
 
-    class ProdutoListaViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textStatus;
+    // --- VIEWHOLDER PARA MODO LISTA (CARD HORIZONTAL) ---
+    class ListaViewHolder extends RecyclerView.ViewHolder {
+        TextView textNome, textDescricao, textPreco, textTipoTag;
+        ImageView imageIcone;
+        CardView cardIcone;
 
-        public ProdutoListaViewHolder(@NonNull View itemView) {
+        public ListaViewHolder(@NonNull View itemView) {
             super(itemView);
-            textNome = itemView.findViewById(R.id.textNomeProduto);
-            textDescricao = itemView.findViewById(R.id.textDescProduto);
-            textStatus = itemView.findViewById(R.id.textStatus);
+            textNome = itemView.findViewById(R.id.textNomeItem);
+            textDescricao = itemView.findViewById(R.id.textDescricaoItem);
+            textPreco = itemView.findViewById(R.id.textPrecoItem);
+            textTipoTag = itemView.findViewById(R.id.textTipoTag);
+            imageIcone = itemView.findViewById(R.id.imageIcone);
+            cardIcone = itemView.findViewById(R.id.cardIcone);
         }
 
         void bind(ItemVenda item) {
-            if(textNome != null) textNome.setText(item.getNome());
-            if(textDescricao != null) textDescricao.setText(item.getDescricao());
+            textNome.setText(item.getNome());
+            textDescricao.setText(item.getDescricao());
 
-            if(textStatus != null) {
-                textStatus.setText("Produto");
-                textStatus.setTextColor(0xFF2196F3); // Azul
+            String precoStr = NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco());
+            textPreco.setText(precoStr);
+
+            if (item.getTipo() == ItemVenda.TIPO_PRODUTO) {
+                textTipoTag.setText("PRODUTO");
+                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorPrimary));
+                imageIcone.setImageResource(R.drawable.ic_categorias_mercado_24);
+                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorPrimary));
+                cardIcone.setCardBackgroundColor(Color.parseColor("#E3F2FD"));
+            } else {
+                textTipoTag.setText("SERVIÇO");
+                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorAccentProventos));
+                imageIcone.setImageResource(R.drawable.ic_categorias_ferramentas_24);
+                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorAccentProventos));
+                cardIcone.setCardBackgroundColor(Color.parseColor("#FFF3E0"));
             }
         }
-    }
-
-    // =================================================================================
-    // VIEWHOLDERS - SERVIÇOS
-    // =================================================================================
-
-    class ServicoGradeViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textPreco, textStatus;
-
-        public ServicoGradeViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textNome = itemView.findViewById(R.id.textNomeServico);
-            textPreco = itemView.findViewById(R.id.textDescServico);
-            textStatus = itemView.findViewById(R.id.textStatus);
-        }
-
-        void bind(ItemVenda item) {
-            if(textNome != null) textNome.setText(item.getNome());
-            if(textPreco != null) textPreco.setText(formatadorMoeda.format(item.getPreco()));
-
-            if (textStatus != null) {
-                textStatus.setText("Serviço");
-                textStatus.setTextColor(0xFFFF9800); // Laranja
-            }
-        }
-    }
-
-    class ServicoListaViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textStatus;
-
-        public ServicoListaViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textNome = itemView.findViewById(R.id.textNomeServico);
-            textDescricao = itemView.findViewById(R.id.textDescServico);
-            textStatus = itemView.findViewById(R.id.textStatus);
-        }
-
-        void bind(ItemVenda item) {
-            if(textNome != null) textNome.setText(item.getNome());
-            if(textDescricao != null) textDescricao.setText(item.getDescricao());
-            if (textStatus != null) {
-                textStatus.setText("Serviço");
-                textStatus.setTextColor(0xFFFF9800); // Laranja
-            }
-        }
-    }
-
-    public void atualizarLista(List<ItemVenda> novaLista) {
-        this.listaItens = novaLista;
-        notifyDataSetChanged();
     }
 }

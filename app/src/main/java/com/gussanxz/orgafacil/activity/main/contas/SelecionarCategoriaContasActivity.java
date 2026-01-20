@@ -24,7 +24,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
-import com.gussanxz.orgafacil.model.CategoriaIdHelper;
+import com.gussanxz.orgafacil.helper.CategoriaIdHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.CadastroProdutosServicosActivity">
+    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.produtos.servico.CadastroServicoActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -22,7 +22,6 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:clickable="true"
-            android:onClick="retornarParaVendasCadastros"
             app:backgroundTint="@color/cardview_dark_background"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -35,24 +34,24 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:text="Novo Produto"
+            android:text="Novo Serviço"
             android:textAlignment="gravity"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
+            app:layout_constraintEnd_toStartOf="@id/fabSalvar"
             app:layout_constraintStart_toEndOf="@+id/fabVoltar"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabSuperiorSalvarCategoria"
+            android:id="@+id/fabSalvar"
             style="@style/NoElevationFab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:clickable="true"
-            android:onClick="salvarProdutoOuServico"
+            android:onClick="salvarServico"
             app:backgroundTint="@color/colorAccentProventos"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -72,59 +71,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/header">
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/toggleTipoCadastro"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            app:checkedButton="@id/btnTipoProduto"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnTipoProduto"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Produto"
-                android:textColor="@color/cor_texto"
-                app:strokeColor="#BDBDBD" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnTipoServico"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Serviço"
-                android:textColor="@color/cor_texto"
-                app:strokeColor="#BDBDBD" />
-
-        </com.google.android.material.button.MaterialButtonToggleGroup>
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputCategoria"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="32dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/toggleTipoCadastro"
+            app:layout_constraintTop_toTopOf="parent"
             app:startIconDrawable="@drawable/ic_label_24">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editCategoria"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
-                android:hint="Categoria do Produto"
+                android:hint="Categoria do Serviço"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -141,10 +105,10 @@
             app:startIconDrawable="@drawable/ic_description_24">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editDescricao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Nome do Produto"
+                android:hint="Descrição do Serviço"
+                android:inputType="textCapSentences"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -161,27 +125,12 @@
             app:startIconDrawable="@drawable/ic_moeda_real_24">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editValor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Preço de Venda"
+                android:hint="Valor do Serviço"
                 android:inputType="numberDecimal"
                 android:text="0.00" />
         </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabInferiorSalvarCategoria"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:clickable="true"
-            android:onClick="salvarProdutoOuServico"
-            app:backgroundTint="@color/colorAccentProventos"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:srcCompat="@drawable/ic_confirmar_branco_24" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

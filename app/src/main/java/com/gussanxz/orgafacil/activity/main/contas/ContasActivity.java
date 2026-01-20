@@ -31,7 +31,7 @@ import com.gussanxz.orgafacil.adapter.MovimentacoesGrouper;
 import com.gussanxz.orgafacil.adapter.MovimentosAgrupadosAdapter;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.model.Movimentacao;
-import com.gussanxz.orgafacil.repository.ContasRepository; // Importe o repositório
+import com.gussanxz.orgafacil.repository.ContasRepository;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;

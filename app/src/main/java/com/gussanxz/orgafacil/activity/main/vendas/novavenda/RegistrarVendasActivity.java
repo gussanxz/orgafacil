@@ -132,7 +132,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         // Usando o construtor da sua classe ItemVenda:
         // (int id, String nome, String descricao, double preco, int tipo)
 
-        // Produtos
+        /* Produtos
         listaCompletaProdutos.add(new ItemVenda(1, "Coca Cola 2L", "Gelada", 12.00, ItemVenda.TIPO_PRODUTO));
         listaCompletaProdutos.add(new ItemVenda(2, "Pastel", "Carne/Queijo", 8.50, ItemVenda.TIPO_PRODUTO));
         listaCompletaProdutos.add(new ItemVenda(3, "Água 500ml", "Sem gás", 3.00, ItemVenda.TIPO_PRODUTO));
@@ -144,7 +144,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         listaCompletaProdutos.add(new ItemVenda(7, "Visita", "Técnica", 50.00, ItemVenda.TIPO_SERVICO));
 
         // Inicializa a lista filtrada com TUDO
-        listaFiltradaProdutos = new ArrayList<>(listaCompletaProdutos);
+        listaFiltradaProdutos = new ArrayList<>(listaCompletaProdutos);*/
     }
 
     private void filtrarProdutosPorCategoria(String nomeCategoria) {
