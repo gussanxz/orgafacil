@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/coordinatorLayout"
     android:layout_width="match_parent"
@@ -14,52 +14,58 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/colorPrimary"
-        android:elevation="0dp"
+        android:elevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:titleTextColor="@color/white" />
+        app:titleTextColor="@android:color/white"
+        app:title="Minhas Contas" />
 
     <include
+        android:id="@+id/content_principal"
         layout="@layout/content_principal"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="55dp" />
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/layoutBotoes"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
-    <com.github.clans.fab.FloatingActionMenu
-        android:id="@+id/floatingActionMenu"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/layoutBotoes"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="9dp"
-        android:layout_marginRight="9dp"
-        android:layout_marginBottom="9dp"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/cor_background"
+        android:elevation="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:menu_colorNormal="@color/colorAccent"
-        app:menu_colorPressed="@color/colorAccent"
-        fab:menu_icon="@drawable/ic_adicionar_branco_24">
+        app:layout_constraintStart_toStartOf="parent">
 
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/menu_despesa"
-            android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/btnDespesa"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="adicionarDespesa"
-            android:src="@drawable/ic_adicionar_branco_24"
-            app:fab_colorPressed="@color/colorPrimaryDarkDespesa"
-            fab:fab_colorNormal="@color/colorPrimaryDespesa"
-            fab:fab_label="Despesa"
-            fab:fab_size="mini" />
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="Nova Despesa"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:backgroundTint="@color/colorPrimaryDespesa"
+            android:onClick="adicionarDespesa"/>
 
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/menu_proventos"
-            android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/btnProventos"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="adicionarProventos"
-            android:src="@drawable/ic_adicionar_branco_24"
-            app:fab_colorPressed="@color/colorPrimaryDarkProventos"
-            fab:fab_colorNormal="@color/colorPrimaryProventos"
-            fab:fab_label="Proventos"
-            fab:fab_size="mini" />
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="Nova Receita"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:backgroundTint="@color/colorPrimaryProventos"
+            android:onClick="adicionarProventos"/>
+    </LinearLayout>
 
-    </com.github.clans.fab.FloatingActionMenu>
 </androidx.constraintlayout.widget.ConstraintLayout>
