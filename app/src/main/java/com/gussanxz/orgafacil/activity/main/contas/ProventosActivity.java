@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button; // IMPORTANTE
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.DatePickerHelper;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.model.TimePickerHelper;
+import com.gussanxz.orgafacil.repository.ContasRepository; // IMPORTANTE
 
 import java.util.Map;
 
@@ -33,11 +35,17 @@ public class ProventosActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
+    private Button btnExcluir; // NOVO BOTÃO
+
     private Movimentacao movimentacao;
     private FirebaseFirestore fs;
-    private Double proventosTotal;
+    private ContasRepository repository; // NOVO REPOSITÓRIO
 
     private ActivityResultLauncher<Intent> launcherCategoria;
+
+    // Variáveis de controle de edição
+    private boolean isEdicao = false;
+    private Movimentacao itemEmEdicao = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,26 +59,24 @@ public class ProventosActivity extends AppCompatActivity {
         });
 
         fs = ConfiguracaoFirestore.getFirestore();
+        repository = new ContasRepository(); // Inicializa repositório
 
+        // Inicializar componentes
         campoValor = findViewById(R.id.editValor);
         campoData = findViewById(R.id.editData);
         campoCategoria = findViewById(R.id.editCategoria);
         campoDescricao = findViewById(R.id.editDescricao);
         campoHora = findViewById(R.id.editHora);
+        btnExcluir = findViewById(R.id.btnExcluir); // Recupera botão do XML
 
-        campoData.setText(DatePickerHelper.setDataAtual());
-
+        // Configurar Listeners
         campoData.setFocusable(false);
         campoData.setClickable(true);
-        campoData.setOnClickListener(v ->
-                DatePickerHelper.showDatePickerDialog(ProventosActivity.this, campoData));
-
-        campoHora.setText(TimePickerHelper.setHoraAtual());
+        campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(ProventosActivity.this, campoData));
 
         campoHora.setFocusable(false);
         campoHora.setClickable(true);
-        campoHora.setOnClickListener(v ->
-                TimePickerHelper.showTimePickerDialog(ProventosActivity.this, campoHora));
+        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(ProventosActivity.this, campoHora));
 
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -86,41 +92,127 @@ public class ProventosActivity extends AppCompatActivity {
             launcherCategoria.launch(intent);
         });
 
-        recuperarProventosTotal();
-
-        // 🔹 NOVO: buscar no Firebase o último provento e oferecer para reaproveitar
-        recuperarUltimoProventoDoFirebase();
+        // Verifica se é edição (Preenche campos e mostra botão excluir) ou novo cadastro
+        verificarModoEdicao();
     }
 
+    // --- MÉTODOS DE LÓGICA (SALVAR/EXCLUIR) ---
+
     public void salvarProventos(View view) {
+        if (!validarCamposProventos()) return;
 
-        if (validarCamposProventos()) {
+        // Se for edição, usamos o objeto existente, senão criamos novo
+        movimentacao = isEdicao ? itemEmEdicao : new Movimentacao();
 
-            movimentacao = new Movimentacao();
-            String data = campoData.getText().toString();
-            Double valorRecuperado = Double.parseDouble(campoValor.getText().toString());
-            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String data = campoData.getText().toString();
+        Double valorAtual = Double.parseDouble(campoValor.getText().toString());
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-            movimentacao.setValor(valorRecuperado);
-            movimentacao.setCategoria(campoCategoria.getText().toString());
-            movimentacao.setDescricao(campoDescricao.getText().toString());
-            movimentacao.setData(data);
-            movimentacao.setHora(campoHora.getText().toString());
-            movimentacao.setTipo("r");
+        movimentacao.setValor(valorAtual);
+        movimentacao.setCategoria(campoCategoria.getText().toString());
+        movimentacao.setDescricao(campoDescricao.getText().toString());
+        movimentacao.setData(data);
+        movimentacao.setHora(campoHora.getText().toString());
+        movimentacao.setTipo("r"); // TIPO RECEITA ("r")
 
+        if (isEdicao) {
+            // Se for edição: Exclui o antigo (para ajustar saldo) e cria novo
+            repository.excluirMovimentacao(itemEmEdicao, new ContasRepository.SimplesCallback() {
+                @Override
+                public void onSucesso() {
+                    movimentacao.setKey(null); // Reseta chave para criar novo ID
+                    movimentacao.salvar(uid, data);
+                    finalizarSalvar();
+                }
+                @Override
+                public void onErro(String erro) {
+                    Toast.makeText(ProventosActivity.this, "Erro ao atualizar: " + erro, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            // Novo cadastro
             movimentacao.salvar(uid, data);
-            Toast.makeText(this, "Provento adicionado!", Toast.LENGTH_SHORT).show();
-
-            finish();
+            finalizarSalvar();
         }
     }
 
+    private void finalizarSalvar() {
+        Toast.makeText(this, isEdicao ? "Provento atualizado!" : "Provento adicionado!", Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    public void excluirProvento(View view) {
+        if (!isEdicao || itemEmEdicao == null) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir Provento")
+                .setMessage("Tem certeza que deseja apagar este lançamento?")
+                .setPositiveButton("Sim, excluir", (dialog, which) -> {
+
+                    repository.excluirMovimentacao(itemEmEdicao, new ContasRepository.SimplesCallback() {
+                        @Override
+                        public void onSucesso() {
+                            Toast.makeText(ProventosActivity.this, "Provento removido!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+
+                        @Override
+                        public void onErro(String erro) {
+                            Toast.makeText(ProventosActivity.this, "Erro ao excluir: " + erro, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    // --- CONTROLE DE TELA (EDIÇÃO VS NOVO) ---
+
+    private void verificarModoEdicao() {
+        Bundle extras = getIntent().getExtras();
+        if (extras != null && extras.containsKey("chave")) {
+            isEdicao = true;
+            itemEmEdicao = new Movimentacao();
+
+            // Recupera dados
+            itemEmEdicao.setKey(extras.getString("chave"));
+            itemEmEdicao.setValor(extras.getDouble("valor"));
+            itemEmEdicao.setCategoria(extras.getString("categoria"));
+            itemEmEdicao.setDescricao(extras.getString("descricao"));
+            itemEmEdicao.setData(extras.getString("data"));
+            itemEmEdicao.setTipo("r"); // Garante que é Receita
+            if(extras.containsKey("hora")) itemEmEdicao.setHora(extras.getString("hora"));
+
+            // Preenche campos
+            campoValor.setText(String.valueOf(itemEmEdicao.getValor()));
+            campoCategoria.setText(itemEmEdicao.getCategoria());
+            campoDescricao.setText(itemEmEdicao.getDescricao());
+            campoData.setText(itemEmEdicao.getData());
+            if(itemEmEdicao.getHora() != null) campoHora.setText(itemEmEdicao.getHora());
+
+            // MOSTRA botão Excluir
+            btnExcluir.setVisibility(View.VISIBLE);
+
+        } else {
+            // Novo cadastro
+            campoData.setText(DatePickerHelper.setDataAtual());
+            campoHora.setText(TimePickerHelper.setHoraAtual());
+
+            // ESCONDE botão Excluir
+            btnExcluir.setVisibility(View.GONE);
+
+            // Só busca sugestão se for novo
+            recuperarUltimoProventoDoFirebase();
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
     public void retornarPrincipal(View view) {
-        startActivity(new Intent(this, ContasActivity.class));
+        finish();
     }
 
     public Boolean validarCamposProventos() {
-
         String textoValor = campoValor.getText().toString();
         String textoData = campoData.getText().toString();
         String textoCategoria = campoCategoria.getText().toString();
@@ -130,61 +222,27 @@ public class ProventosActivity extends AppCompatActivity {
             if (!textoData.isEmpty()) {
                 if (!textoCategoria.isEmpty()) {
                     if (!textoDescricao.isEmpty()) {
-
                         return true;
-
                     } else {
-                        Toast.makeText(ProventosActivity.this,
-                                "Descrição não foi preenchida!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Descrição não foi preenchida!", Toast.LENGTH_SHORT).show();
                         return false;
-
                     }
                 } else {
-                    Toast.makeText(ProventosActivity.this,
-                            "Categoria não foi preenchida!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Categoria não foi preenchida!", Toast.LENGTH_SHORT).show();
                     return false;
                 }
             } else {
-                Toast.makeText(ProventosActivity.this,
-                        "Data não foi preenchida!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Data não foi preenchida!", Toast.LENGTH_SHORT).show();
                 return false;
-
             }
-
         } else {
-            Toast.makeText(ProventosActivity.this,
-                    "Valor não foi preenchido!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Valor não foi preenchido!", Toast.LENGTH_SHORT).show();
             return false;
-
         }
-
     }
 
-    public void recuperarProventosTotal() {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    // --- RECUPERAÇÃO DE SUGESTÃO ---
 
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .get()
-                .addOnSuccessListener(doc -> {
-                    Double v = doc.getDouble("proventosTotal");
-                    proventosTotal = (v != null) ? v : 0.0;
-                })
-                .addOnFailureListener(e -> {
-                    proventosTotal = 0.0;
-                    Toast.makeText(this, "Erro ao carregar proventosTotal", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    // =========================
-    // 🔹 NOVO: BUSCAR ÚLTIMO PROVENTO NO FIREBASE E MOSTRAR POPUP
-    // =========================
-
-    /**
-     * Busca no Firebase o último provento (tipo "r") do usuário
-     * em todos os meses e, se existir, mostra um popup
-     * perguntando se quer reaproveitar Categoria + Descrição.
-     */
     private void recuperarUltimoProventoDoFirebase() {
         String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
@@ -201,63 +259,32 @@ public class ProventosActivity extends AppCompatActivity {
                     Movimentacao m = new Movimentacao();
                     m.setCategoria((String) ultimo.get("categoria"));
                     m.setDescricao((String) ultimo.get("descricao"));
-                    m.setData((String) ultimo.get("data"));
-                    m.setHora((String) ultimo.get("hora"));
-                    m.setTipo("r");
 
                     if (m.getCategoria() != null || m.getDescricao() != null) {
                         mostrarPopupAproveitarUltimoProvento(m);
                     }
-                })
-                .addOnFailureListener(e -> {
-                    // silencioso
                 });
-    }
-
-    private java.util.Date parseDataHora(String dataStr, String horaStr) {
-        try {
-            if (dataStr == null || dataStr.isEmpty()) return null;
-            if (horaStr == null || horaStr.isEmpty()) horaStr = "00:00";
-
-            // Mesmo formato usado nas movimentações: "dd/MM/yyyy" e "HH:mm"
-            String texto = dataStr + " " + horaStr;
-            java.text.SimpleDateFormat sdf =
-                    new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
-            return sdf.parse(texto);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private void mostrarPopupAproveitarUltimoProvento(Movimentacao ultimo) {
         String categoria = ultimo.getCategoria();
         String descricao = ultimo.getDescricao();
 
-        String categoriaLabel = TextUtils.isEmpty(categoria)
-                ? "sem categoria"
-                : categoria;
-
-        String descricaoLabel = TextUtils.isEmpty(descricao)
-                ? "sem descrição"
-                : descricao;
+        String categoriaLabel = TextUtils.isEmpty(categoria) ? "sem categoria" : categoria;
+        String descricaoLabel = TextUtils.isEmpty(descricao) ? "sem descrição" : descricao;
 
         String mensagem = "Deseja aproveitar as informações do último provento?\n\n"
                 + "Categoria: " + categoriaLabel + "\n"
-                + "Descrição do produto ou serviço: " + descricaoLabel
-                + "\n\nOu prefere começar do zero?";
+                + "Descrição: " + descricaoLabel;
 
         new AlertDialog.Builder(this)
-                .setTitle("Aproveitar último lançamento")
+                .setTitle("Sugestão")
                 .setMessage(mensagem)
                 .setPositiveButton("Aproveitar", (dialog, which) -> {
-                    if (!TextUtils.isEmpty(categoria)) {
-                        campoCategoria.setText(categoria);
-                    }
-                    if (!TextUtils.isEmpty(descricao)) {
-                        campoDescricao.setText(descricao);
-                    }
+                    if (!TextUtils.isEmpty(categoria)) campoCategoria.setText(categoria);
+                    if (!TextUtils.isEmpty(descricao)) campoDescricao.setText(descricao);
                 })
-                .setNegativeButton("Começar do zero", null)
+                .setNegativeButton("Não", null)
                 .show();
     }
 }
