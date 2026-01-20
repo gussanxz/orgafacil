@@ -2,7 +2,6 @@ package com.gussanxz.orgafacil.activity.main;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -22,10 +21,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.helper.GoogleLoginHelper; // Helper importado
+import com.gussanxz.orgafacil.helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
@@ -37,8 +35,6 @@ public class CadastroActivity extends AppCompatActivity {
 
     private FirebaseAuth autenticacao;
     private Usuario usuario;
-
-    // Nova variável para o Helper
     private GoogleLoginHelper googleLoginHelper;
 
     @Override
@@ -56,7 +52,6 @@ public class CadastroActivity extends AppCompatActivity {
         inicializarComponentes();
 
         // 1. Inicializa o Helper do Google
-        // Passamos 'this' e a ação de sucesso (abrirTelaHome)
         googleLoginHelper = new GoogleLoginHelper(this, this::abrirTelaHome);
 
         // --- CADASTRO VIA FORMULÁRIO ---
@@ -72,15 +67,15 @@ public class CadastroActivity extends AppCompatActivity {
                 usuario.setEmail(textoEmail);
                 usuario.setSenha(textoSenha);
 
-                // Verifica no Firestore antes de criar no Auth (Sua lógica personalizada)
-                verificarEmailNoFirestoreECadastrar(usuario);
+                // MUDANÇA AQUI: Chamamos o cadastro direto.
+                // O Firebase Auth vai verificar automaticamente se o email já existe.
+                cadastrarUsuarioFormulario();
             }
         });
 
-        // --- CADASTRO VIA GOOGLE (Refatorado) ---
+        // --- CADASTRO VIA GOOGLE ---
         botaoGoogle = findViewById(R.id.btnCadastrarGoogle);
         botaoGoogle.setOnClickListener(v -> {
-            // Usa o helper para pegar a Intent de Login
             resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
         });
 
@@ -90,43 +85,25 @@ public class CadastroActivity extends AppCompatActivity {
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
     }
 
-    // --- LÓGICA DO HELPER (Receiver) ---
+    // --- LÓGICA DO HELPER ---
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Delega todo o processamento para o Helper
                     googleLoginHelper.lidarComResultadoGoogle(result.getData());
                 }
             }
     );
 
-    // --- LÓGICA DE CADASTRO MANUAL (Mantida intacta) ---
-
-    private void verificarEmailNoFirestoreECadastrar(Usuario usuario) {
-        FirebaseFirestore db = ConfiguracaoFirestore.getFirestore();
-        db.collection("users")
-                .whereEqualTo("email", usuario.getEmail())
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        if (!task.getResult().isEmpty()) {
-                            Toast.makeText(CadastroActivity.this, "Este email já está cadastrado no sistema!", Toast.LENGTH_SHORT).show();
-                        } else {
-                            // Se não existe no Firestore, prossegue para criar no Auth
-                            cadastrarUsuarioFormulario();
-                        }
-                    } else {
-                        Toast.makeText(this, "Erro ao verificar cadastro.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
+    // --- CADASTRO MANUAL ---
     public void cadastrarUsuarioFormulario() {
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
+
+        // Tenta criar usuário
         autenticacao.createUserWithEmailAndPassword(usuario.getEmail(), usuario.getSenha())
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        // Sucesso: Salva no Firestore
                         String idUsuario = task.getResult().getUser().getUid();
                         usuario.setIdUsuario(idUsuario);
                         usuario.salvar();
@@ -136,13 +113,13 @@ public class CadastroActivity extends AppCompatActivity {
                         abrirTelaHome();
 
                     } else {
+                        // Erro: (Ex: Email duplicado) cai aqui
                         tratarErrosAuth(task);
                     }
                 });
     }
 
-    // --- MÉTODOS UTILITÁRIOS ---
-
+    // --- UTILITÁRIOS ---
     private void inicializarComponentes() {
         campoNome = findViewById(R.id.editNome);
         campoEmail = findViewById(R.id.editEmail);
@@ -153,26 +130,11 @@ public class CadastroActivity extends AppCompatActivity {
     }
 
     private boolean validarCampos(String nome, String email, String senha, String confSenha) {
-        if (nome.isEmpty()) {
-            Toast.makeText(this, "Preencha o nome.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (email.isEmpty()) {
-            Toast.makeText(this, "Preencha o email.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (senha.isEmpty()) {
-            Toast.makeText(this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (confSenha.isEmpty()) {
-            Toast.makeText(this, "Confirme a senha.", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-        if (!senha.equals(confSenha)) {
-            Toast.makeText(this, "Senhas não conferem!", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+        if (nome.isEmpty()) { Toast.makeText(this, "Preencha o nome.", Toast.LENGTH_SHORT).show(); return false; }
+        if (email.isEmpty()) { Toast.makeText(this, "Preencha o email.", Toast.LENGTH_SHORT).show(); return false; }
+        if (senha.isEmpty()) { Toast.makeText(this, "Preencha a senha.", Toast.LENGTH_SHORT).show(); return false; }
+        if (confSenha.isEmpty()) { Toast.makeText(this, "Confirme a senha.", Toast.LENGTH_SHORT).show(); return false; }
+        if (!senha.equals(confSenha)) { Toast.makeText(this, "Senhas não conferem!", Toast.LENGTH_SHORT).show(); return false; }
         return true;
     }
 
@@ -185,6 +147,7 @@ public class CadastroActivity extends AppCompatActivity {
         } catch (FirebaseAuthInvalidCredentialsException e) {
             excecao = "Por favor, digite um e-mail válido";
         } catch (FirebaseAuthUserCollisionException e) {
+            // AQUI ESTÁ A MÁGICA: O Auth avisa se o email já existe
             excecao = "Esta conta já foi cadastrada!";
         } catch (Exception e) {
             excecao = "Erro ao cadastrar: " + e.getMessage();
