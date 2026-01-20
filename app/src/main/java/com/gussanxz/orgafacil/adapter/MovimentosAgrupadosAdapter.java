@@ -1,6 +1,7 @@
 package com.gussanxz.orgafacil.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.activity.main.contas.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.model.Movimentacao;
 
 import java.text.NumberFormat;
@@ -23,9 +25,18 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     private final Context context;
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    public MovimentosAgrupadosAdapter(Context context, List<MovimentoItem> itens) {
+    // Interface para avisar a Activity que o usuário quer excluir
+    private final OnItemDeleteListener deleteListener;
+
+    public interface OnItemDeleteListener {
+        void onDeleteClick(Movimentacao movimentacao);
+    }
+
+    // Construtor atualizado para receber o Listener
+    public MovimentosAgrupadosAdapter(Context context, List<MovimentoItem> itens, OnItemDeleteListener deleteListener) {
         this.context = context;
         this.itens = itens;
+        this.deleteListener = deleteListener;
     }
 
     @Override
@@ -43,11 +54,9 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (viewType == MovimentoItem.TYPE_HEADER) {
-            // Layout do Header (Data)
             View v = inflater.inflate(R.layout.item_contas_header_dia, parent, false);
             return new HeaderViewHolder(v);
         } else {
-            // Layout do Item (CardView da Movimentação)
             View v = inflater.inflate(R.layout.adapter_contas_movimentacao, parent, false);
             return new MovimentoViewHolder(v);
         }
@@ -64,22 +73,19 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
         }
     }
 
-    // --------- ViewHolder do Cabeçalho (Data) ---------
+    // --------- ViewHolder do Cabeçalho ---------
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView textDiaTitulo, textSaldoDia;
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Certifique-se de que o arquivo item_contas_header_dia.xml existe com esses IDs
             textDiaTitulo = itemView.findViewById(R.id.textDiaTitulo);
             textSaldoDia = itemView.findViewById(R.id.textSaldoDia);
         }
 
         void bind(MovimentoItem item) {
             textDiaTitulo.setText(item.tituloDia);
-
-            // Se o XML do header tiver o campo de saldo, preenchemos:
             if (textSaldoDia != null) {
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(item.saldoDia));
                 int color = item.saldoDia >= 0 ? Color.parseColor("#008000") : Color.parseColor("#B00020");
@@ -88,38 +94,50 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
         }
     }
 
-    // --------- ViewHolder do Item (Seu CardView) ---------
+    // --------- ViewHolder do Item ---------
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
 
         TextView textTitulo, textCategoria, textValor, textData, textHora;
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Ligando os IDs do seu XML (CardView)
             textTitulo = itemView.findViewById(R.id.textAdapterTitulo);
             textCategoria = itemView.findViewById(R.id.textAdapterCategoria);
             textValor = itemView.findViewById(R.id.textAdapterValor);
-            textData = itemView.findViewById(R.id.textAdapterData); // ID novo que você colocou
+            textData = itemView.findViewById(R.id.textAdapterData);
             textHora = itemView.findViewById(R.id.textAdapterHora);
         }
 
         void bind(Movimentacao mov) {
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getCategoria());
-
-            // Preenche Data e Hora separadamente como no seu layout
             textData.setText(mov.getData());
             textHora.setText(mov.getHora());
 
-            // Formatação do Valor
             double valor = mov.getValor();
             if ("d".equals(mov.getTipo())) {
                 textValor.setText("- " + currencyFormat.format(valor));
-                textValor.setTextColor(Color.parseColor("#E53935")); // Vermelho
+                textValor.setTextColor(Color.parseColor("#E53935"));
             } else {
                 textValor.setText("+ " + currencyFormat.format(valor));
-                textValor.setTextColor(Color.parseColor("#00D39E")); // Verde (igual seu XML)
+                textValor.setTextColor(Color.parseColor("#00D39E"));
             }
+
+            // 1. CLIQUE SIMPLES -> EDITAR
+            itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
+                intent.putExtra("movimentacaoSelecionada", mov);
+                intent.putExtra("keyFirebase", mov.getKey());
+                context.startActivity(intent);
+            });
+
+            // 2. CLIQUE LONGO -> EXCLUIR
+            itemView.setOnLongClickListener(v -> {
+                if (deleteListener != null) {
+                    deleteListener.onDeleteClick(mov);
+                }
+                return true; // Retorna true para consumir o evento e não acionar o clique simples depois
+            });
         }
     }
 }
