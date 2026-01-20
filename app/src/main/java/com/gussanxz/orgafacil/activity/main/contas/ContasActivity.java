@@ -96,11 +96,12 @@ public class ContasActivity extends AppCompatActivity {
     // --- MÉTODOS PRINCIPAIS QUE FICARAM MUITO MENORES ---
 
     private void carregarDados() {
-        // 1. Busca Saldo e Nome
+        // 1. Busca Apenas o Nome (O saldo será sobrescrito pelo filtro depois)
         repository.recuperarResumo((saldo, nome) -> {
-            DecimalFormat df = new DecimalFormat("0.##");
-            textoSaldo.setText("R$ " + df.format(saldo));
             textoSaudacao.setText("Olá, " + nome + "!");
+            // Não precisamos mais setar o textoSaldo aqui,
+            // pois o "recuperarMovimentacoes" abaixo vai chamar o "aplicarFiltros"
+            // que vai calcular e exibir o saldo correto.
         });
 
         // 2. Busca Movimentações
@@ -110,7 +111,7 @@ public class ContasActivity extends AppCompatActivity {
                 listaCompleta.clear();
                 listaCompleta.addAll(lista);
 
-                // Aplica filtros locais (data e texto)
+                // Isso aqui vai rodar o código acima e exibir o saldo certo
                 aplicarFiltros();
             }
 
@@ -153,28 +154,48 @@ public class ContasActivity extends AppCompatActivity {
         String texto = searchView.getQuery().toString();
         List<Movimentacao> temp = new ArrayList<>();
 
+        // Variáveis para recalcular o saldo da tela
+        double totalReceitasFiltradas = 0.0;
+        double totalDespesasFiltradas = 0.0;
+
         for (Movimentacao m : listaCompleta) {
-            // Filtro de Data
+            // 1. Aplica Filtro de Data
             if (!estaNoPeriodo(m)) continue;
 
-            // Filtro de Texto
+            // 2. Aplica Filtro de Texto (Busca)
             if (texto.isEmpty() ||
                     m.getDescricao().toLowerCase().contains(texto.toLowerCase()) ||
                     m.getCategoria().toLowerCase().contains(texto.toLowerCase())) {
+
+                // Se passou nos filtros, adiciona na lista visual
                 temp.add(m);
+
+                // --- A MÁGICA: SOMA O VALOR AQUI ---
+                if ("r".equals(m.getTipo())) {
+                    totalReceitasFiltradas += m.getValor();
+                } else {
+                    totalDespesasFiltradas += m.getValor();
+                }
             }
         }
 
-        // Atualiza Adapter
+        // 3. Atualiza o Adapter (Lista visual)
         itensAgrupados.clear();
         itensAgrupados.addAll(MovimentacoesGrouper.agruparPorDiaOrdenar(temp));
         adapterAgrupado.notifyDataSetChanged();
 
-        // Atualiza legenda do saldo
+        // 4. Atualiza o TEXTO DO SALDO com o valor recalculado
+        double saldoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
+        DecimalFormat df = new DecimalFormat("0.##");
+        textoSaldo.setText("R$ " + df.format(saldoFiltrado));
+
+        // 5. Atualiza a legenda para o usuário saber o que está vendo
         if (dataInicialSelecionada != null) {
-            textoSaldoLegenda.setText("Saldo do período filtrado");
+            textoSaldoLegenda.setText("Saldo do período");
+        } else if (!texto.isEmpty()) {
+            textoSaldoLegenda.setText("Saldo da pesquisa");
         } else {
-            textoSaldoLegenda.setText("Saldo atual");
+            textoSaldoLegenda.setText("Saldo total"); // Sem filtros
         }
     }
 
