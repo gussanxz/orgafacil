@@ -1,6 +1,5 @@
 package com.gussanxz.orgafacil.repository;
 
-import android.util.Log;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -10,7 +9,6 @@ import com.gussanxz.orgafacil.model.Movimentacao;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ContasRepository {
 
