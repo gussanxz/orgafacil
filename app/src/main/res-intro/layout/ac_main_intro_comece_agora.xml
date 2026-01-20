@@ -96,6 +96,7 @@
         android:text="Continuar com Google"
         android:textAlignment="center"
         android:textColor="@color/black"
+        android:onClick="btGoogle"
         app:cornerRadius="100dp"
         app:iconGravity="textStart"
         app:layout_constraintBottom_toBottomOf="parent"

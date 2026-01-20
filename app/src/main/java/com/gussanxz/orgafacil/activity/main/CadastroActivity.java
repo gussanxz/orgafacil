@@ -9,21 +9,23 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.helper.GoogleLoginHelper; // Helper importado
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.model.Usuario;
 
@@ -31,9 +33,13 @@ public class CadastroActivity extends AppCompatActivity {
 
     private RadioButton acessarTelaLogin;
     private EditText campoNome, campoEmail, campoSenha, campoSenhaConfirmacao;
-    private Button botaoCadastrar;
+    private Button botaoCadastrar, botaoGoogle;
+
     private FirebaseAuth autenticacao;
     private Usuario usuario;
+
+    // Nova variável para o Helper
+    private GoogleLoginHelper googleLoginHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,110 +53,144 @@ public class CadastroActivity extends AppCompatActivity {
             return insets;
         });
 
-        //Inicializar componentes
+        inicializarComponentes();
+
+        // 1. Inicializa o Helper do Google
+        // Passamos 'this' e a ação de sucesso (abrirTelaHome)
+        googleLoginHelper = new GoogleLoginHelper(this, this::abrirTelaHome);
+
+        // --- CADASTRO VIA FORMULÁRIO ---
+        botaoCadastrar.setOnClickListener(view -> {
+            String textoNome = campoNome.getText().toString();
+            String textoEmail = campoEmail.getText().toString();
+            String textoSenha = campoSenha.getText().toString();
+            String textoSenhaConfirmacao = campoSenhaConfirmacao.getText().toString();
+
+            if (validarCampos(textoNome, textoEmail, textoSenha, textoSenhaConfirmacao)) {
+                usuario = new Usuario();
+                usuario.setNome(textoNome);
+                usuario.setEmail(textoEmail);
+                usuario.setSenha(textoSenha);
+
+                // Verifica no Firestore antes de criar no Auth (Sua lógica personalizada)
+                verificarEmailNoFirestoreECadastrar(usuario);
+            }
+        });
+
+        // --- CADASTRO VIA GOOGLE (Refatorado) ---
+        botaoGoogle = findViewById(R.id.btnCadastrarGoogle);
+        botaoGoogle.setOnClickListener(v -> {
+            // Usa o helper para pegar a Intent de Login
+            resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
+        });
+
+        acessarTelaLogin.setOnClickListener(view -> abrirTelaLogin());
+
+        VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
+        VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
+    }
+
+    // --- LÓGICA DO HELPER (Receiver) ---
+    private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    // Delega todo o processamento para o Helper
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                }
+            }
+    );
+
+    // --- LÓGICA DE CADASTRO MANUAL (Mantida intacta) ---
+
+    private void verificarEmailNoFirestoreECadastrar(Usuario usuario) {
+        FirebaseFirestore db = ConfiguracaoFirestore.getFirestore();
+        db.collection("users")
+                .whereEqualTo("email", usuario.getEmail())
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            Toast.makeText(CadastroActivity.this, "Este email já está cadastrado no sistema!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // Se não existe no Firestore, prossegue para criar no Auth
+                            cadastrarUsuarioFormulario();
+                        }
+                    } else {
+                        Toast.makeText(this, "Erro ao verificar cadastro.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    public void cadastrarUsuarioFormulario() {
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
+        autenticacao.createUserWithEmailAndPassword(usuario.getEmail(), usuario.getSenha())
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        String idUsuario = task.getResult().getUser().getUid();
+                        usuario.setIdUsuario(idUsuario);
+                        usuario.salvar();
+                        usuario.inicializarNovosDados();
+
+                        Toast.makeText(CadastroActivity.this, "Sucesso ao cadastrar usuário!", Toast.LENGTH_SHORT).show();
+                        abrirTelaHome();
+
+                    } else {
+                        tratarErrosAuth(task);
+                    }
+                });
+    }
+
+    // --- MÉTODOS UTILITÁRIOS ---
+
+    private void inicializarComponentes() {
         campoNome = findViewById(R.id.editNome);
         campoEmail = findViewById(R.id.editEmail);
         campoSenha = findViewById(R.id.editSenha);
         campoSenhaConfirmacao = findViewById(R.id.editSenhaConfirmacao);
         botaoCadastrar = findViewById(R.id.buttonCadastrar);
         acessarTelaLogin = findViewById(R.id.radioButtonLogin);
-
-        botaoCadastrar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                String textoNome = campoNome.getText().toString();
-                String textoEmail = campoEmail.getText().toString();
-                String textoSenha = campoSenha.getText().toString();
-                String textoSenhaConfirmacao = campoSenhaConfirmacao.getText().toString();
-
-                //Validar se os campos foram preenchidos
-                if (!textoNome.isEmpty()) {
-                    if (!textoEmail.isEmpty()) {
-                        if (!textoSenha.isEmpty()) {
-                            if (!textoSenhaConfirmacao.isEmpty()){
-                                if (textoSenha.equals(textoSenhaConfirmacao)) {
-
-                                    // Configura objeto usuário
-                                    usuario = new Usuario();
-                                    usuario.setNome(textoNome);
-                                    usuario.setEmail(textoEmail);
-                                    usuario.setSenha(textoSenha);
-
-                                    // Chama o metodo de cadastro
-                                    cadastrarUsuario();
-
-                                } else {
-                                    Toast.makeText(CadastroActivity.this, "Senhas não conferem!", Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(CadastroActivity.this, "Confirme sua senha!", Toast.LENGTH_SHORT).show();
-                            }
-                        } else {
-                            Toast.makeText(CadastroActivity.this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(CadastroActivity.this, "Preencha o email.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(CadastroActivity.this, "Preencha o nome.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        acessarTelaLogin.setOnClickListener(view -> abrirTelaLogin());
-
-        // Helpers de visibilidade de senha
-        VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
-        VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
-
     }
 
-    public void cadastrarUsuario() {
+    private boolean validarCampos(String nome, String email, String senha, String confSenha) {
+        if (nome.isEmpty()) {
+            Toast.makeText(this, "Preencha o nome.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Preencha o email.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (senha.isEmpty()) {
+            Toast.makeText(this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (confSenha.isEmpty()) {
+            Toast.makeText(this, "Confirme a senha.", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (!senha.equals(confSenha)) {
+            Toast.makeText(this, "Senhas não conferem!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
 
-        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
-
-        // Cria o usuário no Firebase Auth (Login/Senha)
-        autenticacao.createUserWithEmailAndPassword(
-                usuario.getEmail(), usuario.getSenha()
-        ).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if ( task.isSuccessful() ){
-
-                    // 1. Recupera o ID único gerado pelo Auth
-                    String idUsuario = task.getResult().getUser().getUid();
-                    usuario.setIdUsuario( idUsuario );
-
-                    // 2. Salva os dados básicos (Nome, Email) na coleção users/{uid}
-                    usuario.salvar();
-
-                    // 3. CRUCIAL: Inicializa a conta financeira (Saldo 0.00 e Categorias Padrão)
-                    // Isso garante que o usuário tenha um documento em users/{uid}/contas/main
-                    usuario.inicializarNovosDados();
-
-                    Toast.makeText(CadastroActivity.this, "Sucesso ao cadastrar usuario!", Toast.LENGTH_SHORT).show();
-                    abrirTelaHome();
-
-                }else {
-
-                    String excecao = "";
-                    try {
-                        throw task.getException();
-                    }catch ( FirebaseAuthWeakPasswordException e){
-                        excecao = "Digite uma senha mais forte!";
-                    }catch (FirebaseAuthInvalidCredentialsException e){
-                        excecao = "Por favor, digite um e-mail válido";
-                    }catch (FirebaseAuthUserCollisionException e){
-                        excecao = "Essa conta já foi cadastrada!";
-                    }catch (Exception e) {
-                        excecao = "Erro ao cadastrar usuário: " + e.getMessage();
-                        e.printStackTrace();
-                    }
-                    Toast.makeText(CadastroActivity.this, excecao, Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+    private void tratarErrosAuth(Task<AuthResult> task) {
+        String excecao = "";
+        try {
+            throw task.getException();
+        } catch (FirebaseAuthWeakPasswordException e) {
+            excecao = "Digite uma senha mais forte!";
+        } catch (FirebaseAuthInvalidCredentialsException e) {
+            excecao = "Por favor, digite um e-mail válido";
+        } catch (FirebaseAuthUserCollisionException e) {
+            excecao = "Esta conta já foi cadastrada!";
+        } catch (Exception e) {
+            excecao = "Erro ao cadastrar: " + e.getMessage();
+            e.printStackTrace();
+        }
+        Toast.makeText(CadastroActivity.this, excecao, Toast.LENGTH_SHORT).show();
     }
 
     public void abrirTelaHome() {
