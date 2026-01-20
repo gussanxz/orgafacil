@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions; // Importante para o merge
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
@@ -108,11 +109,19 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     // Como o layout é reaproveitado, ambos os botões chamam métodos aqui.
     // Você pode ligar o "onClick" do botão Salvar no XML para um desses métodos.
+
+    // ATENÇÃO: Verifique se no seu XML o onClick está como "salvarDespesa" ou "salvarDespesas"
     public void salvarDespesa(View view) {
         confirmarEdicao();
     }
 
+    // ATENÇÃO: Verifique se no seu XML o onClick está como "salvarProvento" ou "salvarProventos"
     public void salvarProvento(View view) {
+        confirmarEdicao();
+    }
+
+    // Método auxiliar caso o XML esteja no plural (comum dar crash por isso)
+    public void salvarProventos(View view) {
         confirmarEdicao();
     }
 
@@ -163,10 +172,20 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         // --- LÓGICA DE MOVIMENTAÇÃO DE COLEÇÃO (MUDANÇA DE MÊS) ---
         if (!mesAnoNovo.equals(mesAnoAntigo)) {
             // Se mudou o mês, precisamos mover o documento para a nova coleção
-            DocumentReference refNova = fs.collection("users").document(uid)
+
+            // 1. Referência da PASTA DO MÊS NOVO
+            DocumentReference refPastaMesNovo = fs.collection("users").document(uid)
                     .collection("contas").document("main")
-                    .collection("movimentacoes").document(mesAnoNovo)
-                    .collection("itens").document(keyFirebase); // Mantém o mesmo ID
+                    .collection("movimentacoes").document(mesAnoNovo);
+
+            // --- CRUCIAL: Criar a pasta do mês para evitar "Documento Fantasma" ---
+            Map<String, Object> dadosMes = new HashMap<>();
+            dadosMes.put("mesAno", mesAnoNovo);
+            batch.set(refPastaMesNovo, dadosMes, SetOptions.merge());
+            // ---------------------------------------------------------------------
+
+            // 2. Referência do item dentro do novo mês
+            DocumentReference refNova = refPastaMesNovo.collection("itens").document(keyFirebase); // Mantém o mesmo ID
 
             batch.delete(refAntiga); // Deleta do mês antigo
             batch.set(refNova, dadosAtualizados); // Cria no mês novo

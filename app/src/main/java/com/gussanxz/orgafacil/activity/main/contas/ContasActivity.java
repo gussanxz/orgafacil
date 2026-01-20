@@ -542,60 +542,59 @@ public class ContasActivity extends AppCompatActivity {
     public void recuperarMovimentacoes() {
         if (uid == null) return;
 
+        // Limpa a lista antes de buscar
         movimentacoes.clear();
+
+        Log.e("DEBUG_ORGA", "=== INICIANDO BUSCA ===");
+        Log.e("DEBUG_ORGA", "Procurando em: users/" + uid + "/contas/main/movimentacoes");
 
         fs.collection("users").document(uid)
                 .collection("contas").document("main")
                 .collection("movimentacoes")
                 .get()
                 .addOnSuccessListener(mesesSnap -> {
+
+                    // 1. Verificando se achou as pastas dos meses (ex: 012026)
+                    Log.e("DEBUG_ORGA", "Pastas de meses encontradas: " + mesesSnap.size());
+
                     if (mesesSnap.isEmpty()) {
+                        Log.e("DEBUG_ORGA", "ERRO: Nenhuma pasta de mês encontrada. O banco está vazio ou o caminho está errado.");
                         aplicarFiltroTextoEAtualizarLista();
                         return;
                     }
 
-                    final int totalMeses = mesesSnap.size();
-                    final int[] done = {0};
-
                     for (QueryDocumentSnapshot mesDoc : mesesSnap) {
-                        String mesAno = mesDoc.getId();
+                        String nomePastaMes = mesDoc.getId();
+                        Log.e("DEBUG_ORGA", " > Lendo pasta do mês: " + nomePastaMes);
 
+                        // 2. Buscando os itens dentro da pasta
                         mesDoc.getReference()
                                 .collection("itens")
-                                .orderBy("createdAt", Query.Direction.DESCENDING)
                                 .get()
                                 .addOnSuccessListener(itensSnap -> {
+
+                                    Log.e("DEBUG_ORGA", "   >> Itens dentro de " + nomePastaMes + ": " + itensSnap.size());
+
                                     for (QueryDocumentSnapshot d : itensSnap) {
-                                        Movimentacao m = new Movimentacao();
-                                        m.setKey(d.getId());
-                                        m.setMesAno(mesAno);
-                                        m.setCategoria(d.getString("categoria"));
-                                        m.setDescricao(d.getString("descricao"));
-                                        m.setData(d.getString("data"));
-                                        m.setHora(d.getString("hora"));
-                                        m.setTipo(d.getString("tipo"));
-                                        Double val = d.getDouble("valor");
-                                        if (val != null) m.setValor(val);
+                                        try {
+                                            Movimentacao m = d.toObject(Movimentacao.class);
+                                            m.setKey(d.getId());
+                                            m.setMesAno(nomePastaMes);
 
-                                        movimentacoes.add(m);
+                                            Log.e("DEBUG_ORGA", "      Item carregado: " + m.getDescricao() + " | Valor: " + m.getValor());
+                                            movimentacoes.add(m);
+                                        } catch (Exception e) {
+                                            Log.e("DEBUG_ORGA", "      ERRO AO CONVERTER: " + e.getMessage());
+                                        }
                                     }
 
-                                    done[0]++;
-                                    if (done[0] == totalMeses) {
-                                        aplicarFiltroTextoEAtualizarLista();
-                                    }
+                                    // Atualiza a tela a cada mês carregado
+                                    aplicarFiltroTextoEAtualizarLista();
                                 })
-                                .addOnFailureListener(e -> {
-                                    done[0]++;
-                                    if (done[0] == totalMeses) {
-                                        aplicarFiltroTextoEAtualizarLista();
-                                    }
-                                });
+                                .addOnFailureListener(e -> Log.e("DEBUG_ORGA", "Erro ao ler itens: " + e.getMessage()));
                     }
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao carregar movimentações", Toast.LENGTH_SHORT).show()
-                );
+                .addOnFailureListener(e -> Log.e("DEBUG_ORGA", "Erro fatal ao buscar meses: " + e.getMessage()));
     }
 
 //    private void removerListenerMovimentacoesSeExistir() {
@@ -608,18 +607,28 @@ public class ContasActivity extends AppCompatActivity {
     public void recuperarResumo() {
         if (uid == null) return;
 
-        // 1) Nome no perfil: users/{uid}.perfil.nome
+        // 1) Recuperar Nome: users/{uid} (campo "nome")
         fs.collection("users").document(uid)
                 .get()
                 .addOnSuccessListener(userDoc -> {
                     String nome = null;
-                    if (userDoc.exists() && userDoc.get("perfil") instanceof java.util.Map) {
-                        java.util.Map perfil = (java.util.Map) userDoc.get("perfil");
-                        Object n = perfil.get("nome");
-                        if (n != null) nome = n.toString();
+
+                    if (userDoc.exists()) {
+                        // CORREÇÃO: Pegamos o "nome" direto da raiz do documento
+                        nome = userDoc.getString("nome");
                     }
-                    if (nome == null || nome.trim().isEmpty()) nome = "usuário";
-                    textoSaudacao.setText("Ola, " + nome + "!");
+
+                    // Fallback: Se não tiver no banco (ex: login google novo), tenta pegar do Auth
+                    if (nome == null && autenticacao.getCurrentUser() != null) {
+                        nome = autenticacao.getCurrentUser().getDisplayName();
+                    }
+
+                    // Se ainda assim for nulo, usa um padrão
+                    if (nome == null || nome.trim().isEmpty()) {
+                        nome = "Usuário";
+                    }
+
+                    textoSaudacao.setText("Olá, " + nome + "!");
                 });
 
         // 2) Totais: users/{uid}/contas/main

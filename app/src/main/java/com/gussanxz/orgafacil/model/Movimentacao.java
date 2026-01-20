@@ -35,21 +35,27 @@ public class Movimentacao implements Serializable {
         this.setMesAno(mesAnoLocal);
 
         FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
-        WriteBatch batch = fs.batch(); // Inicia o pacote de gravação atômica
+        WriteBatch batch = fs.batch();
+
+        // 1. Referência da PASTA DO MÊS (O Fantasma)
+        DocumentReference mesRef = fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("movimentacoes").document(mesAnoLocal);
+
+        // --- CORREÇÃO AQUI: Criamos a pasta do mês oficialmente ---
+        // Isso garante que ela apareça na busca .get()
+        Map<String, Object> dadosMes = new HashMap<>();
+        dadosMes.put("mesAno", mesAnoLocal); // Opcional, só pra ter um campo
+        batch.set(mesRef, dadosMes, SetOptions.merge());
+        // ----------------------------------------------------------
 
         DocumentReference movRef;
-        if (this.getKey() != null && !this.getKey().isEmpty()) {
-            // É uma edição
-            movRef = fs.collection("users").document(uid)
-                    .collection("contas").document("main")
-                    .collection("movimentacoes").document(mesAnoLocal)
-                    .collection("itens").document(this.getKey());
+        boolean isNovo = (this.getKey() == null || this.getKey().isEmpty());
+
+        if (!isNovo) {
+            movRef = mesRef.collection("itens").document(this.getKey());
         } else {
-            // É novo: Gera ID automático
-            movRef = fs.collection("users").document(uid)
-                    .collection("contas").document("main")
-                    .collection("movimentacoes").document(mesAnoLocal)
-                    .collection("itens").document();
+            movRef = mesRef.collection("itens").document();
             this.setKey(movRef.getId());
         }
 
@@ -62,28 +68,25 @@ public class Movimentacao implements Serializable {
         doc.put("valor", this.getValor());
         doc.put("key", this.getKey());
         doc.put("mesAno", mesAnoLocal);
-        doc.put("createdAt", FieldValue.serverTimestamp()); // Usa Timestamp do servidor
+        doc.put("createdAt", FieldValue.serverTimestamp());
 
-        // Adiciona a gravação da movimentação no Batch
         batch.set(movRef, doc, SetOptions.merge());
 
-        // Atualizar o Saldo (users/{uid}/contas/main)
-        // Isso é CRUCIAL: O incremento acontece direto no servidor.
-        DocumentReference contaMainRef = fs.collection("users").document(uid)
-                .collection("contas").document("main");
+        if (isNovo) {
+            DocumentReference contaMainRef = fs.collection("users").document(uid)
+                    .collection("contas").document("main");
 
-        if ("r".equals(getTipo())) {
-            batch.update(contaMainRef, "proventosTotal", FieldValue.increment(getValor()));
-        } else if ("d".equals(getTipo())) {
-            batch.update(contaMainRef, "despesaTotal", FieldValue.increment(getValor()));
+            if ("r".equals(getTipo())) {
+                batch.update(contaMainRef, "proventosTotal", FieldValue.increment(getValor()));
+            } else if ("d".equals(getTipo())) {
+                batch.update(contaMainRef, "despesaTotal", FieldValue.increment(getValor()));
+            }
+            adicionarUltimosLancamentosNoBatch(batch, fs, uid);
         }
 
-        adicionarUltimosLancamentosNoBatch(batch, fs, uid);
-
-        // COMMIT: Envia tudo de uma vez
         batch.commit()
-                .addOnSuccessListener(unused -> Log.d("FireStore", "Movimentação, Saldo e Meta salvos com sucesso!"))
-                .addOnFailureListener(e -> Log.e("FireStore", "Erro crítico ao salvar batch", e));
+                .addOnSuccessListener(unused -> Log.d("FireStore", "Salvo com sucesso!"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao salvar", e));
     }
 
     // Metodo auxiliar para organizar o código (agora recebe o batch)

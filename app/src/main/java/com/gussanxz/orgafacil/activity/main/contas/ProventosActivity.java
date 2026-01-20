@@ -109,8 +109,6 @@ public class ProventosActivity extends AppCompatActivity {
             movimentacao.setHora(campoHora.getText().toString());
             movimentacao.setTipo("r");
 
-            atualizarProventosIncrement(valorRecuperado);
-
             movimentacao.salvar(uid, data);
             Toast.makeText(this, "Provento adicionado!", Toast.LENGTH_SHORT).show();
 
@@ -178,18 +176,6 @@ public class ProventosActivity extends AppCompatActivity {
                     Toast.makeText(this, "Erro ao carregar proventosTotal", Toast.LENGTH_SHORT).show();
                 });
     }
-
-    public void atualizarProventosIncrement(double valor) {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .update("proventosTotal", FieldValue.increment(valor))
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao atualizar proventosTotal", Toast.LENGTH_SHORT).show()
-                );
-    }
-
 
     // =========================
     // 🔹 NOVO: BUSCAR ÚLTIMO PROVENTO NO FIREBASE E MOSTRAR POPUP
