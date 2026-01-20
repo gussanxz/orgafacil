@@ -8,7 +8,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,101 +15,89 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+
+// --- IMPORTS FIRESTORE / REPOSITORY ---
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.adapter.AdapterCategoriaVendas;
 import com.gussanxz.orgafacil.model.Categoria;
+import com.gussanxz.orgafacil.repository.CategoriaRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ListaCategoriasActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
 
+    // Componentes Visuais
     private RecyclerView recyclerCategorias;
-    private AdapterCategoriaVendas adapter;
-    private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
-    private List<Categoria> listaFiltrada = new ArrayList<>();
     private LinearLayout emptyState;
-
-    // Filtros
     private TextInputEditText editBusca;
     private ChipGroup chipGroupFiltro;
 
-    // Firebase
-    private DatabaseReference mDatabase;
-    private FirebaseAuth mAuth;
-    private ValueEventListener eventListenerRef;
-    private DatabaseReference categoriasRef;
+    // Dados e Adaptador
+    private AdapterCategoriaVendas adapter;
+    private final List<Categoria> listaCategoriasTotal = new ArrayList<>(); // Fonte da verdade (Todos os dados)
+    private final List<Categoria> listaFiltrada = new ArrayList<>();        // Dados exibidos (Filtrados)
+
+    // --- REPOSITÓRIO E LISTENER ---
+    private CategoriaRepository repository;
+    private ListenerRegistration listenerRegistration; // Variável para controlar o "ouvido" do banco
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
-        // Configurações iniciais
+        // 1. Inicializa o Repositório
+        repository = new CategoriaRepository();
+
+        // 2. Configura a tela
         inicializarComponentes();
-        configurarFirebase();
         configurarRecyclerView();
         configurarListenerDeFiltro();
-
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        recuperarCategoriasDoFirebase();
+        // 3. Ao abrir a tela, começa a escutar o banco em Tempo Real
+        recuperarCategoriasEmTempoReal();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (categoriasRef != null && eventListenerRef != null) {
-            categoriasRef.removeEventListener(eventListenerRef);
+        // 4. Ao sair da tela, PARA de escutar (Economiza bateria e dados)
+        if (listenerRegistration != null) {
+            listenerRegistration.remove();
+            listenerRegistration = null;
         }
     }
 
-    private void recuperarCategoriasDoFirebase() {
-        if (mAuth.getCurrentUser() == null) return;
-        String uid = mAuth.getCurrentUser().getUid();
+    // --- CONEXÃO COM O REPOSITÓRIO ---
 
-        // Caminho exato que definimos: vendas > uid > ID_USUARIO > cadastros > categorias
-        categoriasRef = mDatabase.child("vendas").child("uid").child(uid).child("cadastros").child("categorias");
-
-        eventListenerRef = categoriasRef.addValueEventListener(new ValueEventListener() {
+    private void recuperarCategoriasEmTempoReal() {
+        // O repositório sabe onde buscar (vendas_categorias). A Activity só recebe a lista pronta.
+        listenerRegistration = repository.listarTempoReal(new CategoriaRepository.ListaCallback() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+            public void onNovosDados(List<Categoria> lista) {
+                // Atualiza nossa lista total
                 listaCategoriasTotal.clear();
+                listaCategoriasTotal.addAll(lista);
 
-                for (DataSnapshot ds : snapshot.getChildren()) {
-                    Categoria cat = ds.getValue(Categoria.class);
-                    if (cat != null) {
-
-                        // Fallback: se o id não veio do objeto, usa a key do Firebase
-                        if (cat.getId() == null || cat.getId().trim().isEmpty()) {
-                            cat.setId(ds.getKey());
-                        }
-
-                        listaCategoriasTotal.add(cat);
-                    }
-                }
-
-                // Após baixar tudo, aplicamos os filtros atuais (texto + chips)
+                // Aplica os filtros (Busca/Chips) para atualizar a tela
                 filtrarDados();
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(ListaCategoriasActivity.this, "Erro ao carregar: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onErro(String erro) {
+                Toast.makeText(ListaCategoriasActivity.this, "Erro ao carregar: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // --- LÓGICA DO SWIPE (IGUAL CONTAS ACTIVITY) ---
+    // --- AÇÕES DO USUÁRIO (EDITAR / EXCLUIR) ---
+
     @Override
     public void onEditarClick(Categoria categoria) {
         Intent intent = new Intent(this, CadastroCategoriaActivity.class);
@@ -125,76 +112,57 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
     @Override
     public void onExcluirClick(Categoria categoria) {
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setTitle("Excluir Categoria");
-        alertDialog.setMessage("Tem certeza que deseja excluir a categoria: " + categoria.getNome() + "?");
-        alertDialog.setCancelable(false);
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir Categoria")
+                .setMessage("Tem certeza que deseja excluir: " + categoria.getNome() + "?")
+                .setCancelable(false)
+                .setPositiveButton("Confirmar", (dialog, which) -> {
 
-        alertDialog.setPositiveButton("Confirmar", (dialog, which) -> {
-            // Remove do Firebase
-            if (mAuth.getCurrentUser() != null && categoria.getId() != null) {
-                String uid = mAuth.getCurrentUser().getUid();
-                mDatabase.child("vendas")
-                          .child("uid")
-                          .child(uid)
-                          .child("cadastros")
-                          .child("categorias")
-                          .child(categoria.getId())
-                          .removeValue();
+                    // Chama o repositório para excluir
+                    repository.excluir(categoria.getId(), new CategoriaRepository.CategoriaCallback() {
+                        @Override
+                        public void onSucesso(String mensagem) {
+                            Toast.makeText(ListaCategoriasActivity.this, mensagem, Toast.LENGTH_SHORT).show();
+                            // Não precisamos recarregar nada manualmente.
+                            // O listener do onStart vai perceber a exclusão e atualizar a lista sozinho!
+                        }
 
-                Toast.makeText(this, "Categoria excluída!", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        alertDialog.setNegativeButton("Cancelar", null);
-        alertDialog.show();
-
+                        @Override
+                        public void onErro(String erro) {
+                            Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
-    // --- Lógica de Filtros  ---
+    // --- LÓGICA DE FILTROS (MANTIDA IGUAL) ---
+    // Essa lógica roda localmente no celular, sem gastar internet extra
+
     private void filtrarDados() {
-
-        // 1. Pega o texto digitado (minúsculo para facilitar a busca)
-        String textoDigitado = "";
-        if (editBusca.getText() != null) {
-            textoDigitado = editBusca.getText().toString().toLowerCase();
-        }
-
-        // 2. Pega qual Chip está marcado
+        String texto = (editBusca.getText() != null) ? editBusca.getText().toString().toLowerCase() : "";
         int chipId = chipGroupFiltro.getCheckedChipId();
 
-        // --- CORREÇÃO AQUI ---
-        // NÃO crie uma nova lista (List<Categoria> lista = new...).
-        // Limpe a lista GLOBAL para receber os novos dados.
-        this.listaFiltrada.clear();
+        listaFiltrada.clear();
 
-        // 3. Loop na lista TOTAL para decidir quem entra na lista FILTRADA
         for (Categoria c : listaCategoriasTotal) {
+            // 1. Filtro de Texto
+            boolean matchTexto = c.getNome().toLowerCase().contains(texto) ||
+                    c.getDescricao().toLowerCase().contains(texto);
 
-            // A. Verificação de Texto (Nome ou Descrição)
-            boolean matchTexto = c.getNome().toLowerCase().contains(textoDigitado) ||
-                    c.getDescricao().toLowerCase().contains(textoDigitado);
+            // 2. Filtro de Status (Ativo/Inativo)
+            boolean matchStatus = true;
+            if (chipId == R.id.chipAtivas) matchStatus = c.isAtiva();
+            else if (chipId == R.id.chipInativas) matchStatus = !c.isAtiva();
 
-            // B. Verificação do Chip (Todas, Ativas ou Inativas)
-            boolean matchStatus = true; // Por padrão aceita tudo (Chip Todas)
-
-            if (chipId == R.id.chipAtivas) {
-                matchStatus = c.isAtiva(); // Só aceita se for true
-            } else if (chipId == R.id.chipInativas) {
-                matchStatus = !c.isAtiva(); // Só aceita se for false
-            }
-            // Se for R.id.chipTodas, matchStatus continua true pra sempre
-
-            // C. Se passar nos DOIS testes, adiciona na lista final
+            // 3. Se passou em tudo, adiciona
             if (matchTexto && matchStatus) {
                 listaFiltrada.add(c);
             }
         }
 
-        // 4. Manda a lista filtrada para o Adapter
         adapter.setListaFiltrada(listaFiltrada);
-
-        // 5. Controla o desenho de "Nenhum item encontrado"
         atualizarEmptyState(listaFiltrada.isEmpty());
     }
 
@@ -209,37 +177,22 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     }
 
     private void configurarListenerDeFiltro() {
-        // Listener para o Texto de Busca
         editBusca.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filtrarDados(); // Chama o filtro a cada letra digitada
-            }
-            @Override
-            public void afterTextChanged(Editable s) {}
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filtrarDados(); }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
-        // Listener para quando CLICAR NOS BOTÕES (CHIPS)
-        chipGroupFiltro.setOnCheckedChangeListener((group, checkedId) -> {
-            filtrarDados(); // Chama o filtro quando troca o botão
-        });
+        chipGroupFiltro.setOnCheckedChangeListener((group, checkedId) -> filtrarDados());
     }
 
-    // --- Configurações Básicas ---
+    // --- CONFIGURAÇÕES BÁSICAS ---
 
     private void configurarRecyclerView() {
-
-        // Começa com lista vazia, mas tipada corretamente
-        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this,this);
+        // Inicializa o adapter com lista vazia. Ele será preenchido pelo filtrarDados()
+        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this, this);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
-    }
-
-    private void configurarFirebase() {
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-        mAuth = FirebaseAuth.getInstance();
     }
 
     private void inicializarComponentes() {
@@ -249,7 +202,6 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         emptyState = findViewById(R.id.emptyState);
     }
 
-    // Métodos dos botões
     public void acessarCadastroCategoria(View view) {
         startActivity(new Intent(this, CadastroCategoriaActivity.class));
     }
