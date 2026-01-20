@@ -153,28 +153,48 @@ public class ContasActivity extends AppCompatActivity {
         String texto = searchView.getQuery().toString();
         List<Movimentacao> temp = new ArrayList<>();
 
+        // Variáveis para recalcular o saldo da tela
+        double totalReceitasFiltradas = 0.0;
+        double totalDespesasFiltradas = 0.0;
+
         for (Movimentacao m : listaCompleta) {
-            // Filtro de Data
+            // 1. Aplica Filtro de Data
             if (!estaNoPeriodo(m)) continue;
 
-            // Filtro de Texto
+            // 2. Aplica Filtro de Texto (Busca)
             if (texto.isEmpty() ||
                     m.getDescricao().toLowerCase().contains(texto.toLowerCase()) ||
                     m.getCategoria().toLowerCase().contains(texto.toLowerCase())) {
+
+                // Se passou nos filtros, adiciona na lista visual
                 temp.add(m);
+
+                // --- A MÁGICA: SOMA O VALOR AQUI ---
+                if ("r".equals(m.getTipo())) {
+                    totalReceitasFiltradas += m.getValor();
+                } else {
+                    totalDespesasFiltradas += m.getValor();
+                }
             }
         }
 
-        // Atualiza Adapter
+        // 3. Atualiza o Adapter (Lista visual)
         itensAgrupados.clear();
         itensAgrupados.addAll(MovimentacoesGrouper.agruparPorDiaOrdenar(temp));
         adapterAgrupado.notifyDataSetChanged();
 
-        // Atualiza legenda do saldo
+        // 4. Atualiza o TEXTO DO SALDO com o valor recalculado
+        double saldoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
+        DecimalFormat df = new DecimalFormat("0.##");
+        textoSaldo.setText("R$ " + df.format(saldoFiltrado));
+
+        // 5. Atualiza a legenda para o usuário saber o que está vendo
         if (dataInicialSelecionada != null) {
-            textoSaldoLegenda.setText("Saldo do período filtrado");
+            textoSaldoLegenda.setText("Saldo do período");
+        } else if (!texto.isEmpty()) {
+            textoSaldoLegenda.setText("Saldo da pesquisa");
         } else {
-            textoSaldoLegenda.setText("Saldo atual");
+            textoSaldoLegenda.setText("Saldo total"); // Sem filtros
         }
     }
 
