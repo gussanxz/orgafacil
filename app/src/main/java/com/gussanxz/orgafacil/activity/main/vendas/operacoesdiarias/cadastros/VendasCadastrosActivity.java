@@ -51,7 +51,9 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         int[] idsBloqueados = {
                 R.id.overlayClientes,
                 R.id.overlayFornecedores,
-                R.id.overlayVendedores
+                R.id.overlayVendedores,
+                R.id.overlayCombos,
+                R.id.overlayModificadores
         };
 
         // Loop para aplicar o listener em todos
@@ -73,14 +75,14 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void exibirCadastroCombos(View view) {
-        Intent intent = new Intent(this, CadastroComboActivity.class);
-        startActivity(intent);
-    }
-
-    public void exibirCadastroModificadores(View view) {
-        Intent intent = new Intent(this, CadastroModificadorActivity.class);
-        startActivity(intent);
-    }
+//    public void exibirCadastroCombos(View view) {
+//        Intent intent = new Intent(this, CadastroComboActivity.class);
+//        startActivity(intent);
+//    }
+//
+//    public void exibirCadastroModificadores(View view) {
+//        Intent intent = new Intent(this, CadastroModificadorActivity.class);
+//        startActivity(intent);
+//    }
 
 }
