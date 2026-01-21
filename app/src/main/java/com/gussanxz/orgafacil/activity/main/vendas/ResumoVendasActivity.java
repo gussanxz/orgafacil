@@ -12,12 +12,14 @@ import androidx.core.view.WindowInsetsCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.vendas.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
+import com.gussanxz.orgafacil.activity.main.vendas.gestaoerelatorios.VendasEmAbertoActivity;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 
 public class ResumoVendasActivity extends AppCompatActivity {
@@ -41,6 +43,16 @@ public class ResumoVendasActivity extends AppCompatActivity {
 
         // 2. Configuração dos botões bloqueados
         configurarBotoesBloqueados();
+
+        LinearLayout btnVendas = findViewById(R.id.cardVendas);
+
+        // 2. Define o clique via código (Muito mais seguro!)
+        if (btnVendas != null) {
+            btnVendas.setOnClickListener(view -> {
+                // Chama o seu método aqui
+                acessarVendasEmAbertoActivity(view);
+            });
+        }
 
     }
 
@@ -66,9 +78,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
         // Lista com todos os IDs dos overlays que criamos no XML
         int[] idsBloqueados = {
                 R.id.overlayStatusCaixa,
-                R.id.overlayPedidosAbertos,
                 R.id.overlayCatalogo,
-                R.id.overlayVendas,
                 R.id.overlayEstoque,
                 R.id.overlayDevolucoes,
                 R.id.overlayRelatorios,
@@ -92,6 +102,10 @@ public class ResumoVendasActivity extends AppCompatActivity {
     public void acessarRegistrarVendasActivity(View view) {
         startActivity(new Intent(this, RegistrarVendasActivity.class));
         Log.i(TAG, "acessou RegistrarVendasActivity");
+    }
+    public void acessarVendasEmAbertoActivity(View view) {
+        startActivity(new Intent(this, VendasEmAbertoActivity.class));
+        Log.i(TAG, "acessou VendasEmAbertoActivity");
     }
 
 }

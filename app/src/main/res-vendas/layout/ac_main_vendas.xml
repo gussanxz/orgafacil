@@ -254,16 +254,6 @@
                                 android:textStyle="bold" />
                         </LinearLayout>
 
-                        <ImageView
-                            android:id="@+id/overlayPedidosAbertos"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="#CC000000"
-                            android:src="@drawable/ic_lock_24"
-                            android:scaleType="center"
-                            app:tint="@android:color/white"
-                            android:visibility="visible"
-                            android:elevation="10dp"/>
                     </FrameLayout>
 
 
@@ -346,7 +336,9 @@
                             android:id="@+id/cardVendas"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true">
 
                             <ImageView
                                 android:layout_width="28dp"
@@ -367,16 +359,6 @@
                                 android:lines="3" />
                         </LinearLayout>
 
-                        <ImageView
-                            android:id="@+id/overlayVendas"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="#CC000000"
-                            android:src="@drawable/ic_lock_24"
-                            android:scaleType="center"
-                            app:tint="@android:color/white"
-                            android:visibility="visible"
-                            android:elevation="10dp"/>
                     </FrameLayout>
 
                     <FrameLayout
