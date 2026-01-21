@@ -100,7 +100,7 @@ public class LoginActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
                     // Delega o resultado para o Helper processar (Verificar novo usuário, pedir senha, etc)
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_LOGIN);
                 } else {
                     Toast.makeText(this, "Login Google cancelado.", Toast.LENGTH_SHORT).show();
                 }

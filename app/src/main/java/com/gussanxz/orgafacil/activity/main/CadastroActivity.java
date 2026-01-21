@@ -90,7 +90,7 @@ public class CadastroActivity extends AppCompatActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_CADASTRO);
                 }
             }
     );

@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.helper;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -25,6 +26,11 @@ public class GoogleLoginHelper {
     private GoogleSignInClient mGoogleSignInClient;
     private Runnable onSuccessCallback; // Ação para executar após sucesso (ex: abrir Home)
 
+    // Constantes para identificar de onde veio o clique
+    public static final int MODO_MISTO = 0;    // Tela Comece Agora
+    public static final int MODO_LOGIN = 1;    // Tela Login
+    public static final int MODO_CADASTRO = 2; // Tela Cadastro
+
     public GoogleLoginHelper(Activity activity, Runnable onSuccessCallback) {
         this.activity = activity;
         this.onSuccessCallback = onSuccessCallback;
@@ -46,39 +52,64 @@ public class GoogleLoginHelper {
         return mGoogleSignInClient.getSignInIntent();
     }
 
-    public void lidarComResultadoGoogle(Intent data) {
+    public void lidarComResultadoGoogle(Intent data, int modoOperacao) {
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
         try {
             GoogleSignInAccount account = task.getResult(ApiException.class);
-            firebaseAuthWithGoogle(account);
-        } catch (ApiException e) {
-            // Código 12501 é quando o usuário cancela a seleção, não precisa mostrar erro
-            if (e.getStatusCode() != 12501) {
-                Toast.makeText(activity, "Erro Google: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            if (account != null) {
+                firebaseAuthWithGoogle(account, modoOperacao);
             }
+        } catch (ApiException e) {
+            Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
+            Log.e("GoogleLogin", "Erro API", e);
         }
     }
 
-    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
+    private void firebaseAuthWithGoogle(GoogleSignInAccount acct, int modoOperacao) {
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
 
         autenticacao.signInWithCredential(credential)
                 .addOnCompleteListener(activity, task -> {
                     if (task.isSuccessful()) {
-                        FirebaseUser userFirebase = autenticacao.getCurrentUser();
+                        FirebaseUser user = autenticacao.getCurrentUser();
                         boolean isNovoUsuario = task.getResult().getAdditionalUserInfo().isNewUser();
 
+                        // --- LÓGICA DE MENSAGENS (TOASTS) ---
                         if (isNovoUsuario) {
-                            // --- CENÁRIO: NOVO USUÁRIO ---
-                            // Como removemos a senha, apenas salvamos os dados do Google no Firestore
-                            salvarNovoUsuarioGoogle(userFirebase);
+                            // Cenário: USUÁRIO NOVO
+                            switch (modoOperacao) {
+                                case MODO_MISTO:
+                                    Toast.makeText(activity, "Conta criada, novo usuário!", Toast.LENGTH_SHORT).show();
+                                    break;
+                                case MODO_LOGIN:
+                                    Toast.makeText(activity, "Usuário novo identificado, criando cadastro...", Toast.LENGTH_SHORT).show();
+                                    break;
+                                case MODO_CADASTRO:
+                                    Toast.makeText(activity, "Realizando cadastro!", Toast.LENGTH_SHORT).show();
+                                    break;
+                            }
+                            // Como é novo, SEMPRE salva no banco
+                            salvarNovoUsuarioGoogle(user);
+
                         } else {
-                            // --- CENÁRIO: USUÁRIO JÁ EXISTE ---
-                            // Apenas prossegue para o app
+                            // Cenário: USUÁRIO JÁ EXISTENTE
+                            switch (modoOperacao) {
+                                case MODO_MISTO:
+                                    Toast.makeText(activity, "Login realizado, bem-vindo!", Toast.LENGTH_SHORT).show();
+                                    break;
+                                case MODO_LOGIN:
+                                    Toast.makeText(activity, "Fazendo login...", Toast.LENGTH_SHORT).show();
+                                    break;
+                                case MODO_CADASTRO:
+                                    Toast.makeText(activity, "Usuário já cadastrado, fazendo login...", Toast.LENGTH_SHORT).show();
+                                    break;
+                            }
+                            // Usuário antigo apenas segue para a Home
                             if (onSuccessCallback != null) onSuccessCallback.run();
                         }
+
                     } else {
-                        Toast.makeText(activity, "Erro ao autenticar com Firebase.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Erro na autenticação.", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -86,19 +117,13 @@ public class GoogleLoginHelper {
     private void salvarNovoUsuarioGoogle(FirebaseUser userFirebase) {
         Usuario usuario = new Usuario();
         usuario.setIdUsuario(userFirebase.getUid());
-        usuario.setNome(userFirebase.getDisplayName());
+        usuario.setNome(userFirebase.getDisplayName() != null ? userFirebase.getDisplayName() : "Usuário");
         usuario.setEmail(userFirebase.getEmail());
-        // Não definimos senha (usuario.setSenha) pois é login Google puro
 
-        // Salva os dados básicos (Nome, Email) na coleção users/{uid}
         usuario.salvar();
-
-        // Inicializa a conta financeira (Saldo 0.00 e Categorias Padrão)
         usuario.inicializarNovosDados();
 
-        Toast.makeText(activity, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show();
-
-        // Chama o callback para ir para a Home
+        // Após salvar, chama o callback para ir para a Home
         if (onSuccessCallback != null) onSuccessCallback.run();
     }
 }
