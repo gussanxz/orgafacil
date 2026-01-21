@@ -12,6 +12,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
+
+        <activity
+            android:name=".activity.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.App.Starting"> <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".activity.main.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.OrgaFacil" />
+
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity"
             android:exported="false" />
@@ -93,16 +108,7 @@
         <activity
             android:name=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.servicos.CadastroServicoActivity"
             android:exported="false"></activity>
-        <activity
-            android:name=".activity.main.MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.OrgaFacil">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
         <activity
             android:name=".activity.main.CadastroActivity"
             android:exported="true" />

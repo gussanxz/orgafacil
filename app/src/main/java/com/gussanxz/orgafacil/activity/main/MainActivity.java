@@ -4,15 +4,18 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
@@ -24,6 +27,7 @@ public class MainActivity extends IntroActivity {
 
     private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper; // Instância do nosso novo Helper
+    private androidx.appcompat.app.AlertDialog dialogCarregando; // Variável do Loading
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,23 +37,37 @@ public class MainActivity extends IntroActivity {
         // Passamos "this" (a activity) e uma ação para executar quando o login der certo (abrirTelaHome)
         googleLoginHelper = new GoogleLoginHelper(this, this::abrirTelaHome);
 
-        verificarUsuarioLogado();
-
+        // Configuração da Intro
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
+        // Slides
         addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_1)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_2)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_3)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_4)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
                 .background(android.R.color.white)
                 .fragment(R.layout.ac_main_intro_comece_agora)
                 .canGoForward(false)
                 .build()
         );
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        verificarUsuarioLogado();
     }
 
     public void btEntrar(View view){
@@ -60,32 +78,23 @@ public class MainActivity extends IntroActivity {
         startActivity(new Intent(this, CadastroActivity.class));
     }
 
-    // --- LÓGICA GOOGLE SIMPLIFICADA ---
-
     public void btGoogle(View view) {
         // Usa o helper para pegar a intent
         resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
     }
 
+    // --- CALLBACK DO GOOGLE ---
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Passa o resultado para o helper resolver a lógica
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                    // Modo MISTO: Aceita tanto login quanto cadastro
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_MISTO);
                 }
             }
     );
 
-    // --- NAVEGAÇÃO E BIOMETRIA (MANTIDO) ---
-
-    public void verificarUsuarioLogado(){
-        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
-        if ( autenticacao.getCurrentUser() != null ){
-            abrirTelaHome();
-        }
-    }
-
+    // --- NAVEGAÇÃO E BIOMETRIA ---
     public void abrirTelaHome() {
         // Se a chamada vier de um callback do helper, garantimos que roda na Thread principal
         runOnUiThread(() -> {
@@ -140,4 +149,5 @@ public class MainActivity extends IntroActivity {
         SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
         return prefs.getBoolean("pin_obrigatorio", true);
     }
+
 }

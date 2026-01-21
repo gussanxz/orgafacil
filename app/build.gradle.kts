@@ -105,4 +105,6 @@ dependencies {
     implementation ("com.google.android.gms:play-services-auth:21.0.0")
     implementation("androidx.biometric:biometric:1.1.0")
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
 }
