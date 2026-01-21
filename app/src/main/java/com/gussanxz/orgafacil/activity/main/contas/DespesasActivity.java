@@ -142,32 +142,6 @@ public class DespesasActivity extends AppCompatActivity {
         }
     }
 
-    public void excluirDespesa(View view) {
-        if (!isEdicao || itemEmEdicao == null) return;
-
-        new AlertDialog.Builder(this)
-                .setTitle("Excluir Despesa")
-                .setMessage("Tem certeza que deseja apagar este lançamento?")
-                .setPositiveButton("Sim, excluir", (dialog, which) -> {
-
-                    // Usa o repositório para excluir
-                    repository.excluirMovimentacao(itemEmEdicao, new ContasRepository.SimplesCallback() {
-                        @Override
-                        public void onSucesso() {
-                            Toast.makeText(DespesasActivity.this, "Despesa removida!", Toast.LENGTH_SHORT).show();
-                            finish();
-                        }
-
-                        @Override
-                        public void onErro(String erro) {
-                            Toast.makeText(DespesasActivity.this, "Erro ao excluir: " + erro, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
     // --- SALVAR (ALTERADO PARA SUPORTAR EDIÇÃO) ---
 
     public void salvarDespesa(View view) {

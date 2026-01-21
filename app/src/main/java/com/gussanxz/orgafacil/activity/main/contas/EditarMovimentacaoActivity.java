@@ -256,4 +256,46 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             launcherCategoria.launch(intent);
         });
     }
+    public void excluirDespesa(View view) {
+        confirmarExclusao();
+    }
+
+    private void confirmarExclusao() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Excluir")
+                .setMessage("Deseja excluir este lançamento?")
+                .setPositiveButton("Excluir", (d, w) -> excluirNoFirestore())
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void excluirNoFirestore() {
+        WriteBatch batch = fs.batch();
+
+        String mesAno = movimentacaoAntiga.getMesAno();
+        if (mesAno == null) mesAno = DateCustom.mesAnoDataEscolhida(movimentacaoAntiga.getData());
+
+        DocumentReference refItem = fs.collection("users").document(uid)
+                .collection("contas").document("main")
+                .collection("movimentacoes").document(mesAno)
+                .collection("itens").document(keyFirebase);
+
+        DocumentReference contaMainRef = fs.collection("users").document(uid)
+                .collection("contas").document("main");
+
+        String campoTotal = "d".equals(movimentacaoAntiga.getTipo()) ? "despesaTotal" : "proventosTotal";
+
+        batch.delete(refItem);
+        batch.update(contaMainRef, campoTotal, FieldValue.increment(-valorAnterior));
+
+        batch.commit()
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Excluído!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao excluir: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+    }
 }
