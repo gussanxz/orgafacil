@@ -135,15 +135,17 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     private void configurarAlternanciaVisualizacao() {
         toggleVisualizacao.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
-                if (checkedId == R.id.btnVisualizacaoGrade) {
-                    // Muda para Grid com 2 colunas
+                boolean modoGrade = (checkedId == R.id.btnVisualizacaoGrade);
+
+                if (modoGrade) {
                     recyclerProdutos.setLayoutManager(new GridLayoutManager(this, 2));
-                } else if (checkedId == R.id.btnVisualizacaoLista) {
-                    // Muda para Lista padrão
+                } else {
                     recyclerProdutos.setLayoutManager(new LinearLayoutManager(this));
                 }
-                // Opcional: Se seu adapter tiver lógica visual diferente para grade, chame aqui:
-                // adapter.setModoGrade(checkedId == R.id.btnVisualizacaoGrade);
+                // Avisa o adapter para trocar o XML inflado (de Lista para Grade)
+                if (adapter != null) {
+                    adapter.setModoGrade(modoGrade);
+                }
             }
         });
     }

@@ -68,7 +68,7 @@
 
         <TextView
             android:id="@+id/textNomeItem"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:gravity="center"
@@ -77,14 +77,16 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:maxLines="2"
+            android:minLines="2"
             android:ellipsize="end"
+            app:layout_constrainedWidth="true"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cardIcone" />
 
         <TextView
             android:id="@+id/textDescricaoItem"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
@@ -93,6 +95,7 @@
             android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end"
+            app:layout_constrainedWidth="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

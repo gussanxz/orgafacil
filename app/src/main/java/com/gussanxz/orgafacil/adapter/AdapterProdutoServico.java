@@ -39,9 +39,10 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         this.listener = listener;
     }
 
+    // Chamado pela Activity quando o toggle muda
     public void setModoGrade(boolean ativarGrade) {
         this.isGridMode = ativarGrade;
-        notifyDataSetChanged();
+        notifyDataSetChanged(); // Força o RecyclerView a redesenhar tudo
     }
 
     public void atualizarLista(List<ItemVenda> novaLista) {
@@ -61,9 +62,11 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         LayoutInflater inflater = LayoutInflater.from(context);
 
         if (viewType == TYPE_GRADE) {
+            // Importante: Layout de Grade (Quadrado)
             View view = inflater.inflate(R.layout.item_venda_grade, parent, false);
             return new GradeViewHolder(view);
         } else {
+            // Importante: Layout de Lista (Horizontal)
             View view = inflater.inflate(R.layout.item_venda_lista, parent, false);
             return new ListaViewHolder(view);
         }
@@ -86,7 +89,56 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         return listaItens != null ? listaItens.size() : 0;
     }
 
-    // --- VIEWHOLDER PARA MODO GRADE (CARD QUADRADO) ---
+    // --- LÓGICA CENTRALIZADA DE VISUAL (O SEGREDO DA ORGANIZAÇÃO) ---
+    private void aplicarEstiloVisual(boolean isProduto, TextView txtTag, ImageView imgIcone, CardView cardIcone) {
+
+            int corDestaque; // Cor do Texto e da Tinta do Ícone
+            int corFundoElements = Color.WHITE; // Fundo Branco (fixo)
+
+            // Ícone FIXO de Câmera (Placeholder da futura foto)
+            int iconeRes = R.drawable.ic_camera_alt_120;
+
+            String textoTag;
+            int backgroundRes;
+
+            if (isProduto) {
+                // === PRODUTO: Laranja ===
+                corDestaque = Color.parseColor("#EF6C00");
+                textoTag = "PRODUTO";
+                backgroundRes = R.drawable.bg_tag_produto;
+            } else {
+                // === SERVIÇO: Azul Escuro ===
+                corDestaque = Color.parseColor("#1565C0");
+                textoTag = "SERVIÇO";
+                backgroundRes = R.drawable.bg_tag_servico;
+            }
+
+            // 1. Configura a Tag (Texto)
+            txtTag.setText(textoTag);
+            txtTag.setTextColor(corDestaque);
+            txtTag.setBackgroundResource(backgroundRes);
+
+            // Garante que o fundo da tag (shape) fique branco
+            if (txtTag.getBackground() != null) {
+                androidx.core.graphics.drawable.DrawableCompat.setTint(
+                        txtTag.getBackground(),
+                        corFundoElements
+                );
+            }
+
+            // 2. Configura o Ícone (Câmera Fixa)
+            imgIcone.setImageResource(iconeRes);
+
+            // AQUI ESTÁ O TRUQUE:
+            // Pintamos a câmera com a cor da categoria (Laranja ou Azul).
+            // Se quiser a câmera cinza (neutra), mude 'corDestaque' para Color.GRAY abaixo.
+            imgIcone.setColorFilter(corDestaque);
+
+            // 3. Configura o Fundo do Card do Ícone (Branco)
+            cardIcone.setCardBackgroundColor(corFundoElements);
+    }
+
+    // --- VIEWHOLDER: GRADE ---
     class GradeViewHolder extends RecyclerView.ViewHolder {
         TextView textNome, textDescricao, textPreco, textTipoTag;
         ImageView imageIcone;
@@ -95,9 +147,9 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         public GradeViewHolder(@NonNull View itemView) {
             super(itemView);
             textNome = itemView.findViewById(R.id.textNomeItem);
-            textDescricao = itemView.findViewById(R.id.textDescricaoItem); // Categoria
-            textPreco = itemView.findViewById(R.id.textPrecoItem); // Onde era status
-            textTipoTag = itemView.findViewById(R.id.textTipoTag); // Onde era o botão excluir
+            textDescricao = itemView.findViewById(R.id.textDescricaoItem);
+            textPreco = itemView.findViewById(R.id.textPrecoItem);
+            textTipoTag = itemView.findViewById(R.id.textTipoTag);
             imageIcone = itemView.findViewById(R.id.imageIcone);
             cardIcone = itemView.findViewById(R.id.cardIcone);
         }
@@ -105,34 +157,17 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         void bind(ItemVenda item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
-            String precoStr = NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco());
-            textPreco.setText(precoStr);
+            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
 
-            // Lógica para aplicar o Background e Cores
-            if (item.getTipo() == ItemVenda.TIPO_PRODUTO) {
-                // Configuração PRODUTO (Azul)
-                textTipoTag.setText("PRODUTO");
-                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorPrimary));
-                textTipoTag.setBackgroundResource(R.drawable.bg_tag_produto); // <--- AQUI APLICA O BG AZUL
-
-                imageIcone.setImageResource(R.drawable.ic_categorias_mercado_24);
-                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorPrimary));
-                cardIcone.setCardBackgroundColor(Color.parseColor("#E3F2FD"));
-
-            } else {
-                // Configuração SERVIÇO (Laranja)
-                textTipoTag.setText("SERVIÇO");
-                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorAccentProventos));
-                textTipoTag.setBackgroundResource(R.drawable.bg_tag_servico); // <--- AQUI APLICA O BG LARANJA
-
-                imageIcone.setImageResource(R.drawable.ic_categorias_ferramentas_24);
-                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorAccentProventos));
-                cardIcone.setCardBackgroundColor(Color.parseColor("#FFF3E0"));
-            }
+            // Usa o método centralizado
+            aplicarEstiloVisual(
+                    item.getTipo() == ItemVenda.TIPO_PRODUTO,
+                    textTipoTag, imageIcone, cardIcone
+            );
         }
     }
 
-    // --- VIEWHOLDER PARA MODO LISTA (CARD HORIZONTAL) ---
+    // --- VIEWHOLDER: LISTA ---
     class ListaViewHolder extends RecyclerView.ViewHolder {
         TextView textNome, textDescricao, textPreco, textTipoTag;
         ImageView imageIcone;
@@ -151,23 +186,13 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         void bind(ItemVenda item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
+            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
 
-            String precoStr = NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco());
-            textPreco.setText(precoStr);
-
-            if (item.getTipo() == ItemVenda.TIPO_PRODUTO) {
-                textTipoTag.setText("PRODUTO");
-                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorPrimary));
-                imageIcone.setImageResource(R.drawable.ic_categorias_mercado_24);
-                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorPrimary));
-                cardIcone.setCardBackgroundColor(Color.parseColor("#E3F2FD"));
-            } else {
-                textTipoTag.setText("SERVIÇO");
-                textTipoTag.setTextColor(ContextCompat.getColor(context, R.color.colorAccentProventos));
-                imageIcone.setImageResource(R.drawable.ic_categorias_ferramentas_24);
-                imageIcone.setColorFilter(ContextCompat.getColor(context, R.color.colorAccentProventos));
-                cardIcone.setCardBackgroundColor(Color.parseColor("#FFF3E0"));
-            }
+            // Usa o método centralizado
+            aplicarEstiloVisual(
+                    item.getTipo() == ItemVenda.TIPO_PRODUTO,
+                    textTipoTag, imageIcone, cardIcone
+            );
         }
     }
 }
