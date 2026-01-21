@@ -131,13 +131,6 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
                 context.startActivity(intent);
             });
 
-            // 2. CLIQUE LONGO -> EXCLUIR
-            itemView.setOnLongClickListener(v -> {
-                if (deleteListener != null) {
-                    deleteListener.onDeleteClick(mov);
-                }
-                return true; // Retorna true para consumir o evento e não acionar o clique simples depois
-            });
         }
     }
 }
