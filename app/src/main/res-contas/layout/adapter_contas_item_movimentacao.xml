@@ -21,14 +21,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingVertical="10dp"
-        android:paddingEnd="8dp"> <View
-        android:id="@+id/viewIndicadorCor"
-        android:layout_width="4dp"
-        android:layout_height="0dp"
-        android:background="#4CAF50"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:paddingEnd="12dp">
+
+        <View
+            android:id="@+id/viewIndicadorCor"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            android:background="#4CAF50"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardIconeConta"
@@ -55,7 +57,6 @@
             android:id="@+id/textAdapterValor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
             android:text="R$ 100,00"
             android:textColor="#00D39E"
             android:textStyle="bold"
@@ -63,20 +64,41 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageButton
-            android:id="@+id/btnExcluirConta"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="10dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_lixeira_excluir_24"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Excluir Conta"
-            app:tint="#9E9E9E"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textAdapterValor"
-            app:layout_constraintVertical_bias="1.0" />
+        <LinearLayout
+            android:id="@+id/layoutDataHora"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+
+            app:layout_constraintTop_toTopOf="@+id/textAdapterCategoria"
+            app:layout_constraintBottom_toBottomOf="@+id/textAdapterCategoria"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/textAdapterData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="21 jan"
+                android:textColor="#9E9E9E"
+                android:textSize="11sp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • "
+                android:textColor="#BDBDBD"
+                android:textSize="11sp"
+                android:layout_marginHorizontal="3dp"/>
+
+            <TextView
+                android:id="@+id/textAdapterHora"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12:00"
+                android:textColor="#9E9E9E"
+                android:textSize="11sp"/>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textAdapterTitulo"
@@ -109,44 +131,9 @@
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/layoutDataHora"
+            app:layout_constraintEnd_toStartOf="@+id/textAdapterValor"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"
             app:layout_constraintTop_toBottomOf="@+id/textAdapterTitulo" />
 
-        <LinearLayout
-            android:id="@+id/layoutDataHora"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginEnd="4dp"
-            app:layout_constraintBottom_toBottomOf="@+id/btnExcluirConta"
-            app:layout_constraintTop_toTopOf="@+id/btnExcluirConta"
-            app:layout_constraintEnd_toStartOf="@+id/btnExcluirConta">
-
-            <TextView
-                android:id="@+id/textAdapterData"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="21 jan"
-                android:textColor="#9E9E9E"
-                android:textSize="11sp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" "
-                android:textSize="11sp"/>
-
-            <TextView
-                android:id="@+id/textAdapterHora"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="12:00"
-                android:textColor="#9E9E9E"
-                android:textSize="11sp"/>
-        </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </com.google.android.material.card.MaterialCardView>

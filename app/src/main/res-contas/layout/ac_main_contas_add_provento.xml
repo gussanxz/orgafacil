@@ -196,21 +196,21 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@drawable/ic_confirmar_branco_24" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <Button
+    <ImageButton
         android:id="@+id/btnExcluir"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:backgroundTint="#F44336"
-        android:clickable="true"
-        android:onClick="excluirProvento"
-        android:text="Excluir"
-        android:textColor="@android:color/white"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_btn_excluir_circular"
+        android:src="@drawable/ic_lixeira_excluir_24"
+        android:contentDescription="Excluir"
+        android:elevation="6dp"
+        app:tint="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.221"
         app:layout_constraintStart_toStartOf="parent" />
 
 

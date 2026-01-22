@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.main.contas.EditarMovimentacaoActivity;
+import com.gussanxz.orgafacil.activity.main.contas.EditarMovimentacaoActivity; // Ajuste se necessário
 import com.gussanxz.orgafacil.model.Movimentacao;
 
 import java.text.NumberFormat;
@@ -25,18 +25,19 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     private final Context context;
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    // Interface para avisar a Activity que o usuário quer excluir
-    private final OnItemDeleteListener deleteListener;
+    // Listener para comunicação com a Activity
+    private final OnItemActionListener listener;
 
-    public interface OnItemDeleteListener {
-        void onDeleteClick(Movimentacao movimentacao);
+    // Interface atualizada: Agora suporta DELETAR (via Swipe/Lixeira) e LONG CLICK
+    public interface OnItemActionListener {
+        void onDeleteClick(Movimentacao movimentacao); // Usado pelo Swipe
+        void onLongClick(Movimentacao movimentacao);   // Usado pelo Segurar
     }
 
-    // Construtor atualizado para receber o Listener
-    public MovimentosAgrupadosAdapter(Context context, List<MovimentoItem> itens, OnItemDeleteListener deleteListener) {
+    public MovimentosAgrupadosAdapter(Context context, List<MovimentoItem> itens, OnItemActionListener listener) {
         this.context = context;
         this.itens = itens;
-        this.deleteListener = deleteListener;
+        this.listener = listener;
     }
 
     @Override
@@ -53,11 +54,15 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+
         if (viewType == MovimentoItem.TYPE_HEADER) {
+            // Layout do Cabeçalho (Data)
             View v = inflater.inflate(R.layout.item_contas_header_dia, parent, false);
             return new HeaderViewHolder(v);
+
         } else {
-            View v = inflater.inflate(R.layout.adapter_contas_movimentacao, parent, false);
+            // Layout da Conta (O XML que limpamos e tiramos o botão)
+            View v = inflater.inflate(R.layout.adapter_contas_item_movimentacao, parent, false);
             return new MovimentoViewHolder(v);
         }
     }
@@ -123,14 +128,26 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
                 textValor.setTextColor(Color.parseColor("#00D39E"));
             }
 
-            // 1. CLIQUE SIMPLES -> EDITAR
+            // 1. CLIQUE CURTO -> EDITAR (Como já estava)
             itemView.setOnClickListener(v -> {
+                // Se preferir, pode passar via interface também: listener.onEditClick(mov);
+                // Mas deixar direto aqui funciona bem se a Activity de destino for fixa
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
                 intent.putExtra("keyFirebase", mov.getKey());
+                // Precisamos usar casting se quisermos usar o launcher da Activity principal,
+                // mas startActivity direto funciona (só não atualiza a lista ao voltar automaticamente sem o launcher)
+                // O ideal aqui seria usar uma interface para editar também, mas vamos manter simples:
                 context.startActivity(intent);
             });
 
+            // 2. CLIQUE LONGO -> EXCLUIR (NOVO!)
+            itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onLongClick(mov);
+                }
+                return true; // Retorna true para consumir o evento e não disparar o clique curto depois
+            });
         }
     }
 }

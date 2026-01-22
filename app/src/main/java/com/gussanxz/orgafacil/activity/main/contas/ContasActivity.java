@@ -2,10 +2,14 @@ package com.gussanxz.orgafacil.activity.main.contas;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -67,7 +71,6 @@ public class ContasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_lista_saldo);
 
-        // Configurações iniciais
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setTitle("OrgaFácil");
@@ -80,7 +83,6 @@ public class ContasActivity extends AppCompatActivity {
         configurarRecyclerView();
         configurarFiltros();
 
-        // Launcher para recarregar dados ao voltar da edição/criação
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -98,12 +100,10 @@ public class ContasActivity extends AppCompatActivity {
     // --- MÉTODOS DE DADOS ---
 
     private void carregarDados() {
-        // 1. Busca o Nome para saudação
         repository.recuperarResumo((saldo, nome) -> {
             textoSaudacao.setText("Olá, " + nome + "!");
         });
 
-        // 2. Busca Movimentações e calcula saldo localmente com filtros
         repository.recuperarMovimentacoes(new ContasRepository.DadosCallback() {
             @Override
             public void onSucesso(List<Movimentacao> lista) {
@@ -119,46 +119,68 @@ public class ContasActivity extends AppCompatActivity {
         });
     }
 
-    // --- EXCLUSÃO (SOBRECARGA DE MÉTODOS) ---
+    // --- EXCLUSÃO ---
 
-    // 1. Método Curto: Chamado pelo Adapter (Clique na Lixeira)
-    // Passamos -1 pois não há swipe visual para restaurar
     private void confirmarExclusao(Movimentacao mov) {
         confirmarExclusao(mov, -1);
     }
 
-    // 2. Método Longo: Chamado pelo Swipe e pelo método acima
     private void confirmarExclusao(Movimentacao mov, int positionParaRestaurar) {
-        new AlertDialog.Builder(this)
-                .setTitle("Excluir")
-                .setMessage("Deseja excluir: " + mov.getDescricao() + "?")
-                .setCancelable(false)
-                .setPositiveButton("Confirmar", (dialog, which) -> {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirmar_exclusao, null);
+        builder.setView(view);
 
-                    repository.excluirMovimentacao(mov, new ContasRepository.SimplesCallback() {
-                        @Override
-                        public void onSucesso() {
-                            Toast.makeText(ContasActivity.this, "Excluído!", Toast.LENGTH_SHORT).show();
-                            // Remove localmente para agilizar visual
-                            listaCompleta.removeIf(m -> m.getKey().equals(mov.getKey()));
-                            aplicarFiltros();
-                        }
+        AlertDialog dialog = builder.create();
 
-                        @Override
-                        public void onErro(String erro) {
-                            Toast.makeText(ContasActivity.this, "Erro ao excluir", Toast.LENGTH_SHORT).show();
-                            // Se falhar, restaura o item swipado
-                            if (positionParaRestaurar != -1) adapterAgrupado.notifyItemChanged(positionParaRestaurar);
-                        }
-                    });
-                })
-                .setNegativeButton("Cancelar", (dialog, which) -> {
-                    // Se cancelar, restaura o item swipado (fecha o fundo vermelho)
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        TextView textMensagem = view.findViewById(R.id.textMensagemDialog);
+        Button btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
+        Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
+
+        textMensagem.setText("Você deseja realmente excluir '" + mov.getDescricao() + "'?");
+
+        // BOTÃO CANCELAR
+        btnCancelar.setOnClickListener(v -> {
+            dialog.dismiss();
+            // Restaura visualmente o item (fade suave)
+            if (positionParaRestaurar != -1) {
+                adapterAgrupado.notifyItemChanged(positionParaRestaurar);
+            }
+        });
+
+        // BOTÃO EXCLUIR
+        btnConfirmar.setOnClickListener(v -> {
+            dialog.dismiss();
+            repository.excluirMovimentacao(mov, new ContasRepository.SimplesCallback() {
+                @Override
+                public void onSucesso() {
+                    Toast.makeText(ContasActivity.this, "Excluído!", Toast.LENGTH_SHORT).show();
+                    listaCompleta.removeIf(m -> m.getKey().equals(mov.getKey()));
+                    aplicarFiltros();
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                    // Se der erro, restaura o item
                     if (positionParaRestaurar != -1) {
                         adapterAgrupado.notifyItemChanged(positionParaRestaurar);
                     }
-                })
-                .show();
+                }
+            });
+        });
+
+        // SE CLICAR FORA (CANCELAR)
+        dialog.setOnCancelListener(d -> {
+            if (positionParaRestaurar != -1) {
+                adapterAgrupado.notifyItemChanged(positionParaRestaurar);
+            }
+        });
+
+        dialog.show();
     }
 
     // --- FILTROS E CÁLCULOS ---
@@ -187,12 +209,10 @@ public class ContasActivity extends AppCompatActivity {
             }
         }
 
-        // Atualiza Lista Visual (Adapter)
         itensAgrupados.clear();
         itensAgrupados.addAll(MovimentacoesGrouper.agruparPorDiaOrdenar(temp));
         adapterAgrupado.notifyDataSetChanged();
 
-        // Atualiza Textos de Saldo
         double saldoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
         DecimalFormat df = new DecimalFormat("0.##");
         textoSaldo.setText("R$ " + df.format(saldoFiltrado));
@@ -231,49 +251,74 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void configurarRecyclerView() {
-        adapterAgrupado = new MovimentosAgrupadosAdapter(this, itensAgrupados, this::confirmarExclusao);
+        adapterAgrupado = new MovimentosAgrupadosAdapter(this, itensAgrupados, new MovimentosAgrupadosAdapter.OnItemActionListener() {
+            @Override
+            public void onDeleteClick(Movimentacao movimentacao) {
+                confirmarExclusao(movimentacao);
+            }
+
+            @Override
+            public void onLongClick(Movimentacao movimentacao) {
+                confirmarExclusao(movimentacao);
+            }
+        });
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapterAgrupado);
 
-        // --- LÓGICA DO SWIPE (ARRASTAR) ---
+        // OBS: Removi o código que desligava as animações (SimpleItemAnimator).
+        // Isso fará o retorno do "Cancelar Exclusão" ser mais suave (Fade in/out) em vez de seco.
+
         SwipeCallback swipeHelper = new SwipeCallback(this) {
 
-            // === NOVO MÉTODO: TRAVA O ARRASTO ANTES DELE COMEÇAR ===
+            @Override
+            public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+                return 0.5f; // Padrão (arrastar metade)
+            }
+
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 int position = viewHolder.getAdapterPosition();
-
-                // Segurança
                 if (position < 0 || position >= itensAgrupados.size()) return 0;
 
-                MovimentoItem item = itensAgrupados.get(position);
-
-                // SE FOR CABEÇALHO (DATA), RETORNA 0 (NENHUM MOVIMENTO PERMITIDO)
-                if (item.type == MovimentoItem.TYPE_HEADER) {
-                    return 0; // 0 significa: travado, nem esquerda nem direita
+                // Trava cabeçalho
+                if (itensAgrupados.get(position).type == MovimentoItem.TYPE_HEADER) {
+                    return 0;
                 }
-
-                // SE FOR CONTA, SEGUE O PADRÃO (PERMITE SWIPE)
-                return super.getMovementFlags(recyclerView, viewHolder);
+                return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
             }
-            // =======================================================
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                viewHolder.itemView.setBackgroundColor(Color.TRANSPARENT);
+            }
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-
-                // (O resto da lógica continua igual, mas agora o Header nem chega aqui)
                 if (position < 0 || position >= itensAgrupados.size()) return;
 
                 MovimentoItem item = itensAgrupados.get(position);
+                if (item.type == MovimentoItem.TYPE_HEADER) {
+                    adapterAgrupado.notifyItemChanged(position);
+                    return;
+                }
+
                 Movimentacao mov = item.movimentacao;
 
-                if (direction == ItemTouchHelper.START) {
-                    // ESQUERDA -> EXCLUIR
+                if (direction == ItemTouchHelper.LEFT) {
+                    // EXCLUIR
                     confirmarExclusao(mov, position);
-                } else {
-                    // DIREITA -> EDITAR
+
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    // EDITAR
+
+                    // 1. Fecha o item IMEDIATAMENTE antes de sair
+                    // Isso evita que ele fique "aberto" (verde) quando você voltar
                     adapterAgrupado.notifyItemChanged(position);
+
+                    // 2. Abre a tela
                     abrirTelaEdicao(mov);
                 }
             }
@@ -283,20 +328,14 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void abrirTelaEdicao(Movimentacao movimentacao) {
-        Intent intent;
-        if ("d".equals(movimentacao.getTipo())) {
-            intent = new Intent(this, DespesasActivity.class);
-        } else {
-            intent = new Intent(this, ProventosActivity.class);
-        }
-
-        intent.putExtra("chave", movimentacao.getKey());
+        Intent intent = new Intent(this, com.gussanxz.orgafacil.activity.main.contas.EditarMovimentacaoActivity.class);
+        intent.putExtra("movimentacaoSelecionada", movimentacao);
+        intent.putExtra("keyFirebase", movimentacao.getKey());
         intent.putExtra("valor", movimentacao.getValor());
         intent.putExtra("categoria", movimentacao.getCategoria());
         intent.putExtra("descricao", movimentacao.getDescricao());
         intent.putExtra("data", movimentacao.getData());
         intent.putExtra("tipo", movimentacao.getTipo());
-
         launcher.launch(intent);
     }
 

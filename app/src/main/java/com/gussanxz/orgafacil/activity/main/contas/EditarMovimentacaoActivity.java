@@ -4,21 +4,27 @@ import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton; // Importante: ImageButton
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions; // Importante para o merge
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
@@ -34,7 +40,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
     private TextView textViewHeader;
-    private Movimentacao movimentacaoAntiga; // Dados originais
+    private ImageButton btnExcluir; // Referência para o botão de lixeira
+
+    private Movimentacao movimentacaoAntiga;
     private String keyFirebase;
     private double valorAnterior;
 
@@ -47,51 +55,57 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Recupera objeto vindo da ContasActivity
+        // Recupera dados
         movimentacaoAntiga = (Movimentacao) getIntent().getSerializableExtra("movimentacaoSelecionada");
         keyFirebase = getIntent().getStringExtra("keyFirebase");
 
-        // Define layout baseado no tipo
-        if (movimentacaoAntiga != null) {
-            if ("d".equals(movimentacaoAntiga.getTipo())) {
-                setContentView(R.layout.ac_main_contas_add_despesa);
-            } else {
-                setContentView(R.layout.ac_main_contas_add_provento);
-            }
-        } else {
-            finish(); // Segurança
+        if (movimentacaoAntiga == null) {
+            finish();
             return;
         }
 
-        // Configurações Iniciais
+        // Define layout
+        if ("d".equals(movimentacaoAntiga.getTipo())) {
+            setContentView(R.layout.ac_main_contas_add_despesa);
+        } else {
+            setContentView(R.layout.ac_main_contas_add_provento);
+        }
+
         fs = ConfiguracaoFirestore.getFirestore();
         uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        textViewHeader = findViewById(R.id.textViewHeader); // Verifique se existe no layout, ou remova
+        inicializarComponentes();
+        preencherDados();
+        configurarListeners();
+        configurarLauncherCategoria();
+    }
+
+    private void inicializarComponentes() {
+        textViewHeader = findViewById(R.id.textViewHeader);
         editData = findViewById(R.id.editData);
         editHora = findViewById(R.id.editHora);
         editDescricao = findViewById(R.id.editDescricao);
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
 
+        // VINCULA O BOTÃO PELO ID (Muito mais seguro que onClick no XML)
+        btnExcluir = findViewById(R.id.btnExcluir);
+
         if (textViewHeader != null) {
-            if ("d".equals(movimentacaoAntiga.getTipo())) {
-                textViewHeader.setText("Editar Despesa");
-            } else {
-                textViewHeader.setText("Editar Receita");
-            }
+            textViewHeader.setText("d".equals(movimentacaoAntiga.getTipo()) ? "Editar Despesa" : "Editar Receita");
         }
+    }
 
-        // Preenche os campos com os valores ANTIGOS
+    private void preencherDados() {
         valorAnterior = movimentacaoAntiga.getValor();
-
         editData.setText(movimentacaoAntiga.getData());
         editHora.setText(movimentacaoAntiga.getHora());
         editDescricao.setText(movimentacaoAntiga.getDescricao());
         editValor.setText(String.valueOf(valorAnterior));
         editCategoria.setText(movimentacaoAntiga.getCategoria());
+    }
 
-        // Listeners
+    private void configurarListeners() {
         editData.setFocusable(false);
         editData.setClickable(true);
         editData.setOnClickListener(v -> abrirDataPicker());
@@ -100,32 +114,21 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editHora.setClickable(true);
         editHora.setOnClickListener(v -> abrirTimePicker());
 
-        configurarLauncherCategoria();
+        // CONFIGURA O CLIQUE DO BOTÃO EXCLUIR NO JAVA
+        if (btnExcluir != null) {
+            btnExcluir.setOnClickListener(v -> confirmarExclusao());
+        }
     }
 
     public void retornarPrincipal(View view) {
         finish();
     }
 
-    // Como o layout é reaproveitado, ambos os botões chamam métodos aqui.
-    // Você pode ligar o "onClick" do botão Salvar no XML para um desses métodos.
+    // --- Métodos para Salvar (Chamados pelo XML dos FABs) ---
+    public void salvarDespesa(View view) { confirmarEdicao(); }
+    public void salvarProvento(View view) { confirmarEdicao(); }
+    public void salvarProventos(View view) { confirmarEdicao(); }
 
-    // ATENÇÃO: Verifique se no seu XML o onClick está como "salvarDespesa" ou "salvarDespesas"
-    public void salvarDespesa(View view) {
-        confirmarEdicao();
-    }
-
-    // ATENÇÃO: Verifique se no seu XML o onClick está como "salvarProvento" ou "salvarProventos"
-    public void salvarProvento(View view) {
-        confirmarEdicao();
-    }
-
-    // Método auxiliar caso o XML esteja no plural (comum dar crash por isso)
-    public void salvarProventos(View view) {
-        confirmarEdicao();
-    }
-
-    // Método único para processar a edição
     private void confirmarEdicao() {
         String novaData = editData.getText().toString();
         String novaDescricao = editDescricao.getText().toString();
@@ -139,21 +142,14 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         }
 
         double novoValor = Double.parseDouble(novoValorStr);
-
-        // 1. Calcula a diferença para ajustar o saldo
-        // Ex: Era 100, virou 120. Diferença = 20. (Soma 20 no total)
-        // Ex: Era 100, virou 80. Diferença = -20. (Subtrai 20 no total)
         double diferencaValor = novoValor - valorAnterior;
 
-        // 2. Prepara referências e Batch
         WriteBatch batch = fs.batch();
 
         String mesAnoAntigo = movimentacaoAntiga.getMesAno();
         if (mesAnoAntigo == null) mesAnoAntigo = DateCustom.mesAnoDataEscolhida(movimentacaoAntiga.getData());
-
         String mesAnoNovo = DateCustom.mesAnoDataEscolhida(novaData);
 
-        // Referência do documento antigo
         DocumentReference refAntiga = fs.collection("users").document(uid)
                 .collection("contas").document("main")
                 .collection("movimentacoes").document(mesAnoAntigo)
@@ -165,108 +161,70 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         dadosAtualizados.put("descricao", novaDescricao);
         dadosAtualizados.put("categoria", novaCategoria);
         dadosAtualizados.put("valor", novoValor);
-        dadosAtualizados.put("tipo", movimentacaoAntiga.getTipo()); // Tipo geralmente não muda
+        dadosAtualizados.put("tipo", movimentacaoAntiga.getTipo());
         dadosAtualizados.put("mesAno", mesAnoNovo);
         dadosAtualizados.put("key", keyFirebase);
 
-        // --- LÓGICA DE MOVIMENTAÇÃO DE COLEÇÃO (MUDANÇA DE MÊS) ---
         if (!mesAnoNovo.equals(mesAnoAntigo)) {
-            // Se mudou o mês, precisamos mover o documento para a nova coleção
-
-            // 1. Referência da PASTA DO MÊS NOVO
             DocumentReference refPastaMesNovo = fs.collection("users").document(uid)
                     .collection("contas").document("main")
                     .collection("movimentacoes").document(mesAnoNovo);
 
-            // --- CRUCIAL: Criar a pasta do mês para evitar "Documento Fantasma" ---
             Map<String, Object> dadosMes = new HashMap<>();
             dadosMes.put("mesAno", mesAnoNovo);
             batch.set(refPastaMesNovo, dadosMes, SetOptions.merge());
-            // ---------------------------------------------------------------------
 
-            // 2. Referência do item dentro do novo mês
-            DocumentReference refNova = refPastaMesNovo.collection("itens").document(keyFirebase); // Mantém o mesmo ID
-
-            batch.delete(refAntiga); // Deleta do mês antigo
-            batch.set(refNova, dadosAtualizados); // Cria no mês novo
+            DocumentReference refNova = refPastaMesNovo.collection("itens").document(keyFirebase);
+            batch.delete(refAntiga);
+            batch.set(refNova, dadosAtualizados);
         } else {
-            // Se é o mesmo mês, apenas atualiza
             batch.update(refAntiga, dadosAtualizados);
         }
 
-        // 3. Atualiza o Saldo Total (Atomicamente)
         DocumentReference contaMainRef = fs.collection("users").document(uid)
                 .collection("contas").document("main");
-
         String campoParaAtualizar = "d".equals(movimentacaoAntiga.getTipo()) ? "despesaTotal" : "proventosTotal";
 
-        // Incrementa a diferença (pode ser positiva ou negativa)
         if (diferencaValor != 0) {
             batch.update(contaMainRef, campoParaAtualizar, FieldValue.increment(diferencaValor));
         }
 
-        // 4. Executa
-        batch.commit()
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Atualizado com sucesso!", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK); // Avisa a ContasActivity para recarregar
-                    finish();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao atualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+        batch.commit().addOnSuccessListener(unused -> {
+            Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
+            finish();
+        }).addOnFailureListener(e -> Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
-    // --- Helpers de UI ---
-
-    private void abrirDataPicker() {
-        Calendar calendar = Calendar.getInstance();
-        // Tenta parsear a data atual do campo para abrir o calendário nela
-        try {
-            String[] parts = editData.getText().toString().split("/");
-            calendar.set(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]) - 1, Integer.parseInt(parts[0]));
-        } catch (Exception e) { /* fallback para hoje */ }
-
-        new DatePickerDialog(this, (view, year, month, day) -> {
-            String dataStr = String.format(Locale.getDefault(), "%02d/%02d/%04d", day, month + 1, year);
-            editData.setText(dataStr);
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
-    }
-
-    private void abrirTimePicker() {
-        Calendar calendar = Calendar.getInstance();
-        new TimePickerDialog(this, (view, hour, minute) -> {
-            String horaStr = String.format(Locale.getDefault(), "%02d:%02d", hour, minute);
-            editHora.setText(horaStr);
-        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show();
-    }
-
-    private void configurarLauncherCategoria() {
-        launcherCategoria = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        String cat = result.getData().getStringExtra("categoriaSelecionada");
-                        editCategoria.setText(cat);
-                    }
-                });
-
-        editCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaContasActivity.class);
-            launcherCategoria.launch(intent);
-        });
-    }
-    public void excluirDespesa(View view) {
-        confirmarExclusao();
-    }
-
+    // --- DIALOG CUSTOMIZADO ---
     private void confirmarExclusao() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Excluir")
-                .setMessage("Deseja excluir este lançamento?")
-                .setPositiveButton("Excluir", (d, w) -> excluirNoFirestore())
-                .setNegativeButton("Cancelar", null)
-                .show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // Verifique se o nome do arquivo XML do dialog está correto aqui:
+        // Se o arquivo for "dialog_exclusao.xml", troque abaixo.
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirmar_exclusao, null);
+
+        builder.setView(view);
+
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        TextView textMensagem = view.findViewById(R.id.textMensagemDialog);
+        Button btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
+        Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
+
+        textMensagem.setText("Você deseja realmente excluir '" + movimentacaoAntiga.getDescricao() + "'?");
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            dialog.dismiss();
+            excluirNoFirestore();
+        });
+
+        dialog.show();
     }
 
     private void excluirNoFirestore() {
@@ -297,5 +255,40 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Erro ao excluir: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
+    }
+
+    // --- Pickers & Categoria ---
+    private void abrirDataPicker() {
+        Calendar c = Calendar.getInstance();
+        try {
+            String[] p = editData.getText().toString().split("/");
+            c.set(Integer.parseInt(p[2]), Integer.parseInt(p[1]) - 1, Integer.parseInt(p[0]));
+        } catch (Exception e) { /* fallback */ }
+
+        new DatePickerDialog(this, (v, y, m, d) ->
+                editData.setText(String.format(Locale.getDefault(), "%02d/%02d/%04d", d, m + 1, y)),
+                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void abrirTimePicker() {
+        Calendar c = Calendar.getInstance();
+        new TimePickerDialog(this, (v, h, m) ->
+                editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m)),
+                c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
+    }
+
+    private void configurarLauncherCategoria() {
+        launcherCategoria = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        editCategoria.setText(result.getData().getStringExtra("categoriaSelecionada"));
+                    }
+                });
+
+        editCategoria.setOnClickListener(v -> {
+            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaContasActivity.class);
+            launcherCategoria.launch(intent);
+        });
     }
 }
