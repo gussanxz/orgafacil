@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.adapter.vendas;
 
 import android.content.Context;
 import android.graphics.Color;

@@ -20,7 +20,7 @@ import com.gussanxz.orgafacil.R;
 // Ajuste os imports abaixo conforme seus pacotes
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.produtos.CadastroProdutoActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.servicos.CadastroServicoActivity;
-import com.gussanxz.orgafacil.adapter.AdapterProdutoServico;
+import com.gussanxz.orgafacil.adapter.vendas.AdapterProdutoServico;
 import com.gussanxz.orgafacil.model.ItemVenda;
 import com.gussanxz.orgafacil.model.Produto;
 import com.gussanxz.orgafacil.model.Servico;

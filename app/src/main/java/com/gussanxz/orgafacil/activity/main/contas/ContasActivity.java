@@ -19,17 +19,18 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.main.LoginActivity;
 import com.gussanxz.orgafacil.activity.main.MainActivity;
 import com.gussanxz.orgafacil.adapter.MovimentoItem;
 import com.gussanxz.orgafacil.adapter.MovimentacoesGrouper;
 import com.gussanxz.orgafacil.adapter.MovimentosAgrupadosAdapter;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.helper.SwipeCallback;
 import com.gussanxz.orgafacil.model.Movimentacao;
 import com.gussanxz.orgafacil.repository.ContasRepository;
 
@@ -57,7 +58,7 @@ public class ContasActivity extends AppCompatActivity {
     private String dataInicialSelecionada, dataFinalSelecionada;
 
     // Dependências
-    private ContasRepository repository; // <--- A MÁGICA
+    private ContasRepository repository;
     private ActivityResultLauncher<Intent> launcher;
 
     @Override
@@ -73,12 +74,13 @@ public class ContasActivity extends AppCompatActivity {
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
-        repository = new ContasRepository(); // Instancia o repositório
+        repository = new ContasRepository();
 
         inicializarComponentes();
         configurarRecyclerView();
         configurarFiltros();
 
+        // Launcher para recarregar dados ao voltar da edição/criação
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -93,25 +95,20 @@ public class ContasActivity extends AppCompatActivity {
         carregarDados();
     }
 
-    // --- MÉTODOS PRINCIPAIS QUE FICARAM MUITO MENORES ---
+    // --- MÉTODOS DE DADOS ---
 
     private void carregarDados() {
-        // 1. Busca Apenas o Nome (O saldo será sobrescrito pelo filtro depois)
+        // 1. Busca o Nome para saudação
         repository.recuperarResumo((saldo, nome) -> {
             textoSaudacao.setText("Olá, " + nome + "!");
-            // Não precisamos mais setar o textoSaldo aqui,
-            // pois o "recuperarMovimentacoes" abaixo vai chamar o "aplicarFiltros"
-            // que vai calcular e exibir o saldo correto.
         });
 
-        // 2. Busca Movimentações
+        // 2. Busca Movimentações e calcula saldo localmente com filtros
         repository.recuperarMovimentacoes(new ContasRepository.DadosCallback() {
             @Override
             public void onSucesso(List<Movimentacao> lista) {
                 listaCompleta.clear();
                 listaCompleta.addAll(lista);
-
-                // Isso aqui vai rodar o código acima e exibir o saldo certo
                 aplicarFiltros();
             }
 
@@ -122,55 +119,66 @@ public class ContasActivity extends AppCompatActivity {
         });
     }
 
+    // --- EXCLUSÃO (SOBRECARGA DE MÉTODOS) ---
+
+    // 1. Método Curto: Chamado pelo Adapter (Clique na Lixeira)
+    // Passamos -1 pois não há swipe visual para restaurar
     private void confirmarExclusao(Movimentacao mov) {
+        confirmarExclusao(mov, -1);
+    }
+
+    // 2. Método Longo: Chamado pelo Swipe e pelo método acima
+    private void confirmarExclusao(Movimentacao mov, int positionParaRestaurar) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir")
                 .setMessage("Deseja excluir: " + mov.getDescricao() + "?")
+                .setCancelable(false)
                 .setPositiveButton("Confirmar", (dialog, which) -> {
 
-                    // Chama o repositório para excluir
                     repository.excluirMovimentacao(mov, new ContasRepository.SimplesCallback() {
                         @Override
                         public void onSucesso() {
                             Toast.makeText(ContasActivity.this, "Excluído!", Toast.LENGTH_SHORT).show();
-                            // Remove da lista localmente para ser rápido
+                            // Remove localmente para agilizar visual
                             listaCompleta.removeIf(m -> m.getKey().equals(mov.getKey()));
-                            carregarDados(); // Recarrega saldo
+                            aplicarFiltros();
                         }
 
                         @Override
                         public void onErro(String erro) {
                             Toast.makeText(ContasActivity.this, "Erro ao excluir", Toast.LENGTH_SHORT).show();
+                            // Se falhar, restaura o item swipado
+                            if (positionParaRestaurar != -1) adapterAgrupado.notifyItemChanged(positionParaRestaurar);
                         }
                     });
                 })
-                .setNegativeButton("Cancelar", null)
+                .setNegativeButton("Cancelar", (dialog, which) -> {
+                    // Se cancelar, restaura o item swipado (fecha o fundo vermelho)
+                    if (positionParaRestaurar != -1) {
+                        adapterAgrupado.notifyItemChanged(positionParaRestaurar);
+                    }
+                })
                 .show();
     }
 
-    // --- LÓGICA DE FILTROS (MANTIDA NA ACTIVITY POIS É VISUAL) ---
+    // --- FILTROS E CÁLCULOS ---
 
     private void aplicarFiltros() {
         String texto = searchView.getQuery().toString();
         List<Movimentacao> temp = new ArrayList<>();
 
-        // Variáveis para recalcular o saldo da tela
         double totalReceitasFiltradas = 0.0;
         double totalDespesasFiltradas = 0.0;
 
         for (Movimentacao m : listaCompleta) {
-            // 1. Aplica Filtro de Data
             if (!estaNoPeriodo(m)) continue;
 
-            // 2. Aplica Filtro de Texto (Busca)
             if (texto.isEmpty() ||
                     m.getDescricao().toLowerCase().contains(texto.toLowerCase()) ||
                     m.getCategoria().toLowerCase().contains(texto.toLowerCase())) {
 
-                // Se passou nos filtros, adiciona na lista visual
                 temp.add(m);
 
-                // --- A MÁGICA: SOMA O VALOR AQUI ---
                 if ("r".equals(m.getTipo())) {
                     totalReceitasFiltradas += m.getValor();
                 } else {
@@ -179,23 +187,22 @@ public class ContasActivity extends AppCompatActivity {
             }
         }
 
-        // 3. Atualiza o Adapter (Lista visual)
+        // Atualiza Lista Visual (Adapter)
         itensAgrupados.clear();
         itensAgrupados.addAll(MovimentacoesGrouper.agruparPorDiaOrdenar(temp));
         adapterAgrupado.notifyDataSetChanged();
 
-        // 4. Atualiza o TEXTO DO SALDO com o valor recalculado
+        // Atualiza Textos de Saldo
         double saldoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
         DecimalFormat df = new DecimalFormat("0.##");
         textoSaldo.setText("R$ " + df.format(saldoFiltrado));
 
-        // 5. Atualiza a legenda para o usuário saber o que está vendo
         if (dataInicialSelecionada != null) {
             textoSaldoLegenda.setText("Saldo do período");
         } else if (!texto.isEmpty()) {
             textoSaldoLegenda.setText("Saldo da pesquisa");
         } else {
-            textoSaldoLegenda.setText("Saldo total"); // Sem filtros
+            textoSaldoLegenda.setText("Saldo total");
         }
     }
 
@@ -210,7 +217,7 @@ public class ContasActivity extends AppCompatActivity {
         } catch (Exception e) { return true; }
     }
 
-    // --- CONFIGURAÇÕES DE UI ---
+    // --- UI SETUP ---
 
     private void inicializarComponentes() {
         textoSaudacao = findViewById(R.id.textSaudacao);
@@ -227,6 +234,70 @@ public class ContasActivity extends AppCompatActivity {
         adapterAgrupado = new MovimentosAgrupadosAdapter(this, itensAgrupados, this::confirmarExclusao);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapterAgrupado);
+
+        // --- LÓGICA DO SWIPE (ARRASTAR) ---
+        SwipeCallback swipeHelper = new SwipeCallback(this) {
+
+            // === NOVO MÉTODO: TRAVA O ARRASTO ANTES DELE COMEÇAR ===
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int position = viewHolder.getAdapterPosition();
+
+                // Segurança
+                if (position < 0 || position >= itensAgrupados.size()) return 0;
+
+                MovimentoItem item = itensAgrupados.get(position);
+
+                // SE FOR CABEÇALHO (DATA), RETORNA 0 (NENHUM MOVIMENTO PERMITIDO)
+                if (item.type == MovimentoItem.TYPE_HEADER) {
+                    return 0; // 0 significa: travado, nem esquerda nem direita
+                }
+
+                // SE FOR CONTA, SEGUE O PADRÃO (PERMITE SWIPE)
+                return super.getMovementFlags(recyclerView, viewHolder);
+            }
+            // =======================================================
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+
+                // (O resto da lógica continua igual, mas agora o Header nem chega aqui)
+                if (position < 0 || position >= itensAgrupados.size()) return;
+
+                MovimentoItem item = itensAgrupados.get(position);
+                Movimentacao mov = item.movimentacao;
+
+                if (direction == ItemTouchHelper.START) {
+                    // ESQUERDA -> EXCLUIR
+                    confirmarExclusao(mov, position);
+                } else {
+                    // DIREITA -> EDITAR
+                    adapterAgrupado.notifyItemChanged(position);
+                    abrirTelaEdicao(mov);
+                }
+            }
+        };
+
+        new ItemTouchHelper(swipeHelper).attachToRecyclerView(recyclerView);
+    }
+
+    private void abrirTelaEdicao(Movimentacao movimentacao) {
+        Intent intent;
+        if ("d".equals(movimentacao.getTipo())) {
+            intent = new Intent(this, DespesasActivity.class);
+        } else {
+            intent = new Intent(this, ProventosActivity.class);
+        }
+
+        intent.putExtra("chave", movimentacao.getKey());
+        intent.putExtra("valor", movimentacao.getValor());
+        intent.putExtra("categoria", movimentacao.getCategoria());
+        intent.putExtra("descricao", movimentacao.getDescricao());
+        intent.putExtra("data", movimentacao.getData());
+        intent.putExtra("tipo", movimentacao.getTipo());
+
+        launcher.launch(intent);
     }
 
     private void configurarFiltros() {
@@ -261,6 +332,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     // --- MENU ---
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_principal, menu);

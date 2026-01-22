@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterCategoriaContas;
+import com.gussanxz.orgafacil.adapter.contas.AdapterCategoriaContas;
 import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;

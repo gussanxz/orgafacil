@@ -8,18 +8,20 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 
-// --- IMPORTS FIRESTORE / REPOSITORY ---
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterCategoriaVendas;
+import com.gussanxz.orgafacil.adapter.vendas.AdapterCategoriaVendas;
+import com.gussanxz.orgafacil.helper.SwipeCallback; // Certifique-se que sua classe Helper está importada
 import com.gussanxz.orgafacil.model.Categoria;
 import com.gussanxz.orgafacil.repository.CategoriaRepository;
 
@@ -36,22 +38,20 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
     // Dados e Adaptador
     private AdapterCategoriaVendas adapter;
-    private final List<Categoria> listaCategoriasTotal = new ArrayList<>(); // Fonte da verdade (Todos os dados)
-    private final List<Categoria> listaFiltrada = new ArrayList<>();        // Dados exibidos (Filtrados)
+    private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
+    private final List<Categoria> listaFiltrada = new ArrayList<>();
 
-    // --- REPOSITÓRIO E LISTENER ---
+    // Repositório
     private CategoriaRepository repository;
-    private ListenerRegistration listenerRegistration; // Variável para controlar o "ouvido" do banco
+    private ListenerRegistration listenerRegistration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
-        // 1. Inicializa o Repositório
         repository = new CategoriaRepository();
 
-        // 2. Configura a tela
         inicializarComponentes();
         configurarRecyclerView();
         configurarListenerDeFiltro();
@@ -60,46 +60,108 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     @Override
     protected void onStart() {
         super.onStart();
-        // 3. Ao abrir a tela, começa a escutar o banco em Tempo Real
         recuperarCategoriasEmTempoReal();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // 4. Ao sair da tela, PARA de escutar (Economiza bateria e dados)
         if (listenerRegistration != null) {
             listenerRegistration.remove();
             listenerRegistration = null;
         }
     }
 
-    // --- CONEXÃO COM O REPOSITÓRIO ---
+    // --- LÓGICA CENTRALIZADA DE EXCLUSÃO ---
+    // Este método é usado tanto pelo botão de lixeira quanto pelo Swipe
+    private void confirmarExclusao(Categoria categoria, int positionParaRestaurar) {
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir Categoria")
+                .setMessage("Tem certeza que deseja excluir: " + categoria.getNome() + "?")
+                .setCancelable(false)
+                .setPositiveButton("Sim", (dialog, which) -> {
+                    // Chama o repositório
+                    repository.excluir(categoria.getId(), new CategoriaRepository.CategoriaCallback() {
+                        @Override
+                        public void onSucesso(String mensagem) {
+                            Toast.makeText(ListaCategoriasActivity.this, mensagem, Toast.LENGTH_SHORT).show();
+                            // O listener do onStart atualizará a lista automaticamente
+                        }
 
-    private void recuperarCategoriasEmTempoReal() {
-        // O repositório sabe onde buscar (vendas_categorias). A Activity só recebe a lista pronta.
-        listenerRegistration = repository.listarTempoReal(new CategoriaRepository.ListaCallback() {
-            @Override
-            public void onNovosDados(List<Categoria> lista) {
-                // Atualiza nossa lista total
-                listaCategoriasTotal.clear();
-                listaCategoriasTotal.addAll(lista);
-
-                // Aplica os filtros (Busca/Chips) para atualizar a tela
-                filtrarDados();
-            }
-
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(ListaCategoriasActivity.this, "Erro ao carregar: " + erro, Toast.LENGTH_SHORT).show();
-            }
-        });
+                        @Override
+                        public void onErro(String erro) {
+                            Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                            // Se deu erro, restaura o item swipado (se houver)
+                            if (positionParaRestaurar != -1) adapter.notifyItemChanged(positionParaRestaurar);
+                        }
+                    });
+                })
+                .setNegativeButton("Não", (dialog, which) -> {
+                    // SE O USUÁRIO CANCELAR E TIVER FEITO SWIPE, PRECISAMOS RESTAURAR O ITEM VISUALMENTE
+                    if (positionParaRestaurar != -1) {
+                        adapter.notifyItemChanged(positionParaRestaurar);
+                    }
+                })
+                .show();
     }
 
-    // --- AÇÕES DO USUÁRIO (EDITAR / EXCLUIR) ---
+    // --- MÉTODOS DA INTERFACE (Cliques no Item/Lixeira) ---
 
     @Override
     public void onEditarClick(Categoria categoria) {
+        abrirTelaEdicao(categoria);
+    }
+
+    @Override
+    public void onExcluirClick(Categoria categoria) {
+        // Ao clicar na lixeira, não temos posição de swipe para restaurar, então passamos -1
+        confirmarExclusao(categoria, -1);
+    }
+
+    // --- CONFIGURAÇÃO DO RECYCLER VIEW COM SWIPE ---
+
+    private void configurarRecyclerView() {
+        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this, this);
+        recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
+        recyclerCategorias.setAdapter(adapter);
+
+        // CONFIGURAÇÃO DO SWIPE
+        SwipeCallback swipeHelper = new SwipeCallback(this) {
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+
+                // Segurança contra lista vazia ou índices inválidos
+                if (adapter.getItemCount() == 0 || position < 0) return;
+
+                // Pega o objeto correto (considerando filtro)
+                Categoria categoriaSelecionada = listaFiltrada.isEmpty() ?
+                        listaCategoriasTotal.get(position) : listaFiltrada.get(position);
+
+                if (direction == ItemTouchHelper.START) {
+                    // --- SWIPE ESQUERDA (EXCLUIR) ---
+                    // Passamos a posição para que, se cancelar, o item volte pro lugar
+                    confirmarExclusao(categoriaSelecionada, position);
+
+                } else if (direction == ItemTouchHelper.END) {
+                    // --- SWIPE DIREITA (EDITAR) ---
+
+                    // 1. IMPORTANTE: Manda o item voltar pro lugar visualmente antes de trocar de tela
+                    // Assim, quando você voltar, a lista estará bonita e fechada.
+                    adapter.notifyItemChanged(position);
+
+                    // 2. Abre a tela de edição
+                    abrirTelaEdicao(categoriaSelecionada);
+                }
+            }
+        };
+
+        new ItemTouchHelper(swipeHelper).attachToRecyclerView(recyclerCategorias);
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
+    private void abrirTelaEdicao(Categoria categoria) {
         Intent intent = new Intent(this, CadastroCategoriaActivity.class);
         intent.putExtra("modoEditar", true);
         intent.putExtra("idCategoria", categoria.getId());
@@ -110,35 +172,21 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         startActivity(intent);
     }
 
-    @Override
-    public void onExcluirClick(Categoria categoria) {
-        new AlertDialog.Builder(this)
-                .setTitle("Excluir Categoria")
-                .setMessage("Tem certeza que deseja excluir: " + categoria.getNome() + "?")
-                .setCancelable(false)
-                .setPositiveButton("Confirmar", (dialog, which) -> {
+    private void recuperarCategoriasEmTempoReal() {
+        listenerRegistration = repository.listarTempoReal(new CategoriaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<Categoria> lista) {
+                listaCategoriasTotal.clear();
+                listaCategoriasTotal.addAll(lista);
+                filtrarDados();
+            }
 
-                    // Chama o repositório para excluir
-                    repository.excluir(categoria.getId(), new CategoriaRepository.CategoriaCallback() {
-                        @Override
-                        public void onSucesso(String mensagem) {
-                            Toast.makeText(ListaCategoriasActivity.this, mensagem, Toast.LENGTH_SHORT).show();
-                            // Não precisamos recarregar nada manualmente.
-                            // O listener do onStart vai perceber a exclusão e atualizar a lista sozinho!
-                        }
-
-                        @Override
-                        public void onErro(String erro) {
-                            Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
-
-    // --- LÓGICA DE FILTROS (MANTIDA IGUAL) ---
-    // Essa lógica roda localmente no celular, sem gastar internet extra
 
     private void filtrarDados() {
         String texto = (editBusca.getText() != null) ? editBusca.getText().toString().toLowerCase() : "";
@@ -147,16 +195,13 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         listaFiltrada.clear();
 
         for (Categoria c : listaCategoriasTotal) {
-            // 1. Filtro de Texto
             boolean matchTexto = c.getNome().toLowerCase().contains(texto) ||
                     c.getDescricao().toLowerCase().contains(texto);
 
-            // 2. Filtro de Status (Ativo/Inativo)
             boolean matchStatus = true;
             if (chipId == R.id.chipAtivas) matchStatus = c.isAtiva();
             else if (chipId == R.id.chipInativas) matchStatus = !c.isAtiva();
 
-            // 3. Se passou em tudo, adiciona
             if (matchTexto && matchStatus) {
                 listaFiltrada.add(c);
             }
@@ -184,15 +229,6 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         });
 
         chipGroupFiltro.setOnCheckedChangeListener((group, checkedId) -> filtrarDados());
-    }
-
-    // --- CONFIGURAÇÕES BÁSICAS ---
-
-    private void configurarRecyclerView() {
-        // Inicializa o adapter com lista vazia. Ele será preenchido pelo filtrarDados()
-        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this, this);
-        recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
-        recyclerCategorias.setAdapter(adapter);
     }
 
     private void inicializarComponentes() {

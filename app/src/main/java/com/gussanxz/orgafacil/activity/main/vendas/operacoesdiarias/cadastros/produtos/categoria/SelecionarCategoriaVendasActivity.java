@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterCategoriaVendas;
+import com.gussanxz.orgafacil.adapter.vendas.AdapterCategoriaVendas;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

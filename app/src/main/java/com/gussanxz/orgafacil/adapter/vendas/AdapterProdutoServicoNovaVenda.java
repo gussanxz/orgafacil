@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.adapter.vendas;
 
 import android.view.LayoutInflater;
 import android.view.View;

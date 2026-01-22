@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.adapter.contas;
 
 import android.app.Activity;
 import android.content.Context;

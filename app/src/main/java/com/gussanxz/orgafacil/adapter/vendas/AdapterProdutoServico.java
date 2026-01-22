@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.adapter.vendas;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -10,7 +10,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;

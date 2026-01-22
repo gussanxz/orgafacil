@@ -13,8 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.AdapterFiltroCategoriasNovaVenda;
-import com.gussanxz.orgafacil.adapter.AdapterProdutoServicoNovaVenda; // Import do novo Adapter
+import com.gussanxz.orgafacil.adapter.vendas.AdapterFiltroCategoriasNovaVenda;
+import com.gussanxz.orgafacil.adapter.vendas.AdapterProdutoServicoNovaVenda; // Import do novo Adapter
 import com.gussanxz.orgafacil.model.Categoria;
 import com.gussanxz.orgafacil.model.ItemVenda;
 
