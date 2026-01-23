@@ -68,7 +68,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         if ("d".equals(movimentacaoAntiga.getTipo())) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
-            setContentView(R.layout.ac_main_contas_add_provento);
+            setContentView(R.layout.ac_main_contas_add_receita);
         }
 
         fs = ConfiguracaoFirestore.getFirestore();

@@ -389,6 +389,6 @@ public class ContasActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void adicionarProventos(View v) { startActivity(new Intent(this, ProventosActivity.class)); }
+    public void adicionarReceita(View v) { startActivity(new Intent(this, ReceitasActivity.class)); }
     public void adicionarDespesa(View v) { startActivity(new Intent(this, DespesasActivity.class)); }
 }

@@ -80,7 +80,7 @@
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".activity.main.contas.ProventosActivity"
+            android:name=".activity.main.contas.ReceitasActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity

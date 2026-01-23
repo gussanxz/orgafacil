@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryProventos"
-    tools:context=".activity.main.contas.ProventosActivity">
+    tools:context=".activity.main.contas.ReceitasActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -34,7 +34,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:text="Adicionar Proventos"
+            android:text="Adicionar Receita"
             android:textAlignment="gravity"
             android:textColor="@color/white"
             android:textSize="20dp"

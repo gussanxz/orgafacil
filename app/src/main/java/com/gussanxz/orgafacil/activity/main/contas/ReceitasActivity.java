@@ -6,8 +6,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button; // IMPORTANTE
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -31,11 +31,11 @@ import com.gussanxz.orgafacil.repository.ContasRepository; // IMPORTANTE
 
 import java.util.Map;
 
-public class ProventosActivity extends AppCompatActivity {
+public class ReceitasActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
-    private Button btnExcluir; // NOVO BOTÃO
+    private ImageButton btnExcluir; // NOVO BOTÃO
 
     private Movimentacao movimentacao;
     private FirebaseFirestore fs;
@@ -51,7 +51,7 @@ public class ProventosActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.ac_main_contas_add_provento);
+        setContentView(R.layout.ac_main_contas_add_receita);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -72,11 +72,11 @@ public class ProventosActivity extends AppCompatActivity {
         // Configurar Listeners
         campoData.setFocusable(false);
         campoData.setClickable(true);
-        campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(ProventosActivity.this, campoData));
+        campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(ReceitasActivity.this, campoData));
 
         campoHora.setFocusable(false);
         campoHora.setClickable(true);
-        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(ProventosActivity.this, campoHora));
+        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(ReceitasActivity.this, campoHora));
 
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -88,7 +88,7 @@ public class ProventosActivity extends AppCompatActivity {
                 });
 
         campoCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(ProventosActivity.this, SelecionarCategoriaContasActivity.class);
+            Intent intent = new Intent(ReceitasActivity.this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
 
@@ -126,7 +126,7 @@ public class ProventosActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onErro(String erro) {
-                    Toast.makeText(ProventosActivity.this, "Erro ao atualizar: " + erro, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ReceitasActivity.this, "Erro ao atualizar: " + erro, Toast.LENGTH_SHORT).show();
                 }
             });
         } else {
@@ -152,13 +152,13 @@ public class ProventosActivity extends AppCompatActivity {
                     repository.excluirMovimentacao(itemEmEdicao, new ContasRepository.SimplesCallback() {
                         @Override
                         public void onSucesso() {
-                            Toast.makeText(ProventosActivity.this, "Provento removido!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ReceitasActivity.this, "Provento removido!", Toast.LENGTH_SHORT).show();
                             finish();
                         }
 
                         @Override
                         public void onErro(String erro) {
-                            Toast.makeText(ProventosActivity.this, "Erro ao excluir: " + erro, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ReceitasActivity.this, "Erro ao excluir: " + erro, Toast.LENGTH_SHORT).show();
                         }
                     });
                 })

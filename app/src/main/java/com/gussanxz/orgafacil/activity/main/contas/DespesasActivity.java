@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -36,7 +37,7 @@ public class DespesasActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
-    private Button btnExcluir;
+    private ImageButton btnExcluir;
     private Movimentacao movimentacao;
     private FirebaseFirestore fs;
     private ActivityResultLauncher<Intent> launcherCategoria;

@@ -121,36 +121,29 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     // --- CONFIGURAÇÃO DO RECYCLER VIEW COM SWIPE ---
 
     private void configurarRecyclerView() {
-        adapter = new AdapterCategoriaVendas(new ArrayList<>(), this, this);
+        // Passamos a lista filtrada (que começa vazia ou com dados) para o adapter
+        adapter = new AdapterCategoriaVendas(listaFiltrada, this, this);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
 
-        // CONFIGURAÇÃO DO SWIPE
         SwipeCallback swipeHelper = new SwipeCallback(this) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
 
-                // Segurança contra lista vazia ou índices inválidos
-                if (adapter.getItemCount() == 0 || position < 0) return;
+                if (position == RecyclerView.NO_POSITION) return;
 
-                // Pega o objeto correto (considerando filtro)
-                Categoria categoriaSelecionada = listaFiltrada.isEmpty() ?
-                        listaCategoriasTotal.get(position) : listaFiltrada.get(position);
+                // BUSCA SEMPRE NA LISTA QUE O ADAPTER ESTÁ USANDO (listaFiltrada)
+                Categoria categoriaSelecionada = listaFiltrada.get(position);
 
-                if (direction == ItemTouchHelper.START) {
-                    // --- SWIPE ESQUERDA (EXCLUIR) ---
-                    // Passamos a posição para que, se cancelar, o item volte pro lugar
+                // Use LEFT e RIGHT para bater com o desenho do SwipeCallback genérico
+                if (direction == ItemTouchHelper.LEFT) {
+                    // <--- ESQUERDA (EXCLUIR)
                     confirmarExclusao(categoriaSelecionada, position);
 
-                } else if (direction == ItemTouchHelper.END) {
-                    // --- SWIPE DIREITA (EDITAR) ---
-
-                    // 1. IMPORTANTE: Manda o item voltar pro lugar visualmente antes de trocar de tela
-                    // Assim, quando você voltar, a lista estará bonita e fechada.
-                    adapter.notifyItemChanged(position);
-
-                    // 2. Abre a tela de edição
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    // ---> DIREITA (EDITAR)
+                    adapter.notifyItemChanged(position); // Fecha o swipe visualmente
                     abrirTelaEdicao(categoriaSelecionada);
                 }
             }

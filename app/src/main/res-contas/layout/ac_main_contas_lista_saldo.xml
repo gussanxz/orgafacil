@@ -44,7 +44,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <Button
-            android:id="@+id/btnDespesa"
+            android:id="@+id/btnNovaDespesa"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -56,7 +56,7 @@
             android:onClick="adicionarDespesa"/>
 
         <Button
-            android:id="@+id/btnProventos"
+            android:id="@+id/btnNovaReceita"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -65,7 +65,7 @@
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:backgroundTint="@color/colorPrimaryProventos"
-            android:onClick="adicionarProventos"/>
+            android:onClick="adicionarReceita"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
