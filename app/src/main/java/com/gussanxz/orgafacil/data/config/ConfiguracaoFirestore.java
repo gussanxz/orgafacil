@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.config;
+package com.gussanxz.orgafacil.data.config;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;

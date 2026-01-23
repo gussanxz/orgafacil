@@ -16,8 +16,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.model.Usuario;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.model.Usuario;
 
 public class GoogleLoginHelper {
 

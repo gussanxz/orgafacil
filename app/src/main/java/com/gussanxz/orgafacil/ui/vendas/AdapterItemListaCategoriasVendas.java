@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter.vendas;
+package com.gussanxz.orgafacil.ui.vendas;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -13,11 +13,25 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.Categoria;
+import com.gussanxz.orgafacil.data.model.Categoria;
 
 import java.util.List;
 
-public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategoriaVendas.MyViewHolder> {
+/**
+ * ADAPTER: AdapterCategoriaVendas
+ *
+ * RESPONSABILIDADE:
+ * Atuar como intermediário entre a lista de dados (Categorias) e a interface do usuário (RecyclerView).
+ * Faz parte da camada de UI (User Interface).
+ *
+ * O QUE ELA FAZ:
+ * 1. Converte objetos do tipo 'Categoria' em itens visuais na lista de vendas.
+ * 2. Gerencia a exibição dinâmica de ícones, nomes e status (Ativa/Inativa).
+ * 3. Notifica a Activity/Fragment sobre ações do usuário (Editar/Excluir) via Interface Callback.
+ * 4. Suporta filtragem de dados em tempo real através do metodo 'setListaFiltrada'.
+ */
+
+public class AdapterItemListaCategoriasVendas extends RecyclerView.Adapter<AdapterItemListaCategoriasVendas.MyViewHolder> {
 
     private List<Categoria> listaCategorias;
     private final Context context;
@@ -29,7 +43,7 @@ public class AdapterCategoriaVendas extends RecyclerView.Adapter<AdapterCategori
         void onExcluirClick(Categoria categoria);
     }
 
-    public AdapterCategoriaVendas(List<Categoria> listaCategorias, Context context, OnCategoriaActionListener listener) {
+    public AdapterItemListaCategoriasVendas(List<Categoria> listaCategorias, Context context, OnCategoriaActionListener listener) {
         this.listaCategorias = listaCategorias;
         this.context = context;
         this.listener = listener;

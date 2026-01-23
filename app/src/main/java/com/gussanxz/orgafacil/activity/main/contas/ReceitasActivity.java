@@ -23,11 +23,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.DatePickerHelper;
-import com.gussanxz.orgafacil.model.Movimentacao;
-import com.gussanxz.orgafacil.model.TimePickerHelper;
-import com.gussanxz.orgafacil.repository.ContasRepository; // IMPORTANTE
+import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.data.model.TimePickerHelper;
+import com.gussanxz.orgafacil.data.repository.ContasRepository; // IMPORTANTE
 
 import java.util.Map;
 

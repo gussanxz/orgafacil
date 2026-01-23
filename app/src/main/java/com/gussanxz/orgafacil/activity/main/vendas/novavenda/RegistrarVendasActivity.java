@@ -13,10 +13,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.vendas.AdapterFiltroCategoriasNovaVenda;
-import com.gussanxz.orgafacil.adapter.vendas.AdapterProdutoServicoNovaVenda; // Import do novo Adapter
-import com.gussanxz.orgafacil.model.Categoria;
-import com.gussanxz.orgafacil.model.ItemVenda;
+import com.gussanxz.orgafacil.ui.vendas.nova_venda.AdapterFiltroCategoriasNovaVenda;
+import com.gussanxz.orgafacil.ui.vendas.nova_venda.AdapterFiltroPorPSNovaVenda; // Import do novo Adapter
+import com.gussanxz.orgafacil.data.model.Categoria;
+import com.gussanxz.orgafacil.data.model.ItemVenda;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     // Componentes de Produtos (NOVO)
     private RecyclerView rvGradeProdutos;
-    private AdapterProdutoServicoNovaVenda adapterProdutos;
+    private AdapterFiltroPorPSNovaVenda adapterProdutos;
     private List<ItemVenda> listaCompletaProdutos = new ArrayList<>();
     private List<ItemVenda> listaFiltradaProdutos = new ArrayList<>();
 
@@ -114,7 +114,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvGradeProdutos.setNestedScrollingEnabled(false);
 
         // 3. Instanciar o novo Adapter
-        adapterProdutos = new AdapterProdutoServicoNovaVenda(listaFiltradaProdutos, new AdapterProdutoServicoNovaVenda.OnItemClickListener() {
+        adapterProdutos = new AdapterFiltroPorPSNovaVenda(listaFiltradaProdutos, new AdapterFiltroPorPSNovaVenda.OnItemClickListener() {
             @Override
             public void onItemClick(ItemVenda item) {
                 // Ação ao clicar no produto (Adicionar ao carrinho futuramente)

@@ -1,9 +1,9 @@
-package com.gussanxz.orgafacil.repository;
+package com.gussanxz.orgafacil.data.repository;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.gussanxz.orgafacil.model.Servico;
+import com.gussanxz.orgafacil.data.model.Servico;
 
 public class ServicoRepository {
 

@@ -22,10 +22,10 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
-import com.gussanxz.orgafacil.model.Usuario;
+import com.gussanxz.orgafacil.data.model.Usuario;
 
 public class CadastroActivity extends AppCompatActivity {
 

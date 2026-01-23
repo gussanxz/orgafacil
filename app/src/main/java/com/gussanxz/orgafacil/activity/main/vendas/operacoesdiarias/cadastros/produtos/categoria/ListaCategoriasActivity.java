@@ -20,15 +20,15 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.vendas.AdapterCategoriaVendas;
+import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasVendas;
 import com.gussanxz.orgafacil.helper.SwipeCallback; // Certifique-se que sua classe Helper está importada
-import com.gussanxz.orgafacil.model.Categoria;
-import com.gussanxz.orgafacil.repository.CategoriaRepository;
+import com.gussanxz.orgafacil.data.model.Categoria;
+import com.gussanxz.orgafacil.data.repository.CategoriaRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListaCategoriasActivity extends AppCompatActivity implements AdapterCategoriaVendas.OnCategoriaActionListener {
+public class ListaCategoriasActivity extends AppCompatActivity implements AdapterItemListaCategoriasVendas.OnCategoriaActionListener {
 
     // Componentes Visuais
     private RecyclerView recyclerCategorias;
@@ -37,7 +37,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     private ChipGroup chipGroupFiltro;
 
     // Dados e Adaptador
-    private AdapterCategoriaVendas adapter;
+    private AdapterItemListaCategoriasVendas adapter;
     private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
     private final List<Categoria> listaFiltrada = new ArrayList<>();
 
@@ -122,7 +122,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
     private void configurarRecyclerView() {
         // Passamos a lista filtrada (que começa vazia ou com dados) para o adapter
-        adapter = new AdapterCategoriaVendas(listaFiltrada, this, this);
+        adapter = new AdapterItemListaCategoriasVendas(listaFiltrada, this, this);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
 

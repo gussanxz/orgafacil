@@ -1,11 +1,11 @@
-package com.gussanxz.orgafacil.repository;
+package com.gussanxz.orgafacil.data.repository;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.gussanxz.orgafacil.model.Categoria;
+import com.gussanxz.orgafacil.data.model.Categoria;
 
 import java.util.ArrayList;
 import java.util.List;

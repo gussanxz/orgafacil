@@ -17,8 +17,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.adapter.contas.AdapterCategoriaContas;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.ui.contas.categorias.AdapterExibirCategoriasContas;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -35,7 +35,7 @@ import java.util.Map;
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    private AdapterCategoriaContas adapter;
+    private AdapterExibirCategoriasContas adapter;
     private final List<String> categorias = new ArrayList<>();
 
     private FirebaseFirestore fs;
@@ -50,7 +50,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
-        adapter = new AdapterCategoriaContas(categorias, this);
+        adapter = new AdapterExibirCategoriasContas(categorias, this);
         recyclerView.setAdapter(adapter);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {

@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter.vendas;
+package com.gussanxz.orgafacil.ui.vendas.nova_venda;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -13,13 +13,27 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.ItemVenda;
+import com.gussanxz.orgafacil.data.model.ItemVenda;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
-public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+/**
+ * ADAPTER: AdapterExibirProdutoServicoNovaVenda
+ *
+ * RESPONSABILIDADE:
+ * Gerenciar a exibição de itens (Produtos e Serviços) na tela de vendas,
+ * permitindo a troca dinâmica de layout (Lista ou Grade).
+ *  *
+ * * O QUE ELA FAZ:
+ * 1. Suporte Multi-Layout: Alterna entre 'item_venda_lista' (horizontal) e 'item_venda_grade' (quadrado).
+ * 2. Identificação Visual: Diferencia Produtos (Laranja) de Serviços (Azul) através de cores e tags.
+ * 3. Formatação Financeira: Converte valores numéricos para o padrão de moeda brasileiro (R$).
+ * 4. Centralização de Estilo: Usa o metodo 'aplicarEstiloVisual' para garantir que a identidade
+ * visual seja idêntica em ambos os modos de exibição.
+ */
+public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int TYPE_LISTA = 1;
     private static final int TYPE_GRADE = 2;
@@ -33,7 +47,7 @@ public class AdapterProdutoServico extends RecyclerView.Adapter<RecyclerView.Vie
         void onItemClick(ItemVenda item);
     }
 
-    public AdapterProdutoServico(List<ItemVenda> listaItens, OnItemClickListener listener) {
+    public AdapterExibirPSGradeListaNovaVenda(List<ItemVenda> listaItens, OnItemClickListener listener) {
         this.listaItens = listaItens;
         this.listener = listener;
     }

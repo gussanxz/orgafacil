@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter.contas;
+package com.gussanxz.orgafacil.ui.contas.categorias;
 
 import android.app.Activity;
 import android.content.Context;
@@ -13,12 +13,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-public class AdapterCategoriaContas extends RecyclerView.Adapter<AdapterCategoriaContas.ViewHolder> {
+public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterExibirCategoriasContas.ViewHolder> {
 
     private final List<String> categorias;
     private final Context context;
 
-    public AdapterCategoriaContas(List<String> categorias, Context context) {
+    public AdapterExibirCategoriasContas(List<String> categorias, Context context) {
         this.categorias = categorias;
         this.context = context;
     }

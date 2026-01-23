@@ -1,11 +1,11 @@
-package com.gussanxz.orgafacil.repository;
+package com.gussanxz.orgafacil.data.repository;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.model.Movimentacao;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
 
 import java.util.ArrayList;
 import java.util.List;

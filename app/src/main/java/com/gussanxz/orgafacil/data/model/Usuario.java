@@ -1,6 +1,6 @@
-package com.gussanxz.orgafacil.model;
+package com.gussanxz.orgafacil.data.model;
 
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import android.util.Log;
 
 import com.google.firebase.firestore.Exclude;

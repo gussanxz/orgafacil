@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter.vendas;
+package com.gussanxz.orgafacil.ui.vendas.nova_venda;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -11,9 +11,23 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.Categoria;
+import com.gussanxz.orgafacil.data.model.Categoria;
 
 import java.util.List;
+
+/**
+ * ADAPTER: AdapterFiltroCategoriasNovaVenda
+ *
+ * RESPONSABILIDADE:
+ * Gerenciar a barra de filtros horizontal (estilo Chips/Abas) na tela de Nova Venda.
+ * Faz parte da camada de UI (User Interface).
+ *
+ * O QUE ELA FAZ:
+ * 1. Exibe as categorias disponíveis como botões selecionáveis (filtros).
+ * 2. Controle de Estado Visual: Gerencia qual categoria está "Ativa", mudando as cores de fundo e texto dinamicamente.
+ * 3. Ponte de Eventos: Comunica à Activity de Vendas qual categoria foi escolhida para que a lista de produtos seja filtrada.
+ * 4. Feedback Instantâneo: Usa o 'notifyDataSetChanged' para redesenhar a seleção assim que o usuário toca em um item.
+ */
 public class AdapterFiltroCategoriasNovaVenda extends RecyclerView.Adapter<AdapterFiltroCategoriasNovaVenda.ViewHolder> {
 
     private List<Categoria> listaCategorias;

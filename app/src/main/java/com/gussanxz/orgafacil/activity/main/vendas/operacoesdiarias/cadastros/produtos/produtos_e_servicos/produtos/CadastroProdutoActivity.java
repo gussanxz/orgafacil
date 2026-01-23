@@ -12,8 +12,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.Produto;
-import com.gussanxz.orgafacil.repository.ProdutoRepository;
+import com.gussanxz.orgafacil.data.model.Produto;
+import com.gussanxz.orgafacil.data.repository.ProdutoRepository;
 
 public class CadastroProdutoActivity extends AppCompatActivity {
 

@@ -1,7 +1,6 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.ui.contas.movimentacao;
 
-import com.gussanxz.orgafacil.adapter.MovimentoItem;
-import com.gussanxz.orgafacil.model.Movimentacao;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -14,13 +13,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class MovimentacoesGrouper {
+/**
+ * HELPER: MovimentacoesGrouper
+ *
+ * RESPONSABILIDADE: Processar a lista bruta de movimentações, realizando ordenação cronológica e agrupamento por data.
+ * Localizado em: helper (ou ui.contas, se preferir manter a lógica de funcionalidade).
+ *
+ * * O QUE ELA FAZ:
+ * 1. Ordenação Cronológica: Organiza os itens do mais recente para o mais antigo (data + hora).
+ * 2. Agrupamento por Dia: Reúne todas as movimentações de uma mesma data sob um único cabeçalho.
+ * 3. Cálculo de Saldo Diário: Soma receitas e subtrai despesas de cada dia para exibir o saldo parcial no Header.
+ * 4. Humanização de Datas: Converte datas estáticas em títulos amigáveis como "Hoje" ou "Ontem".
+ * 5. Preparação de Dados: Converte a lista de 'Movimentacao' em uma lista achatada de 'MovimentoItem'.
+ */
+public class HelperExibirDatasMovimentacao {
 
     private static final SimpleDateFormat sdfData = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
     private static final SimpleDateFormat sdfDataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
     private static final SimpleDateFormat sdfDataTitulo = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-    public static List<MovimentoItem> agruparPorDiaOrdenar(List<Movimentacao> movs) {
+    public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<Movimentacao> movs) {
         // 1) ordenar por data+hora DECRESCENTE
         List<Movimentacao> copia = new ArrayList<>(movs);
         Collections.sort(copia, new Comparator<Movimentacao>() {
@@ -48,7 +60,7 @@ public class MovimentacoesGrouper {
         }
 
         // 3) montar lista achatada com header + linhas
-        List<MovimentoItem> resultado = new ArrayList<>();
+        List<ExibirItemListaMovimentacaoContas> resultado = new ArrayList<>();
 
         Date hoje = zerarHora(new Date());
         Date ontem = new Date(hoje.getTime() - 24L*60L*60L*1000L);
@@ -87,10 +99,10 @@ public class MovimentacoesGrouper {
                 }
             }
 
-            resultado.add(MovimentoItem.header(dataStr, tituloDia, saldoDia));
+            resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, saldoDia));
 
             for (Movimentacao m : listaDoDia) {
-                resultado.add(MovimentoItem.linha(m));
+                resultado.add(ExibirItemListaMovimentacaoContas.linha(m));
             }
         }
 

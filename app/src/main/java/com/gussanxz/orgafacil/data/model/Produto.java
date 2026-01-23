@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.model;
+package com.gussanxz.orgafacil.data.model;
 
 public class Produto implements ItemVenda {
     private String id;

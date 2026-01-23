@@ -4,21 +4,17 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.content.SharedPreferences;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.GoogleLoginHelper; // IMPORTANTE
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;

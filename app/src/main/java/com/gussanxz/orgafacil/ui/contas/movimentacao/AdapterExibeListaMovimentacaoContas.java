@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter;
+package com.gussanxz.orgafacil.ui.contas.movimentacao;
 
 import android.content.Context;
 import android.content.Intent;
@@ -13,15 +13,31 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.contas.EditarMovimentacaoActivity; // Ajuste se necessário
-import com.gussanxz.orgafacil.model.Movimentacao;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
-public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+/**
+ * ADAPTER: MovimentosAgrupadosAdapter
+ *
+ * RESPONSABILIDADE: Gerenciar a exibição da timeline financeira, agrupando receitas e despesas por data.
+ * Localizado em: ui.contas (Organização por Funcionalidade).
+ *
+ * O QUE ELA FAZ:
+ * 1. Multi-Layout (Timeline): Alterna entre cabeçalhos de data (Header) e itens de conta (Movimentação).
+ * 2. Cálculo Visual de Saldo: Exibe o saldo do dia no cabeçalho com cores dinâmicas (Verde para positivo, Vermelho para negativo).
+ * 3. Diferenciação de Fluxo: Formata valores de Receita (+) e Despesa (-) com cores específicas.
+ * 4. Gestão de Eventos:
+ * - Clique Curto: Direciona para a tela de edição.
+ * - Clique Longo: Aciona a interface para exclusão do registro.
+ * 5. Formatação: Converte valores para a moeda brasileira (R$) e exibe metadados como hora e categoria.
+ */
 
-    private final List<MovimentoItem> itens;
+public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private final List<ExibirItemListaMovimentacaoContas> itens;
     private final Context context;
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
@@ -34,7 +50,7 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
         void onLongClick(Movimentacao movimentacao);   // Usado pelo Segurar
     }
 
-    public MovimentosAgrupadosAdapter(Context context, List<MovimentoItem> itens, OnItemActionListener listener) {
+    public AdapterExibeListaMovimentacaoContas(Context context, List<ExibirItemListaMovimentacaoContas> itens, OnItemActionListener listener) {
         this.context = context;
         this.itens = itens;
         this.listener = listener;
@@ -55,7 +71,7 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 
-        if (viewType == MovimentoItem.TYPE_HEADER) {
+        if (viewType == ExibirItemListaMovimentacaoContas.TYPE_HEADER) {
             // Layout do Cabeçalho (Data)
             View v = inflater.inflate(R.layout.item_contas_header_dia, parent, false);
             return new HeaderViewHolder(v);
@@ -69,7 +85,7 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        MovimentoItem item = itens.get(position);
+        ExibirItemListaMovimentacaoContas item = itens.get(position);
 
         if (holder instanceof HeaderViewHolder) {
             ((HeaderViewHolder) holder).bind(item);
@@ -89,7 +105,7 @@ public class MovimentosAgrupadosAdapter extends RecyclerView.Adapter<RecyclerVie
             textSaldoDia = itemView.findViewById(R.id.textSaldoDia);
         }
 
-        void bind(MovimentoItem item) {
+        void bind(ExibirItemListaMovimentacaoContas item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(item.saldoDia));

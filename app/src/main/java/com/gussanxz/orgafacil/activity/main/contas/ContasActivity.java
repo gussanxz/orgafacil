@@ -30,13 +30,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.MainActivity;
-import com.gussanxz.orgafacil.adapter.MovimentoItem;
-import com.gussanxz.orgafacil.adapter.MovimentacoesGrouper;
-import com.gussanxz.orgafacil.adapter.MovimentosAgrupadosAdapter;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.ui.contas.movimentacao.ExibirItemListaMovimentacaoContas;
+import com.gussanxz.orgafacil.ui.contas.movimentacao.HelperExibirDatasMovimentacao;
+import com.gussanxz.orgafacil.ui.contas.movimentacao.AdapterExibeListaMovimentacaoContas;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.SwipeCallback;
-import com.gussanxz.orgafacil.model.Movimentacao;
-import com.gussanxz.orgafacil.repository.ContasRepository;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.data.repository.ContasRepository;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -57,8 +57,8 @@ public class ContasActivity extends AppCompatActivity {
 
     // Dados
     private final List<Movimentacao> listaCompleta = new ArrayList<>();
-    private final List<MovimentoItem> itensAgrupados = new ArrayList<>();
-    private MovimentosAgrupadosAdapter adapterAgrupado;
+    private final List<ExibirItemListaMovimentacaoContas> itensAgrupados = new ArrayList<>();
+    private AdapterExibeListaMovimentacaoContas adapterAgrupado;
     private String dataInicialSelecionada, dataFinalSelecionada;
 
     // Dependências
@@ -210,7 +210,7 @@ public class ContasActivity extends AppCompatActivity {
         }
 
         itensAgrupados.clear();
-        itensAgrupados.addAll(MovimentacoesGrouper.agruparPorDiaOrdenar(temp));
+        itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(temp));
         adapterAgrupado.notifyDataSetChanged();
 
         double saldoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
@@ -251,7 +251,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void configurarRecyclerView() {
-        adapterAgrupado = new MovimentosAgrupadosAdapter(this, itensAgrupados, new MovimentosAgrupadosAdapter.OnItemActionListener() {
+        adapterAgrupado = new AdapterExibeListaMovimentacaoContas(this, itensAgrupados, new AdapterExibeListaMovimentacaoContas.OnItemActionListener() {
             @Override
             public void onDeleteClick(Movimentacao movimentacao) {
                 confirmarExclusao(movimentacao);
@@ -282,7 +282,7 @@ public class ContasActivity extends AppCompatActivity {
                 if (position < 0 || position >= itensAgrupados.size()) return 0;
 
                 // Trava cabeçalho
-                if (itensAgrupados.get(position).type == MovimentoItem.TYPE_HEADER) {
+                if (itensAgrupados.get(position).type == ExibirItemListaMovimentacaoContas.TYPE_HEADER) {
                     return 0;
                 }
                 return makeMovementFlags(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
@@ -299,8 +299,8 @@ public class ContasActivity extends AppCompatActivity {
                 int position = viewHolder.getAdapterPosition();
                 if (position < 0 || position >= itensAgrupados.size()) return;
 
-                MovimentoItem item = itensAgrupados.get(position);
-                if (item.type == MovimentoItem.TYPE_HEADER) {
+                ExibirItemListaMovimentacaoContas item = itensAgrupados.get(position);
+                if (item.type == ExibirItemListaMovimentacaoContas.TYPE_HEADER) {
                     adapterAgrupado.notifyItemChanged(position);
                     return;
                 }

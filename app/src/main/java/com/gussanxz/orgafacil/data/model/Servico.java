@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.model;
+package com.gussanxz.orgafacil.data.model;
 
 // 1. OBRIGATÓRIO: "implements ItemVenda"
 public class Servico implements ItemVenda {

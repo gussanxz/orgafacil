@@ -9,19 +9,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.model.Usuario;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.model.Usuario;
 
 public class PerfilActivity extends AppCompatActivity {
 

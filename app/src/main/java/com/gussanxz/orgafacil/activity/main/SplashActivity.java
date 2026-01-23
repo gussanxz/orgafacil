@@ -11,7 +11,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.activity.main.HomeActivity;
 import com.gussanxz.orgafacil.activity.main.MainActivity;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 
 public class SplashActivity extends AppCompatActivity {
 

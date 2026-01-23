@@ -20,12 +20,12 @@ import com.gussanxz.orgafacil.R;
 // Ajuste os imports abaixo conforme seus pacotes
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.produtos.CadastroProdutoActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.servicos.CadastroServicoActivity;
-import com.gussanxz.orgafacil.adapter.vendas.AdapterProdutoServico;
-import com.gussanxz.orgafacil.model.ItemVenda;
-import com.gussanxz.orgafacil.model.Produto;
-import com.gussanxz.orgafacil.model.Servico;
-import com.gussanxz.orgafacil.repository.ProdutoRepository;
-import com.gussanxz.orgafacil.repository.ServicoRepository;
+import com.gussanxz.orgafacil.ui.vendas.nova_venda.AdapterExibirPSGradeListaNovaVenda;
+import com.gussanxz.orgafacil.data.model.ItemVenda;
+import com.gussanxz.orgafacil.data.model.Produto;
+import com.gussanxz.orgafacil.data.model.Servico;
+import com.gussanxz.orgafacil.data.repository.ProdutoRepository;
+import com.gussanxz.orgafacil.data.repository.ServicoRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     private ChipGroup chipGroupTipo;
     private MaterialButtonToggleGroup toggleVisualizacao; // VOLTOU!
 
-    private AdapterProdutoServico adapter;
+    private AdapterExibirPSGradeListaNovaVenda adapter;
 
     // Listas
     private final List<ItemVenda> listaTotal = new ArrayList<>();
@@ -125,7 +125,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     }
 
     private void configurarRecyclerView() {
-        adapter = new AdapterProdutoServico(listaFiltrada, this::onItemClick);
+        adapter = new AdapterExibirPSGradeListaNovaVenda(listaFiltrada, this::onItemClick);
         // Padrão inicial: Lista Vertical
         recyclerProdutos.setLayoutManager(new LinearLayoutManager(this));
         recyclerProdutos.setAdapter(adapter);

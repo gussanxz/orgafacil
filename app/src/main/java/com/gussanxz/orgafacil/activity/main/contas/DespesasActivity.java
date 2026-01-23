@@ -4,9 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -18,18 +16,16 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
-import com.google.android.material.floatingactionbutton.FloatingActionButton; // IMPORTANTE
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.model.Movimentacao;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
 import com.gussanxz.orgafacil.helper.DatePickerHelper;
-import com.gussanxz.orgafacil.model.TimePickerHelper;
-import com.gussanxz.orgafacil.repository.ContasRepository; // IMPORTANTE
+import com.gussanxz.orgafacil.data.model.TimePickerHelper;
+import com.gussanxz.orgafacil.data.repository.ContasRepository; // IMPORTANTE
 
 import java.util.Map;
 

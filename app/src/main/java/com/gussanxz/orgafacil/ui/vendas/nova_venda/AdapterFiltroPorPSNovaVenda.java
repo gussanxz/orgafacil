@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.adapter.vendas;
+package com.gussanxz.orgafacil.ui.vendas.nova_venda;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,14 +10,37 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.ItemVenda;
+import com.gussanxz.orgafacil.data.model.ItemVenda;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * ADAPTER: AdapterFiltroPorPSNovaVenda
+ *
+ * RESPONSABILIDADE:  Gerenciar a exibição e o filtro dinâmico de itens (Produtos e Serviços)
+ * na grade principal da tela de Nova Venda.
+ * Localizado em: ui.vendas.nova_venda (Organização por Funcionalidade).
+ *
+ * O QUE ELA FAZ:
+ * 1. Diferenciação por Tipo: Seleciona automaticamente entre o layout de Produto
+ * e o layout de Serviço baseado no dado vindo do modelo.
+ *
+ * 2. Suporte a Filtros: Fornece o metodo 'atualizarLista' para reagir aos cliques
+ * nas categorias (Chips) da Activity.
+ *
+ * 3. Gerenciamento de Layouts: Infla 'item_nova_venda_produto_grid' ou
+ * 'item_nova_venda_servico_grid' conforme a necessidade.
+ *
+ * 4. Resiliência de IDs: Possui lógica de "fallback" no ViewHolder para encontrar
+ * componentes mesmo que os layouts usem nomes de IDs diferentes.
+ *
+ * 5. Formatação: Exibe os valores monetários no padrão brasileiro (R$).
+ */
+
 // CORREÇÃO 1: Ajustado o tipo do Adapter para usar o VendaViewHolder específico
-public class AdapterProdutoServicoNovaVenda extends RecyclerView.Adapter<AdapterProdutoServicoNovaVenda.VendaViewHolder> {
+public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFiltroPorPSNovaVenda.VendaViewHolder> {
 
         private List<ItemVenda> listaItens;
         private final OnItemClickListener listener;
@@ -33,7 +56,7 @@ public class AdapterProdutoServicoNovaVenda extends RecyclerView.Adapter<Adapter
         }
 
         // CORREÇÃO 2: O nome do construtor deve ser IGUAL ao nome da classe
-        public AdapterProdutoServicoNovaVenda(List<ItemVenda> listaItens, OnItemClickListener listener) {
+        public AdapterFiltroPorPSNovaVenda(List<ItemVenda> listaItens, OnItemClickListener listener) {
                 this.listaItens = listaItens;
                 this.listener = listener;
         }

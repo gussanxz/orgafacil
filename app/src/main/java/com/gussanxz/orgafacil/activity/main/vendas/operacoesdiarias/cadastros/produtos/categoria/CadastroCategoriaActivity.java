@@ -22,8 +22,8 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.model.Categoria;
-import com.gussanxz.orgafacil.repository.CategoriaRepository; // Importe o repositório criado
+import com.gussanxz.orgafacil.data.model.Categoria;
+import com.gussanxz.orgafacil.data.repository.CategoriaRepository; // Importe o repositório criado
 
 public class CadastroCategoriaActivity extends AppCompatActivity {
 

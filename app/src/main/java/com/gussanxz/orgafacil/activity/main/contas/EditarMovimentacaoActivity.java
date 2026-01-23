@@ -27,9 +27,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.helper.DateCustom;
-import com.gussanxz.orgafacil.model.Movimentacao;
+import com.gussanxz.orgafacil.data.model.Movimentacao;
 
 import java.util.Calendar;
 import java.util.HashMap;
