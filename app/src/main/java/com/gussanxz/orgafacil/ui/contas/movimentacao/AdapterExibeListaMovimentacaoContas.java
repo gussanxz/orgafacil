@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * ADAPTER: MovimentosAgrupadosAdapter
+ * ADAPTER: AdapterExibeListaMovimentacaoContas
  *
  * RESPONSABILIDADE: Gerenciar a exibição da timeline financeira, agrupando receitas e despesas por data.
  * Localizado em: ui.contas (Organização por Funcionalidade).
@@ -119,6 +119,8 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
 
         TextView textTitulo, textCategoria, textValor, textData, textHora;
+        // 1. Declarar a View do indicador
+        View viewIndicadorCor;
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -127,6 +129,9 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             textValor = itemView.findViewById(R.id.textAdapterValor);
             textData = itemView.findViewById(R.id.textAdapterData);
             textHora = itemView.findViewById(R.id.textAdapterHora);
+
+            // 2. Ligar a variável ao ID do seu XML
+            viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
         }
 
         void bind(Movimentacao mov) {
@@ -136,12 +141,18 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             textHora.setText(mov.getHora());
 
             double valor = mov.getValor();
+
+            // 3. Lógica para definir a cor do indicador
             if ("d".equals(mov.getTipo())) {
+                // DESPESA: Vermelho
                 textValor.setText("- " + currencyFormat.format(valor));
                 textValor.setTextColor(Color.parseColor("#E53935"));
+                viewIndicadorCor.setBackgroundColor(Color.parseColor("#E53935"));
             } else {
+                // RECEITA: Verde
                 textValor.setText("+ " + currencyFormat.format(valor));
                 textValor.setTextColor(Color.parseColor("#00D39E"));
+                viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
             // 1. CLIQUE CURTO -> EDITAR (Como já estava)
