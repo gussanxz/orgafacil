@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
+
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -17,48 +18,46 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.SetOptions;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 import com.gussanxz.orgafacil.data.model.Movimentacao;
 import com.gussanxz.orgafacil.helper.DatePickerHelper;
 import com.gussanxz.orgafacil.data.model.TimePickerHelper;
-import com.gussanxz.orgafacil.data.repository.ContasRepository; // IMPORTANTE
 
+import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * DespesasActivity (schema novo)
+ *
+ * Regras:
+ * - NOVO: cria doc novo (key null) => createdAt serverTimestamp => atualiza ultimos
+ * - EDIÇÃO: mantém o mesmo movId (key) => NÃO mexe em createdAt (correção)
+ */
 public class DespesasActivity extends AppCompatActivity {
 
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private ImageButton btnExcluir;
-    private Movimentacao movimentacao;
-    private FirebaseFirestore fs;
-    private ActivityResultLauncher<Intent> launcherCategoria;
-    private ContasRepository repository; // NOVO
 
-    // Variáveis de controle de edição
+    private ActivityResultLauncher<Intent> launcherCategoria;
+
     private boolean isEdicao = false;
-    private Movimentacao itemEmEdicao = null;
+    private Movimentacao itemEmEdicao = null; // contém key
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_add_despesa);
-
         setupWindowInsets();
-
-        fs = ConfiguracaoFirestore.getFirestore();
-        repository = new ContasRepository(); // Inicializa repositório
 
         inicializarComponentes();
         configurarListeners();
         configurarLauncherCategoria();
-
-        // Verifica se veio da tela de detalhes/lista para editar
         verificarModoEdicao();
     }
 
@@ -68,7 +67,7 @@ public class DespesasActivity extends AppCompatActivity {
         campoCategoria = findViewById(R.id.editCategoria);
         campoDescricao = findViewById(R.id.editDescricao);
         campoHora = findViewById(R.id.editHora);
-        btnExcluir = findViewById(R.id.btnExcluir); // Recupera o botão do XML
+        btnExcluir = findViewById(R.id.btnExcluir);
     }
 
     private void configurarListeners() {
@@ -84,6 +83,12 @@ public class DespesasActivity extends AppCompatActivity {
             Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
+
+        if (btnExcluir != null) {
+            btnExcluir.setOnClickListener(v -> {
+                if (isEdicao && itemEmEdicao != null) confirmarExcluir();
+            });
+        }
     }
 
     private void configurarLauncherCategoria() {
@@ -97,108 +102,188 @@ public class DespesasActivity extends AppCompatActivity {
                 });
     }
 
-    // --- LÓGICA DE EDIÇÃO / EXCLUSÃO ---
-
     private void verificarModoEdicao() {
         Bundle extras = getIntent().getExtras();
         if (extras != null && extras.containsKey("chave")) {
             isEdicao = true;
             itemEmEdicao = new Movimentacao();
 
-            // Recupera dados passados pela Intent
             itemEmEdicao.setKey(extras.getString("chave"));
             itemEmEdicao.setValor(extras.getDouble("valor"));
             itemEmEdicao.setCategoria(extras.getString("categoria"));
             itemEmEdicao.setDescricao(extras.getString("descricao"));
             itemEmEdicao.setData(extras.getString("data"));
-            itemEmEdicao.setTipo(extras.getString("tipo")); // "d" ou "r"
-            // Se tiver hora na intent, recupera, senão deixa vazio
-            if(extras.containsKey("hora")) itemEmEdicao.setHora(extras.getString("hora"));
+            itemEmEdicao.setTipo("d");
+            if (extras.containsKey("hora")) itemEmEdicao.setHora(extras.getString("hora"));
 
-            // Preenche a tela
             campoValor.setText(String.valueOf(itemEmEdicao.getValor()));
             campoCategoria.setText(itemEmEdicao.getCategoria());
             campoDescricao.setText(itemEmEdicao.getDescricao());
             campoData.setText(itemEmEdicao.getData());
-            if(itemEmEdicao.getHora() != null) campoHora.setText(itemEmEdicao.getHora());
+            if (itemEmEdicao.getHora() != null) campoHora.setText(itemEmEdicao.getHora());
 
-            // Mostra o botão de excluir
             btnExcluir.setVisibility(View.VISIBLE);
-
-            // Muda título se quiser
-            // ((TextView)findViewById(R.id.textViewHeader)).setText("Editar Despesa");
-
         } else {
-            // Modo Novo Cadastro
+            isEdicao = false;
+            itemEmEdicao = null;
+
             campoData.setText(DatePickerHelper.setDataAtual());
             campoHora.setText(TimePickerHelper.setHoraAtual());
             btnExcluir.setVisibility(View.GONE);
 
-            // Só busca sugestão se for NOVO cadastro
+            // sugestão barata: 1 doc (Resumos/ultimos)
             recuperarUltimaDespesaDoFirebase();
         }
     }
 
-    // --- SALVAR (ALTERADO PARA SUPORTAR EDIÇÃO) ---
-
     public void salvarDespesa(View view) {
         if (!validarCamposDespesas()) return;
 
-        // Se for edição, usamos o objeto existente, senão criamos novo
-        movimentacao = isEdicao ? itemEmEdicao : new Movimentacao();
+        Movimentacao mov = isEdicao ? itemEmEdicao : new Movimentacao();
 
-        String data = campoData.getText().toString();
-        Double valorAtual = Double.parseDouble(campoValor.getText().toString());
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mov.setValor(Double.parseDouble(campoValor.getText().toString()));
+        mov.setCategoria(campoCategoria.getText().toString());
+        mov.setDescricao(campoDescricao.getText().toString());
+        mov.setData(campoData.getText().toString());
+        mov.setHora(campoHora.getText().toString());
+        mov.setTipo("d"); // despesa
 
-        // Se for edição e o valor mudou, precisamos lidar com a atualização do saldo.
-        // O jeito mais simples e seguro (atomicamente) é excluir o antigo e salvar o novo.
-        // Ou, se sua função 'salvar' já lida com update de saldo (increment/decrement), ok.
-        // Assumindo aqui a lógica padrão de salvar novo:
+        // Aqui está o ponto MAIS IMPORTANTE:
+        // - se for edição, NÃO zera key => não recria => não vira "último"
+        // - se for novo, key está null => cria doc novo => atualiza ultimos
+        String uid = FirestoreSchema.requireUid();
+        mov.salvar(uid, mov.getData());
 
-        movimentacao.setValor(valorAtual);
-        movimentacao.setCategoria(campoCategoria.getText().toString());
-        movimentacao.setDescricao(campoDescricao.getText().toString());
-        movimentacao.setData(data);
-        movimentacao.setHora(campoHora.getText().toString());
-        movimentacao.setTipo("d");
-
-        // Se for edição, o ideal é remover o valor antigo do saldo total antes de salvar o novo
-        // Para simplificar: salvar() sobrescreve o documento se tiver ID, mas o saldo total precisa de ajuste.
-        // SOLUÇÃO ROBUSTA: No seu caso, sugiro APAGAR o antigo e CRIAR um novo se for edição de valor/data.
-
-        if (isEdicao) {
-            // 1. Exclui o antigo (ajusta saldo)
-            // Nota: Para fazer isso perfeito, precisaria ser uma Transação (Batch).
-            // Aqui faremos simplificado: Exclui -> Sucesso -> Salva Novo.
-            repository.excluirMovimentacao(itemEmEdicao, new ContasRepository.SimplesCallback() {
-                @Override
-                public void onSucesso() {
-                    // 2. Salva o novo (ajusta saldo novamente com valor novo)
-                    // Resetamos a chave para gerar novo ID ou usamos a mesma se preferir manter histórico
-                    // Melhor gerar novo ID se mudar o Mês (data).
-                    movimentacao.setKey(null);
-                    movimentacao.salvar(uid, data);
-                    finalizarSalvar();
-                }
-                @Override
-                public void onErro(String erro) {
-                    Toast.makeText(DespesasActivity.this, "Erro ao atualizar: " + erro, Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            // Novo cadastro direto
-            movimentacao.salvar(uid, data);
-            finalizarSalvar();
-        }
-    }
-
-    private void finalizarSalvar() {
         Toast.makeText(this, isEdicao ? "Despesa atualizada!" : "Despesa adicionada!", Toast.LENGTH_SHORT).show();
         finish();
     }
 
-    // --- MÉTODOS AUXILIARES (MANTIDOS) ---
+    private void confirmarExcluir() {
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir Despesa")
+                .setMessage("Tem certeza que deseja apagar este lançamento?")
+                .setPositiveButton("Sim, excluir", (dialog, which) -> excluirDespesa())
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void excluirDespesa() {
+        String movId = itemEmEdicao.getKey();
+        if (movId == null || movId.trim().isEmpty()) return;
+
+        FirestoreSchema.contasMovimentacaoDoc(movId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    recalcularUltimoPorTipo("Despesa", () -> {
+                        Toast.makeText(this, "Despesa removida!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao excluir: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    // ===== Sugestão: Resumos/ultimos =====
+
+    private void recuperarUltimaDespesaDoFirebase() {
+        FirestoreSchema.contasResumoUltimosDoc()
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+
+                    // novo schema
+                    Map<String, Object> ultima = (Map<String, Object>) doc.get("ultimaSaida");
+
+                    // fallback legado (se ainda existir no banco antigo)
+                    if (ultima == null) ultima = (Map<String, Object>) doc.get("ultimaDespesa");
+
+                    if (ultima == null) return;
+
+                    String cat = (String) ultima.get("categoriaNomeSnapshot");
+                    if (cat == null) cat = (String) ultima.get("categoria");
+
+                    String desc = (String) ultima.get("descricao"); // pode não existir no snapshot novo
+                    if (desc == null) desc = (String) ultima.get("descricaoSnapshot"); // caso você crie depois
+
+                    Movimentacao m = new Movimentacao();
+                    m.setCategoria(cat);
+                    m.setDescricao(desc);
+
+                    if (m.getCategoria() != null || m.getDescricao() != null) {
+                        mostrarPopupAproveitarUltimaDespesa(m);
+                    }
+                });
+    }
+
+    private void mostrarPopupAproveitarUltimaDespesa(Movimentacao ultima) {
+        String categoria = ultima.getCategoria();
+        String descricao = ultima.getDescricao();
+
+        String msg = "Aproveitar última despesa?\nCategoria: " + (categoria != null ? categoria : "-") +
+                "\nDescrição: " + (descricao != null ? descricao : "-");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Sugestão")
+                .setMessage(msg)
+                .setPositiveButton("Sim", (dialog, which) -> {
+                    if (categoria != null) campoCategoria.setText(categoria);
+                    if (descricao != null) campoDescricao.setText(descricao);
+                })
+                .setNegativeButton("Não", null)
+                .show();
+    }
+
+    // ===== Recalcular "ultimos" por createdAt =====
+
+    private interface SimpleVoidCb { void done(); }
+
+    private void recalcularUltimoPorTipo(String tipoNovo, SimpleVoidCb cb) {
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereEqualTo("tipo", tipoNovo)
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap == null || snap.isEmpty()) {
+                        limparUltimoCampo(tipoNovo, cb);
+                        return;
+                    }
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("movId", snap.getDocuments().get(0).getId());
+                    info.put("createdAt", snap.getDocuments().get(0).get("createdAt"));
+                    info.put("valorCent", snap.getDocuments().get(0).get("valorCent"));
+                    info.put("categoriaId", snap.getDocuments().get(0).get("categoriaId"));
+                    info.put("categoriaNomeSnapshot", snap.getDocuments().get(0).get("categoriaNome"));
+
+                    String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+
+                    Map<String, Object> patch = new HashMap<>();
+                    patch.put(campo, info);
+                    patch.put("updatedAt", FieldValue.serverTimestamp());
+
+                    FirestoreSchema.contasResumoUltimosDoc()
+                            .set(patch, SetOptions.merge())
+                            .addOnSuccessListener(v -> cb.done())
+                            .addOnFailureListener(e -> cb.done());
+                })
+                .addOnFailureListener(e -> cb.done());
+    }
+
+    private void limparUltimoCampo(String tipoNovo, SimpleVoidCb cb) {
+        String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+
+        Map<String, Object> patch = new HashMap<>();
+        patch.put(campo, null);
+        patch.put("updatedAt", FieldValue.serverTimestamp());
+
+        FirestoreSchema.contasResumoUltimosDoc()
+                .set(patch, SetOptions.merge())
+                .addOnSuccessListener(v -> cb.done())
+                .addOnFailureListener(e -> cb.done());
+    }
+
+    // ===== Validação/infra =====
 
     public Boolean validarCamposDespesas() {
         String textoValor = campoValor.getText().toString();
@@ -206,18 +291,11 @@ public class DespesasActivity extends AppCompatActivity {
         String textoCategoria = campoCategoria.getText().toString();
         String textoDescricao = campoDescricao.getText().toString();
 
-        if (textoValor.isEmpty()) {
-            campoValor.setError("Preencha o valor"); return false;
-        }
-        if (textoData.isEmpty()) {
-            Toast.makeText(this, "Preencha a data", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (textoCategoria.isEmpty()) {
-            Toast.makeText(this, "Preencha a categoria", Toast.LENGTH_SHORT).show(); return false;
-        }
-        if (textoDescricao.isEmpty()) {
-            campoDescricao.setError("Preencha a descrição"); return false;
-        }
+        if (textoValor.isEmpty()) { campoValor.setError("Preencha o valor"); return false; }
+        if (textoData.isEmpty()) { Toast.makeText(this, "Preencha a data", Toast.LENGTH_SHORT).show(); return false; }
+        if (textoCategoria.isEmpty()) { Toast.makeText(this, "Preencha a categoria", Toast.LENGTH_SHORT).show(); return false; }
+        if (textoDescricao.isEmpty()) { campoDescricao.setError("Preencha a descrição"); return false; }
+
         return true;
     }
 
@@ -229,42 +307,5 @@ public class DespesasActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-    }
-
-    // Código de Recuperar Ultima Despesa (Mantido igual)
-    private void recuperarUltimaDespesaDoFirebase() {
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("_meta").document("ultimos")
-                .get()
-                .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) return;
-                    Map<String, Object> ultima = (Map<String, Object>) doc.get("ultimaDespesa");
-                    if (ultima == null) return;
-                    Movimentacao m = new Movimentacao();
-                    m.setCategoria((String) ultima.get("categoria"));
-                    m.setDescricao((String) ultima.get("descricao"));
-                    if (m.getCategoria() != null || m.getDescricao() != null) {
-                        mostrarPopupAproveitarUltimaDespesa(m);
-                    }
-                });
-    }
-
-    private void mostrarPopupAproveitarUltimaDespesa(Movimentacao ultima) {
-        String categoria = ultima.getCategoria();
-        String descricao = ultima.getDescricao();
-        String msg = "Aproveitar última despesa?\nCategoria: " + (categoria!=null?categoria:"-") +
-                "\nDescrição: " + (descricao!=null?descricao:"-");
-
-        new AlertDialog.Builder(this)
-                .setTitle("Sugestão")
-                .setMessage(msg)
-                .setPositiveButton("Sim", (dialog, which) -> {
-                    if (categoria != null) campoCategoria.setText(categoria);
-                    if (descricao != null) campoDescricao.setText(descricao);
-                })
-                .setNegativeButton("Não", null)
-                .show();
     }
 }

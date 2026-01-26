@@ -1,13 +1,15 @@
 package com.gussanxz.orgafacil.data.model;
 
-import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import android.util.Log;
 
-import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.firestore.Exclude;
+
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,6 +19,19 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.text.Normalizer;
 
+/**
+ * Usuario
+ *
+ * O que faz:
+ * - Representa dados básicos do usuário (nome/email/senha local).
+ * - Inicializa estrutura mínima no Firestore conforme schema NOVO:
+ *   usuarios/{uid}/config/perfil
+ *   usuarios/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
+ *
+ * Impacto:
+ * - Ao centralizar o path via FirestoreSchema, trocar ROOT muda o banco inteiro.
+ * - Evita "users" hardcoded e evita manter dados em esquema antigo.
+ */
 public class Usuario {
 
     private String idUsuario;
@@ -24,111 +39,102 @@ public class Usuario {
     private String email;
     private String senha;
 
-    // Esses campos servem apenas para leitura ou uso local.
+    // Campos de uso local (não persistem como "verdade" do schema novo)
     private Double proventosTotal = 0.00;
     private Double despesaTotal = 0.00;
 
-    // Construtor vazio para o Firestore
-    public Usuario() {
-    }
+    public Usuario() {}
 
-    // Este metodo deve ser usado para cadastrar ou salvar dados iniciais.
+    /**
+     * Salva / atualiza o perfil no schema novo:
+     * usuarios/{uid}/config/perfil
+     */
     public void salvar() {
-
-        FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
         String uid = getIdUsuario();
-
         if (uid == null || uid.trim().isEmpty()) {
             Log.e("FireStore", "Usuario.salvar(): uid vazio");
             return;
         }
 
-        Map<String, Object> userDoc = new HashMap<>();
-        userDoc.put("nome", getNome());
-        userDoc.put("email", getEmail());
-        userDoc.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        Map<String, Object> perfil = new HashMap<>();
+        perfil.put("nome", getNome() != null ? getNome() : "Usuário");
+        perfil.put("email", getEmail());
+        perfil.put("dataCriação", FieldValue.serverTimestamp()); // só será setado se não existir
+        perfil.put("updatedAt", FieldValue.serverTimestamp());
 
-        fs.collection("users").document(uid)
-                .set(userDoc, SetOptions.merge())
+        // /usuarios/{uid}/config/perfil
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.CONFIG)
+                .document(FirestoreSchema.PERFIL)
+                .set(perfil, SetOptions.merge())
                 .addOnFailureListener(e -> Log.e("FireStore", "Erro ao salvar perfil", e));
     }
 
-    // --- NOVO MÉTODO ADICIONADO ---
-    // Usado especificamente para a tela de Perfil.
-    // Ele usa .update() em vez de .set(), o que falha se o documento não existir (segurança).
+    /**
+     * Atualiza campos do perfil usando update (não cria doc do nada).
+     * Se o doc não existir, update falha -> isso é bom para integridade.
+     */
     public void atualizar() {
-        FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
         String uid = getIdUsuario();
+        if (uid == null || uid.trim().isEmpty()) return;
 
-        if (uid == null || uid.trim().isEmpty()) {
-            return;
-        }
+        Map<String, Object> patch = new HashMap<>();
+        if (getNome() != null) patch.put("nome", getNome());
+        patch.put("updatedAt", FieldValue.serverTimestamp());
 
-        // Cria um mapa com APENAS o que queremos mudar (neste caso, o nome)
-        Map<String, Object> dadosAtualizar = new HashMap<>();
-
-        if (getNome() != null) {
-            dadosAtualizar.put("nome", getNome());
-        }
-
-        // Se precisar atualizar outros campos no futuro, adicione aqui.
-        // Não atualizamos email aqui pois o email é chave de autenticação.
-
-        dadosAtualizar.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-
-        fs.collection("users")
-                .document(uid)
-                .update(dadosAtualizar) // .update altera só o que enviamos
-                .addOnSuccessListener(aVoid -> Log.d("FireStore", "Usuário atualizado com sucesso"))
-                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao atualizar usuário", e));
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.CONFIG)
+                .document(FirestoreSchema.PERFIL)
+                .update(patch)
+                .addOnSuccessListener(aVoid -> Log.d("FireStore", "Perfil atualizado com sucesso"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao atualizar perfil", e));
     }
 
+    /**
+     * Inicializa dados operacionais no schema novo.
+     *
+     * Hoje: seed de categorias padrão em:
+     * usuarios/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
+     *
+     * (você pode adicionar também criação de /Resumos/ultimos vazio no futuro)
+     */
     public void inicializarNovosDados() {
-
-        FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
         String uid = getIdUsuario();
+        if (uid == null || uid.trim().isEmpty()) return;
 
-        if (uid == null) return;
-
-        Map<String, Object> resumo = new HashMap<>();
-        resumo.put("proventosTotal", 0.0);
-        resumo.put("despesaTotal", 0.0);
-        resumo.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .set(resumo, SetOptions.merge())
-                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao iniciar conta", e));
-
-        seedCategoriasPadrao(fs, uid);
+        seedCategoriasPadrao(uid);
     }
 
-    private void seedCategoriasPadrao(FirebaseFirestore fs, String uid) {
-
+    private void seedCategoriasPadrao(String uid) {
         List<String> padroes = Arrays.asList(
                 "Alimentação", "Aluguel", "Pets", "Contas", "Doações e caridades",
                 "Educação", "Investimento", "Lazer", "Mercado", "Moradia"
         );
 
+        FirebaseFirestore fs = FirestoreSchema.db();
         WriteBatch batch = fs.batch();
 
+        int ordem = 0;
         for (String nome : padroes) {
             String catId = gerarSlug(nome);
-            Log.d("FireStore", "Categoria padrão setadas pro usuário");
 
-            DocumentReference ref = fs.collection("users").document(uid)
-                    .collection("contas").document("main")
-                    .collection("categorias").document(catId);
+            // usuarios/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
+            DocumentReference ref = FirestoreSchema.userDoc(uid)
+                    .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                    .collection(FirestoreSchema.CONTAS_CATEGORIAS).document(catId);
 
             Map<String, Object> doc = new HashMap<>();
             doc.put("nome", nome);
-            doc.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+            doc.put("tipo", "Despesa");  // padrão (ajuste se quiser separar)
+            doc.put("ativo", true);
+            doc.put("ordem", ordem++);
+            doc.put("createdAt", FieldValue.serverTimestamp());
 
             batch.set(ref, doc, SetOptions.merge());
         }
 
         batch.commit()
-                .addOnSuccessListener(unused -> Log.d("FireStore", "Seed categorias OK"))
+                .addOnSuccessListener(unused -> Log.d("FireStore", "Seed categorias OK (schema novo)"))
                 .addOnFailureListener(e -> Log.e("FireStore", "Erro seed categorias", e));
     }
 
@@ -142,51 +148,24 @@ public class Usuario {
     }
 
     // --- GETTERS E SETTERS ---
-    public Double getProventosTotal() {
-        return proventosTotal;
-    }
 
-    public void setProventosTotal(Double proventosTotal) {
-        this.proventosTotal = proventosTotal;
-    }
+    public Double getProventosTotal() { return proventosTotal; }
+    public void setProventosTotal(Double proventosTotal) { this.proventosTotal = proventosTotal; }
 
-    public Double getDespesaTotal() {
-        return despesaTotal;
-    }
-
-    public void setDespesaTotal(Double despesaTotal) {
-        this.despesaTotal = despesaTotal;
-    }
+    public Double getDespesaTotal() { return despesaTotal; }
+    public void setDespesaTotal(Double despesaTotal) { this.despesaTotal = despesaTotal; }
 
     @Exclude
-    public String getIdUsuario() {
-        return idUsuario;
-    }
-    public void setIdUsuario(String idUsuario) {
-        this.idUsuario = idUsuario;
-    }
+    public String getIdUsuario() { return idUsuario; }
+    public void setIdUsuario(String idUsuario) { this.idUsuario = idUsuario; }
 
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     @Exclude
-    public String getSenha() {
-        return senha;
-    }
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 }

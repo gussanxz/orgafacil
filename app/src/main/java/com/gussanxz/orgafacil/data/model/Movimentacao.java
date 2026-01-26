@@ -7,117 +7,180 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
-import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.helper.DateCustom;
+
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 
 import java.io.Serializable;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Movimentacao (schema novo) — com regra:
+ * - NOVO: define createdAt (server) e atualiza Resumos/ultimos
+ * - EDIÇÃO: NÃO altera createdAt e NÃO atualiza Resumos/ultimos (edição = correção)
+ *
+ * Salva em:
+ * {ROOT}/{uid}/moduloSistema/contas/contasMovimentacoes/{movId}
+ *
+ * Resumo:
+ * {ROOT}/{uid}/moduloSistema/contas/Resumos/ultimos
+ */
 public class Movimentacao implements Serializable {
 
-    private String data;
-    private String hora;
-    private String categoria;
+    // Mantidos por compatibilidade UI atual
+    private String data;      // dd/MM/yyyy
+    private String hora;      // HH:mm
+    private String categoria; // nome (hoje)
     private String descricao;
-    private String tipo; // "d" despesa | "r" proventos
-    private double valor;
+    private String tipo;      // "d" despesa | "r" proventos (legado)
+    private double valor;     // legado (double)
+
+    // Id do documento no Firestore (schema novo)
     private String key;
-    private String mesAno; // <-- ajuda MUITO para excluir/filtrar
+
+    // legado (não precisa mais para path, mantido por compatibilidade)
+    private String mesAno;
 
     public Movimentacao() {}
 
+    /**
+     * Salva no schema novo.
+     *
+     * Regras:
+     * - Se key estiver vazia => NOVO documento:
+     *   - createdAt = serverTimestamp()
+     *   - updatedAt = serverTimestamp()
+     *   - atualiza Resumos/ultimos (ultimaEntrada/ultimaSaida)
+     *
+     * - Se key estiver preenchida => EDIÇÃO (correção):
+     *   - NÃO mexe em createdAt
+     *   - updatedAt = serverTimestamp()
+     *   - NÃO atualiza Resumos/ultimos
+     */
     public void salvar(String uid, String dataEscolhida) {
-
-        String mesAnoLocal = DateCustom.mesAnoDataEscolhida(dataEscolhida);
-        this.setData(dataEscolhida);
-        this.setMesAno(mesAnoLocal);
-
-        FirebaseFirestore fs = ConfiguracaoFirestore.getFirestore();
-        WriteBatch batch = fs.batch();
-
-        // 1. Referência da PASTA DO MÊS (O Fantasma)
-        DocumentReference mesRef = fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("movimentacoes").document(mesAnoLocal);
-
-        // --- CORREÇÃO AQUI: Criamos a pasta do mês oficialmente ---
-        // Isso garante que ela apareça na busca .get()
-        Map<String, Object> dadosMes = new HashMap<>();
-        dadosMes.put("mesAno", mesAnoLocal); // Opcional, só pra ter um campo
-        batch.set(mesRef, dadosMes, SetOptions.merge());
-        // ----------------------------------------------------------
-
-        DocumentReference movRef;
-        boolean isNovo = (this.getKey() == null || this.getKey().isEmpty());
-
-        if (!isNovo) {
-            movRef = mesRef.collection("itens").document(this.getKey());
-        } else {
-            movRef = mesRef.collection("itens").document();
-            this.setKey(movRef.getId());
+        if (uid == null || uid.trim().isEmpty()) {
+            Log.e("FireStore", "Movimentacao.salvar(): uid vazio");
+            return;
         }
 
+        this.setData(dataEscolhida);
+
+        FirebaseFirestore fs = FirestoreSchema.db();
+        WriteBatch batch = fs.batch();
+
+        boolean isNovo = (this.getKey() == null || this.getKey().trim().isEmpty());
+
+        // referência do doc (novo schema)
+        DocumentReference movRef;
+        if (isNovo) {
+            movRef = FirestoreSchema.userDoc(uid)
+                    .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                    .collection(FirestoreSchema.CONTAS_MOV).document();
+            this.setKey(movRef.getId());
+        } else {
+            movRef = FirestoreSchema.userDoc(uid)
+                    .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                    .collection(FirestoreSchema.CONTAS_MOV).document(this.getKey());
+        }
+
+        // Keys por data
+        Date dateObj = parseBrDate(dataEscolhida);
+        String diaKey = FirestoreSchema.diaKey(dateObj);
+        String mesKey = FirestoreSchema.mesKey(dateObj);
+
+        // tipo legado -> tipo novo
+        // "r" => Receita | "d" => Despesa
+        String tipoNovo = "r".equals(getTipo()) ? "Receita" : "Despesa";
+
+        // valor double -> centavos
+        int valorCent = (int) Math.round(getValor() * 100.0);
+
         Map<String, Object> doc = new HashMap<>();
+        doc.put("diaKey", diaKey);
+        doc.put("mesKey", mesKey);
+        doc.put("tipo", tipoNovo); // "Receita" | "Despesa"
+        doc.put("valorCent", valorCent);
+
+        // campos úteis para UI
         doc.put("data", this.getData());
         doc.put("hora", this.getHora());
-        doc.put("categoria", this.getCategoria());
         doc.put("descricao", this.getDescricao());
-        doc.put("tipo", this.getTipo());
-        doc.put("valor", this.getValor());
-        doc.put("key", this.getKey());
-        doc.put("mesAno", mesAnoLocal);
-        doc.put("createdAt", FieldValue.serverTimestamp());
+        doc.put("categoriaNome", this.getCategoria());
+
+        // timestamps
+        doc.put("updatedAt", FieldValue.serverTimestamp());
+        if (isNovo) {
+            // só no novo (edição não pode alterar o ranking)
+            doc.put("createdAt", FieldValue.serverTimestamp());
+        }
 
         batch.set(movRef, doc, SetOptions.merge());
 
+        // Atualiza "ultimos" SOMENTE se for NOVO
         if (isNovo) {
-            DocumentReference contaMainRef = fs.collection("users").document(uid)
-                    .collection("contas").document("main");
-
-            if ("r".equals(getTipo())) {
-                batch.update(contaMainRef, "proventosTotal", FieldValue.increment(getValor()));
-            } else if ("d".equals(getTipo())) {
-                batch.update(contaMainRef, "despesaTotal", FieldValue.increment(getValor()));
-            }
-            adicionarUltimosLancamentosNoBatch(batch, fs, uid);
+            adicionarUltimosLancamentosNoBatch(batch, uid, tipoNovo, valorCent);
         }
 
         batch.commit()
-                .addOnSuccessListener(unused -> Log.d("FireStore", "Salvo com sucesso!"))
-                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao salvar", e));
+                .addOnSuccessListener(unused -> Log.d("FireStore", isNovo
+                        ? "Movimentação criada (schema novo)!"
+                        : "Movimentação editada (correção, schema novo)!"))
+                .addOnFailureListener(e -> Log.e("FireStore", "Erro ao salvar movimentação (schema novo)", e));
     }
 
-    // Metodo auxiliar para organizar o código (agora recebe o batch)
-    private void adicionarUltimosLancamentosNoBatch(WriteBatch batch, FirebaseFirestore fs, String uid) {
-        String tipoMov = this.getTipo();
+    /**
+     * Atualiza Resumos/ultimos:
+     * - Receita => ultimaEntrada
+     * - Despesa => ultimaSaida
+     *
+     * Observação: Só é chamado em NOVO lançamento.
+     */
+    private void adicionarUltimosLancamentosNoBatch(WriteBatch batch,
+                                                    String uid,
+                                                    String tipoNovo,
+                                                    int valorCent) {
 
         Map<String, Object> info = new HashMap<>();
-        info.put("categoria", this.getCategoria());
-        info.put("descricao", this.getDescricao());
-        info.put("data", this.getData());
-        info.put("hora", this.getHora());
-        info.put("valor", this.getValor()); // Adicionei valor, geralmente é útil exibir no resumo
+        info.put("movId", this.getKey());
+        // não precisa duplicar createdAt real aqui, mas ajuda para debug
+        info.put("createdAt", FieldValue.serverTimestamp());
+        info.put("valorCent", valorCent);
+
+        // quando tiver categoriaId real, preencha
+        info.put("categoriaId", null);
+        info.put("categoriaNomeSnapshot", this.getCategoria());
+
+        // (opcional, recomendado) snapshot de descricao/hora para sugestão melhor
+        info.put("descricaoSnapshot", this.getDescricao());
+        info.put("horaSnapshot", this.getHora());
+
+        String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
 
         Map<String, Object> payload = new HashMap<>();
-        if ("d".equals(tipoMov)) {
-            payload.put("ultimaDespesa", info);
-        } else if ("r".equals(tipoMov)) {
-            payload.put("ultimoProvento", info);
-        } else {
-            return;
-        }
+        payload.put(campo, info);
         payload.put("updatedAt", FieldValue.serverTimestamp());
 
-        DocumentReference metaRef = fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("_meta").document("ultimos");
+        DocumentReference ultimosRef = FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                .collection(FirestoreSchema.CONTAS_RESUMOS).document(FirestoreSchema.CONTAS_ULTIMOS);
 
-        // Adiciona ao pacote
-        batch.set(metaRef, payload, SetOptions.merge());
+        batch.set(ultimosRef, payload, SetOptions.merge());
     }
 
-// --- GETTERS E SETTERS ---
+    private Date parseBrDate(String dataBr) {
+        if (dataBr == null) return new Date();
+        try {
+            return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dataBr);
+        } catch (ParseException e) {
+            return new Date();
+        }
+    }
+
+    // --- GETTERS E SETTERS ---
 
     public String getMesAno() { return mesAno; }
     public void setMesAno(String mesAno) { this.mesAno = mesAno; }

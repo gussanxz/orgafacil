@@ -1,19 +1,40 @@
 package com.gussanxz.orgafacil.data.repository;
 
+import androidx.annotation.NonNull;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 import com.gussanxz.orgafacil.data.model.Produto;
 
+/**
+ * ProdutoRepository
+ *
+ * O que faz:
+ * - CRUD + Listener de produtos do módulo vendas mantendo o caminho atual:
+ *   {ROOT}/{uid}/vendas_produtos/{produtoId}
+ *
+ * Impacto:
+ * - Agora respeita FirestoreSchema.ROOT (ex: "usuarios" / "teste")
+ * - Remove hardcode "users" em todos os paths
+ * - Mantém compatibilidade com telas atuais (não migra ainda o schema)
+ */
 public class ProdutoRepository {
 
     private final FirebaseFirestore db;
     private final String uid;
 
+    // Mantém o nome da coleção atual para não quebrar o app agora
+    private static final String COL_VENDAS_PRODUTOS = "vendas_produtos";
+
     public ProdutoRepository() {
-        this.db = FirebaseFirestore.getInstance();
-        this.uid = FirebaseAuth.getInstance().getCurrentUser() != null ?
-                FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        this.db = FirestoreSchema.db();
+        this.uid = (FirebaseAuth.getInstance().getCurrentUser() != null)
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
     }
 
     public interface Callback {
@@ -21,55 +42,77 @@ public class ProdutoRepository {
         void onErro(String erro);
     }
 
-    public void salvar(Produto produto, Callback callback) {
-        if (uid == null) { callback.onErro("Usuário não logado"); return; }
-
-        DocumentReference docRef;
-        boolean isEdicao = (produto.getId() != null && !produto.getId().isEmpty());
-
-        // CAMINHO: users/{uid}/vendas_produtos/{id}
-        if (isEdicao) {
-            docRef = db.collection("users").document(uid)
-                    .collection("vendas_produtos").document(produto.getId());
-        } else {
-            docRef = db.collection("users").document(uid)
-                    .collection("vendas_produtos").document();
-            produto.setId(docRef.getId());
-        }
-
-        docRef.set(produto)
-                .addOnSuccessListener(aVoid -> callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
-    }
-
-    // Adicione esta interface dentro da classe
     public interface ListaCallback {
         void onNovosDados(java.util.List<Produto> lista);
         void onErro(String erro);
     }
 
-    // Adicione este método
-    public com.google.firebase.firestore.ListenerRegistration listarTempoReal(ListaCallback callback) {
+    /**
+     * Salvar/Editar produto
+     *
+     * Caminho:
+     * {ROOT}/{uid}/vendas_produtos/{id}
+     */
+    public void salvar(@NonNull Produto produto, @NonNull Callback callback) {
+        if (uid == null) {
+            callback.onErro("Usuário não logado");
+            return;
+        }
+
+        boolean isEdicao = (produto.getId() != null && !produto.getId().isEmpty());
+        DocumentReference docRef;
+
+        if (isEdicao) {
+            docRef = FirestoreSchema.userDoc(uid)
+                    .collection(COL_VENDAS_PRODUTOS)
+                    .document(produto.getId());
+        } else {
+            docRef = FirestoreSchema.userDoc(uid)
+                    .collection(COL_VENDAS_PRODUTOS)
+                    .document();
+            produto.setId(docRef.getId());
+        }
+
+        docRef.set(produto)
+                .addOnSuccessListener(aVoid ->
+                        callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!")
+                )
+                .addOnFailureListener(e ->
+                        callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar produto")
+                );
+    }
+
+    /**
+     * Listener em tempo real (lista de produtos)
+     *
+     * Impacto:
+     * - Bom para UI de catálogo
+     * - Cada alteração gera evento (custo: leituras por mudança)
+     */
+    public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         if (uid == null) return null;
 
-        return db.collection("users").document(uid)
-                .collection("vendas_produtos") // Caminho dos produtos
-                .orderBy("nome") // Ordena por nome
+        return FirestoreSchema.userDoc(uid)
+                .collection(COL_VENDAS_PRODUTOS)
+                .orderBy("nome")
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
-                        callback.onErro(error.getMessage());
+                        callback.onErro(error.getMessage() != null ? error.getMessage() : "Erro ao listar produtos");
                         return;
                     }
+
                     java.util.List<Produto> lista = new java.util.ArrayList<>();
                     if (snapshots != null) {
                         lista = snapshots.toObjects(Produto.class);
-                        // Garante IDs
+
+                        // Garante IDs (toObjects pode não preencher id)
                         int i = 0;
                         for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots) {
-                            if(i < lista.size()) lista.get(i).setId(doc.getId());
+                            if (i < lista.size()) lista.get(i).setId(doc.getId());
                             i++;
                         }
                     }
+
                     callback.onNovosDados(lista);
                 });
     }

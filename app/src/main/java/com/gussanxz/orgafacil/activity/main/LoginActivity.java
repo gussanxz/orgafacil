@@ -23,15 +23,25 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.helper.GoogleLoginHelper; // Helper Importado
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
+import com.gussanxz.orgafacil.helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.helper.VisibilidadeHelper;
 import com.gussanxz.orgafacil.data.model.Usuario;
 
+/**
+ * LoginActivity
+ * - A verificação de "usuário tem dados" não olha mais users/{uid}
+ * - Agora olha: {ROOT}/{uid}/config/perfil
+ *
+ * Impacto:
+ * - ROOT passa a funcionar de verdade (teste/usuarios/users)
+ * - A "safety net" recria dados no schema novo, evitando crash na home
+ */
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String TAG = "LoginActivity";
     private EditText campoEmail, campoSenha;
     private Button botaoEntrar, btnLoginGoogle;
     private TextView recuperarSenha;
@@ -39,7 +49,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private Usuario usuario;
     private FirebaseAuth autenticacao;
-    private GoogleLoginHelper googleLoginHelper; // Instância do Helper
+    private GoogleLoginHelper googleLoginHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,35 +65,34 @@ public class LoginActivity extends AppCompatActivity {
 
         inicializarComponentes();
 
-        // 1. Inicializa o Helper
-        // A ação de sucesso será verificar os dados no Firestore (para garantir integridade)
+        // Google helper chama nosso "safety net" ao finalizar login
         googleLoginHelper = new GoogleLoginHelper(this, this::verificarSeUsuarioTemDadosNoFirestore);
 
-        // --- BOTÃO LOGIN MANUAL ---
+        // Login manual
         botaoEntrar.setOnClickListener(v -> {
             String textoEmail = campoEmail.getText().toString();
             String textoSenha = campoSenha.getText().toString();
 
-            if (!textoEmail.isEmpty()) {
-                if (!textoSenha.isEmpty()) {
-                    usuario = new Usuario();
-                    usuario.setEmail(textoEmail);
-                    usuario.setSenha(textoSenha);
-                    validarLoginManual();
-                } else {
-                    Toast.makeText(LoginActivity.this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(LoginActivity.this, "Preencha o email.", Toast.LENGTH_SHORT).show();
+            if (textoEmail.isEmpty()) {
+                Toast.makeText(this, "Preencha o email.", Toast.LENGTH_SHORT).show();
+                return;
             }
+            if (textoSenha.isEmpty()) {
+                Toast.makeText(this, "Preencha a senha.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            usuario = new Usuario();
+            usuario.setEmail(textoEmail);
+            usuario.setSenha(textoSenha);
+            validarLoginManual();
         });
 
-        // --- BOTÃO LOGIN GOOGLE ---
+        // Login Google
         if (btnLoginGoogle != null) {
-            btnLoginGoogle.setOnClickListener(v -> {
-                // Chama a intent do Google via Helper
-                resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
-            });
+            btnLoginGoogle.setOnClickListener(v ->
+                    resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent())
+            );
         }
 
         acessarTelaCadastro.setOnClickListener(view -> abrirTelaCadastro());
@@ -92,12 +101,10 @@ public class LoginActivity extends AppCompatActivity {
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
     }
 
-    // --- LÓGICA DO HELPER (Receiver) ---
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Delega o resultado para o Helper processar (Verificar novo usuário, pedir senha, etc)
                     googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_LOGIN);
                 } else {
                     Toast.makeText(this, "Login Google cancelado.", Toast.LENGTH_SHORT).show();
@@ -105,52 +112,48 @@ public class LoginActivity extends AppCompatActivity {
             }
     );
 
-    // --- LOGIN MANUAL (EMAIL/SENHA) ---
-    public void validarLoginManual(){
+    public void validarLoginManual() {
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
-        autenticacao.signInWithEmailAndPassword(
-                usuario.getEmail(),
-                usuario.getSenha()
-        ).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if ( task.isSuccessful() ) {
-                    // Login manual ok, verifica dados no banco
-                    verificarSeUsuarioTemDadosNoFirestore();
-                } else {
-                    tratarErrosLogin(task);
-                }
-            }
-        });
+        autenticacao.signInWithEmailAndPassword(usuario.getEmail(), usuario.getSenha())
+                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            verificarSeUsuarioTemDadosNoFirestore();
+                        } else {
+                            tratarErrosLogin(task);
+                        }
+                    }
+                });
     }
 
-    // --- VERIFICAÇÃO DE DADOS (SAFETY NET) ---
-    // Este método é chamado tanto pelo Login Manual quanto pelo Callback do Google Helper
+    /**
+     * SAFETY NET (schema novo)
+     * Verifica se existe:
+     * {ROOT}/{uid}/config/perfil
+     */
     private void verificarSeUsuarioTemDadosNoFirestore() {
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         if (autenticacao.getCurrentUser() == null) return;
 
         String uid = autenticacao.getUid();
 
-        // Verifica se existe o documento users/{uid}
-        ConfiguracaoFirestore.getFirestore()
-                .collection("users").document(uid)
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.CONFIG)
+                .document(FirestoreSchema.PERFIL)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        // [CENÁRIO 1] Usuário já tem dados. Tudo certo.
                         abrirTelaHome();
                     } else {
-                        // [CENÁRIO 2] Usuário logou (provavelmente antigo ou erro de criação), mas sem dados.
-                        // Recria os dados básicos para evitar crash na Home.
-                        recriarDadosUsuario(autenticacao.getCurrentUser().getEmail(), autenticacao.getCurrentUser().getDisplayName(), uid);
+                        recriarDadosUsuario(
+                                autenticacao.getCurrentUser().getEmail(),
+                                autenticacao.getCurrentUser().getDisplayName(),
+                                uid
+                        );
                     }
                 })
-                .addOnFailureListener(e -> {
-                    // Em caso de erro de rede, tenta abrir a home de qualquer jeito
-                    // A HomeActivity deve tratar falta de conexão
-                    abrirTelaHome();
-                });
+                .addOnFailureListener(e -> abrirTelaHome());
     }
 
     private void recriarDadosUsuario(String email, String nome, String uid) {
@@ -159,14 +162,12 @@ public class LoginActivity extends AppCompatActivity {
         usuarioMigrado.setEmail(email);
         usuarioMigrado.setNome(nome != null ? nome : "Usuário");
 
-        usuarioMigrado.salvar();
-        usuarioMigrado.inicializarNovosDados(); // Cria saldo 0 e categorias
+        usuarioMigrado.salvar();              // config/perfil
+        usuarioMigrado.inicializarNovosDados(); // seed categorias em moduloSistema/contas
 
-        Toast.makeText(LoginActivity.this, "Dados sincronizados com sucesso.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Dados sincronizados com sucesso.", Toast.LENGTH_SHORT).show();
         abrirTelaHome();
     }
-
-    // --- MÉTODOS UTILITÁRIOS ---
 
     private void inicializarComponentes() {
         campoEmail = findViewById(R.id.editEmail);
@@ -182,7 +183,7 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    public void abrirTelaCadastro(){
+    public void abrirTelaCadastro() {
         startActivity(new Intent(this, CadastroActivity.class));
     }
 
@@ -204,7 +205,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void tratarErrosLogin(Task<AuthResult> task) {
-        String excecao = "";
+        String excecao;
         try {
             throw task.getException();
         } catch (FirebaseAuthInvalidUserException e) {
@@ -213,8 +214,7 @@ public class LoginActivity extends AppCompatActivity {
             excecao = "E-mail e/ou senha incorretos.";
         } catch (Exception e) {
             excecao = "Erro ao logar: " + e.getMessage();
-            e.printStackTrace();
         }
-        Toast.makeText(LoginActivity.this, excecao, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, excecao, Toast.LENGTH_SHORT).show();
     }
 }

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -21,15 +23,17 @@ import com.gussanxz.orgafacil.data.model.Usuario;
 
 public class GoogleLoginHelper {
 
-    private Activity activity;
-    private FirebaseAuth autenticacao;
+    private final Activity activity;
+    private final FirebaseAuth autenticacao;
     private GoogleSignInClient mGoogleSignInClient;
-    private Runnable onSuccessCallback; // Ação para executar após sucesso (ex: abrir Home)
 
-    // Constantes para identificar de onde veio o clique
-    public static final int MODO_MISTO = 0;    // Tela Comece Agora
-    public static final int MODO_LOGIN = 1;    // Tela Login
-    public static final int MODO_CADASTRO = 2; // Tela Cadastro
+    // ✅ Callback simples (abre Home)
+    private final Runnable onSuccessCallback;
+
+    // Constantes
+    public static final int MODO_MISTO = 0;
+    public static final int MODO_LOGIN = 1;
+    public static final int MODO_CADASTRO = 2;
 
     public GoogleLoginHelper(Activity activity, Runnable onSuccessCallback) {
         this.activity = activity;
@@ -47,7 +51,7 @@ public class GoogleLoginHelper {
     }
 
     public Intent getSignInIntent() {
-        // Desloga do Google antes de iniciar para permitir escolher conta novamente
+        // Opcional: se quiser sempre escolher conta
         mGoogleSignInClient.signOut();
         return mGoogleSignInClient.getSignInIntent();
     }
@@ -56,9 +60,7 @@ public class GoogleLoginHelper {
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
         try {
             GoogleSignInAccount account = task.getResult(ApiException.class);
-            if (account != null) {
-                firebaseAuthWithGoogle(account, modoOperacao);
-            }
+            if (account != null) firebaseAuthWithGoogle(account, modoOperacao);
         } catch (ApiException e) {
             Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
             Log.e("GoogleLogin", "Erro API", e);
@@ -70,60 +72,75 @@ public class GoogleLoginHelper {
 
         autenticacao.signInWithCredential(credential)
                 .addOnCompleteListener(activity, task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = autenticacao.getCurrentUser();
-                        boolean isNovoUsuario = task.getResult().getAdditionalUserInfo().isNewUser();
+                    if (!task.isSuccessful()) {
+                        Toast.makeText(activity, "Erro na autenticação.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                        // --- LÓGICA DE MENSAGENS (TOASTS) ---
-                        if (isNovoUsuario) {
-                            // Cenário: USUÁRIO NOVO
-                            switch (modoOperacao) {
-                                case MODO_MISTO:
-                                    Toast.makeText(activity, "Conta criada, novo usuário!", Toast.LENGTH_SHORT).show();
-                                    break;
-                                case MODO_LOGIN:
-                                    Toast.makeText(activity, "Usuário novo identificado, criando cadastro...", Toast.LENGTH_SHORT).show();
-                                    break;
-                                case MODO_CADASTRO:
-                                    Toast.makeText(activity, "Realizando cadastro!", Toast.LENGTH_SHORT).show();
-                                    break;
-                            }
-                            // Como é novo, SEMPRE salva no banco
-                            salvarNovoUsuarioGoogle(user);
+                    FirebaseUser user = autenticacao.getCurrentUser();
 
-                        } else {
-                            // Cenário: USUÁRIO JÁ EXISTENTE
-                            switch (modoOperacao) {
-                                case MODO_MISTO:
-                                    Toast.makeText(activity, "Login realizado, bem-vindo!", Toast.LENGTH_SHORT).show();
-                                    break;
-                                case MODO_LOGIN:
-                                    Toast.makeText(activity, "Fazendo login...", Toast.LENGTH_SHORT).show();
-                                    break;
-                                case MODO_CADASTRO:
-                                    Toast.makeText(activity, "Usuário já cadastrado, fazendo login...", Toast.LENGTH_SHORT).show();
-                                    break;
-                            }
-                            // Usuário antigo apenas segue para a Home
-                            if (onSuccessCallback != null) onSuccessCallback.run();
+                    boolean isNovoUsuario = false;
+                    try {
+                        if (task.getResult() != null
+                                && task.getResult().getAdditionalUserInfo() != null) {
+                            isNovoUsuario = task.getResult().getAdditionalUserInfo().isNewUser();
+                        }
+                    } catch (Exception ignored) {}
+
+                    // ✅ 1) NAVEGA IMEDIATO (NUNCA BLOQUEIA POR FIRESTORE)
+                    if (onSuccessCallback != null) onSuccessCallback.run();
+
+                    // ✅ 2) Toasts (só informativo)
+                    if (isNovoUsuario) {
+                        switch (modoOperacao) {
+                            case MODO_MISTO:
+                                Toast.makeText(activity, "Conta criada, novo usuário!", Toast.LENGTH_SHORT).show();
+                                break;
+                            case MODO_LOGIN:
+                                Toast.makeText(activity, "Usuário novo identificado!", Toast.LENGTH_SHORT).show();
+                                break;
+                            case MODO_CADASTRO:
+                                Toast.makeText(activity, "Realizando cadastro!", Toast.LENGTH_SHORT).show();
+                                break;
                         }
 
+                        // ✅ 3) Setup Firestore em paralelo (não trava navegação)
+                        if (user != null) salvarNovoUsuarioGoogleSemBloquear(user);
+
                     } else {
-                        Toast.makeText(activity, "Erro na autenticação.", Toast.LENGTH_SHORT).show();
+                        switch (modoOperacao) {
+                            case MODO_MISTO:
+                                Toast.makeText(activity, "Login realizado, bem-vindo!", Toast.LENGTH_SHORT).show();
+                                break;
+                            case MODO_LOGIN:
+                                Toast.makeText(activity, "Fazendo login...", Toast.LENGTH_SHORT).show();
+                                break;
+                            case MODO_CADASTRO:
+                                Toast.makeText(activity, "Usuário já cadastrado, fazendo login...", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
                     }
                 });
     }
 
-    private void salvarNovoUsuarioGoogle(FirebaseUser userFirebase) {
-        Usuario usuario = new Usuario();
-        usuario.setIdUsuario(userFirebase.getUid());
-        usuario.setNome(userFirebase.getDisplayName() != null ? userFirebase.getDisplayName() : "Usuário");
-        usuario.setEmail(userFirebase.getEmail());
+    /**
+     * ✅ Importante: não pode bloquear a navegação.
+     * Se falhar (ex: PERMISSION_DENIED), só loga/Toast.
+     */
+    private void salvarNovoUsuarioGoogleSemBloquear(FirebaseUser userFirebase) {
+        try {
+            Usuario usuario = new Usuario();
+            usuario.setIdUsuario(userFirebase.getUid());
+            usuario.setNome(userFirebase.getDisplayName() != null ? userFirebase.getDisplayName() : "Usuário");
+            usuario.setEmail(userFirebase.getEmail());
 
-        usuario.salvar();
-        usuario.inicializarNovosDados();
+            // Essas chamadas provavelmente são async. Não dependa delas pra navegar.
+            usuario.salvar();
+            usuario.inicializarNovosDados();
 
-        // Após salvar, chama o callback para ir para a Home
-        if (onSuccessCallback != null) onSuccessCallback.run();
+        } catch (Exception e) {
+            Log.e("GoogleLogin", "Falha ao iniciar setup do usuário", e);
+            Toast.makeText(activity, "Login OK, mas falhou setup inicial.", Toast.LENGTH_SHORT).show();
+        }
     }
 }

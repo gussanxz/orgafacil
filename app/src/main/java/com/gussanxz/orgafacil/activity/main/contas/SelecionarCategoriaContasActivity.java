@@ -18,12 +18,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.ui.contas.categorias.AdapterExibirCategoriasContas;
-import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.FieldValue;
+
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 import com.gussanxz.orgafacil.helper.CategoriaIdHelper;
 
 import java.util.ArrayList;
@@ -32,6 +34,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * SelecionarCategoriaContasActivity (schema novo)
+ *
+ * Categorias agora em:
+ *  {ROOT}/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
+ *
+ * Verificação de uso:
+ *  consulta contasMovimentacoes onde categoriaNome == {nome}
+ *
+ * Impacto:
+ * - remove "contas/main/categorias" antigo
+ * - caminho único, fácil de indexar e manter
+ */
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -59,12 +74,19 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         }
 
         uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        fs = ConfiguracaoFirestore.getFirestore();
+        fs = FirestoreSchema.db();
 
         carregarCategoriasDoFirestore();
 
         findViewById(R.id.btnNovaCategoria).setOnClickListener(v -> mostrarDialogNovaCategoria());
         configurarSwipeParaExcluir();
+    }
+
+    private DocumentReference categoriaDocRef(String catId) {
+        // {ROOT}/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
+        return FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                .collection(FirestoreSchema.CONTAS_CATEGORIAS).document(catId);
     }
 
     private void mostrarDialogNovaCategoria() {
@@ -88,19 +110,15 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // users/{uid}/contas/main/categorias/{catId}
-    private DocumentReference categoriaDocRef(String catId) {
-        return fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("categorias").document(catId);
-    }
-
     private void salvarCategoriaNoFirestore(String nomeCategoria) {
         String catId = CategoriaIdHelper.slugify(nomeCategoria);
 
         Map<String, Object> doc = new HashMap<>();
         doc.put("nome", nomeCategoria);
-        doc.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        doc.put("tipo", "Despesa"); // padrão (ajuste se quiser separar Receita/Despesa por tela)
+        doc.put("ativo", true);
+        doc.put("ordem", 0);
+        doc.put("createdAt", FieldValue.serverTimestamp());
 
         categoriaDocRef(catId)
                 .set(doc, SetOptions.merge())
@@ -119,9 +137,10 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     }
 
     private void carregarCategoriasDoFirestore() {
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("categorias")
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                .collection(FirestoreSchema.CONTAS_CATEGORIAS)
+                .whereEqualTo("ativo", true)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     categorias.clear();
@@ -134,16 +153,15 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                     }
 
                     if (categorias.isEmpty()) {
-                        // fallback (caso seed no cadastro falhe)
                         inicializarCategoriasPadraoNoFirestore();
                     } else {
                         categorias.sort(String::compareToIgnoreCase);
                         adapter.notifyDataSetChanged();
                     }
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Erro ao carregar categorias", Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao carregar categorias", Toast.LENGTH_SHORT).show()
+                );
     }
 
     private void inicializarCategoriasPadraoNoFirestore() {
@@ -152,7 +170,6 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                 "Educação", "Investimento", "Lazer", "Mercado", "Moradia"
         );
 
-        // cria todas e depois recarrega
         final int total = padroes.size();
         final int[] ok = {0};
 
@@ -161,20 +178,19 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
             Map<String, Object> doc = new HashMap<>();
             doc.put("nome", nome);
-            doc.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+            doc.put("tipo", "Despesa");
+            doc.put("ativo", true);
+            doc.put("ordem", 0);
+            doc.put("createdAt", FieldValue.serverTimestamp());
 
             categoriaDocRef(catId).set(doc, SetOptions.merge())
                     .addOnSuccessListener(unused -> {
                         ok[0]++;
-                        if (ok[0] == total) {
-                            carregarCategoriasDoFirestore();
-                        }
+                        if (ok[0] == total) carregarCategoriasDoFirestore();
                     })
                     .addOnFailureListener(e -> {
                         ok[0]++;
-                        if (ok[0] == total) {
-                            carregarCategoriasDoFirestore();
-                        }
+                        if (ok[0] == total) carregarCategoriasDoFirestore();
                     });
         }
     }
@@ -192,8 +208,9 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int pos = viewHolder.getAdapterPosition();
                 String categoria = categorias.get(pos);
-                excluirCategoriaFirestore(CategoriaIdHelper.slugify(categoria), pos);
-//                verificarEExcluirCategoriaFirestore(categoria, pos);
+
+                // Versão segura: verifica se está em uso antes de excluir
+                verificarEExcluirCategoriaFirestore(categoria, pos);
             }
 
             @Override
@@ -220,60 +237,32 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     /**
      * Bloqueia exclusão se existir qualquer movimentação usando a categoria.
-     * Implementação simples: varre meses e consulta "itens" de cada mês.
-     * (Depois podemos otimizar com índice/coleção única por mês ou campo agregado.)
+     *
+     * Agora (schema novo):
+     * - Consulta direta em contasMovimentacoes onde categoriaNome == categoria
+     *
+     * Impacto:
+     * - Muito mais barato que varrer meses/subcoleções
      */
-    private void verificarEExcluirCategoriaFirestore(String categoria, int posicaoNaLista) {
-        String cat = categoria;
-        String catId = CategoriaIdHelper.slugify(cat);
-
-        fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("movimentacoes")
+    private void verificarEExcluirCategoriaFirestore(String categoriaNome, int posicaoNaLista) {
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
+                .collection(FirestoreSchema.CONTAS_MOV)
+                .whereEqualTo("categoriaNome", categoriaNome)
+                .limit(1)
                 .get()
-                .addOnSuccessListener(mesesSnap -> {
-                    if (mesesSnap.isEmpty()) {
-                        excluirCategoriaFirestore(catId, posicaoNaLista);
-                        return;
-                    }
-
-                    final boolean[] emUso = {false};
-                    final int totalMeses = mesesSnap.size();
-                    final int[] verificados = {0};
-
-                    for (QueryDocumentSnapshot mesDoc : mesesSnap) {
-                        mesDoc.getReference()
-                                .collection("itens")
-                                .whereEqualTo("categoria", cat)
-                                .limit(1)
-                                .get()
-                                .addOnSuccessListener(itensSnap -> {
-                                    if (!itensSnap.isEmpty()) emUso[0] = true;
-
-                                    verificados[0]++;
-                                    if (verificados[0] == totalMeses) {
-                                        if (emUso[0]) {
-                                            Toast.makeText(this,
-                                                    "Categoria em uso — não pode ser excluída.", Toast.LENGTH_SHORT).show();
-                                            adapter.notifyItemChanged(posicaoNaLista);
-                                        } else {
-                                            excluirCategoriaFirestore(catId, posicaoNaLista);
-                                        }
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    verificados[0]++;
-                                    if (verificados[0] == totalMeses) {
-                                        // se falhou a verificação, por segurança não exclui
-                                        Toast.makeText(this,
-                                                "Não foi possível verificar uso da categoria.", Toast.LENGTH_SHORT).show();
-                                        adapter.notifyItemChanged(posicaoNaLista);
-                                    }
-                                });
+                .addOnSuccessListener(itensSnap -> {
+                    if (itensSnap != null && !itensSnap.isEmpty()) {
+                        Toast.makeText(this,
+                                "Categoria em uso — não pode ser excluída.", Toast.LENGTH_SHORT).show();
+                        adapter.notifyItemChanged(posicaoNaLista);
+                    } else {
+                        excluirCategoriaFirestore(CategoriaIdHelper.slugify(categoriaNome), posicaoNaLista);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Erro ao verificar movimentações", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this,
+                            "Não foi possível verificar uso da categoria.", Toast.LENGTH_SHORT).show();
                     adapter.notifyItemChanged(posicaoNaLista);
                 });
     }

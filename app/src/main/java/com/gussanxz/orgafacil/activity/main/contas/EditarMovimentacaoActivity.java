@@ -11,7 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton; // Importante: ImageButton
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,34 +20,44 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.firestore.DocumentSnapshot;
+
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.config.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.helper.DateCustom;
+import com.gussanxz.orgafacil.data.config.FirestoreSchema;
 import com.gussanxz.orgafacil.data.model.Movimentacao;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Date;
 
+/**
+ * EditarMovimentacaoActivity (schema novo)
+ *
+ * O que faz:
+ * - Edita uma movimentação EXISTENTE SEM recriar documento.
+ *
+ * Impacto:
+ * - "Último lançamento" continua baseado em createdAt (criação),
+ *   porque edição NÃO altera createdAt.
+ * - Evita bug de ranking (edição virando "mais recente").
+ */
 public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
     private TextView textViewHeader;
-    private ImageButton btnExcluir; // Referência para o botão de lixeira
+    private ImageButton btnExcluir;
 
     private Movimentacao movimentacaoAntiga;
-    private String keyFirebase;
-    private double valorAnterior;
-
-    private FirebaseFirestore fs;
-    private String uid;
+    private String movId;          // ID do doc em contasMovimentacoes
+    private double valorAnterior;  // valor antigo (double legado)
 
     private ActivityResultLauncher<Intent> launcherCategoria;
 
@@ -55,24 +65,20 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Recupera dados
         movimentacaoAntiga = (Movimentacao) getIntent().getSerializableExtra("movimentacaoSelecionada");
-        keyFirebase = getIntent().getStringExtra("keyFirebase");
+        movId = getIntent().getStringExtra("keyFirebase"); // reutilizando seu nome antigo
 
-        if (movimentacaoAntiga == null) {
+        if (movimentacaoAntiga == null || movId == null || movId.trim().isEmpty()) {
             finish();
             return;
         }
 
-        // Define layout
+        // Mantém suas telas separadas por tipo (UI)
         if ("d".equals(movimentacaoAntiga.getTipo())) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
             setContentView(R.layout.ac_main_contas_add_receita);
         }
-
-        fs = ConfiguracaoFirestore.getFirestore();
-        uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         inicializarComponentes();
         preencherDados();
@@ -88,7 +94,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
 
-        // VINCULA O BOTÃO PELO ID (Muito mais seguro que onClick no XML)
         btnExcluir = findViewById(R.id.btnExcluir);
 
         if (textViewHeader != null) {
@@ -114,7 +119,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editHora.setClickable(true);
         editHora.setOnClickListener(v -> abrirTimePicker());
 
-        // CONFIGURA O CLIQUE DO BOTÃO EXCLUIR NO JAVA
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
         }
@@ -124,86 +128,77 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         finish();
     }
 
-    // --- Métodos para Salvar (Chamados pelo XML dos FABs) ---
+    // XML chama esses nomes nos FABs (mantidos)
     public void salvarDespesa(View view) { confirmarEdicao(); }
     public void salvarProvento(View view) { confirmarEdicao(); }
     public void salvarProventos(View view) { confirmarEdicao(); }
 
+    /**
+     * Edição no schema novo:
+     * - Atualiza o MESMO documento /contasMovimentacoes/{movId}
+     * - NÃO mexe em createdAt (para não virar "último")
+     * - Atualiza diaKey/mesKey conforme a data corrigida
+     */
     private void confirmarEdicao() {
-        String novaData = editData.getText().toString();
-        String novaDescricao = editDescricao.getText().toString();
-        String novaCategoria = editCategoria.getText().toString();
-        String novoValorStr = editValor.getText().toString();
-        String novaHora = editHora.getText().toString();
+        String novaData = editData.getText().toString().trim();
+        String novaDescricao = editDescricao.getText().toString().trim();
+        String novaCategoria = editCategoria.getText().toString().trim();
+        String novoValorStr = editValor.getText().toString().trim();
+        String novaHora = editHora.getText().toString().trim();
 
         if (novaData.isEmpty() || novaDescricao.isEmpty() || novaCategoria.isEmpty() || novoValorStr.isEmpty()) {
             Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        double novoValor = Double.parseDouble(novoValorStr);
-        double diferencaValor = novoValor - valorAnterior;
-
-        WriteBatch batch = fs.batch();
-
-        String mesAnoAntigo = movimentacaoAntiga.getMesAno();
-        if (mesAnoAntigo == null) mesAnoAntigo = DateCustom.mesAnoDataEscolhida(movimentacaoAntiga.getData());
-        String mesAnoNovo = DateCustom.mesAnoDataEscolhida(novaData);
-
-        DocumentReference refAntiga = fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("movimentacoes").document(mesAnoAntigo)
-                .collection("itens").document(keyFirebase);
-
-        Map<String, Object> dadosAtualizados = new HashMap<>();
-        dadosAtualizados.put("data", novaData);
-        dadosAtualizados.put("hora", novaHora);
-        dadosAtualizados.put("descricao", novaDescricao);
-        dadosAtualizados.put("categoria", novaCategoria);
-        dadosAtualizados.put("valor", novoValor);
-        dadosAtualizados.put("tipo", movimentacaoAntiga.getTipo());
-        dadosAtualizados.put("mesAno", mesAnoNovo);
-        dadosAtualizados.put("key", keyFirebase);
-
-        if (!mesAnoNovo.equals(mesAnoAntigo)) {
-            DocumentReference refPastaMesNovo = fs.collection("users").document(uid)
-                    .collection("contas").document("main")
-                    .collection("movimentacoes").document(mesAnoNovo);
-
-            Map<String, Object> dadosMes = new HashMap<>();
-            dadosMes.put("mesAno", mesAnoNovo);
-            batch.set(refPastaMesNovo, dadosMes, SetOptions.merge());
-
-            DocumentReference refNova = refPastaMesNovo.collection("itens").document(keyFirebase);
-            batch.delete(refAntiga);
-            batch.set(refNova, dadosAtualizados);
-        } else {
-            batch.update(refAntiga, dadosAtualizados);
+        double novoValor;
+        try {
+            novoValor = Double.parseDouble(novoValorStr);
+        } catch (Exception e) {
+            Toast.makeText(this, "Valor inválido", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        DocumentReference contaMainRef = fs.collection("users").document(uid)
-                .collection("contas").document("main");
-        String campoParaAtualizar = "d".equals(movimentacaoAntiga.getTipo()) ? "despesaTotal" : "proventosTotal";
+        // recalcula keys
+        Date dateObj = parseBrDate(novaData);
+        String diaKey = FirestoreSchema.diaKey(dateObj);
+        String mesKey = FirestoreSchema.mesKey(dateObj);
 
-        if (diferencaValor != 0) {
-            batch.update(contaMainRef, campoParaAtualizar, FieldValue.increment(diferencaValor));
-        }
+        // tipo novo (não muda na tela)
+        String tipoNovo = "d".equals(movimentacaoAntiga.getTipo()) ? "Despesa" : "Receita";
+        int valorCent = (int) Math.round(novoValor * 100.0);
 
-        batch.commit().addOnSuccessListener(unused -> {
-            Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
-        }).addOnFailureListener(e -> Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("diaKey", diaKey);
+        patch.put("mesKey", mesKey);
+        patch.put("tipo", tipoNovo);
+        patch.put("valorCent", valorCent);
+
+        patch.put("data", novaData);
+        patch.put("hora", novaHora);
+        patch.put("descricao", novaDescricao);
+        patch.put("categoriaNome", novaCategoria);
+
+        // crucial: só updatedAt (não altera createdAt)
+        patch.put("updatedAt", FieldValue.serverTimestamp());
+
+        FirestoreSchema.contasMovimentacaoDoc(movId)
+                .set(patch, SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
     }
 
-    // --- DIALOG CUSTOMIZADO ---
+    // ===== EXCLUSÃO =====
+
     private void confirmarExclusao() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // Verifique se o nome do arquivo XML do dialog está correto aqui:
-        // Se o arquivo for "dialog_exclusao.xml", troque abaixo.
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirmar_exclusao, null);
-
         builder.setView(view);
 
         AlertDialog dialog = builder.create();
@@ -218,7 +213,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         textMensagem.setText("Você deseja realmente excluir '" + movimentacaoAntiga.getDescricao() + "'?");
 
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
-
         btnConfirmar.setOnClickListener(v -> {
             dialog.dismiss();
             excluirNoFirestore();
@@ -227,43 +221,89 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    /**
+     * Exclui o doc e recalcula o "último" do mesmo tipo.
+     * Impacto:
+     * - mantém recomendação correta: se apagou o último, pega o anterior.
+     * - se não houver anterior, limpa o campo no resumo.
+     */
     private void excluirNoFirestore() {
-        WriteBatch batch = fs.batch();
+        String tipoNovo = "d".equals(movimentacaoAntiga.getTipo()) ? "Despesa" : "Receita";
 
-        String mesAno = movimentacaoAntiga.getMesAno();
-        if (mesAno == null) mesAno = DateCustom.mesAnoDataEscolhida(movimentacaoAntiga.getData());
-
-        DocumentReference refItem = fs.collection("users").document(uid)
-                .collection("contas").document("main")
-                .collection("movimentacoes").document(mesAno)
-                .collection("itens").document(keyFirebase);
-
-        DocumentReference contaMainRef = fs.collection("users").document(uid)
-                .collection("contas").document("main");
-
-        String campoTotal = "d".equals(movimentacaoAntiga.getTipo()) ? "despesaTotal" : "proventosTotal";
-
-        batch.delete(refItem);
-        batch.update(contaMainRef, campoTotal, FieldValue.increment(-valorAnterior));
-
-        batch.commit()
+        FirestoreSchema.contasMovimentacaoDoc(movId)
+                .delete()
                 .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Excluído!", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
-                    finish();
+                    recalcularUltimoPorTipo(tipoNovo, () -> {
+                        Toast.makeText(this, "Excluído!", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
+                        finish();
+                    });
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Erro ao excluir: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );
     }
 
-    // --- Pickers & Categoria ---
+    // ===== Recalcular "ultimos" (por createdAt) =====
+
+    private interface SimpleVoidCb { void done(); }
+
+    private void recalcularUltimoPorTipo(String tipoNovo, SimpleVoidCb cb) {
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereEqualTo("tipo", tipoNovo)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap == null || snap.isEmpty()) {
+                        limparUltimoCampo(tipoNovo, cb);
+                        return;
+                    }
+
+                    DocumentSnapshot doc = snap.getDocuments().get(0);
+
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("movId", doc.getId());
+                    info.put("createdAt", doc.get("createdAt"));
+                    info.put("valorCent", doc.get("valorCent"));
+                    info.put("categoriaId", doc.get("categoriaId"));
+                    info.put("categoriaNomeSnapshot", doc.get("categoriaNome"));
+
+                    String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+
+                    Map<String, Object> patch = new HashMap<>();
+                    patch.put(campo, info);
+                    patch.put("updatedAt", FieldValue.serverTimestamp());
+
+                    FirestoreSchema.contasResumoUltimosDoc()
+                            .set(patch, SetOptions.merge())
+                            .addOnSuccessListener(v -> cb.done())
+                            .addOnFailureListener(e -> cb.done());
+                })
+                .addOnFailureListener(e -> cb.done());
+    }
+
+    private void limparUltimoCampo(String tipoNovo, SimpleVoidCb cb) {
+        String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+
+        Map<String, Object> patch = new HashMap<>();
+        patch.put(campo, null);
+        patch.put("updatedAt", FieldValue.serverTimestamp());
+
+        FirestoreSchema.contasResumoUltimosDoc()
+                .set(patch, SetOptions.merge())
+                .addOnSuccessListener(v -> cb.done())
+                .addOnFailureListener(e -> cb.done());
+    }
+
+    // ===== Pickers =====
+
     private void abrirDataPicker() {
         Calendar c = Calendar.getInstance();
         try {
             String[] p = editData.getText().toString().split("/");
             c.set(Integer.parseInt(p[2]), Integer.parseInt(p[1]) - 1, Integer.parseInt(p[0]));
-        } catch (Exception e) { /* fallback */ }
+        } catch (Exception ignored) {}
 
         new DatePickerDialog(this, (v, y, m, d) ->
                 editData.setText(String.format(Locale.getDefault(), "%02d/%02d/%04d", d, m + 1, y)),
@@ -287,8 +327,17 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 });
 
         editCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(EditarMovimentacaoActivity.this, SelecionarCategoriaContasActivity.class);
+            Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
+    }
+
+    private Date parseBrDate(String dataBr) {
+        if (dataBr == null) return new Date();
+        try {
+            return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dataBr);
+        } catch (ParseException e) {
+            return new Date();
+        }
     }
 }
