@@ -1,5 +1,7 @@
 package com.gussanxz.orgafacil.data.repository;
 
+import static com.gussanxz.orgafacil.data.config.FirestoreSchema.VENDAS_CATEGORIAS;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -82,11 +84,11 @@ public class CategoriaRepository {
 
         if (isEdicao) {
             docRef = FirestoreSchema.userDoc(uid)
-                    .collection(COL_VENDAS_CATEGORIAS)
+                    .collection(VENDAS_CATEGORIAS)
                     .document(categoria.getId());
         } else {
             docRef = FirestoreSchema.userDoc(uid)
-                    .collection(COL_VENDAS_CATEGORIAS)
+                    .collection(VENDAS_CATEGORIAS)
                     .document();
             categoria.setId(docRef.getId());
         }

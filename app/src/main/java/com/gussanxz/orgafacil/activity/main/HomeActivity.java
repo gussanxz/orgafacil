@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.activity.main.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.activity.main.contas.ContasActivity;
+import com.gussanxz.orgafacil.activity.main.contas.ResumoContasActivity;
 import com.gussanxz.orgafacil.activity.main.vendas.ResumoVendasActivity;
 
 public class HomeActivity extends AppCompatActivity {
@@ -43,8 +44,8 @@ public class HomeActivity extends AppCompatActivity {
         configurarBotoesBloqueados();
     }
 
-    public void acessarContasActivity(View view) {
-        startActivity(new Intent(this, ContasActivity.class));
+    public void acessarResumoContasActivity(View view) {
+        startActivity(new Intent(this, ResumoContasActivity.class));
         Log.i(TAG, "acessou ContasActivity");
     }
 

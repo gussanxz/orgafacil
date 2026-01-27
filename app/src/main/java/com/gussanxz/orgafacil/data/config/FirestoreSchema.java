@@ -36,27 +36,27 @@ public final class FirestoreSchema {
     public static final String MODULO = "moduloSistema";
 
     // config docs
-    public static final String PERFIL = "perfil";
-    public static final String PREFERENCIAS = "preferencias";
-    public static final String SEGURANCA = "seguranca";
+    public static final String PERFIL = "config_perfil";
+    public static final String PREFERENCIAS = "config_preferencias";
+    public static final String SEGURANCA = "config_seguranca";
 
     // moduloSistema/contas
     public static final String CONTAS = "contas";
-    public static final String CONTAS_CATEGORIAS = "contasCategorias";
-    public static final String CONTAS_MOV = "contasMovimentacoes";
-    public static final String CONTAS_FUTURAS = "contasFuturas";
-    public static final String CONTAS_RESUMOS = "Resumos";
-    public static final String CONTAS_ULTIMOS = "ultimos";
+    public static final String CONTAS_CATEGORIAS = "contas_categorias";
+    public static final String CONTAS_MOV = "contas_movimentacoes";
+    public static final String CONTAS_FUTURAS = "contas_futuras";
+    public static final String CONTAS_RESUMOS = "contas_resumos";
+    public static final String CONTAS_ULTIMOS = "contas_ultimos";
 
     // moduloSistema/vendas
     public static final String VENDAS = "vendas";
-    public static final String VENDAS_CATEGORIAS = "categorias";
-    public static final String VENDAS_CATALOGO = "catalogoVendas";
-    public static final String VENDAS_CAIXA = "caixa";
-    public static final String VENDAS_VENDAS = "vendas";
-    public static final String VENDAS_CLIENTES = "clientes";
-    public static final String VENDAS_VENDEDORES = "vendedores";
-    public static final String VENDAS_FORNECEDORES = "fornecedores";
+    public static final String VENDAS_CATEGORIAS = "vendas_categorias";
+    public static final String VENDAS_CATALOGO = "vendas_catalogo";
+    public static final String VENDAS_CAIXA = "vendas_caixa";
+    public static final String VENDAS_VENDAS = "vendas_vendas";
+    public static final String VENDAS_CLIENTES = "vendas_clientes";
+    public static final String VENDAS_VENDEDORES = "vendas_vendedores";
+    public static final String VENDAS_FORNECEDORES = "vendas_fornecedores";
 
     // ======== Base providers ========
     @NonNull
