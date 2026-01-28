@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_titulo_ultimas_mov">Últimas Movimentações</string>
+    <string name="tab_titulo_contas_a_vencer">Contas a Vencer</string>
+</resources>

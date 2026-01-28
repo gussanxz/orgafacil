@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -12,9 +12,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_alignParentTop="true">
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -22,7 +20,7 @@
             android:textSize="18sp"
             android:gravity="center_vertical|start"
             android:padding="12dp"
-            android:textColor="@color/white"
+            android:textColor="@android:color/white"
             android:textStyle="bold"/>
     </LinearLayout>
 
@@ -33,8 +31,7 @@
         android:background="@color/colorPrimary"
         android:gravity="center"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
-
+        android:layout_below="@id/toolbar">
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -42,7 +39,6 @@
             android:gravity="center"
             android:layout_weight="1"
             android:orientation="vertical">
-
             <TextView
                 android:id="@+id/textVendasHoje"
                 android:layout_width="match_parent"
@@ -52,13 +48,11 @@
                 android:textAlignment="center"
                 android:textColor="@android:color/white"
                 android:textStyle="bold" />
-
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
                 <ImageView
                     android:id="@+id/imgOlhoSaldo"
                     android:layout_width="wrap_content"
@@ -67,7 +61,6 @@
                     android:focusable="true"
                     android:padding="5dp"
                     android:src="@drawable/ic_visibility_24" />
-
                 <TextView
                     android:id="@+id/textSaldo"
                     android:layout_width="wrap_content"
@@ -79,16 +72,43 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
+    </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/containerSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/cor_background"
+        android:layout_alignParentBottom="true"
+        android:elevation="20dp">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayoutDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/cor_background"
+            app:tabIndicatorColor="@color/colorPrimary"
+            app:tabSelectedTextColor="@color/colorPrimary"
+            app:tabTextColor="#757575"
+            app:tabMode="fixed"
+            app:tabGravity="fill"/>
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPagerDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="240dp" />
 
     </LinearLayout>
 
     <ScrollView
+        android:id="@+id/scrollMeio"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
+        android:layout_below="@id/headerResumoVendas"
+        android:layout_above="@id/containerSlider"
         android:background="@drawable/header_background"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerResumoVendas">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -101,12 +121,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingTop="12dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
                     <LinearLayout
                         android:id="@+id/cardCadastros"
                         android:layout_width="0dp"
@@ -115,7 +133,6 @@
                         android:background="@drawable/fundo_arredondado"
                         android:orientation="vertical"
                         android:layout_margin="4dp">
-
                         <ImageView
                             android:layout_width="28dp"
                             android:layout_height="28dp"
@@ -123,7 +140,6 @@
                             android:layout_gravity="center"
                             android:layout_marginTop="8dp"
                             android:layout_marginBottom="8dp"/>
-
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -134,7 +150,6 @@
                             android:gravity="center"
                             android:lines="3" />
                     </LinearLayout>
-
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -142,13 +157,11 @@
                         android:layout_margin="4dp"
                         android:background="@drawable/fundo_arredondado"
                         android:clipToOutline="true">
-
                         <LinearLayout
                             android:id="@+id/cardPedidosAbertos"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
-
                             <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
@@ -156,7 +169,6 @@
                                 android:layout_gravity="center"
                                 android:layout_marginTop="8dp"
                                 android:layout_marginBottom="8dp" />
-
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -167,7 +179,6 @@
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
-
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -177,7 +188,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingTop="12dp">
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -186,12 +196,10 @@
                     android:textStyle="bold"
                     android:textColor="@color/cor_texto"
                     android:layout_marginBottom="10dp"/>
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -199,7 +207,6 @@
                         android:layout_margin="4dp"
                         android:background="@drawable/fundo_arredondado"
                         android:clipToOutline="true">
-
                         <LinearLayout
                             android:id="@+id/cardVendas"
                             android:layout_width="match_parent"
@@ -207,7 +214,6 @@
                             android:orientation="vertical"
                             android:clickable="true"
                             android:focusable="true">
-
                             <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
@@ -215,7 +221,6 @@
                                 android:layout_gravity="center"
                                 android:layout_marginTop="8dp"
                                 android:layout_marginBottom="8dp"/>
-
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -226,9 +231,7 @@
                                 android:gravity="center"
                                 android:lines="3" />
                         </LinearLayout>
-
                     </FrameLayout>
-
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -236,13 +239,11 @@
                         android:layout_margin="4dp"
                         android:background="@drawable/fundo_arredondado"
                         android:clipToOutline="true">
-
                         <LinearLayout
                             android:id="@+id/cardEstoque"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
-
                             <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
@@ -250,7 +251,6 @@
                                 android:layout_gravity="center"
                                 android:layout_marginTop="8dp"
                                 android:layout_marginBottom="8dp" />
-
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -262,7 +262,6 @@
                                 android:lines="3" />
                         </LinearLayout>
                     </FrameLayout>
-
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -275,7 +274,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
-
                             <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
@@ -283,7 +281,6 @@
                                 android:layout_gravity="center"
                                 android:layout_marginTop="8dp"
                                 android:layout_marginBottom="8dp" />
-
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -307,7 +304,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
-
                             <ImageView
                                 android:layout_width="28dp"
                                 android:layout_height="28dp"
@@ -315,7 +311,6 @@
                                 android:layout_gravity="center"
                                 android:layout_marginTop="8dp"
                                 android:layout_marginBottom="8dp" />
-
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -328,13 +323,13 @@
                         </LinearLayout>
                     </FrameLayout>
                 </LinearLayout>
-                <!-- LISTA DE MOVIMENTAÇÕES -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclesMovimentos"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="20dp" />
+
         </LinearLayout>
     </ScrollView>
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+</RelativeLayout>
