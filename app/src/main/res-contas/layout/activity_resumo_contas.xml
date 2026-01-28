@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
+    android:orientation="vertical"
     tools:context=".activity.main.contas.ResumoContasActivity">
 
     <LinearLayout
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:layout_alignParentTop="true">
+        android:layout_height="?attr/actionBarSize">
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -20,7 +20,7 @@
             android:textSize="18sp"
             android:gravity="center_vertical|start"
             android:padding="12dp"
-            android:textColor="@android:color/white"
+            android:textColor="@color/white"
             android:textStyle="bold"/>
     </LinearLayout>
 
@@ -30,8 +30,7 @@
         android:layout_height="80dp"
         android:background="@color/colorPrimary"
         android:gravity="center"
-        android:orientation="horizontal"
-        android:layout_below="@id/toolbar">
+        android:orientation="horizontal">
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -74,39 +73,11 @@
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/containerSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@color/cor_background"
-        android:layout_alignParentBottom="true"
-        android:elevation="20dp">
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayoutDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/cor_background"
-            app:tabIndicatorColor="@color/colorPrimary"
-            app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextColor="#757575"
-            app:tabMode="fixed"
-            app:tabGravity="fill"/>
-
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/viewPagerDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="240dp" />
-
-    </LinearLayout>
-
     <ScrollView
         android:id="@+id/scrollMeio"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/headerResumoVendas"
-        android:layout_above="@id/containerSlider"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="@drawable/header_background"
         android:fillViewport="true">
 
@@ -324,12 +295,33 @@
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
         </LinearLayout>
     </ScrollView>
 
-</RelativeLayout>
+    <LinearLayout
+        android:id="@+id/containerSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#F5F5F5">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayoutDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/cor_background"
+            app:tabIndicatorColor="@color/colorPrimary"
+            app:tabSelectedTextColor="@color/colorPrimary"
+            app:tabTextColor="#757575"
+            app:tabMode="fixed"
+            app:tabGravity="fill"/>
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPagerDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="@color/cor_background"/>
+
+    </LinearLayout>
+
+</LinearLayout>
