@@ -1,6 +1,9 @@
 package com.gussanxz.orgafacil.activity.main.contas;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,6 +19,7 @@ import com.google.android.material.tabs.TabLayoutMediator;
 
 public class ResumoContasActivity extends AppCompatActivity {
 
+    private static final String TAG = "ResumoContasActivity";
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
 
@@ -37,6 +41,10 @@ public class ResumoContasActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPagerDashboard);
 
         setupSlideView();
+    }
+    public void acessarContasActivity(View view) {
+        startActivity(new Intent(this, ContasActivity.class));
+        Log.i(TAG, "acessou ContasActivity");
     }
 
     private void setupSlideView() {

@@ -73,13 +73,14 @@
         </LinearLayout>
     </LinearLayout>
 
-    <ScrollView
+    <LinearLayout
         android:id="@+id/scrollMeio"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="@drawable/header_background"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -103,7 +104,8 @@
                         android:layout_weight="1"
                         android:background="@drawable/fundo_arredondado"
                         android:orientation="vertical"
-                        android:layout_margin="4dp">
+                        android:layout_margin="4dp"
+                        android:onClick="acessarContasActivity">
                         <ImageView
                             android:layout_width="28dp"
                             android:layout_height="28dp"
@@ -159,169 +161,162 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingTop="12dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AÇÕES RÁPIDAS"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/cor_texto"
-                    android:layout_marginBottom="10dp"/>
                 <LinearLayout
+                    android:id="@+id/containerSlider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <FrameLayout
-                        android:layout_width="0dp"
+                    android:orientation="vertical"
+                    android:background="#F5F5F5">
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tabLayoutDashboard"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="4dp"
-                        android:background="@drawable/fundo_arredondado"
-                        android:clipToOutline="true">
-                        <LinearLayout
-                            android:id="@+id/cardVendas"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:clickable="true"
-                            android:focusable="true">
-                            <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:src="@drawable/ic_monitoring_28"
-                                android:layout_gravity="center"
-                                android:layout_marginTop="8dp"
-                                android:layout_marginBottom="8dp"/>
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="NOVA\nDESPESA"
-                                android:textColor="@android:color/black"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
-                                android:gravity="center"
-                                android:lines="3" />
-                        </LinearLayout>
-                    </FrameLayout>
-                    <FrameLayout
-                        android:layout_width="0dp"
+                        android:background="@color/cor_background"
+                        app:tabIndicatorColor="@color/colorPrimary"
+                        app:tabSelectedTextColor="@color/colorPrimary"
+                        app:tabTextColor="#757575"
+                        app:tabMode="fixed"
+                        app:tabGravity="fill"/>
+
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/viewPagerDashboard"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="4dp"
-                        android:background="@drawable/fundo_arredondado"
-                        android:clipToOutline="true">
-                        <LinearLayout
-                            android:id="@+id/cardEstoque"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-                            <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:src="@drawable/ic_inventory_28"
-                                android:layout_gravity="center"
-                                android:layout_marginTop="8dp"
-                                android:layout_marginBottom="8dp" />
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="NOVA\nRECEITA"
-                                android:textColor="@android:color/black"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
-                                android:gravity="center"
-                                android:lines="3" />
-                        </LinearLayout>
-                    </FrameLayout>
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="4dp"
-                        android:background="@drawable/fundo_arredondado"
-                        android:clipToOutline="true">
-                        <LinearLayout
-                            android:id="@+id/cardDevolucoes"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-                            <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:src="@drawable/ic_assignment_return_28"
-                                android:layout_gravity="center"
-                                android:layout_marginTop="8dp"
-                                android:layout_marginBottom="8dp" />
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="NOVA\nDÍVIDA"
-                                android:textColor="@android:color/black"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
-                                android:gravity="center"
-                                android:lines="3" />
-                        </LinearLayout>
-                    </FrameLayout>
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="4dp"
-                        android:background="@drawable/fundo_arredondado"
-                        android:clipToOutline="true">
-                        <LinearLayout
-                            android:id="@+id/cardNovaCobranca"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-                            <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:src="@drawable/ic_assignment_return_28"
-                                android:layout_gravity="center"
-                                android:layout_marginTop="8dp"
-                                android:layout_marginBottom="8dp" />
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="NOVA\nCOBRANÇA"
-                                android:textColor="@android:color/black"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
-                                android:gravity="center"
-                                android:lines="3" />
-                        </LinearLayout>
-                    </FrameLayout>
+                        android:background="@color/cor_background"/>
                 </LinearLayout>
             </LinearLayout>
+
+
         </LinearLayout>
-    </ScrollView>
-
-    <LinearLayout
-        android:id="@+id/containerSlider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#F5F5F5">
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayoutDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/cor_background"
-            app:tabIndicatorColor="@color/colorPrimary"
-            app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextColor="#757575"
-            app:tabMode="fixed"
-            app:tabGravity="fill"/>
-
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/viewPagerDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="240dp"
-            android:background="@color/cor_background"/>
 
     </LinearLayout>
-
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/cor_background">
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="@drawable/fundo_arredondado"
+            android:clipToOutline="true">
+            <LinearLayout
+                android:id="@+id/cardVendas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_monitoring_28"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"/>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NOVA\nDESPESA"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:lines="3" />
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="@drawable/fundo_arredondado"
+            android:clipToOutline="true">
+            <LinearLayout
+                android:id="@+id/cardEstoque"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_inventory_28"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NOVA\nRECEITA"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:lines="3" />
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="@drawable/fundo_arredondado"
+            android:clipToOutline="true">
+            <LinearLayout
+                android:id="@+id/cardDevolucoes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_assignment_return_28"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NOVA\nDÍVIDA"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:lines="3" />
+            </LinearLayout>
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:background="@drawable/fundo_arredondado"
+            android:clipToOutline="true">
+            <LinearLayout
+                android:id="@+id/cardNovaCobranca"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_assignment_return_28"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NOVA\nCOBRANÇA"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:lines="3" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>
