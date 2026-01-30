@@ -64,19 +64,18 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         // --- LÓGICA DE VISUAL: FOTO vs ÍCONE ---
         if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
-            // MODO FOTO
             holder.imgIconeCategoria.setColorFilter(null);
             holder.imgIconeCategoria.setPadding(0, 0, 0, 0);
 
             Glide.with(context)
                     .load(categoria.getUrlImagem())
                     .apply(new RequestOptions().transform(new CenterCrop()))
-                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .placeholder(R.drawable.ic_launcher_foreground) // Show while loading
+                    .error(R.drawable.ic_cadeado_cinza_24) //  Show this if URL is 404
                     .into(holder.imgIconeCategoria);
 
-            holder.cardIconeCategoria.setStrokeColor(Color.parseColor("#2196F3")); // Azul
+            holder.cardIconeCategoria.setStrokeColor(Color.parseColor("#2196F3"));
             holder.cardIconeCategoria.setStrokeWidth(3);
-
         } else {
             // MODO ÍCONE
             holder.imgIconeCategoria.setImageResource(getIconePorIndex(categoria.getIndexIcone()));
