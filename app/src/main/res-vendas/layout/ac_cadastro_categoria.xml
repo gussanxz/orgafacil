@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.features.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity">
+    tools:context="features.vendas.cadastros.catalogo.categoria.CadastroCategoriaActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
