@@ -107,4 +107,6 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    implementation("com.github.bumptech.glide:glide:5.0.5")
+
 }

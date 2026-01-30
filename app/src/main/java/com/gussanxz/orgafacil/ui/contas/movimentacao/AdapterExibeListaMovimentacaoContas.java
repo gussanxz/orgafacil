@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.features.contas.EditarMovimentacaoActivity; // Ajuste se necessário
+import com.gussanxz.orgafacil.features.contas.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.data.model.Movimentacao;
 
 import java.text.NumberFormat;

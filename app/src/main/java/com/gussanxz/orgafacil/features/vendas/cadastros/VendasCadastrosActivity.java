@@ -13,8 +13,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
 //import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
-import com.gussanxz.orgafacil.activity.features.vendas.operacoesdiarias.cadastros.produtos.categoria.ListaCategoriasActivity;
-import com.gussanxz.orgafacil.activity.features.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.ListaProdutosEServicosActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.catalogo.categoria.ListaCategoriasActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity;
 
 public class VendasCadastrosActivity extends AppCompatActivity {
 

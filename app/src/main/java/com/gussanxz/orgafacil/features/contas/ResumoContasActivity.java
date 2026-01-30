@@ -43,7 +43,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         setupSlideView();
     }
     public void acessarContasActivity(View view) {
-        startActivity(new Intent(this, com.gussanxz.orgafacil.activity.features.contas.ContasActivity.class));
+        startActivity(new Intent(this, com.gussanxz.orgafacil.features.contas.ContasActivity.class));
         Log.i(TAG, "acessou ContasActivity");
     }
 

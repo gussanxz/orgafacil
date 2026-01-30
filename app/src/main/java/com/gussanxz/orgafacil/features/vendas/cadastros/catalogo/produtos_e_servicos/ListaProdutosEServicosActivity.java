@@ -18,8 +18,9 @@ import com.google.android.material.button.MaterialButtonToggleGroup; // IMPORTAN
 import com.google.android.material.chip.ChipGroup;
 import com.gussanxz.orgafacil.R;
 // Ajuste os imports abaixo conforme seus pacotes
-import com.gussanxz.orgafacil.activity.features.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.produtos.CadastroProdutoActivity;
-import com.gussanxz.orgafacil.activity.features.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.servicos.CadastroServicoActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity;
 import com.gussanxz.orgafacil.ui.vendas.nova_venda.AdapterExibirPSGradeListaNovaVenda;
 import com.gussanxz.orgafacil.data.model.ItemVenda;
 import com.gussanxz.orgafacil.data.model.Produto;

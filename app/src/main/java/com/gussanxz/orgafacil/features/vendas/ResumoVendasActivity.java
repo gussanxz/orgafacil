@@ -17,9 +17,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.features.vendas.novavenda.RegistrarVendasActivity;
-import com.gussanxz.orgafacil.activity.features.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity;
-import com.gussanxz.orgafacil.activity.features.vendas.gestaoerelatorios.VendasEmAbertoActivity;
+import com.gussanxz.orgafacil.features.vendas.novavenda.RegistrarVendasActivity;
+import com.gussanxz.orgafacil.features.vendas.cadastros.VendasCadastrosActivity;
+import com.gussanxz.orgafacil.features.vendas.gestaoerelatorios.VendasEmAbertoActivity;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
 public class ResumoVendasActivity extends AppCompatActivity {

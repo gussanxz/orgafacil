@@ -14,7 +14,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.features.contas.ContasActivity;
+import com.gussanxz.orgafacil.features.contas.ContasActivity;
 import com.gussanxz.orgafacil.features.auth.CadastroActivity;
 import com.gussanxz.orgafacil.features.auth.LoginActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper; // IMPORTANTE

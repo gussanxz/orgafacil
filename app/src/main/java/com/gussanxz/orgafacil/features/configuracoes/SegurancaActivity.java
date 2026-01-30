@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.activity.features.configuracoes;
+package com.gussanxz.orgafacil.features.configuracoes;
 
 import android.content.Intent;
 import android.content.SharedPreferences;

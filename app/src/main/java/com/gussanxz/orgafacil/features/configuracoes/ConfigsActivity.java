@@ -76,7 +76,7 @@ public class ConfigsActivity extends AppCompatActivity {
                 System.out.println("--------------------");
 
                 // 3. Prepara a navegação enviando os dados
-                Intent intent = new Intent(ConfigsActivity.this, com.gussanxz.orgafacil.activity.features.configuracoes.PerfilActivity.class);
+                Intent intent = new Intent(ConfigsActivity.this, com.gussanxz.orgafacil.features.configuracoes.PerfilActivity.class);
                 intent.putExtra("nomeUsuario", userName);
                 intent.putExtra("emailUsuario", userEmail);
 
@@ -103,7 +103,7 @@ public class ConfigsActivity extends AppCompatActivity {
 
     private void configurarClickSeguranca() {
         itemSeguranca.setOnClickListener(v -> {
-            startActivity(new Intent(ConfigsActivity.this, com.gussanxz.orgafacil.activity.features.configuracoes.SegurancaActivity.class));
+            startActivity(new Intent(ConfigsActivity.this, com.gussanxz.orgafacil.features.configuracoes.SegurancaActivity.class));
         });
     }
 

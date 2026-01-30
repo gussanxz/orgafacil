@@ -14,8 +14,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.activity.features.configuracoes.ConfigsActivity;
-import com.gussanxz.orgafacil.activity.features.contas.ResumoContasActivity;
+import com.gussanxz.orgafacil.features.configuracoes.ConfigsActivity;
+import com.gussanxz.orgafacil.features.contas.ResumoContasActivity;
 import com.gussanxz.orgafacil.features.vendas.ResumoVendasActivity;
 
 public class HomeActivity extends AppCompatActivity {
