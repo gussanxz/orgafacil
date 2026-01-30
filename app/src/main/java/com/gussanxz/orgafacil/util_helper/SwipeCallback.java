@@ -1,18 +1,14 @@
-package com.gussanxz.orgafacil.helper;
+package com.gussanxz.orgafacil.util_helper;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.gussanxz.orgafacil.R;
 
 // Classe abstrata: obriga quem usar a implementar o método onSwiped
 public abstract class SwipeCallback extends ItemTouchHelper.SimpleCallback {

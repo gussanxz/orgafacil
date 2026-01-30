@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.configuracoes.SegurancaActivity">
+    tools:context=".activity.features.configuracoes.SegurancaActivity">
 
     <!-- Cabeçalho -->
     <androidx.constraintlayout.widget.ConstraintLayout

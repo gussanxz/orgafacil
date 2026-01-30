@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
     android:orientation="vertical"
-    tools:context=".activity.main.contas.ResumoContasActivity">
+    tools:context=".activity.features.contas.ResumoContasActivity">
 
     <LinearLayout
         android:id="@+id/toolbar"

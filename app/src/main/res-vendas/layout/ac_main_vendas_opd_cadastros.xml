@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
     android:orientation="vertical"
-    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity">
+    tools:context=".activity.features.vendas.operacoesdiarias.cadastros.VendasCadastrosActivity">
 
     <LinearLayout
         android:layout_width="match_parent"

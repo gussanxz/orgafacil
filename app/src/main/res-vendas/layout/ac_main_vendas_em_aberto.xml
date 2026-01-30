@@ -4,6 +4,6 @@
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    tools:context=".activity.main.vendas.gestaoerelatorios.VendasEmAbertoActivity">
+    tools:context=".activity.features.vendas.gestaoerelatorios.VendasEmAbertoActivity">
 
 </androidx.constraintlayout.widget.ConstraintLayout>

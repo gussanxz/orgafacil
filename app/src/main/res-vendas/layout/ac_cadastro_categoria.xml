@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity">
+    tools:context=".activity.features.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -38,7 +38,7 @@
             android:text="Nova Categoria"
             android:textAlignment="gravity"
             android:textColor="@color/cor_texto"
-            android:textSize="20dp"
+            android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:clickable="true"
-            android:onClick="salvarCategoriaTeste"
+            android:onClick="salvarCategoria"
             app:backgroundTint="@color/colorAccentProventos"
             app:fabCustomSize="45dp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -117,20 +117,6 @@
                 android:drawablePadding="12dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabInferiorSalvarCategoria"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:clickable="true"
-            android:onClick="salvarCategoria"
-            app:backgroundTint="@color/colorAccentProventos"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:srcCompat="@drawable/ic_confirmar_branco_24" />
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardStatusCategoria"
             android:layout_width="0dp"
@@ -183,6 +169,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/caixa"
             android:layout_width="0dp"
@@ -196,333 +183,174 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cardStatusCategoria">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBtnSelecionarIcones"
+            <TextView
+                android:id="@+id/txtLabelVisual"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Definir Visual"
+                android:textColor="@color/cor_texto"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
+            <LinearLayout
+                android:id="@+id/containerBotoesVisual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@id/txtLabelVisual"
+                app:layout_constraintStart_toStartOf="parent">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBtnSelecionarIcones"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#E0E0E0"
+                    app:strokeWidth="1dp">
+
+                    <ImageButton
+                        android:id="@+id/imgBtnSelecionarIcones"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Selecionar Ícone"
+                        android:onClick="exibeSelecaoDeIcones"
+                        android:padding="12dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_add_reaction_24"
+                        app:tint="@color/colorPrimary" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ícone Padrão"
+                    android:layout_marginStart="8dp"
+                    android:layout_gravity="center_vertical"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"/> <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBtnGaleria"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
+                android:layout_marginStart="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
-                app:layout_constraintEnd_toEndOf="@id/caixa"
-                app:layout_constraintStart_toStartOf="@id/caixa"
-                app:layout_constraintTop_toTopOf="@id/caixa"
                 app:strokeColor="#E0E0E0"
                 app:strokeWidth="1dp">
 
                 <ImageButton
-                    android:id="@+id/imgBtnSelecionarIcones"
+                    android:id="@+id/imgBtnGaleria"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Alterar cor"
-                    android:onClick="exibeSelecaoDeIcones"
+                    android:contentDescription="Selecionar da Galeria"
                     android:padding="12dp"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/ic_add_reaction_24"
-                    app:tint="@color/colorPrimary"
-                    tools:ignore="HardcodedText" />
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_add_photo_alternate_24"
+                    app:tint="#757575" />
             </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Galeria"
+                    android:layout_marginStart="8dp"
+                    android:layout_gravity="center_vertical"/>
+
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@id/layoutSelecao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:layout_marginStart="4dp"
-                android:layout_marginTop="60dp"
-                android:layout_marginEnd="4dp"
+                android:layout_marginTop="16dp"
                 android:background="@color/cor_background"
                 android:orientation="vertical"
                 android:padding="16dp"
                 android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="@id/caixa"
-                app:layout_constraintEnd_toEndOf="@id/caixa"
-                app:layout_constraintStart_toStartOf="@id/caixa"
-                app:layout_constraintTop_toTopOf="@id/cardBtnSelecionarIcones">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/containerBotoesVisual">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="Ícone de Exibição"
+                    android:text="Selecione:"
                     android:textColor="@color/cor_texto"
-                    android:textSize="14sp"
-                    android:layout_marginStart="10dp"/>
+                    android:textSize="14sp"/>
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="8dp"
+                    android:layout_margin="2dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeColor="#E0E0E0"
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="@color/cor_background">
 
-                <androidx.core.widget.NestedScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    <androidx.core.widget.NestedScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                <GridLayout
-                    android:id="@+id/containerIcones"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:columnCount="4"
-                    android:rowCount="3"
-                    android:alignmentMode="alignMargins"
-                    android:useDefaultMargins="true"
-                    android:layout_gravity="center_horizontal">
+                        <GridLayout
+                            android:id="@+id/containerIcones"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:columnCount="4"
+                            android:rowCount="3"
+                            android:alignmentMode="alignMargins"
+                            android:useDefaultMargins="true"
+                            android:layout_gravity="center_horizontal">
 
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="46dp"
-                            android:layout_height="46dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            app:cardBackgroundColor="#F5F5F5"
-                            app:cardCornerRadius="25dp"
-                            app:cardElevation="0dp"
-                            app:strokeColor="#E0E0E0"
-                            app:strokeWidth="1dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_categorias_mercado_24"
-                                app:tint="#9E9E9E" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="46dp"
-                            android:layout_height="46dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            app:cardBackgroundColor="#F5F5F5"
-                            app:cardCornerRadius="25dp"
-                            app:cardElevation="0dp"
-                            app:strokeColor="#E0E0E0"
-                            app:strokeWidth="1dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_categorias_roupas_24"
-                                app:tint="#9E9E9E" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="46dp"
-                            android:layout_height="46dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            app:cardBackgroundColor="#F5F5F5"
-                            app:cardCornerRadius="25dp"
-                            app:cardElevation="0dp"
-                            app:strokeColor="#E0E0E0"
-                            app:strokeWidth="1dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_categorias_comida_24"
-                                app:tint="#9E9E9E" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="46dp"
-                            android:layout_height="46dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            app:cardBackgroundColor="#F5F5F5"
-                            app:cardCornerRadius="25dp"
-                            app:cardElevation="0dp"
-                            app:strokeColor="#E0E0E0"
-                            app:strokeWidth="1dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_categorias_bebidas_24"
-                                app:tint="#9E9E9E" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_eletronicos_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_spa_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_fitness_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_geral_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_ferramentas_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_papelaria_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_casa_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
-                        android:layout_margin="8dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="#F5F5F5"
-                        app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="#E0E0E0"
-                        app:strokeWidth="1dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_categorias_brinquedos_24"
-                            app:tint="#9E9E9E" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    </GridLayout>
-                </androidx.core.widget.NestedScrollView>
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="46dp"
+                                android:layout_height="46dp"
+                                android:layout_margin="8dp"
+                                app:cardBackgroundColor="#F5F5F5"
+                                app:cardCornerRadius="25dp"
+                                app:strokeWidth="1dp"
+                                app:strokeColor="#E0E0E0">
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_categorias_mercado_24"
+                                    app:tint="#9E9E9E" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </GridLayout>
+                    </androidx.core.widget.NestedScrollView>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabInferiorSalvarCategoria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:clickable="true"
+            android:onClick="salvarCategoria"
+            app:backgroundTint="@color/colorAccentProventos"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:srcCompat="@drawable/ic_confirmar_branco_24" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>

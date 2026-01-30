@@ -1,11 +1,9 @@
-package com.gussanxz.orgafacil.helper;
+package com.gussanxz.orgafacil.util_helper;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
-
-import androidx.annotation.Nullable;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;

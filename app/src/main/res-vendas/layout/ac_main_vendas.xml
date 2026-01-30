@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.vendas.ResumoVendasActivity">
+    tools:context=".activity.features.vendas.ResumoVendasActivity">
 
     <LinearLayout
         android:id="@+id/toolbar"

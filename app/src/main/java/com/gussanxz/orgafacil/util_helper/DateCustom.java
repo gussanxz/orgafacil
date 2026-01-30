@@ -1,7 +1,6 @@
-package com.gussanxz.orgafacil.helper;
+package com.gussanxz.orgafacil.util_helper;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 public class DateCustom {

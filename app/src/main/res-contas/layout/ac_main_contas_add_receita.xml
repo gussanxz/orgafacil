@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryProventos"
-    tools:context=".activity.main.contas.ReceitasActivity">
+    tools:context=".activity.features.contas.ReceitasActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"

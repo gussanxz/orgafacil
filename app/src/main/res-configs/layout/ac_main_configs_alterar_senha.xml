@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.configuracoes.AlterarSenhaActivity">
+    tools:context=".activity.features.configuracoes.AlterarSenhaActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerConfiguracoes"

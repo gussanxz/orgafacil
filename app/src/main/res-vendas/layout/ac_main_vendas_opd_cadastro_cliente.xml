@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/softGreen"
-    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.pessoas.cliente.CadastroClienteActivity">
+    tools:context=".activity.features.vendas.operacoesdiarias.cadastros.pessoas.cliente.CadastroClienteActivity">
 
     <LinearLayout
         android:id="@+id/headerCadastroCliente"
