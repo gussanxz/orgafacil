@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context="features.vendas.cadastros.catalogo.categoria.CadastroCategoriaActivity">
+    tools:context=".features.vendas.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -41,8 +41,22 @@
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
+            app:layout_constraintEnd_toStartOf="@id/btnExcluirHeader"
             app:layout_constraintStart_toEndOf="@+id/fabVoltar"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btnExcluirHeader"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Excluir Categoria"
+            android:src="@drawable/ic_lixeira_excluir_24"
+            android:visibility="gone"
+            app:tint="#D32F2F"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/fabSuperiorSalvarCategoria"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -31,11 +31,11 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.ui.contas.categorias.CadastroCategoriaViewModel;
+import com.gussanxz.orgafacil.ui.vendas.opd.CadastroCategoriaVendasViewModel;
 import android.graphics.drawable.ColorDrawable;
 import android.view.LayoutInflater;
 
-public class CadastroCategoriaActivity extends AppCompatActivity {
+public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
     // --- UI Components ---
     private NestedScrollView scrollView;
@@ -56,7 +56,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
     private View btnSalvarSuperior, btnSalvarInferior;
 
     // ViewModel
-    private CadastroCategoriaViewModel viewModel;
+    private CadastroCategoriaVendasViewModel viewModel;
 
     // Launcher da Galeria
     private final ActivityResultLauncher<Intent> launcherGaleria = registerForActivityResult(
@@ -75,7 +75,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         setContentView(R.layout.ac_cadastro_categoria);
         ajustarInsets();
 
-        viewModel = new ViewModelProvider(this).get(CadastroCategoriaViewModel.class);
+        viewModel = new ViewModelProvider(this).get(CadastroCategoriaVendasViewModel.class);
 
         inicializarComponentes();
         processarIntentInicial();

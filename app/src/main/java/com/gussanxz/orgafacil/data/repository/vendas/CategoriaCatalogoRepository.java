@@ -6,7 +6,6 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
@@ -23,13 +22,8 @@ public class CategoriaCatalogoRepository {
     private final String uid;
     private final StorageReference storageRef;
 
-    // Nome da coleção de Vendas
-    private static final String COL_VENDAS_CATEGORIAS = "vendas_categorias";
-
     public CategoriaCatalogoRepository() {
-        this.uid = (FirebaseAuth.getInstance().getCurrentUser() != null)
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
+        this.uid = FirestoreSchema.uidOrNull(); // Usa o helper do Schema
         this.storageRef = FirebaseStorage.getInstance().getReference();
     }
 
@@ -45,7 +39,7 @@ public class CategoriaCatalogoRepository {
 
     /**
      * Salva Categoria do Catálogo (Vendas).
-     * Suporta upload de imagem opcional.
+     * Caminho: usuarios/{uid}/moduloSistema/vendas/vendas_categorias/{id}
      */
     public void salvar(@NonNull Categoria categoria, @Nullable Uri imagemUri, @NonNull Callback callback) {
         if (uid == null) {
@@ -53,18 +47,26 @@ public class CategoriaCatalogoRepository {
             return;
         }
 
-        // Se tiver imagem, sobe antes
+        // 1. Se tem imagem NOVA, faz upload primeiro
         if (imagemUri != null) {
             uploadImagem(imagemUri, (url, erro) -> {
                 if (erro != null) {
                     callback.onErro("Erro ao subir imagem: " + erro);
                 } else {
                     categoria.setUrlImagem(url);
-                    categoria.setIndexIcone(-1); // Anula ícone
+                    categoria.setIndexIcone(-1); // Garante que usa a foto
                     salvarNoFirestore(categoria, callback);
                 }
             });
-        } else {
+        }
+        // 2. Se NÃO tem imagem nova, mas o usuário escolheu usar ÍCONE (index != -1)
+        // Precisamos limpar a URL antiga para não ficar inconsistente
+        else if (categoria.getIndexIcone() != -1) {
+            categoria.setUrlImagem(null);
+            salvarNoFirestore(categoria, callback);
+        }
+        // 3. Mantém como estava (edição sem troca de foto)
+        else {
             salvarNoFirestore(categoria, callback);
         }
     }
@@ -73,25 +75,26 @@ public class CategoriaCatalogoRepository {
         boolean isEdicao = (categoria.getId() != null && !categoria.getId().isEmpty());
         DocumentReference docRef;
 
-        // Usa a estrutura de USER do schema
+        // --- MUDANÇA AQUI: USANDO O SCHEMA CORRETO ---
         if (isEdicao) {
-            docRef = FirestoreSchema.userDoc(uid).collection(COL_VENDAS_CATEGORIAS).document(categoria.getId());
+            docRef = FirestoreSchema.vendasCategoriaDoc(categoria.getId());
         } else {
-            docRef = FirestoreSchema.userDoc(uid).collection(COL_VENDAS_CATEGORIAS).document();
+            // Cria um novo ID dentro da coleção correta
+            docRef = FirestoreSchema.vendasCategoriasCol().document();
             categoria.setId(docRef.getId());
         }
 
-        // Regra de Vendas: Sobrescreve o objeto (.set sem merge)
+        // Vendas usa .set() direto (sobrescreve o doc com o objeto)
         docRef.set(categoria)
-                .addOnSuccessListener(aVoid -> callback.onSucesso(isEdicao ? "Atualizado!" : "Criado!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                .addOnSuccessListener(aVoid -> callback.onSucesso(isEdicao ? "Categoria atualizada!" : "Categoria criada!"))
+                .addOnFailureListener(e -> callback.onErro("Erro ao salvar: " + e.getMessage()));
     }
 
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         if (uid == null) return null;
 
-        return FirestoreSchema.userDoc(uid)
-                .collection(COL_VENDAS_CATEGORIAS)
+        // --- MUDANÇA AQUI: USANDO O SCHEMA CORRETO ---
+        return FirestoreSchema.vendasCategoriasCol()
                 .orderBy("nome", Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
@@ -106,7 +109,15 @@ public class CategoriaCatalogoRepository {
     // --- Helpers Privados ---
     private void uploadImagem(Uri uri, BiConsumer<String, String> callback) {
         String nomeArquivo = UUID.randomUUID().toString() + ".jpg";
-        StorageReference fotoRef = storageRef.child("images/users/" + uid + "/categorias/" + nomeArquivo);
+
+        // Caminho no Storage: images/users/{uid}/vendas/categorias/{arquivo}
+        StorageReference fotoRef = storageRef
+                .child("images")
+                .child("users")
+                .child(uid)
+                .child("vendas")
+                .child("categorias")
+                .child(nomeArquivo);
 
         fotoRef.putFile(uri)
                 .addOnSuccessListener(task -> fotoRef.getDownloadUrl()
@@ -115,4 +126,20 @@ public class CategoriaCatalogoRepository {
     }
 
     private interface BiConsumer<T, U> { void accept(T t, U u); }
+
+    public void excluir(@NonNull String idCategoria, @NonNull Callback callback) {
+        if (uid == null) {
+            callback.onErro("Usuário não logado");
+            return;
+        }
+
+        // Deleta o documento no caminho: moduloSistema/vendas/vendas_categorias/{id}
+        FirestoreSchema.vendasCategoriaDoc(idCategoria)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSucesso("Categoria excluída com sucesso!"))
+                .addOnFailureListener(e -> callback.onErro("Erro ao excluir: " + e.getMessage()));
+
+        // Nota: Para um sistema perfeito, futuramente poderíamos deletar a imagem
+        // do Storage aqui também, mas deletando do banco já some do app.
+    }
 }

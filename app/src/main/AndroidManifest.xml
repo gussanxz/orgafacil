@@ -36,7 +36,7 @@
             android:exported="false"
             android:theme="@style/Theme.OrgaFacil" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.categoria.ListaCategoriasActivity"
+            android:name=".features.vendas.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity"
             android:exported="false" />
         <activity
             android:name=".features.vendas.cadastros.VendasCadastrosActivity"
@@ -96,7 +96,7 @@
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.categoria.CadastroCategoriaActivity"
+            android:name=".features.vendas.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity"
             android:exported="false" />
         <activity
             android:name=".features.vendas.cadastros.catalogo.combo.CadastroComboActivity"

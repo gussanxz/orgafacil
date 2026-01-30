@@ -17,18 +17,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
-
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasVendas;
-import com.gussanxz.orgafacil.util_helper.SwipeCallback; // Certifique-se que sua classe Helper está importada
 import com.gussanxz.orgafacil.data.model.Categoria;
-import com.gussanxz.orgafacil.data.repository.CategoriaRepository;
+// IMPORTANTE: Use o Repository específico de Vendas
+import com.gussanxz.orgafacil.data.repository.vendas.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasCatalogoVendas;
+import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListaCategoriasActivity extends AppCompatActivity implements AdapterItemListaCategoriasVendas.OnCategoriaActionListener {
+public class ListaCategoriasCatalogoActivity extends AppCompatActivity implements AdapterItemListaCategoriasCatalogoVendas.OnCategoriaActionListener {
 
     // Componentes Visuais
     private RecyclerView recyclerCategorias;
@@ -37,12 +37,12 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     private ChipGroup chipGroupFiltro;
 
     // Dados e Adaptador
-    private AdapterItemListaCategoriasVendas adapter;
+    private AdapterItemListaCategoriasCatalogoVendas adapter;
     private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
     private final List<Categoria> listaFiltrada = new ArrayList<>();
 
-    // Repositório
-    private CategoriaRepository repository;
+    // Repositório (Atualizado para Vendas)
+    private CategoriaCatalogoRepository repository;
     private ListenerRegistration listenerRegistration;
 
     @Override
@@ -50,7 +50,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
-        repository = new CategoriaRepository();
+        repository = new CategoriaCatalogoRepository();
 
         inicializarComponentes();
         configurarRecyclerView();
@@ -73,31 +73,30 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
     }
 
     // --- LÓGICA CENTRALIZADA DE EXCLUSÃO ---
-    // Este método é usado tanto pelo botão de lixeira quanto pelo Swipe
     private void confirmarExclusao(Categoria categoria, int positionParaRestaurar) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Categoria")
                 .setMessage("Tem certeza que deseja excluir: " + categoria.getNome() + "?")
                 .setCancelable(false)
                 .setPositiveButton("Sim", (dialog, which) -> {
-                    // Chama o repositório
-                    repository.excluir(categoria.getId(), new CategoriaRepository.CategoriaCallback() {
+                    // Chama o repositório de Vendas
+                    repository.excluir(categoria.getId(), new CategoriaCatalogoRepository.Callback() {
                         @Override
                         public void onSucesso(String mensagem) {
-                            Toast.makeText(ListaCategoriasActivity.this, mensagem, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ListaCategoriasCatalogoActivity.this, mensagem, Toast.LENGTH_SHORT).show();
                             // O listener do onStart atualizará a lista automaticamente
                         }
 
                         @Override
                         public void onErro(String erro) {
-                            Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
-                            // Se deu erro, restaura o item swipado (se houver)
+                            Toast.makeText(ListaCategoriasCatalogoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                            // Se deu erro, restaura o item swipado
                             if (positionParaRestaurar != -1) adapter.notifyItemChanged(positionParaRestaurar);
                         }
                     });
                 })
                 .setNegativeButton("Não", (dialog, which) -> {
-                    // SE O USUÁRIO CANCELAR E TIVER FEITO SWIPE, PRECISAMOS RESTAURAR O ITEM VISUALMENTE
+                    // Restaura visualmente se cancelou o swipe
                     if (positionParaRestaurar != -1) {
                         adapter.notifyItemChanged(positionParaRestaurar);
                     }
@@ -105,8 +104,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
                 .show();
     }
 
-    // --- MÉTODOS DA INTERFACE (Cliques no Item/Lixeira) ---
-
+    // --- MÉTODOS DA INTERFACE DO ADAPTER ---
     @Override
     public void onEditarClick(Categoria categoria) {
         abrirTelaEdicao(categoria);
@@ -114,15 +112,12 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
     @Override
     public void onExcluirClick(Categoria categoria) {
-        // Ao clicar na lixeira, não temos posição de swipe para restaurar, então passamos -1
         confirmarExclusao(categoria, -1);
     }
 
-    // --- CONFIGURAÇÃO DO RECYCLER VIEW COM SWIPE ---
-
+    // --- CONFIGURAÇÃO DO RECYCLER VIEW ---
     private void configurarRecyclerView() {
-        // Passamos a lista filtrada (que começa vazia ou com dados) para o adapter
-        adapter = new AdapterItemListaCategoriasVendas(listaFiltrada, this, this);
+        adapter = new AdapterItemListaCategoriasCatalogoVendas(listaFiltrada, this, this); // Context e Listener
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
 
@@ -130,20 +125,14 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-
                 if (position == RecyclerView.NO_POSITION) return;
 
-                // BUSCA SEMPRE NA LISTA QUE O ADAPTER ESTÁ USANDO (listaFiltrada)
                 Categoria categoriaSelecionada = listaFiltrada.get(position);
 
-                // Use LEFT e RIGHT para bater com o desenho do SwipeCallback genérico
                 if (direction == ItemTouchHelper.LEFT) {
-                    // <--- ESQUERDA (EXCLUIR)
                     confirmarExclusao(categoriaSelecionada, position);
-
                 } else if (direction == ItemTouchHelper.RIGHT) {
-                    // ---> DIREITA (EDITAR)
-                    adapter.notifyItemChanged(position); // Fecha o swipe visualmente
+                    adapter.notifyItemChanged(position); // Fecha o swipe
                     abrirTelaEdicao(categoriaSelecionada);
                 }
             }
@@ -152,21 +141,35 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         new ItemTouchHelper(swipeHelper).attachToRecyclerView(recyclerCategorias);
     }
 
-    // --- MÉTODOS AUXILIARES ---
-
+    // --- NAVEGAÇÃO ---
     private void abrirTelaEdicao(Categoria categoria) {
-        Intent intent = new Intent(this, CadastroCategoriaActivity.class);
+        // Aponta para a Activity de Cadastro que criamos
+        Intent intent = new Intent(this, CadastroCategoriaCatalogoActivity.class);
+
         intent.putExtra("modoEditar", true);
         intent.putExtra("idCategoria", categoria.getId());
+        intent.putExtra("tipo", "PRODUTO"); // OBRIGATÓRIO: Define o contexto da tela
+
         intent.putExtra("nome", categoria.getNome());
         intent.putExtra("descricao", categoria.getDescricao());
         intent.putExtra("iconeIndex", categoria.getIndexIcone());
         intent.putExtra("ativa", categoria.isAtiva());
+
+        // Passa a URL da foto (se houver)
+        intent.putExtra("urlImagem", categoria.getUrlImagem());
+
         startActivity(intent);
     }
 
+    public void acessarCadastroCategoria(View view) {
+        Intent intent = new Intent(this, CadastroCategoriaCatalogoActivity.class);
+        intent.putExtra("tipo", "PRODUTO"); // Define que estamos criando um Produto
+        startActivity(intent);
+    }
+
+    // --- DADOS E FILTROS ---
     private void recuperarCategoriasEmTempoReal() {
-        listenerRegistration = repository.listarTempoReal(new CategoriaRepository.ListaCallback() {
+        listenerRegistration = repository.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
             @Override
             public void onNovosDados(List<Categoria> lista) {
                 listaCategoriasTotal.clear();
@@ -176,7 +179,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
             @Override
             public void onErro(String erro) {
-                Toast.makeText(ListaCategoriasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ListaCategoriasCatalogoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -189,7 +192,7 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
 
         for (Categoria c : listaCategoriasTotal) {
             boolean matchTexto = c.getNome().toLowerCase().contains(texto) ||
-                    c.getDescricao().toLowerCase().contains(texto);
+                    (c.getDescricao() != null && c.getDescricao().toLowerCase().contains(texto));
 
             boolean matchStatus = true;
             if (chipId == R.id.chipAtivas) matchStatus = c.isAtiva();
@@ -200,7 +203,8 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
             }
         }
 
-        adapter.setListaFiltrada(listaFiltrada);
+        // Importante: Notificar o adapter da mudança completa
+        adapter.atualizarLista(listaFiltrada);
         atualizarEmptyState(listaFiltrada.isEmpty());
     }
 
@@ -229,10 +233,6 @@ public class ListaCategoriasActivity extends AppCompatActivity implements Adapte
         editBusca = findViewById(R.id.editBusca);
         chipGroupFiltro = findViewById(R.id.chipGroupFiltroStatus);
         emptyState = findViewById(R.id.emptyState);
-    }
-
-    public void acessarCadastroCategoria(View view) {
-        startActivity(new Intent(this, CadastroCategoriaActivity.class));
     }
 
     public void retornarParaVendasCadastros(View view) {

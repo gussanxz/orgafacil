@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.ui.contas.categorias;
+package com.gussanxz.orgafacil.ui.vendas.opd;
 
 import android.net.Uri;
 import androidx.lifecycle.LiveData;
@@ -8,7 +8,7 @@ import com.gussanxz.orgafacil.data.model.Categoria;
 // IMPORTANTE: Usando o Repository novo de Catálogo (Vendas)
 import com.gussanxz.orgafacil.data.repository.vendas.CategoriaCatalogoRepository;
 
-public class CadastroCategoriaViewModel extends ViewModel {
+public class CadastroCategoriaVendasViewModel extends ViewModel {
 
     private final CategoriaCatalogoRepository repository;
 
@@ -25,7 +25,7 @@ public class CadastroCategoriaViewModel extends ViewModel {
     private final MutableLiveData<String> _mensagemErro = new MutableLiveData<>();
     public LiveData<String> mensagemErro = _mensagemErro;
 
-    // Novo: Estado de carregamento para travar botão salvar
+    // Novo: Estado de carregamento para travar botão salvar/excluir
     private final MutableLiveData<Boolean> _carregando = new MutableLiveData<>(false);
     public LiveData<Boolean> carregando = _carregando;
 
@@ -33,7 +33,7 @@ public class CadastroCategoriaViewModel extends ViewModel {
     private Categoria.Tipo tipoCategoria = Categoria.Tipo.DESPESA;
     private String idEdicao = null;
 
-    public CadastroCategoriaViewModel() {
+    public CadastroCategoriaVendasViewModel() {
         this.repository = new CategoriaCatalogoRepository();
     }
 
@@ -105,6 +105,30 @@ public class CadastroCategoriaViewModel extends ViewModel {
             public void onSucesso(String msg) {
                 _carregando.setValue(false);
                 _mensagemSucesso.setValue(msg);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                _carregando.setValue(false);
+                _mensagemErro.setValue(erro);
+            }
+        });
+    }
+
+    // --- EXCLUIR (NOVO MÉTODO) ---
+    public void excluir() {
+        if (idEdicao == null) {
+            _mensagemErro.setValue("Erro: Tentando excluir categoria inexistente.");
+            return;
+        }
+
+        _carregando.setValue(true);
+
+        repository.excluir(idEdicao, new CategoriaCatalogoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                _carregando.setValue(false);
+                _mensagemSucesso.setValue(msg); // A Activity observa isso e fecha a tela
             }
 
             @Override

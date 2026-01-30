@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasVendas;
+import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasCatalogoVendas;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -23,10 +23,10 @@ import com.gussanxz.orgafacil.data.model.Categoria;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SelecionarCategoriaVendasActivity extends AppCompatActivity implements AdapterItemListaCategoriasVendas.OnCategoriaActionListener {
+public class SelecionarCategoriaVendasActivity extends AppCompatActivity implements AdapterItemListaCategoriasCatalogoVendas.OnCategoriaActionListener {
 
     private RecyclerView recyclerView;
-    private AdapterItemListaCategoriasVendas adapter;
+    private AdapterItemListaCategoriasCatalogoVendas adapter;
     private List<Categoria> listaCategorias = new ArrayList<>();
     private DatabaseReference firebaseRef;
     private FirebaseAuth mAuth;
@@ -46,7 +46,7 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
         //Configurando Adapter (passando a lista de Objetos)
-        adapter = new AdapterItemListaCategoriasVendas(listaCategorias, this, this);
+        adapter = new AdapterItemListaCategoriasCatalogoVendas(listaCategorias, this, this);
         recyclerView.setAdapter(adapter);
 
         //Buscar os dados
