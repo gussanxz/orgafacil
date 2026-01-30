@@ -5,14 +5,15 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.gussanxz.orgafacil.data.model.Categoria;
-import com.gussanxz.orgafacil.data.repository.CategoriaRepository;
+// IMPORTANTE: Usando o Repository novo de Catálogo (Vendas)
+import com.gussanxz.orgafacil.data.repository.vendas.CategoriaCatalogoRepository;
 
 public class CadastroCategoriaViewModel extends ViewModel {
 
-    private final CategoriaRepository repository;
+    private final CategoriaCatalogoRepository repository;
 
-    // Estados Observáveis (A Activity "assiste" essas variáveis)
-    private final MutableLiveData<Integer> _iconeSelecionado = new MutableLiveData<>(0); // Começa com o 1º ícone
+    // Estados Observáveis
+    private final MutableLiveData<Integer> _iconeSelecionado = new MutableLiveData<>(0);
     public LiveData<Integer> iconeSelecionado = _iconeSelecionado;
 
     private final MutableLiveData<Uri> _imagemUri = new MutableLiveData<>(null);
@@ -24,33 +25,35 @@ public class CadastroCategoriaViewModel extends ViewModel {
     private final MutableLiveData<String> _mensagemErro = new MutableLiveData<>();
     public LiveData<String> mensagemErro = _mensagemErro;
 
+    // Novo: Estado de carregamento para travar botão salvar
+    private final MutableLiveData<Boolean> _carregando = new MutableLiveData<>(false);
+    public LiveData<Boolean> carregando = _carregando;
+
     // Dados Internos
     private Categoria.Tipo tipoCategoria = Categoria.Tipo.DESPESA;
     private String idEdicao = null;
 
     public CadastroCategoriaViewModel() {
-        this.repository = new CategoriaRepository();
+        this.repository = new CategoriaCatalogoRepository();
     }
 
-    // --- AÇÕES DE SELEÇÃO (Lógica de Exclusividade) ---
-
+    // --- AÇÕES VISUAIS ---
     public void selecionarIcone(int index) {
         _iconeSelecionado.setValue(index);
-        _imagemUri.setValue(null); // Regra: Se escolheu ícone, zera a foto
+        _imagemUri.setValue(null);
     }
 
     public void selecionarFoto(Uri uri) {
         _imagemUri.setValue(uri);
-        _iconeSelecionado.setValue(-1); // Regra: Se escolheu foto, zera o ícone
+        _iconeSelecionado.setValue(-1);
     }
 
-    // --- CONFIGURAÇÃO INICIAL ---
-
+    // --- CONFIGURAÇÃO ---
     public void definirContexto(String tipoString) {
         if (tipoString != null) {
             try {
                 this.tipoCategoria = Categoria.Tipo.valueOf(tipoString);
-            } catch (IllegalArgumentException e) {
+            } catch (Exception e) {
                 this.tipoCategoria = Categoria.Tipo.DESPESA;
             }
         }
@@ -58,9 +61,10 @@ public class CadastroCategoriaViewModel extends ViewModel {
 
     public void carregarDadosEdicao(String id, String nome, String desc, boolean ativa, String urlFoto, int indexIcone) {
         this.idEdicao = id;
-        // Se tivesse lógica de carregar foto da URL, faríamos aqui
+        // Na edição, se tem URL de foto, marcamos icone como -1 para a UI saber que é foto
         if (urlFoto != null && !urlFoto.isEmpty()) {
-            // Lógica futura para URL
+            _iconeSelecionado.setValue(-1);
+            // Obs: _imagemUri continua null pois é uma URL remota, a Activity trata de exibir via Glide/Picasso
         } else {
             selecionarIcone(indexIcone);
         }
@@ -71,42 +75,42 @@ public class CadastroCategoriaViewModel extends ViewModel {
     }
 
     // --- SALVAR ---
-
     public void salvar(String nome, String descricao, boolean ativa) {
-        if (nome == null || nome.isEmpty()) {
+        if (nome == null || nome.trim().isEmpty()) {
             _mensagemErro.setValue("O nome da categoria é obrigatório.");
             return;
         }
 
-        // Validação: Tem que ter visual
-        if (_iconeSelecionado.getValue() == -1 && _imagemUri.getValue() == null) {
-            _mensagemErro.setValue("Selecione um ícone ou uma foto da galeria.");
+        // Validação Visual (se é novo cadastro, exige escolha)
+        if (idEdicao == null && _iconeSelecionado.getValue() == -1 && _imagemUri.getValue() == null) {
+            _mensagemErro.setValue("Selecione um ícone ou uma foto.");
             return;
         }
 
-        // TODO: Aqui entraria o Upload da Imagem para o Storage se (_imagemUri != null)
-        // Como ainda não temos o Storage, vamos salvar simulando que é ícone ou URL futura
+        _carregando.setValue(true);
 
-        Categoria categoria = new Categoria(
-                null,
-                nome,
-                descricao,
-                _iconeSelecionado.getValue() != null ? _iconeSelecionado.getValue() : 0,
-                null, // URL da imagem (seria preenchida após upload)
-                ativa,
-                tipoCategoria
-        );
+        // Monta o objeto
+        Categoria categoria = new Categoria();
         categoria.setId(idEdicao);
+        categoria.setNome(nome);
+        categoria.setDescricao(descricao);
+        categoria.setAtiva(ativa);
+        categoria.setTipoEnum(tipoCategoria);
+        // Se tiver ícone selecionado, usa ele. Se for foto (-1), o repository zera lá.
+        categoria.setIndexIcone(_iconeSelecionado.getValue() != null ? _iconeSelecionado.getValue() : 0);
 
-        repository.salvar(categoria, new CategoriaRepository.CategoriaCallback() {
+        // Chama Repository (que decide se faz upload ou não)
+        repository.salvar(categoria, _imagemUri.getValue(), new CategoriaCatalogoRepository.Callback() {
             @Override
-            public void onSucesso(String mensagem) {
-                _mensagemSucesso.postValue(mensagem);
+            public void onSucesso(String msg) {
+                _carregando.setValue(false);
+                _mensagemSucesso.setValue(msg);
             }
 
             @Override
             public void onErro(String erro) {
-                _mensagemErro.postValue(erro);
+                _carregando.setValue(false);
+                _mensagemErro.setValue(erro);
             }
         });
     }

@@ -81,6 +81,14 @@ public class Categoria implements Serializable {
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
 
+    public String getUrlImagem() {
+        return urlImagem;
+    }
+
+    public void setUrlImagem(String urlImagem) {
+        this.urlImagem = urlImagem;
+    }
+
     // Auxiliar para Enum
     public void setTipoEnum(Tipo tipoEnum) {
         this.tipo = tipoEnum.toString();

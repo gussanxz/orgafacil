@@ -19,10 +19,12 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.card.MaterialCardView;
@@ -30,34 +32,38 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.ui.contas.categorias.CadastroCategoriaViewModel;
+import android.graphics.drawable.ColorDrawable;
+import android.view.LayoutInflater;
 
 public class CadastroCategoriaActivity extends AppCompatActivity {
 
-    // --- Componentes da Interface (UI) ---
+    // --- UI Components ---
+    private NestedScrollView scrollView;
     private GridLayout containerIcones;
     private LinearLayout layoutSelecao;
     private TextView textViewHeader;
-
-    // Botões de Visual
     private ImageButton imgBtnSelecionarIcones;
     private ImageView imgBtnGaleria;
     private MaterialCardView cardBtnGaleria;
-
-    // Inputs
     private TextInputEditText editNome, editDesc;
     private MaterialSwitch switchAtiva;
+    private View loadingOverlay;
+    private MaterialCardView cardPreviewFoto, cardContainerGrid;
+    private ImageView imgPreviewLarge;
+    private TextView txtTituloSelecao;
 
-    // --- ViewModel (Lógica) ---
+    // Botões Salvar
+    private View btnSalvarSuperior, btnSalvarInferior;
+
+    // ViewModel
     private CadastroCategoriaViewModel viewModel;
 
-    // --- Launcher para pegar foto da Galeria ---
+    // Launcher da Galeria
     private final ActivityResultLauncher<Intent> launcherGaleria = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri imagemUri = result.getData().getData();
-                    // Passa a uri para o ViewModel processar
-                    viewModel.selecionarFoto(imagemUri);
+                    viewModel.selecionarFoto(result.getData().getData());
                 }
             }
     );
@@ -67,32 +73,18 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_cadastro_categoria);
-
         ajustarInsets();
 
-        // 1. Inicializa o ViewModel
         viewModel = new ViewModelProvider(this).get(CadastroCategoriaViewModel.class);
 
-        // 2. Inicializa Views e Cliques
         inicializarComponentes();
-
-        // 3. Configura Contexto (Receita/Despesa/etc) e Edição
         processarIntentInicial();
-
-        // 4. Observa as mudanças de estado (A Mágica do MVVM)
         observarViewModel();
     }
 
-    private void ajustarInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-    }
-
     private void inicializarComponentes() {
-        // Vincula IDs
+        // 1. Vincular IDs
+        scrollView = findViewById(R.id.scrollViewContent);
         containerIcones = findViewById(R.id.containerIcones);
         layoutSelecao = findViewById(R.id.layoutSelecao);
         textViewHeader = findViewById(R.id.textViewHeader);
@@ -104,51 +96,79 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         editNome = findViewById(R.id.editCategoria);
         editDesc = findViewById(R.id.editDescricao);
         switchAtiva = findViewById(R.id.switchAtiva);
+        loadingOverlay = findViewById(R.id.loadingOverlay);
 
-        // Configura Cliques dos Botões Principais
+        btnSalvarSuperior = findViewById(R.id.fabSuperiorSalvarCategoria);
+        btnSalvarInferior = findViewById(R.id.fabInferiorSalvarCategoria);
+
+        cardPreviewFoto = findViewById(R.id.cardPreviewFoto);
+        cardContainerGrid = findViewById(R.id.cardContainerGrid);
+        imgPreviewLarge = findViewById(R.id.imgPreviewLarge);
+        txtTituloSelecao = findViewById(R.id.txtTituloSelecao);
+
+        // 2. Configurar Cliques Básicos
         findViewById(R.id.fabVoltar).setOnClickListener(v -> finish());
-        findViewById(R.id.fabSuperiorSalvarCategoria).setOnClickListener(this::salvarCategoria);
-        findViewById(R.id.fabInferiorSalvarCategoria).setOnClickListener(this::salvarCategoria);
+        btnSalvarSuperior.setOnClickListener(this::salvarCategoria);
+        btnSalvarInferior.setOnClickListener(this::salvarCategoria);
 
-        // Clique para abrir Galeria
-        if (cardBtnGaleria != null) {
-            cardBtnGaleria.setOnClickListener(v -> abrirGaleria());
-        }
+        // Listener Galeria (Aplica no Card e na Imagem para garantir o clique)
+        View.OnClickListener acaoAbrirGaleria = v -> abrirGaleria();
+        if (cardBtnGaleria != null) cardBtnGaleria.setOnClickListener(acaoAbrirGaleria);
+        if (imgBtnGaleria != null) imgBtnGaleria.setOnClickListener(acaoAbrirGaleria);
 
-        // Configura cliques do Grid de Ícones
+        // 3. Configurar Grid de Ícones
         configurarCliquesGridIcones();
     }
 
     private void processarIntentInicial() {
-        // Define o Tipo (Receita, Despesa...)
-        viewModel.definirContexto(getIntent().getStringExtra("tipo"));
-        atualizarTituloHeader();
+        Intent intent = getIntent();
+        String tipo = intent.getStringExtra("tipo");
 
-        // Verifica se é Edição
-        Bundle bundle = getIntent().getExtras();
-        if (bundle != null && bundle.containsKey("modoEditar")) {
-            editNome.setText(bundle.getString("nome"));
-            editDesc.setText(bundle.getString("descricao"));
-            switchAtiva.setChecked(bundle.getBoolean("ativa"));
+        // --- CORREÇÃO DE CASE SENSITIVITY ---
+        // Garante que "Produto" vire "PRODUTO" para bater com o Enum
+        if (tipo != null) {
+            tipo = tipo.toUpperCase();
+        }
 
-            // Passa dados visuais para o VM
+        viewModel.definirContexto(tipo);
+
+        if (intent.hasExtra("modoEditar")) {
+            editNome.setText(intent.getStringExtra("nome"));
+            editDesc.setText(intent.getStringExtra("descricao"));
+            switchAtiva.setChecked(intent.getBooleanExtra("ativa", true));
+
+            String urlFoto = intent.getStringExtra("urlImagem");
+
+            // Se tiver foto antiga (URL), carregar com Glide
+            if (urlFoto != null && !urlFoto.isEmpty()) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(urlFoto)
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_launcher_foreground)
+                        .into(imgBtnGaleria); // Carrega no botão pequeno apenas visualmente
+
+                // Ajustes visuais manuais pois o Glide é assíncrono
+                imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
+                cardBtnGaleria.setStrokeWidth(4);
+            }
+
             viewModel.carregarDadosEdicao(
-                    bundle.getString("idCategoria"),
-                    bundle.getString("nome"),
-                    bundle.getString("descricao"),
-                    bundle.getBoolean("ativa"),
-                    bundle.getString("urlImagem"),
-                    bundle.getInt("iconeIndex", 0)
+                    intent.getStringExtra("idCategoria"),
+                    intent.getStringExtra("nome"),
+                    intent.getStringExtra("descricao"),
+                    intent.getBooleanExtra("ativa", true),
+                    urlFoto,
+                    intent.getIntExtra("iconeIndex", 0)
             );
-
-            textViewHeader.setText("Editar " + obterNomeTipoBonito());
+            textViewHeader.setText("Editar Categoria");
+        } else {
+            atualizarTituloHeader();
         }
     }
 
-    // --- PADRÃO OBSERVER (Atualiza a UI quando o ViewModel mudar) ---
     private void observarViewModel() {
-
-        // Quando o ÍCONE mudar
+        // Observa mudança no índice do ícone
         viewModel.iconeSelecionado.observe(this, index -> {
             if (index != -1) {
                 atualizarVisualGridIcones(index);
@@ -156,7 +176,7 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             }
         });
 
-        // Quando a FOTO mudar
+        // Observa mudança na URI da imagem (Galeria)
         viewModel.imagemUri.observe(this, uri -> {
             if (uri != null) {
                 atualizarVisualGaleria(uri);
@@ -174,13 +194,23 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         viewModel.mensagemErro.observe(this, erro -> {
             if (erro.toLowerCase().contains("nome")) {
                 editNome.setError(erro);
+                editNome.requestFocus();
             } else {
                 Toast.makeText(this, erro, Toast.LENGTH_LONG).show();
             }
         });
+
+        // Loading
+        viewModel.carregando.observe(this, isLoading -> {
+            btnSalvarSuperior.setEnabled(!isLoading);
+            btnSalvarInferior.setEnabled(!isLoading);
+            if (loadingOverlay != null) {
+                loadingOverlay.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            }
+        });
     }
 
-    // --- AÇÕES DE UI ---
+    // --- AÇÕES ---
 
     public void salvarCategoria(View view) {
         viewModel.salvar(
@@ -190,9 +220,72 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         );
     }
 
+    // --- LÓGICA DE INTERAÇÃO VISUAL ---
+
     public void exibeSelecaoDeIcones(View view) {
         esconderTeclado();
-        layoutSelecao.setVisibility(layoutSelecao.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+
+        // 1. Lógica de Toggle (se já está aberto, fecha)
+        boolean painelAberto = layoutSelecao.getVisibility() == View.VISIBLE;
+        boolean mostrandoGrid = cardContainerGrid.getVisibility() == View.VISIBLE;
+
+        if (painelAberto && mostrandoGrid) {
+            layoutSelecao.setVisibility(View.GONE);
+            return;
+        }
+
+        // 2. Verifica se tem FOTO selecionada
+        Integer currentIndex = viewModel.iconeSelecionado.getValue();
+        boolean temFotoSelecionada = (currentIndex != null && currentIndex == -1);
+
+        if (temFotoSelecionada) {
+            mostrarDialogConfirmacaoTroca(); // <--- CHAMA O NOVO DIALOG AQUI
+        } else {
+            abrirPainelDeIcones();
+        }
+    }
+
+    // --- NOVO MÉTODO DO DIALOG PERSONALIZADO ---
+    private void mostrarDialogConfirmacaoTroca() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // Infla o layout que criamos
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirmar_troca_foto_categoria, null);
+        builder.setView(view);
+
+        AlertDialog dialog = builder.create();
+
+        // IMPORTANTE: Deixa o fundo do Dialog transparente para o CardView arredondado aparecer
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        // Configura os botões do layout customizado
+        View btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
+        View btnCancelar = view.findViewById(R.id.btnCancelarDialog);
+
+        btnConfirmar.setOnClickListener(v -> {
+            abrirPainelDeIcones(); // Ação real
+            dialog.dismiss();      // Fecha o dialog
+        });
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void abrirPainelDeIcones() {
+        esconderTeclado();
+
+        layoutSelecao.setVisibility(View.VISIBLE);
+        cardContainerGrid.setVisibility(View.VISIBLE);
+        cardPreviewFoto.setVisibility(View.GONE);
+        txtTituloSelecao.setText("Selecione um Ícone:");
+
+        // Rola a tela para baixo para mostrar os ícones
+        if (scrollView != null) {
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+        }
     }
 
     private void abrirGaleria() {
@@ -200,38 +293,39 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         launcherGaleria.launch(intent);
     }
 
-    // --- MÉTODOS DE PINTURA E VISUAL ---
+    // --- ATUALIZAÇÃO VISUAL ---
 
-    private void atualizarTituloHeader() {
-        textViewHeader.setText("Nova " + obterNomeTipoBonito());
-    }
+    private void atualizarVisualGaleria(Uri uri) {
+        // 1. Atualiza visual do botão pequeno (apenas borda e ícone azul)
+        cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
+        cardBtnGaleria.setStrokeWidth(4);
+        imgBtnGaleria.setColorFilter(Color.parseColor("#2196F3"));
 
-    private String obterNomeTipoBonito() {
-        switch (viewModel.getTipoCategoria()) {
-            case RECEITA: return "Receita";
-            case PRODUTO: return "Produto";
-            case SERVICO: return "Serviço";
-            default: return "Despesa";
+        // 2. Atualiza o PREVIEW GRANDE com a foto real
+        if (imgPreviewLarge != null) {
+            imgPreviewLarge.setImageURI(uri);
+            imgPreviewLarge.setImageTintList(null); // Remove tint
+            imgPreviewLarge.setColorFilter(null);   // Remove filtro cinza
+            imgPreviewLarge.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        }
+
+        // 3. Controles de Visibilidade
+        if (layoutSelecao != null) layoutSelecao.setVisibility(View.VISIBLE);
+        if (cardContainerGrid != null) cardContainerGrid.setVisibility(View.GONE);
+        if (cardPreviewFoto != null) cardPreviewFoto.setVisibility(View.VISIBLE);
+        if (txtTituloSelecao != null) txtTituloSelecao.setText("Pré-visualização:");
+
+        // 4. Scroll Automático
+        if (scrollView != null) {
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         }
     }
 
-    private void atualizarVisualGaleria(Uri uri) {
-        imgBtnGaleria.setImageURI(uri);
-        imgBtnGaleria.setColorFilter(null); // Tira o cinza
-        imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3")); // Azul
-        cardBtnGaleria.setStrokeWidth(4);
-
-        // Fecha o painel de ícones se estiver aberto
-        layoutSelecao.setVisibility(View.GONE);
-    }
-
     private void resetarVisualGaleria() {
-        imgBtnGaleria.setImageResource(R.drawable.ic_launcher_foreground); // Ícone padrão placeholder
-        imgBtnGaleria.setColorFilter(Color.parseColor("#757575"));
-        imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        // Volta o botão da galeria para o estado inativo (cinza)
         cardBtnGaleria.setStrokeColor(Color.parseColor("#E0E0E0"));
         cardBtnGaleria.setStrokeWidth(1);
+        imgBtnGaleria.setColorFilter(Color.parseColor("#757575"));
     }
 
     private void atualizarVisualGridIcones(int indexSelecionado) {
@@ -243,44 +337,60 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
         if (containerIcones == null) return;
 
         for (int i = 0; i < containerIcones.getChildCount(); i++) {
-            View v = containerIcones.getChildAt(i);
-            if (v instanceof MaterialCardView) {
-                MaterialCardView c = (MaterialCardView) v;
-                ImageView icon = (ImageView) c.getChildAt(0);
+            MaterialCardView c = (MaterialCardView) containerIcones.getChildAt(i);
+            ImageView icon = (ImageView) c.getChildAt(0);
+            boolean isSelected = (i == indexSelecionado);
 
-                boolean isSelected = (i == indexSelecionado);
-
-                c.setCardBackgroundColor(isSelected ? verde : cinzaBg);
-                c.setStrokeWidth(isSelected ? 0 : 3);
-                c.setStrokeColor(borda);
-
-                if(icon != null) icon.setColorFilter(isSelected ? Color.WHITE : cinzaIcon);
-            }
+            c.setCardBackgroundColor(isSelected ? verde : cinzaBg);
+            c.setStrokeWidth(isSelected ? 0 : 3);
+            c.setStrokeColor(borda);
+            if (icon != null) icon.setColorFilter(isSelected ? Color.WHITE : cinzaIcon);
         }
 
-        // Atualiza o preview pequeno
-        imgBtnSelecionarIcones.setImageResource(getIconePorIndex(indexSelecionado));
-        imgBtnSelecionarIcones.setColorFilter(Color.parseColor("#2196F3"));
+        if (indexSelecionado >= 0) {
+            imgBtnSelecionarIcones.setImageResource(getIconePorIndex(indexSelecionado));
+            imgBtnSelecionarIcones.setColorFilter(Color.parseColor("#2196F3"));
+        }
     }
 
     private void resetarVisualGridIcones() {
-        atualizarVisualGridIcones(-1); // -1 remove a cor de todos
+        atualizarVisualGridIcones(-1);
         imgBtnSelecionarIcones.setColorFilter(Color.parseColor("#757575"));
     }
 
-    private void configuringCliquesGridIcones() {
+    private void configurarCliquesGridIcones() {
         if (containerIcones == null) return;
         for (int i = 0; i < containerIcones.getChildCount(); i++) {
-            final int index = i;
-            containerIcones.getChildAt(i).setOnClickListener(v ->
-                    viewModel.selecionarIcone(index) // Chama ViewModel
-            );
+            int finalI = i;
+            containerIcones.getChildAt(i).setOnClickListener(v -> viewModel.selecionarIcone(finalI));
         }
     }
 
-    // Método auxiliar renomeado para ficar claro no inicializar
-    private void configurarCliquesGridIcones() {
-        configuringCliquesGridIcones();
+    // --- HELPERS ---
+
+    private void atualizarTituloHeader() {
+        String titulo = "Nova Categoria";
+        if (viewModel.getTipoCategoria() != null) {
+            switch (viewModel.getTipoCategoria()) {
+                case RECEITA:
+                    titulo = "Nova Categoria de Receita";
+                    break;
+                case PRODUTO:
+                    titulo = "Nova Categoria de Produto";
+                    break;
+                case SERVICO:
+                    titulo = "Nova Categoria de Serviço";
+                    break;
+                case DESPESA:
+                    titulo = "Nova Categoria de Despesa";
+                    break;
+            }
+        }
+        textViewHeader.setText(titulo);
+    }
+
+    private String obterNomeTipoBonito() {
+        return textViewHeader.getText().toString().replace("Nova ", "").replace("Editar ", "");
     }
 
     private void esconderTeclado() {
@@ -289,6 +399,14 @@ public class CadastroCategoriaActivity extends AppCompatActivity {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
+    }
+
+    private void ajustarInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
     }
 
     private int getIconePorIndex(int index) {
