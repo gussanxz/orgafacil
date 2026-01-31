@@ -52,13 +52,22 @@ public final class FirestoreSchema {
 
     // ======== Referências Base ========
 
-    private static FirebaseFirestore db() {
+    static FirebaseFirestore db() {
         return ConfiguracaoFirestore.getFirestore();
+    }
+
+    /**
+     * Retorna o UID atual ou lança exceção se o usuário não estiver logado.
+     * Resolve o erro de compilação nos Repositories.
+     */
+    @NonNull
+    public static String requireUid() {
+        return FirebaseSession.getUserId();
     }
 
     @NonNull
     public static DocumentReference myUserDoc() {
-        return userDoc(FirebaseSession.getUserId());
+        return userDoc(requireUid());
     }
 
     @NonNull

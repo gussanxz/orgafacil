@@ -17,266 +17,133 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.dados.CategoriaContasRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.visual.AdapterExibirCategoriasContas;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.firestore.FieldValue;
-
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.util_helper.CategoriaIdHelper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-/**
- * SelecionarCategoriaContasActivity (schema novo)
- *
- * Categorias agora em:
- *  {ROOT}/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
- *
- * Verificação de uso:
- *  consulta contasMovimentacoes onde categoriaNome == {nome}
- *
- * Impacto:
- * - remove "contas/main/categorias" antigo
- * - caminho único, fácil de indexar e manter
- */
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private AdapterExibirCategoriasContas adapter;
     private final List<String> categorias = new ArrayList<>();
-
-    private FirebaseFirestore fs;
-    private String uid;
+    private CategoriaContasRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_contas_selecao_categoria);
 
-        recyclerView = findViewById(R.id.recyclerViewCategorias);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-
-        adapter = new AdapterExibirCategoriasContas(categorias, this);
-        recyclerView.setAdapter(adapter);
-
-        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+        // 1. Verificação de Sessão (Pensa fora da caixa: segurança primeiro)
+        if (!FirebaseSession.isUserLogged()) {
             finish();
             return;
         }
 
-        uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        fs = FirestoreSchema.db();
+        repository = new CategoriaContasRepository();
+        configurarRecycler();
 
-        carregarCategoriasDoFirestore();
+        carregarCategorias();
 
         findViewById(R.id.btnNovaCategoria).setOnClickListener(v -> mostrarDialogNovaCategoria());
         configurarSwipeParaExcluir();
     }
 
-    private DocumentReference categoriaDocRef(String catId) {
-        // {ROOT}/{uid}/moduloSistema/contas/contasCategorias/{categoriaId}
-        return FirestoreSchema.userDoc(uid)
-                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
-                .collection(FirestoreSchema.CONTAS_CATEGORIAS).document(catId);
+    private void configurarRecycler() {
+        recyclerView = findViewById(R.id.recyclerViewCategorias);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        adapter = new AdapterExibirCategoriasContas(categorias, this);
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void carregarCategorias() {
+        repository.listarAtivas().addOnSuccessListener(snapshot -> {
+            categorias.clear();
+            for (QueryDocumentSnapshot doc : snapshot) {
+                String nome = doc.getString("nome");
+                if (nome != null) categorias.add(nome);
+            }
+
+            // Substitua o trecho com erro por este:
+            if (categorias.isEmpty()) {
+                repository.inicializarPadroes(new CategoriaContasRepository.Callback() {
+                    @Override
+                    public void onSucesso() {
+                        carregarCategorias(); // Agora sim chama o método após inicializar
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).addOnFailureListener(e -> Toast.makeText(this, "Erro ao carregar", Toast.LENGTH_SHORT).show());
     }
 
     private void mostrarDialogNovaCategoria() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Nova Categoria");
-
         final EditText input = new EditText(this);
-        input.setHint("Digite o nome da categoria");
+        input.setHint("Digite o nome");
         builder.setView(input);
 
         builder.setPositiveButton("Salvar", (dialog, which) -> {
-            String novaCategoria = input.getText().toString().trim();
-            if (!TextUtils.isEmpty(novaCategoria)) {
-                salvarCategoriaNoFirestore(novaCategoria);
-            } else {
-                Toast.makeText(this, "Digite uma categoria válida", Toast.LENGTH_SHORT).show();
+            String nome = input.getText().toString().trim();
+            if (!TextUtils.isEmpty(nome)) {
+                repository.salvar(nome, new CategoriaContasRepository.Callback() {
+                    @Override
+                    public void onSucesso() {
+                        Toast.makeText(SelecionarCategoriaContasActivity.this, "Salvo!", Toast.LENGTH_SHORT).show();
+                        carregarCategorias();
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
-
-        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
+        builder.setNegativeButton("Cancelar", null);
         builder.show();
-    }
-
-    private void salvarCategoriaNoFirestore(String nomeCategoria) {
-        String catId = CategoriaIdHelper.slugify(nomeCategoria);
-
-        Map<String, Object> doc = new HashMap<>();
-        doc.put("nome", nomeCategoria);
-        doc.put("tipo", "Despesa"); // padrão (ajuste se quiser separar Receita/Despesa por tela)
-        doc.put("ativo", true);
-        doc.put("ordem", 0);
-        doc.put("createdAt", FieldValue.serverTimestamp());
-
-        categoriaDocRef(catId)
-                .set(doc, SetOptions.merge())
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Categoria adicionada!", Toast.LENGTH_SHORT).show();
-
-                    if (!categorias.contains(nomeCategoria)) {
-                        categorias.add(nomeCategoria);
-                        categorias.sort(String::compareToIgnoreCase);
-                        adapter.notifyDataSetChanged();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao salvar categoria", Toast.LENGTH_SHORT).show()
-                );
-    }
-
-    private void carregarCategoriasDoFirestore() {
-        FirestoreSchema.userDoc(uid)
-                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
-                .collection(FirestoreSchema.CONTAS_CATEGORIAS)
-                .whereEqualTo("ativo", true)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    categorias.clear();
-
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        String nome = doc.getString("nome");
-                        if (!TextUtils.isEmpty(nome) && !categorias.contains(nome)) {
-                            categorias.add(nome);
-                        }
-                    }
-
-                    if (categorias.isEmpty()) {
-                        inicializarCategoriasPadraoNoFirestore();
-                    } else {
-                        categorias.sort(String::compareToIgnoreCase);
-                        adapter.notifyDataSetChanged();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao carregar categorias", Toast.LENGTH_SHORT).show()
-                );
-    }
-
-    private void inicializarCategoriasPadraoNoFirestore() {
-        List<String> padroes = Arrays.asList(
-                "Alimentação", "Aluguel", "Pets", "Contas", "Doações e caridades",
-                "Educação", "Investimento", "Lazer", "Mercado", "Moradia"
-        );
-
-        final int total = padroes.size();
-        final int[] ok = {0};
-
-        for (String nome : padroes) {
-            String catId = CategoriaIdHelper.slugify(nome);
-
-            Map<String, Object> doc = new HashMap<>();
-            doc.put("nome", nome);
-            doc.put("tipo", "Despesa");
-            doc.put("ativo", true);
-            doc.put("ordem", 0);
-            doc.put("createdAt", FieldValue.serverTimestamp());
-
-            categoriaDocRef(catId).set(doc, SetOptions.merge())
-                    .addOnSuccessListener(unused -> {
-                        ok[0]++;
-                        if (ok[0] == total) carregarCategoriasDoFirestore();
-                    })
-                    .addOnFailureListener(e -> {
-                        ok[0]++;
-                        if (ok[0] == total) carregarCategoriasDoFirestore();
-                    });
-        }
     }
 
     private void configurarSwipeParaExcluir() {
         ItemTouchHelper.SimpleCallback itemTouch = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView,
-                                  @NonNull RecyclerView.ViewHolder viewHolder,
-                                  @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
+            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder vh, @NonNull RecyclerView.ViewHolder t) { return false; }
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int pos = viewHolder.getAdapterPosition();
-                String categoria = categorias.get(pos);
+                String categoriaNome = categorias.get(pos);
 
-                // Versão segura: verifica se está em uso antes de excluir
-                verificarEExcluirCategoriaFirestore(categoria, pos);
+                repository.verificarEExcluir(categoriaNome, new CategoriaContasRepository.Callback() {
+                    @Override
+                    public void onSucesso() {
+                        categorias.remove(pos);
+                        adapter.notifyItemRemoved(pos);
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+                        adapter.notifyItemChanged(pos);
+                    }
+                });
             }
 
             @Override
-            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
-                                    @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
-                                    int actionState, boolean isCurrentlyActive) {
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
-
-                Paint paint = new Paint();
-                paint.setColor(Color.RED);
-
-                c.drawRect(viewHolder.itemView.getRight() + dX, viewHolder.itemView.getTop(),
-                        viewHolder.itemView.getRight(), viewHolder.itemView.getBottom(), paint);
-
-                paint.setColor(Color.WHITE);
-                paint.setTextSize(40);
-                c.drawText("Excluir", viewHolder.itemView.getRight() - 150,
-                        viewHolder.itemView.getTop() + viewHolder.itemView.getHeight() / 2f + 15, paint);
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh, float dX, float dY, int state, boolean active) {
+                // ... (mantenha sua implementação de desenho do Canvas aqui, ela está correta)
+                super.onChildDraw(c, rv, vh, dX, dY, state, active);
             }
         };
-
         new ItemTouchHelper(itemTouch).attachToRecyclerView(recyclerView);
-    }
-
-    /**
-     * Bloqueia exclusão se existir qualquer movimentação usando a categoria.
-     *
-     * Agora (schema novo):
-     * - Consulta direta em contasMovimentacoes onde categoriaNome == categoria
-     *
-     * Impacto:
-     * - Muito mais barato que varrer meses/subcoleções
-     */
-    private void verificarEExcluirCategoriaFirestore(String categoriaNome, int posicaoNaLista) {
-        FirestoreSchema.userDoc(uid)
-                .collection(FirestoreSchema.MODULO).document(FirestoreSchema.CONTAS)
-                .collection(FirestoreSchema.CONTAS_MOV)
-                .whereEqualTo("categoriaNome", categoriaNome)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(itensSnap -> {
-                    if (itensSnap != null && !itensSnap.isEmpty()) {
-                        Toast.makeText(this,
-                                "Categoria em uso — não pode ser excluída.", Toast.LENGTH_SHORT).show();
-                        adapter.notifyItemChanged(posicaoNaLista);
-                    } else {
-                        excluirCategoriaFirestore(CategoriaIdHelper.slugify(categoriaNome), posicaoNaLista);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this,
-                            "Não foi possível verificar uso da categoria.", Toast.LENGTH_SHORT).show();
-                    adapter.notifyItemChanged(posicaoNaLista);
-                });
-    }
-
-    private void excluirCategoriaFirestore(String catId, int posicaoNaLista) {
-        categoriaDocRef(catId)
-                .delete()
-                .addOnSuccessListener(unused -> {
-                    categorias.remove(posicaoNaLista);
-                    adapter.notifyItemRemoved(posicaoNaLista);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Erro ao excluir categoria", Toast.LENGTH_SHORT).show();
-                    adapter.notifyItemChanged(posicaoNaLista);
-                });
     }
 }

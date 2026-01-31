@@ -13,43 +13,40 @@ import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository; // Adicionado [cite: 2026-01-22]
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService; // Adicionado [cite: 2025-11-10]
+import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
-import com.gussanxz.orgafacil.util_helper.LoadingHelper; // Adicionado [cite: 2025-11-10]
+import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 
 public class MainActivity extends IntroActivity {
 
-    private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository; // [cite: 2026-01-22]
-    private UsuarioService usuarioService; // [cite: 2025-11-10]
-    private LoadingHelper loadingHelper; // Substituindo o AlertDialog antigo [cite: 2025-11-10]
+    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioService usuarioService;
+    private LoadingHelper loadingHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Inicializa as camadas de dados [cite: 2025-11-10, 2026-01-22]
+        // Inicializa as camadas de dados através da arquitetura stateless [cite: 2025-11-10]
         perfilRepository = new ConfigPerfilUsuarioRepository();
         usuarioService = new UsuarioService();
 
-        // Altere para o ID do seu loading overlay no layout ac_main_intro_comece_agora
-        // Se não houver um overlay nesse layout específico, você pode usar um Toast ou Dialog provisório
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
-        // Ajuste no Helper: Agora ele chama a Safety Net unificada [cite: 2026-01-31]
+        // Helper utiliza a Session para gerenciar o estado da autenticação [cite: 2025-11-10]
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
 
-        // Configuração da Intro
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
@@ -62,24 +59,23 @@ public class MainActivity extends IntroActivity {
     }
 
     /**
-     * SAFETY NET UNIFICADA PARA O BOTÃO GOOGLE DA INTRO [cite: 2026-01-31]
+     * Fluxo de segurança que utiliza a Session para validar o usuário [cite: 2025-11-10, 2026-01-31]
      */
     private void iniciarFluxoSegurancaDadosGoogle() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
+        if (!FirebaseSession.isUserLogged()) return;
 
         if (loadingHelper != null) loadingHelper.exibir();
 
-        // Verifica se o usuário já existe no Firestore [cite: 2026-01-31]
-        perfilRepository.verificarExistenciaPerfil(user.getUid()).addOnCompleteListener(task -> {
+        // O repositório agora obtém o UID automaticamente via Session [cite: 2025-11-10]
+        perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                // CENÁRIO: Usuário antigo. [cite: 2026-01-31]
                 if (loadingHelper != null) loadingHelper.ocultar();
                 Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
                 abrirTelaHome();
             } else {
-                // CENÁRIO: Usuário novo ou dados deletados. [cite: 2026-01-31]
-                Toast.makeText(this, "Criando sua conta... Bem-vindo!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Criando sua conta...", Toast.LENGTH_SHORT).show();
+                // O Service também utiliza a Session internamente [cite: 2025-11-10]
+                FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
                 usuarioService.inicializarNovoUsuario(user, taskService -> {
                     if (loadingHelper != null) loadingHelper.ocultar();
                     abrirTelaHome();
@@ -109,38 +105,31 @@ public class MainActivity extends IntroActivity {
             }
     );
 
-    // --- NAVEGAÇÃO E BIOMETRIA ---
     public void abrirTelaHome() {
         runOnUiThread(() -> {
-            if (isPinObrigatorio()) {
-                autenticarComDispositivo(() -> {
-                    startActivity(new Intent(this, HomeActivity.class));
-                    finish();
-                });
-            } else {
-                startActivity(new Intent(this, HomeActivity.class));
-                finish();
-            }
+            Intent intent = new Intent(this, HomeActivity.class);
+            verificarBiometriaENavegar(intent);
         });
     }
 
-    // ... (restante dos métodos de biometria permanecem iguais)
-
     public void abrirTelaContas() {
+        Intent intent = new Intent(this, ContasActivity.class);
+        verificarBiometriaENavegar(intent);
+    }
+
+    private void verificarBiometriaENavegar(Intent intent) {
         if (isPinObrigatorio()) {
             autenticarComDispositivo(() -> {
-                startActivity(new Intent(this, ContasActivity.class));
+                startActivity(intent);
                 finish();
             });
         } else {
-            startActivity(new Intent(this, ContasActivity.class));
+            startActivity(intent);
             finish();
         }
     }
 
     private void autenticarComDispositivo(Runnable onSuccess) {
-        BiometricManager bm = BiometricManager.from(this);
-
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Desbloquear OrgaFácil")
                 .setSubtitle("Use biometria ou senha do celular")
@@ -165,5 +154,4 @@ public class MainActivity extends IntroActivity {
         SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
         return prefs.getBoolean("pin_obrigatorio", true);
     }
-
 }

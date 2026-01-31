@@ -20,12 +20,12 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
-
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService; // Import adicionado
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
@@ -33,21 +33,19 @@ import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
 /**
  * LoginActivity
- * Gerencia a entrada do usuário e delega a lógica de dados para o ConfigPerfilUsuarioRepository.
+ * Orquestra o acesso do usuário, validando integridade entre Auth e Firestore.
  */
 public class LoginActivity extends AppCompatActivity {
 
-    // Componentes de UI
     private EditText campoEmail, campoSenha;
     private Button botaoEntrar, btnLoginGoogle;
     private TextView recuperarSenha;
     private RadioButton acessarTelaCadastro;
 
-    // Helpers e Ferramentas
     private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
     private ConfigPerfilUsuarioRepository perfilRepository;
-    private UsuarioService usuarioService; // Declarado para resolver o erro [cite: 2025-11-10]
+    private UsuarioService usuarioService;
     private LoadingHelper loadingHelper;
 
     @Override
@@ -56,6 +54,7 @@ public class LoginActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_login);
 
+        // Aplica padding das barras de sistema (Status/Nav)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -66,9 +65,6 @@ public class LoginActivity extends AppCompatActivity {
         configurarListeners();
     }
 
-    /**
-     * Vincula componentes e instanciar ferramentas de suporte.
-     */
     private void inicializarComponentes() {
         campoEmail = findViewById(R.id.editEmail);
         campoSenha = findViewById(R.id.editSenha);
@@ -77,11 +73,13 @@ public class LoginActivity extends AppCompatActivity {
         recuperarSenha = findViewById(R.id.textViewRecuperarSenha);
         btnLoginGoogle = findViewById(R.id.btnLoginGoogle);
 
+        // Instancia as camadas de negócio
         perfilRepository = new ConfigPerfilUsuarioRepository();
-        usuarioService = new UsuarioService(); // Instanciado para resolver o erro [cite: 2025-11-10]
+        usuarioService = new UsuarioService();
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
-        loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
+        // Inicializa helpers
+        loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
@@ -124,31 +122,26 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * SAFETY NET ATUALIZADA: Garante integridade total entre Auth e Firestore.
-     * Prioriza a correção de documentos fantasmas usando validação de timestamp.
+     * SAFETY NET: Verifica se os dados do Firestore acompanham a conta Auth.
      */
     private void iniciarFluxoSegurancaDados() {
-        FirebaseUser user = autenticacao.getCurrentUser();
-        if (user == null) return;
+        if (!FirebaseSession.isUserLogged()) return;
 
         loadingHelper.exibir();
 
-        // 1. Apenas VERIFICAMOS se o perfil existe no Firestore sem criar nada [cite: 2026-01-31]
-        perfilRepository.verificarExistenciaPerfil(user.getUid()).addOnCompleteListener(task -> {
+        // O repositório agora resolve o UID internamente via FirebaseSession
+        perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
-
                 if (task.getResult().exists()) {
-                    // CENÁRIO 1: Usuário real com dados íntegros [cite: 2026-01-31]
+                    // SUCESSO: Usuário já tem tudo configurado
                     loadingHelper.ocultar();
                     Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
                     abrirTelaHome();
                 } else {
-                    // CENÁRIO 2: Auth existe mas Firestore não (Login novo ou Fantasma) [cite: 2026-01-31]
-                    tratarUsuarioSemDocumento(user);
+                    // ALERTA: Usuário logou mas não tem documento (Login novo ou erro de sincronia)
+                    tratarUsuarioSemDocumento(autenticacao.getCurrentUser());
                 }
-
             } else {
-                // CENÁRIO 3: Falha técnica (Rede ou Permissão) [cite: 2026-01-31]
                 loadingHelper.ocultar();
                 String erro = perfilRepository.mapearErroAutenticacao(task.getException());
                 Toast.makeText(this, "Erro de sincronização: " + erro, Toast.LENGTH_LONG).show();
@@ -156,31 +149,26 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * Filtro de Segurança: Decide se inicializa os dados ou expulsa a sessão órfã.
-     */
     private void tratarUsuarioSemDocumento(FirebaseUser user) {
-        // Pegamos o momento exato do último login no Firebase Auth [cite: 2026-01-31]
+        if (user == null) return;
+
         long momentoLogin = user.getMetadata().getLastSignInTimestamp();
         long agora = System.currentTimeMillis();
 
-        // Se o login ocorreu há menos de 30 segundos, é uma ação legítima de agora [cite: 2025-11-10]
+        // Se o login for recente (legítimo), inicializamos a conta
         if (agora - momentoLogin < 30000) {
-            Toast.makeText(this, "Criando sua conta... Bem-vindo!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Configurando sua conta... Aguarde.", Toast.LENGTH_SHORT).show();
 
-            // Inicializa toda a estrutura (Perfil, Carteira, Categorias) via Service [cite: 2025-11-10]
             usuarioService.inicializarNovoUsuario(user, taskService -> {
                 loadingHelper.ocultar();
                 abrirTelaHome();
             });
         } else {
-            // Sessão antiga sem documento = Dados deletados no console [cite: 2025-11-10]
-            // Limpamos tudo para evitar a recriação automática infinita [cite: 2026-01-31]
+            // Se a sessão for antiga e não houver documento, limpamos para evitar erro de "fantasma"
             loadingHelper.ocultar();
-            perfilRepository.deslogar();
+            FirebaseSession.logOut();
             if (googleLoginHelper != null) googleLoginHelper.recarregarSessaoGoogle();
-
-            Toast.makeText(this, "Sessão expirada ou conta removida pelo sistema.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show();
         }
     }
 

@@ -1,11 +1,11 @@
 package com.gussanxz.orgafacil.funcionalidades.firebase;
 
 import androidx.annotation.NonNull;
+import com.google.firebase.auth.FirebaseUser;
 
 /**
  * FirebaseSession
- * * Gerencia o estado do usuário logado e centraliza o acesso ao UID.
- * Isola a lógica de autenticação das definições de banco de dados.
+ * Gerencia o estado do usuário logado e centraliza o acesso ao UID. [cite: 2025-11-10]
  */
 public final class FirebaseSession {
 
@@ -13,21 +13,28 @@ public final class FirebaseSession {
 
     /**
      * Retorna o UID do usuário logado.
-     * @throws IllegalStateException se o usuário não estiver autenticado.
+     * @throws IllegalStateException se o usuário não estiver autenticado. [cite: 2025-11-10]
      */
     @NonNull
     public static String getUserId() {
-        String uid = ConfiguracaoFirestore.getFirebaseAutenticacao().getUid();
-        if (uid == null) {
+        FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
+        if (user == null) {
             throw new IllegalStateException("Acesso negado: Usuário não autenticado no Firebase.");
         }
-        return uid;
+        return user.getUid();
     }
 
     /**
-     * Verifica se existe uma sessão ativa.
+     * Verifica se existe uma sessão ativa. [cite: 2025-11-10]
      */
     public static boolean isUserLogged() {
         return ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser() != null;
+    }
+
+    /**
+     * Finaliza a sessão do usuário. [cite: 2025-11-10]
+     */
+    public static void logOut() {
+        ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
     }
 }

@@ -2,39 +2,30 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 
 import androidx.annotation.NonNull;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-
+import com.google.firebase.firestore.Query;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ProdutoRepository
  *
- * O que faz:
- * - CRUD + Listener de produtos do módulo vendas mantendo o caminho atual:
- *   {ROOT}/{uid}/vendas_produtos/{produtoId}
- *
- * Impacto:
- * - Agora respeita FirestoreSchema.ROOT (ex: "usuarios" / "teste")
- * - Remove hardcode "users" em todos os paths
- * - Mantém compatibilidade com telas atuais (não migra ainda o schema)
+ * Responsabilidade:
+ * - CRUD e Listener em tempo real para "Produtos" no módulo de vendas.
+ * - Utiliza FirebaseSession para identidade e FirestoreSchema para caminhos. [cite: 2025-11-10]
  */
 public class ProdutoRepository {
 
-    private final FirebaseFirestore db;
-    private final String uid;
-
-    // Mantém o nome da coleção atual para não quebrar o app agora
+    // Nome da coleção centralizado
     private static final String COL_VENDAS_PRODUTOS = "vendas_produtos";
 
     public ProdutoRepository() {
-        this.db = FirestoreSchema.db();
-        this.uid = (FirebaseAuth.getInstance().getCurrentUser() != null)
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
+        // O repositório agora é "stateless" em relação ao UID. [cite: 2025-11-10]
     }
 
     public interface Callback {
@@ -43,77 +34,75 @@ public class ProdutoRepository {
     }
 
     public interface ListaCallback {
-        void onNovosDados(java.util.List<ProdutoModel> lista);
+        void onNovosDados(List<ProdutoModel> lista);
         void onErro(String erro);
     }
 
     /**
-     * Salvar/Editar produto
-     *
-     * Caminho:
-     * {ROOT}/{uid}/vendas_produtos/{id}
+     * Salvar ou Editar produto.
+     * Utiliza o myUserDoc() do Schema que já resolve o UID internamente. [cite: 2025-11-10]
      */
     public void salvar(@NonNull ProdutoModel produtoModel, @NonNull Callback callback) {
-        if (uid == null) {
-            callback.onErro("Usuário não logado");
-            return;
+        try {
+            boolean isEdicao = (produtoModel.getId() != null && !produtoModel.getId().isEmpty());
+            DocumentReference docRef;
+
+            if (isEdicao) {
+                docRef = FirestoreSchema.myUserDoc()
+                        .collection(COL_VENDAS_PRODUTOS)
+                        .document(produtoModel.getId());
+            } else {
+                docRef = FirestoreSchema.myUserDoc()
+                        .collection(COL_VENDAS_PRODUTOS)
+                        .document();
+                produtoModel.setId(docRef.getId());
+            }
+
+            docRef.set(produtoModel)
+                    .addOnSuccessListener(aVoid ->
+                            callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!")
+                    )
+                    .addOnFailureListener(e ->
+                            callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar produto")
+                    );
+
+        } catch (IllegalStateException e) {
+            // Tratamento de erro caso o usuário perca a sessão. [cite: 2025-11-10]
+            callback.onErro("Sessão expirada: " + e.getMessage());
         }
-
-        boolean isEdicao = (produtoModel.getId() != null && !produtoModel.getId().isEmpty());
-        DocumentReference docRef;
-
-        if (isEdicao) {
-            docRef = FirestoreSchema.userDoc(uid)
-                    .collection(COL_VENDAS_PRODUTOS)
-                    .document(produtoModel.getId());
-        } else {
-            docRef = FirestoreSchema.userDoc(uid)
-                    .collection(COL_VENDAS_PRODUTOS)
-                    .document();
-            produtoModel.setId(docRef.getId());
-        }
-
-        docRef.set(produtoModel)
-                .addOnSuccessListener(aVoid ->
-                        callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!")
-                )
-                .addOnFailureListener(e ->
-                        callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar produto")
-                );
     }
 
     /**
-     * Listener em tempo real (lista de produtos)
-     *
-     * Impacto:
-     * - Bom para UI de catálogo
-     * - Cada alteração gera evento (custo: leituras por mudança)
+     * Listener em tempo real para listagem de produtos.
      */
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
-        if (uid == null) return null;
-
-        return FirestoreSchema.userDoc(uid)
-                .collection(COL_VENDAS_PRODUTOS)
-                .orderBy("nome")
-                .addSnapshotListener((snapshots, error) -> {
-                    if (error != null) {
-                        callback.onErro(error.getMessage() != null ? error.getMessage() : "Erro ao listar produtos");
-                        return;
-                    }
-
-                    java.util.List<ProdutoModel> lista = new java.util.ArrayList<>();
-                    if (snapshots != null) {
-                        lista = snapshots.toObjects(ProdutoModel.class);
-
-                        // Garante IDs (toObjects pode não preencher id)
-                        int i = 0;
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots) {
-                            if (i < lista.size()) lista.get(i).setId(doc.getId());
-                            i++;
+        try {
+            return FirestoreSchema.myUserDoc()
+                    .collection(COL_VENDAS_PRODUTOS)
+                    .orderBy("nome", Query.Direction.ASCENDING)
+                    .addSnapshotListener((snapshots, error) -> {
+                        if (error != null) {
+                            callback.onErro(error.getMessage() != null ? error.getMessage() : "Erro ao listar produtos");
+                            return;
                         }
-                    }
 
-                    callback.onNovosDados(lista);
-                });
+                        List<ProdutoModel> lista = new ArrayList<>();
+                        if (snapshots != null) {
+                            lista = snapshots.toObjects(ProdutoModel.class);
+
+                            // Sincroniza os IDs dos documentos com os objetos da lista
+                            for (int i = 0; i < snapshots.size(); i++) {
+                                if (i < lista.size()) {
+                                    lista.get(i).setId(snapshots.getDocuments().get(i).getId());
+                                }
+                            }
+                        }
+
+                        callback.onNovosDados(lista);
+                    });
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+            return null;
+        }
     }
 }
