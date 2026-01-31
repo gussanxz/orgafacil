@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -16,31 +15,24 @@ import java.util.Locale;
 /**
  * FirestoreSchema
  *
- * Centraliza TODOS os caminhos do Firestore (rotas) do OrgaFacil.
- * Assim, qualquer mudança de estrutura exige alteração em 1 único arquivo.
- *
- * Modelo alvo:
- * usuarios/{uid}/config/{perfil|preferencias|seguranca}
- * usuarios/{uid}/moduloSistema/{contas|vendas}/...
+ * Centraliza TODOS os caminhos do Firestore (rotas).
+ * Camada de mapeamento de dados (Data Mapping Layer).
  */
 public final class FirestoreSchema {
 
     private FirestoreSchema() {}
 
-    // ======== Ajuste rápido de "coleção raiz" ========
-    // Se um dia vocês decidirem trocar "usuarios" -> "users", muda só aqui.
-    public static final String ROOT = "teste";
-
-    // ======== Nomes fixos do modelo ========
+    // ======== Coleções Raiz ========
+    public static final String ROOT = "teste"; // Mudar para "usuarios" em produção
     public static final String CONFIG = "config";
     public static final String MODULO = "moduloSistema";
 
-    // config docs
+    // Sub-documentos de Configuração
     public static final String PERFIL = "config_perfil";
     public static final String PREFERENCIAS = "config_preferencias";
     public static final String SEGURANCA = "config_seguranca";
 
-    // moduloSistema/contas
+    // Módulo Contas
     public static final String CONTAS = "contas";
     public static final String CONTAS_CATEGORIAS = "contas_categorias";
     public static final String CONTAS_MOV = "contas_movimentacoes";
@@ -48,40 +40,25 @@ public final class FirestoreSchema {
     public static final String CONTAS_RESUMOS = "contas_resumos";
     public static final String CONTAS_ULTIMOS = "contas_ultimos";
 
-    // moduloSistema/vendas
+    // Módulo Vendas
     public static final String VENDAS = "vendas";
     public static final String VENDAS_CATEGORIAS = "vendas_categorias";
     public static final String VENDAS_CATALOGO = "vendas_catalogo";
     public static final String VENDAS_CAIXA = "vendas_caixa";
     public static final String VENDAS_VENDAS = "vendas_vendas";
     public static final String VENDAS_CLIENTES = "vendas_clientes";
-    public static final String VENDAS_VENDEDORES = "vendas_vendedores";
-    public static final String VENDAS_FORNECEDORES = "vendas_fornecedores";
+    public static final String VENDAS_VENDEDORES = "vendedores";
+    public static final String VENDAS_FORNECEDORES = "fornecedores";
 
-    // ======== Base providers ========
-    @NonNull
-    public static FirebaseFirestore db() {
+    // ======== Referências Base ========
+
+    private static FirebaseFirestore db() {
         return ConfiguracaoFirestore.getFirestore();
     }
 
-    @Nullable
-    public static String uidOrNull() {
-        return FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
-    }
-
     @NonNull
-    public static String requireUid() {
-        String uid = uidOrNull();
-        if (uid == null) throw new IllegalStateException("Usuário não logado (uid null).");
-        return uid;
-    }
-
-    // ======== Root: usuarios/{uid} ========
-    @NonNull
-    public static DocumentReference userDoc() {
-        return db().collection(ROOT).document(requireUid());
+    public static DocumentReference myUserDoc() {
+        return userDoc(FirebaseSession.getUserId());
     }
 
     @NonNull
@@ -90,25 +67,27 @@ public final class FirestoreSchema {
     }
 
     // ======== CONFIG ========
+
     @NonNull
     public static DocumentReference configPerfilDoc() {
-        return userDoc().collection(CONFIG).document(PERFIL);
+        return myUserDoc().collection(CONFIG).document(PERFIL);
     }
 
     @NonNull
     public static DocumentReference configPreferenciasDoc() {
-        return userDoc().collection(CONFIG).document(PREFERENCIAS);
+        return myUserDoc().collection(CONFIG).document(PREFERENCIAS);
     }
 
     @NonNull
     public static DocumentReference configSegurancaDoc() {
-        return userDoc().collection(CONFIG).document(SEGURANCA);
+        return myUserDoc().collection(CONFIG).document(SEGURANCA);
     }
 
     // ======== MODULO SISTEMA / CONTAS ========
+
     @NonNull
     public static CollectionReference contasCategoriasCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_CATEGORIAS);
+        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_CATEGORIAS);
     }
 
     @NonNull
@@ -118,7 +97,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference contasMovimentacoesCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_MOV);
+        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_MOV);
     }
 
     @NonNull
@@ -128,7 +107,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference contasFuturasCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_FUTURAS);
+        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_FUTURAS);
     }
 
     @NonNull
@@ -136,19 +115,17 @@ public final class FirestoreSchema {
         return contasFuturasCol().document(contaFuturaId);
     }
 
-    /**
-     * usuarios/{uid}/moduloSistema/contas/Resumos/ultimos
-     */
     @NonNull
     public static DocumentReference contasResumoUltimosDoc() {
-        return userDoc().collection(MODULO).document(CONTAS)
+        return myUserDoc().collection(MODULO).document(CONTAS)
                 .collection(CONTAS_RESUMOS).document(CONTAS_ULTIMOS);
     }
 
     // ======== MODULO SISTEMA / VENDAS ========
+
     @NonNull
     public static CollectionReference vendasCategoriasCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATEGORIAS);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATEGORIAS);
     }
 
     @NonNull
@@ -158,7 +135,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasCatalogoCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATALOGO);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATALOGO);
     }
 
     @NonNull
@@ -168,7 +145,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasCaixaCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CAIXA);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CAIXA);
     }
 
     @NonNull
@@ -178,7 +155,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasVendasCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDAS);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDAS);
     }
 
     @NonNull
@@ -188,7 +165,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasClientesCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CLIENTES);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CLIENTES);
     }
 
     @NonNull
@@ -198,7 +175,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasVendedoresCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDEDORES);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDEDORES);
     }
 
     @NonNull
@@ -208,7 +185,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasFornecedoresCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_FORNECEDORES);
+        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_FORNECEDORES);
     }
 
     @NonNull
@@ -216,7 +193,8 @@ public final class FirestoreSchema {
         return vendasFornecedoresCol().document(fornecedorId);
     }
 
-    // ======== Helpers de data (diaKey / mesKey) ========
+    // ======== Helpers de Utilidade ========
+
     @NonNull
     public static String diaKey(@Nullable Date date) {
         Date d = (date != null) ? date : new Date();
@@ -232,9 +210,5 @@ public final class FirestoreSchema {
     @NonNull
     public static Timestamp nowTs() {
         return Timestamp.now();
-    }
-
-    public static FirebaseFirestore getFirestore() {
-        return FirebaseFirestore.getInstance();
     }
 }
