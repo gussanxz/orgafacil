@@ -127,6 +127,8 @@
             android:exported="false" />
         <activity android:name=".funcionalidades.autenticacao.visual.TermosActivity"
             android:exported="false" />
+        <activity android:name=".funcionalidades.configuracoes.visual.ConfirmacaoEncerrarContaActivity"
+            android:exported="false"></activity>
     </application>
 
 </manifest>
