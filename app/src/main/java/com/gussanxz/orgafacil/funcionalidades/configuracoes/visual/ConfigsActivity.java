@@ -63,7 +63,7 @@ public class ConfigsActivity extends AppCompatActivity {
         itemPerfil.setOnClickListener(v -> navegarParaPerfil());
 
         itemPreferencias.setOnClickListener(v ->
-                Toast.makeText(this, "Funcionalidade em desenvolvimento", Toast.LENGTH_SHORT).show()
+                startActivity(new Intent(this, PreferenciasActivity.class))
         );
 
         itemSeguranca.setOnClickListener(v ->

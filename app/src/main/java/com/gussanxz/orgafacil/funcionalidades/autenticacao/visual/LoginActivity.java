@@ -166,7 +166,7 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             // Se a sessão for antiga e não houver documento, limpamos para evitar erro de "fantasma"
             loadingHelper.ocultar();
-            FirebaseSession.logOut();
+            FirebaseSession.logOut(this);
             if (googleLoginHelper != null) googleLoginHelper.recarregarSessaoGoogle();
             Toast.makeText(this, "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show();
         }

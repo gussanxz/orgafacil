@@ -45,7 +45,6 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void verificarSessao() {
-        // Usa a Session para verificar o estado [cite: 2025-11-10]
         if (!FirebaseSession.isUserLogged()) {
             irParaIntro();
             return;
@@ -53,13 +52,12 @@ public class SplashActivity extends AppCompatActivity {
 
         FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
 
-        // TRAVA 1: Sincroniza com o servidor Auth para checar se o UID ainda é válido [cite: 2026-01-31]
         user.reload().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 garantirIntegridadeFirestore();
             } else {
-                // Sessão inválida ou usuário deletado no console [cite: 2026-01-31]
-                FirebaseSession.logOut();
+                // CORREÇÃO: Passando 'this' para limpar o cache no logout [cite: 2026-01-31]
+                FirebaseSession.logOut(this);
                 irParaIntro();
             }
         });
@@ -72,11 +70,10 @@ public class SplashActivity extends AppCompatActivity {
     private void garantirIntegridadeFirestore() {
         perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                // Tudo certo: Auth e Banco sincronizados [cite: 2026-01-31]
                 irParaHome();
             } else {
-                // Sessão órfã: existe login mas os dados sumiram [cite: 2026-01-31]
-                FirebaseSession.logOut();
+                // CORREÇÃO: Passando 'this' para limpar o cache no logout [cite: 2026-01-31]
+                FirebaseSession.logOut(this);
                 irParaIntro();
             }
         });

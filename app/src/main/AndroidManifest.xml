@@ -129,6 +129,8 @@
             android:exported="false" />
         <activity android:name=".funcionalidades.configuracoes.visual.ConfirmacaoEncerrarContaActivity"
             android:exported="false"></activity>
+        <activity android:name=".funcionalidades.configuracoes.visual.PreferenciasActivity"
+            android:exported="false"></activity>
     </application>
 
 </manifest>
