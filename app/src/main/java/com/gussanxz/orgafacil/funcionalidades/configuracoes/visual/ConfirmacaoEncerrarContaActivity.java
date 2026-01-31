@@ -2,106 +2,147 @@ package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
 /**
  * ConfirmacaoEncerrarContaActivity
- * Tela crítica para encerramento definitivo de conta.
- * Exige reautenticação por senha para validar a operação no Firebase.
+ * Tela para encerramento de conta.
+ * Atualmente simplificada para apenas confirmação direta.
  */
 public class ConfirmacaoEncerrarContaActivity extends AppCompatActivity {
 
+    private TextInputLayout layoutSenha;
     private TextInputEditText editSenhaEncerramento;
     private Button btnConfirmarEncerramento, btnCancelar;
     private LoadingHelper loadingHelper;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
     private FirebaseUser user;
+    private GoogleLoginHelper googleLoginHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_confirmacao_encerrar_conta);
 
-        // Inicialização de componentes e lógica
-        usuarioRepository = new UsuarioRepository();
+        // Inicialização com foco no repositório de perfil
+        perfilRepository = new ConfigPerfilUsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
-        // Helper de carregamento (certifique-se de ter o include no XML)
+        // Inicializa o helper usando o ID do layout incluído no XML
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
         bindViews();
+        configurarInterfaceSimplificada();
         configurarListeners();
     }
 
     private void bindViews() {
+        layoutSenha = findViewById(R.id.layoutSenhaEncerramento);
         editSenhaEncerramento = findViewById(R.id.editSenhaEncerramento);
         btnConfirmarEncerramento = findViewById(R.id.btnConfirmarEncerramento);
         btnCancelar = findViewById(R.id.btnCancelarEncerramento);
     }
 
-    private void configurarListeners() {
-        // Inicia o processo de exclusão
-        btnConfirmarEncerramento.setOnClickListener(v -> processarEncerramento());
+    /**
+     * Configura a interface para o modo de testes/provisório.
+     * Esconde a obrigatoriedade de senha para agilizar o desenvolvimento.
+     */
+    private void configurarInterfaceSimplificada() {
+        if (layoutSenha != null) {
+            layoutSenha.setVisibility(View.GONE);
+        }
+        btnConfirmarEncerramento.setText("Sim, desejo excluir minha conta");
+    }
 
-        // Apenas fecha a tela e volta para Segurança
+    private void configurarListeners() {
+        btnConfirmarEncerramento.setOnClickListener(v -> processarExclusaoDireta());
         btnCancelar.setOnClickListener(v -> finish());
     }
 
     /**
-     * Valida os campos e solicita o encerramento ao repositório.
+     * FLUXO ATUAL: Exclusão direta sem validação de senha/código.
+     * Utiliza o repositório para apagar os dados do Firestore antes de deletar o Auth.
      */
-    private void processarEncerramento() {
-        String senha = editSenhaEncerramento.getText().toString().trim();
-
-        if (senha.isEmpty()) {
-            editSenhaEncerramento.setError("Digite sua senha para confirmar");
-            editSenhaEncerramento.requestFocus();
-            return;
-        }
-
+    private void processarExclusaoDireta() {
         loadingHelper.exibir();
-        btnConfirmarEncerramento.setEnabled(false); // Evita cliques duplos
 
-        // Chamada ao método centralizado no UsuarioRepository
-        usuarioRepository.excluirContaDefinitivamente(user, senha, task -> {
+        perfilRepository.excluirContaSemSenha(user, task -> {
             loadingHelper.ocultar();
-            btnConfirmarEncerramento.setEnabled(true);
 
             if (task != null && task.isSuccessful()) {
+                // SUCESSO TOTAL: Firestore e Auth limpos.
                 finalizarSessaoEApp();
             } else {
-                // Tradução do erro (ex: senha incorreta ou erro de rede)
-                String msgErro = usuarioRepository.mapearErroAutenticacao(task.getException());
-                editSenhaEncerramento.setError(msgErro);
-                Toast.makeText(this, msgErro, Toast.LENGTH_SHORT).show();
+                // FALHA: Provavelmente precisa de login recente
+                String erro = perfilRepository.mapearErroAutenticacao(task != null ? task.getException() : null);
+                Toast.makeText(this, erro, Toast.LENGTH_LONG).show();
             }
         });
     }
 
-    /**
-     * Limpa os dados de autenticação local e redireciona para o Login.
-     */
     private void finalizarSessaoEApp() {
-        Toast.makeText(this, "Conta encerrada com sucesso. Sentiremos sua falta!", Toast.LENGTH_LONG).show();
+        if (googleLoginHelper != null) {
+            googleLoginHelper.recarregarSessaoGoogle(); // Mata o cache do Google [cite: 2026-01-31]
+        }
+        FirebaseAuth.getInstance().signOut(); // Mata a sessão Firebase [cite: 2025-11-10]
 
-        // Logout definitivo do Firebase
-        FirebaseAuth.getInstance().signOut();
-
-        // Navegação de segurança: limpa o histórico de telas
         Intent i = new Intent(this, LoginActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
         finish();
     }
+    /* ========================================================================================
+    MÉTODOS COMENTADOS PARA IMPLEMENTAÇÃO FUTURA (FLUXO HÍBRIDO SENHA/GOOGLE)
+    ========================================================================================
+
+    private void processarFluxoGoogle() {
+        loadingHelper.exibir();
+        btnConfirmarEncerramento.setEnabled(false);
+
+        perfilRepository.enviarCodigoVerificacaoExclusao(user.getEmail(), task -> {
+            loadingHelper.ocultar();
+            if (task.isSuccessful()) {
+                Toast.makeText(this, "E-mail enviado! Verifique sua caixa.", Toast.LENGTH_LONG).show();
+                btnConfirmarEncerramento.setText("E-mail enviado");
+                btnConfirmarEncerramento.postDelayed(this::finish, 3000);
+            } else {
+                btnConfirmarEncerramento.setEnabled(true);
+                String msg = perfilRepository.mapearErroAutenticacao(task.getException());
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void processarEncerramentoPadrao() {
+        String senha = editSenhaEncerramento.getText().toString().trim();
+        if (senha.isEmpty()) {
+            editSenhaEncerramento.setError("Digite sua senha");
+            return;
+        }
+        loadingHelper.exibir();
+        perfilRepository.excluirContaDefinitivamente(user, senha, task -> {
+            loadingHelper.ocultar();
+            if (task != null && task.isSuccessful()) {
+                finalizarSessaoEApp();
+            } else {
+                String msgErro = perfilRepository.mapearErroAutenticacao(task.getException());
+                Toast.makeText(this, msgErro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    */
 }

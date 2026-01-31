@@ -21,8 +21,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 
+import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService; // Import adicionado
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
@@ -31,7 +33,7 @@ import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
 /**
  * LoginActivity
- * Gerencia a entrada do usuário e delega a lógica de dados para o UsuarioRepository.
+ * Gerencia a entrada do usuário e delega a lógica de dados para o ConfigPerfilUsuarioRepository.
  */
 public class LoginActivity extends AppCompatActivity {
 
@@ -44,7 +46,8 @@ public class LoginActivity extends AppCompatActivity {
     // Helpers e Ferramentas
     private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioService usuarioService; // Declarado para resolver o erro [cite: 2025-11-10]
     private LoadingHelper loadingHelper;
 
     @Override
@@ -53,7 +56,6 @@ public class LoginActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_login);
 
-        // Configuração de Insets para preenchimento de tela
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -75,25 +77,19 @@ public class LoginActivity extends AppCompatActivity {
         recuperarSenha = findViewById(R.id.textViewRecuperarSenha);
         btnLoginGoogle = findViewById(R.id.btnLoginGoogle);
 
-        // Inicia Repositório e Helpers
-        usuarioRepository = new UsuarioRepository();
+        perfilRepository = new ConfigPerfilUsuarioRepository();
+        usuarioService = new UsuarioService(); // Instanciado para resolver o erro [cite: 2025-11-10]
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
-        // Google helper com callback para a Safety Net no Repository
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
     }
 
-    /**
-     * Centraliza a configuração de cliques.
-     */
     private void configurarListeners() {
-        // Login Manual
         botaoEntrar.setOnClickListener(v -> validarEntradasLogin());
 
-        // Login Google
         if (btnLoginGoogle != null) {
             btnLoginGoogle.setOnClickListener(v ->
                     resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent())
@@ -101,14 +97,9 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         acessarTelaCadastro.setOnClickListener(view -> abrirTelaCadastro());
-
-        // Agora abre o BottomSheet moderno de recuperação
         recuperarSenha.setOnClickListener(view -> exibirDialogoRecuperacao());
     }
 
-    /**
-     * Valida os campos e inicia o processo de login no Firebase.
-     */
     private void validarEntradasLogin() {
         String email = campoEmail.getText().toString().trim();
         String senha = campoSenha.getText().toString().trim();
@@ -126,29 +117,73 @@ public class LoginActivity extends AppCompatActivity {
                         iniciarFluxoSegurancaDados();
                     } else {
                         loadingHelper.ocultar();
-                        // Delega a tradução do erro para o Repository
-                        String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
+                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
                         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
     /**
-     * SAFETY NET: Delega ao Repository a verificação e criação de dados iniciais.
+     * SAFETY NET ATUALIZADA: Garante integridade total entre Auth e Firestore.
+     * Prioriza a correção de documentos fantasmas usando validação de timestamp.
      */
     private void iniciarFluxoSegurancaDados() {
-        if (autenticacao.getCurrentUser() == null) return;
+        FirebaseUser user = autenticacao.getCurrentUser();
+        if (user == null) return;
 
-        // O Repository agora cuida de verificar o schema e recriar dados se necessário
-        usuarioRepository.garantirDadosIniciais(autenticacao.getCurrentUser(), task -> {
-            loadingHelper.ocultar();
-            abrirTelaHome();
+        loadingHelper.exibir();
+
+        // 1. Apenas VERIFICAMOS se o perfil existe no Firestore sem criar nada [cite: 2026-01-31]
+        perfilRepository.verificarExistenciaPerfil(user.getUid()).addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+
+                if (task.getResult().exists()) {
+                    // CENÁRIO 1: Usuário real com dados íntegros [cite: 2026-01-31]
+                    loadingHelper.ocultar();
+                    Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
+                    abrirTelaHome();
+                } else {
+                    // CENÁRIO 2: Auth existe mas Firestore não (Login novo ou Fantasma) [cite: 2026-01-31]
+                    tratarUsuarioSemDocumento(user);
+                }
+
+            } else {
+                // CENÁRIO 3: Falha técnica (Rede ou Permissão) [cite: 2026-01-31]
+                loadingHelper.ocultar();
+                String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                Toast.makeText(this, "Erro de sincronização: " + erro, Toast.LENGTH_LONG).show();
+            }
         });
     }
 
     /**
-     * Exibe o diálogo moderno (BottomSheet) para recuperação de senha.
+     * Filtro de Segurança: Decide se inicializa os dados ou expulsa a sessão órfã.
      */
+    private void tratarUsuarioSemDocumento(FirebaseUser user) {
+        // Pegamos o momento exato do último login no Firebase Auth [cite: 2026-01-31]
+        long momentoLogin = user.getMetadata().getLastSignInTimestamp();
+        long agora = System.currentTimeMillis();
+
+        // Se o login ocorreu há menos de 30 segundos, é uma ação legítima de agora [cite: 2025-11-10]
+        if (agora - momentoLogin < 30000) {
+            Toast.makeText(this, "Criando sua conta... Bem-vindo!", Toast.LENGTH_SHORT).show();
+
+            // Inicializa toda a estrutura (Perfil, Carteira, Categorias) via Service [cite: 2025-11-10]
+            usuarioService.inicializarNovoUsuario(user, taskService -> {
+                loadingHelper.ocultar();
+                abrirTelaHome();
+            });
+        } else {
+            // Sessão antiga sem documento = Dados deletados no console [cite: 2025-11-10]
+            // Limpamos tudo para evitar a recriação automática infinita [cite: 2026-01-31]
+            loadingHelper.ocultar();
+            perfilRepository.deslogar();
+            if (googleLoginHelper != null) googleLoginHelper.recarregarSessaoGoogle();
+
+            Toast.makeText(this, "Sessão expirada ou conta removida pelo sistema.", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void exibirDialogoRecuperacao() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_recuperar_senha, null);
@@ -164,12 +199,13 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            usuarioRepository.enviarEmailRecuperacao(email, task -> {
+            autenticacao.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     Toast.makeText(this, "Link enviado! Verifique seu e-mail.", Toast.LENGTH_LONG).show();
                     dialog.dismiss();
                 } else {
-                    Toast.makeText(this, "Erro ao enviar link.", Toast.LENGTH_SHORT).show();
+                    String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                    Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -177,7 +213,6 @@ public class LoginActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Gerenciador de resultado do Login Google
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {

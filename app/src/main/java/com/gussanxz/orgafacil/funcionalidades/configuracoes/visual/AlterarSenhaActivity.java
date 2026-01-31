@@ -18,7 +18,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
 /**
@@ -35,7 +35,7 @@ public class AlterarSenhaActivity extends AppCompatActivity {
     private LoadingHelper loadingHelper;
 
     private FirebaseUser user;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +51,7 @@ public class AlterarSenhaActivity extends AppCompatActivity {
         });
 
         // Inicialização de repositório e autenticação
-        usuarioRepository = new UsuarioRepository();
+        perfilRepository = new ConfigPerfilUsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         inicializarComponentes();
@@ -77,7 +77,7 @@ public class AlterarSenhaActivity extends AppCompatActivity {
                 String nova = editNovaSenha.getText().toString().trim();
                 String conf = editConfirmarSenha.getText().toString().trim();
 
-                // Critérios: Senhas iguais e tamanho mínimo de 6 caracteres
+                // Critérios: Senhas iguais e tamanho mínimo de 6 caracteres [cite: 2025-11-10]
                 boolean senhasIguais = nova.equals(conf) && !nova.isEmpty();
                 boolean tamanhoMinimo = nova.length() >= 6;
 
@@ -119,28 +119,37 @@ public class AlterarSenhaActivity extends AppCompatActivity {
         btnSalvarSenha.setEnabled(false);
         loadingHelper.exibir();
 
-        // Chamada delegada ao Repositório para operações de rede
-        usuarioRepository.alterarSenhaComReautenticacao(user, senhaAtual, nova, task -> {
+        // Nota: O método de reautenticação deve estar descomentado no repositório [cite: 2025-11-10]
+        // Chamada direta via Firebase Auth mantendo a lógica de mapeamento de erro do repositório
+        com.google.firebase.auth.AuthCredential credential =
+                com.google.firebase.auth.EmailAuthProvider.getCredential(user.getEmail(), senhaAtual);
 
-            // Oculta loading e reabilita o botão independente do resultado
-            loadingHelper.ocultar();
-            btnSalvarSenha.setEnabled(true);
+        user.reauthenticate(credential).addOnCompleteListener(reauthTask -> {
+            if (reauthTask.isSuccessful()) {
+                user.updatePassword(nova).addOnCompleteListener(task -> {
+                    loadingHelper.ocultar();
+                    btnSalvarSenha.setEnabled(true);
 
-            if (task.isSuccessful()) {
-                // SUCESSO: Feedback visual e Logout forçado
-                Toast.makeText(this, "Senha alterada! Faça login com a nova senha.", Toast.LENGTH_LONG).show();
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Senha alterada! Faça login novamente.", Toast.LENGTH_LONG).show();
 
-                // Método centralizado no repositório
-                usuarioRepository.deslogar();
+                        // Logout centralizado no repositório
+                        perfilRepository.deslogar();
 
-                // Redirecionamento para Login limpando a pilha de navegação
-                Intent intent = new Intent(this, LoginActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
+                        Intent intent = new Intent(this, LoginActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                        Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
-                // FALHA: Provável erro na senha atual (reautenticação)
-                Toast.makeText(this, "Falha: Verifique se sua senha atual está correta.", Toast.LENGTH_LONG).show();
+                loadingHelper.ocultar();
+                btnSalvarSenha.setEnabled(true);
+                String erro = perfilRepository.mapearErroAutenticacao(reauthTask.getException());
+                Toast.makeText(this, "Erro de Reautenticação: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }

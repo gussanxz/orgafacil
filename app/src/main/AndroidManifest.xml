@@ -22,7 +22,7 @@
             android:name=".funcionalidades.contas.ResumoContasActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.autenticacao.SplashActivity"
+            android:name=".funcionalidades.autenticacao.visual.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>

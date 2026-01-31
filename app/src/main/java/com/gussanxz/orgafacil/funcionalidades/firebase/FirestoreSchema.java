@@ -233,4 +233,8 @@ public final class FirestoreSchema {
     public static Timestamp nowTs() {
         return Timestamp.now();
     }
+
+    public static FirebaseFirestore getFirestore() {
+        return FirebaseFirestore.getInstance();
+    }
 }

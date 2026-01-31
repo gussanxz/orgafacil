@@ -31,12 +31,13 @@ import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 
 /**
  * CadastroActivity
  * Gerencia a criação de conta, validação de termos e segurança de dados.
- * Segue o padrão de delegar lógica de dados ao UsuarioRepository. [cite: 2025-11-10]
+ * Segue o padrão de delegar lógica de dados ao ConfigPerfilUsuarioRepository.
  */
 public class CadastroActivity extends AppCompatActivity {
 
@@ -49,7 +50,8 @@ public class CadastroActivity extends AppCompatActivity {
     // Helpers e Ferramentas
     private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
+    private UsuarioService usuarioService; // Adicionado para orquestração sequencial
     private LoadingHelper loadingHelper;
 
     @Override
@@ -80,7 +82,8 @@ public class CadastroActivity extends AppCompatActivity {
         acessarTelaLogin = findViewById(R.id.radioButtonLogin);
         checkTermos = findViewById(R.id.checkTermos);
 
-        usuarioRepository = new UsuarioRepository();
+        perfilRepository = new ConfigPerfilUsuarioRepository();
+        usuarioService = new UsuarioService();
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
@@ -135,7 +138,8 @@ public class CadastroActivity extends AppCompatActivity {
                         iniciarFluxoSegurancaDados();
                     } else {
                         loadingHelper.ocultar();
-                        String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
+                        // Mapeamento de erro via novo repositório
+                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
                         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -153,6 +157,7 @@ public class CadastroActivity extends AppCompatActivity {
 
     /**
      * SAFETY NET: Garante consistência de dados no Firestore antes de navegar.
+     * Utiliza o UsuarioService para orquestrar a criação de Perfil e Carteira.
      */
     private void iniciarFluxoSegurancaDados() {
         FirebaseUser user = autenticacao.getCurrentUser();
@@ -161,7 +166,8 @@ public class CadastroActivity extends AppCompatActivity {
             return;
         }
 
-        usuarioRepository.garantirDadosIniciais(user, task -> {
+        // A Service agora cuida do encadeamento correto de todas as coleções
+        usuarioService.inicializarNovoUsuario(user, task -> {
             loadingHelper.ocultar();
             abrirTelaHome();
         });

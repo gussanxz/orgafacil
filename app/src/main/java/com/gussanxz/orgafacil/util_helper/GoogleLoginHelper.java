@@ -19,8 +19,8 @@ import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 
 /**
  * Helper responsável exclusivamente pela autenticação via Google.
- * A lógica de criação de dados no Firestore foi movida para o UsuarioRepository
- * para evitar duplicidade e conflitos.
+ * A lógica de decisão sobre o estado do usuário (novo/antigo) foi movida para o fluxo
+ * de Safety Net na LoginActivity/Repository para garantir integridade com o Firestore.
  */
 public class GoogleLoginHelper {
 
@@ -52,9 +52,18 @@ public class GoogleLoginHelper {
     }
 
     public Intent getSignInIntent() {
-        // Força o logout do Google antes de iniciar para permitir trocar de conta
+        // Força o seletor de contas a aparecer, essencial para o fluxo de "Criar Conta"
         mGoogleSignInClient.signOut();
         return mGoogleSignInClient.getSignInIntent();
+    }
+    /**
+     * NOVO: Método para limpar a sessão do Google explicitamente.
+     * Use isso ao excluir a conta para evitar que o Google logue sozinho em seguida.
+     */
+    public void recarregarSessaoGoogle() {
+        mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+            Log.d("GoogleLogin", "Sessão do Google limpa com sucesso.");
+        });
     }
 
     public void lidarComResultadoGoogle(Intent data, int modoOperacao) {
@@ -63,8 +72,11 @@ public class GoogleLoginHelper {
             GoogleSignInAccount account = task.getResult(ApiException.class);
             if (account != null) firebaseAuthWithGoogle(account, modoOperacao);
         } catch (ApiException e) {
-            Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
-            Log.e("GoogleLogin", "Erro na API do Google", e);
+            // StatusCode 12501 é quando o usuário apenas fecha o seletor (não é um erro real)
+            if (e.getStatusCode() != 12501) {
+                Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
+            }
+            Log.e("GoogleLogin", "Erro na API do Google: " + e.getStatusCode());
         }
     }
 
@@ -81,34 +93,12 @@ public class GoogleLoginHelper {
                         return;
                     }
 
-                    // Identifica se é um usuário novo apenas para fins de Log/Toast
-                    boolean isNovoUsuario = false;
-                    try {
-                        if (task.getResult() != null && task.getResult().getAdditionalUserInfo() != null) {
-                            isNovoUsuario = task.getResult().getAdditionalUserInfo().isNewUser();
-                        }
-                    } catch (Exception ignored) {}
-
-                    // Logs informativos baseados no modo de operação
-                    processarMensagensLog(modoOperacao, isNovoUsuario);
-
-                    // ✅ DELEGAÇÃO: Notifica a Activity que o login foi feito.
-                    // A partir daqui, a Activity chamará o UsuarioRepository.garantirDadosIniciais()
-                    // que centraliza toda a lógica de segurança e criação de documentos.
+                    // ✅ DELEGAÇÃO: Notifica a Activity que o login Auth foi feito.
+                    // Agora a LoginActivity usará a Safety Net para verificar se os dados
+                    // existem no Firestore e decidir se mostra "Bem-vindo" ou "Criando conta".
                     if (onSuccessCallback != null) {
                         onSuccessCallback.run();
                     }
                 });
-    }
-
-    /**
-     * Gerencia os Toasts de feedback para o usuário.
-     */
-    private void processarMensagensLog(int modo, boolean novo) {
-        if (novo) {
-            Toast.makeText(activity, "Preparando sua nova conta...", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(activity, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
-        }
     }
 }

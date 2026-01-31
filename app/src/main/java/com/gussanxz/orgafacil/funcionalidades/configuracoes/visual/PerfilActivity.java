@@ -19,8 +19,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
 
 /**
  * PerfilActivity
@@ -45,15 +45,14 @@ public class PerfilActivity extends AppCompatActivity {
     // Firebase e Persistência
     private FirebaseAuth autenticacao;
     private FirebaseUser usuarioAtual;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_configs_meu_perfil);
 
-        // 1. Inicializa o repositório e componentes da interface
-        usuarioRepository = new UsuarioRepository();
+        perfilRepository = new ConfigPerfilUsuarioRepository(); // Nome novo
         inicializarComponentes();
 
         // 2. Recupera a instância do usuário logado
@@ -91,8 +90,6 @@ public class PerfilActivity extends AppCompatActivity {
      */
     private void salvarAlteracoes() {
         String novoNome = editNomePerfil.getText().toString().trim();
-
-        // Validação básica de campo vazio
         if (novoNome.isEmpty()) {
             editNomePerfil.setError("Nome não pode ser vazio");
             return;
@@ -100,38 +97,46 @@ public class PerfilActivity extends AppCompatActivity {
 
         if (usuarioAtual == null) return;
 
-        // INÍCIO DO FEEDBACK DE CARREGAMENTO
-        // Exibe a barra de progresso e desativa o botão para evitar cliques múltiplos
         progressBar.setVisibility(View.VISIBLE);
         btnSalvarEdicao.setEnabled(false);
 
-        // 1. Atualiza o Perfil no Firebase Authentication (Sessão local)
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setDisplayName(novoNome)
                 .build();
 
         usuarioAtual.updateProfile(profileUpdates)
                 .addOnCompleteListener(task -> {
-                    // Independente de sucesso ou falha, encerra o feedback visual
-                    progressBar.setVisibility(View.GONE);
-                    btnSalvarEdicao.setEnabled(true);
-
-                    if (task.isSuccessful()) {
-                        // 2. Atualiza no Firestore através do Repositório (Persistência remota)
-                        UsuarioModel usuarioModelUpdate = new UsuarioModel();
-                        usuarioModelUpdate.setIdUsuario(usuarioAtual.getUid());
-                        usuarioModelUpdate.setNome(novoNome);
-
-                        // Chamada delegada ao Repository para isolar a lógica de rede
-                        usuarioRepository.atualizarPerfil(usuarioModelUpdate);
-
-                        // 3. Sucesso: Atualiza a interface e volta ao modo leitura
-                        textNomePerfil.setText(novoNome);
-                        Toast.makeText(this, "Perfil atualizado com sucesso!", Toast.LENGTH_SHORT).show();
-                        alternarModo(false);
-                    } else {
+                    // Feedback visual encerrado apenas se a primeira etapa falhar;
+                    // caso contrário, aguarda o Firestore. [cite: 2025-11-10]
+                    if (!task.isSuccessful()) {
+                        progressBar.setVisibility(View.GONE);
+                        btnSalvarEdicao.setEnabled(true);
                         Toast.makeText(this, "Erro ao atualizar autenticação.", Toast.LENGTH_SHORT).show();
+                        return;
                     }
+
+                    // USA O NOVO MODELO E REPOSITÓRIO [cite: 2026-01-22]
+                    ConfigPerfilUsuarioModel perfilUpdate = new ConfigPerfilUsuarioModel();
+                    perfilUpdate.setIdUsuario(usuarioAtual.getUid());
+                    perfilUpdate.setNome(novoNome);
+                    perfilUpdate.setEmail(usuarioAtual.getEmail());
+
+                    // TRATATIVA ADICIONAL: Garante que o banco também foi atualizado antes de confirmar ao usuário. [cite: 2025-11-10]
+                    perfilRepository.atualizarPerfil(perfilUpdate)
+                            .addOnSuccessListener(aVoid -> {
+                                progressBar.setVisibility(View.GONE);
+                                btnSalvarEdicao.setEnabled(true);
+                                textNomePerfil.setText(novoNome);
+                                Toast.makeText(this, "Perfil atualizado com sucesso!", Toast.LENGTH_SHORT).show();
+                                alternarModo(false);
+                            })
+                            .addOnFailureListener(e -> {
+                                progressBar.setVisibility(View.GONE);
+                                btnSalvarEdicao.setEnabled(true);
+                                // Utiliza o mapeador de erros do Repository para feedback preciso. [cite: 2025-11-10]
+                                String mensagemErro = perfilRepository.mapearErroAutenticacao(e);
+                                Toast.makeText(this, mensagemErro, Toast.LENGTH_LONG).show();
+                            });
                 });
     }
 

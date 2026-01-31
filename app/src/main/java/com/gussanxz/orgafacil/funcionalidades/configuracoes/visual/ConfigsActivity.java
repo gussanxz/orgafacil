@@ -16,7 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository; // Import necessário
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository; // Import atualizado
 
 
 public class ConfigsActivity extends AppCompatActivity {
@@ -24,8 +24,8 @@ public class ConfigsActivity extends AppCompatActivity {
     private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSair;
     private FirebaseUser user;
 
-    // 1. Declarar o repositório para usar o logout centralizado
-    private UsuarioRepository usuarioRepository;
+    // 1. Declarar o repositório para usar o logout centralizado (Nome atualizado)
+    private ConfigPerfilUsuarioRepository perfilRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,8 +39,8 @@ public class ConfigsActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 2. Inicializar o repositório
-        usuarioRepository = new UsuarioRepository();
+        // 2. Inicializar o repositório atualizado
+        perfilRepository = new ConfigPerfilUsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user == null) {
@@ -93,8 +93,8 @@ public class ConfigsActivity extends AppCompatActivity {
      * Executa o logout através do repositório centralizado.
      */
     private void executarLogout() {
-        // 4. Usa o método centralizado conforme planejado
-        usuarioRepository.deslogar();
+        // 4. Usa o metodo centralizado conforme planejado através do perfilRepository
+        perfilRepository.deslogar();
         abrirTelaLogin();
     }
 

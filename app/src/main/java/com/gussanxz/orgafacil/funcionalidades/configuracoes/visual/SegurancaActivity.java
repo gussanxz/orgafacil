@@ -16,7 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 
 /**
  * SegurancaActivity
@@ -30,7 +30,7 @@ public class SegurancaActivity extends AppCompatActivity {
     private SharedPreferences prefs;
 
     private FirebaseUser usuarioAtual;
-    private UsuarioRepository usuarioRepository;
+    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo nome [cite: 2026-01-22]
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +46,7 @@ public class SegurancaActivity extends AppCompatActivity {
         });
 
         // Inicialização de Repositório e Instâncias
-        usuarioRepository = new UsuarioRepository();
+        perfilRepository = new ConfigPerfilUsuarioRepository(); // Atualizado para o novo nome [cite: 2026-01-22]
         usuarioAtual = FirebaseAuth.getInstance().getCurrentUser();
         prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
 
@@ -94,11 +94,13 @@ public class SegurancaActivity extends AppCompatActivity {
      */
     private void dispararEmailRecuperacao() {
         if (usuarioAtual != null && usuarioAtual.getEmail() != null) {
-            usuarioRepository.enviarEmailRecuperacao(usuarioAtual.getEmail(), task -> {
+            // Nota: Certifique-se de que o método enviarEmailRecuperacao esteja descomentado no perfilRepository [cite: 2025-11-10]
+            FirebaseAuth.getInstance().sendPasswordResetEmail(usuarioAtual.getEmail()).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     Toast.makeText(this, "E-mail de recuperação enviado!", Toast.LENGTH_LONG).show();
                 } else {
-                    String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
+                    // Delegamos o mapeamento de erro para o novo Repositório [cite: 2025-11-10]
+                    String erro = perfilRepository.mapearErroAutenticacao(task.getException());
                     Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                 }
             });
