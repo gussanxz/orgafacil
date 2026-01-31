@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 
 import java.util.List;
 

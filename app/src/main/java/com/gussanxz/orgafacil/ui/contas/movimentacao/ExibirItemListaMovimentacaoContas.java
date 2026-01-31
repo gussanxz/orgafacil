@@ -1,6 +1,6 @@
 package com.gussanxz.orgafacil.ui.contas.movimentacao;
 
-import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.negocio.modelos.MovimentacaoModel;
 
 /**
  * MODEL: MovimentoItem
@@ -27,7 +27,7 @@ public class ExibirItemListaMovimentacaoContas {
     public double saldoDia;
 
     // para linha
-    public Movimentacao movimentacao;
+    public MovimentacaoModel movimentacaoModel;
 
     public static ExibirItemListaMovimentacaoContas header(String data, String tituloDia, double saldoDia) {
         ExibirItemListaMovimentacaoContas item = new ExibirItemListaMovimentacaoContas();
@@ -38,10 +38,10 @@ public class ExibirItemListaMovimentacaoContas {
         return item;
     }
 
-    public static ExibirItemListaMovimentacaoContas linha(Movimentacao m) {
+    public static ExibirItemListaMovimentacaoContas linha(MovimentacaoModel m) {
         ExibirItemListaMovimentacaoContas item = new ExibirItemListaMovimentacaoContas();
         item.type = TYPE_MOVIMENTO;
-        item.movimentacao = m;
+        item.movimentacaoModel = m;
         return item;
     }
 }

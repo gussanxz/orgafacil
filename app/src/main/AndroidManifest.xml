@@ -19,10 +19,10 @@
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
         <activity
-            android:name=".features.contas.ResumoContasActivity"
+            android:name=".funcionalidades.contas.ResumoContasActivity"
             android:exported="false" />
         <activity
-            android:name=".features.auth.SplashActivity"
+            android:name=".funcionalidades.autenticacao.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
@@ -32,98 +32,98 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".features.main.MainActivity"
+            android:name=".funcionalidades.main.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.OrgaFacil" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.VendasCadastrosActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity"
             android:exported="false" />
         <activity
-            android:name=".features.configuracoes.AlterarSenhaActivity"
+            android:name=".funcionalidades.configuracoes.visual.AlterarSenhaActivity"
             android:exported="false" />
         <activity
-            android:name=".features.configuracoes.SegurancaActivity"
+            android:name=".funcionalidades.configuracoes.visual.SegurancaActivity"
             android:exported="false" />
         <activity
-            android:name=".features.contas.EditarMovimentacaoActivity"
+            android:name=".funcionalidades.contas.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.contas.SelecionarCategoriaContasActivity"
+            android:name=".funcionalidades.contas.SelecionarCategoriaContasActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.ListaVendasActivity"
+            android:name=".funcionalidades.vendas.visual.listas.ListaPsActivty"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.ListaPagamentosActivity"
+            android:name=".funcionalidades.vendas.visual.listas.ListaPagamentosActivity"
             android:exported="false" />
         <activity
-            android:name=".features.configuracoes.ConfigsActivity"
+            android:name=".funcionalidades.configuracoes.visual.ConfigsActivity"
             android:exported="false" />
         <activity
-            android:name=".features.boletos.BoletosActivity"
+            android:name=".funcionalidades.boletos.BoletosActivity"
             android:exported="false" />
         <activity
-            android:name=".features.todo.ListaAtividadesActivity"
+            android:name=".funcionalidades.todo.ListaAtividadesActivity"
             android:exported="false" />
         <activity
-            android:name=".features.mercado.ResumoListaMercadoActivity"
+            android:name=".funcionalidades.mercado.ResumoListaMercadoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.main.HomeActivity"
+            android:name=".funcionalidades.main.HomeActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.pessoas.cliente.CadastroClienteActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.ResumoVendasActivity"
+            android:name=".funcionalidades.vendas.ResumoVendasActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.novavenda.RegistrarVendasActivity"
+            android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity"
             android:exported="false" />
         <activity
-            android:name=".features.contas.DespesasActivity"
+            android:name=".funcionalidades.contas.DespesasActivity"
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".features.contas.ReceitasActivity"
+            android:name=".funcionalidades.contas.ReceitasActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".features.contas.ContasActivity"
+            android:name=".funcionalidades.contas.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.combo.CadastroComboActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.modificador.CadastroModificadorActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity"
             android:exported="false" />
         <activity
-            android:name=".features.configuracoes.PerfilActivity"
+            android:name=".funcionalidades.configuracoes.visual.PerfilActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.vendas.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity"
+            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity"
             android:exported="false" />
         <activity
-            android:name=".features.auth.CadastroActivity"
+            android:name=".funcionalidades.autenticacao.CadastroActivity"
             android:exported="true" />
         <activity
-            android:name=".features.auth.LoginActivity"
+            android:name=".funcionalidades.autenticacao.LoginActivity"
             android:exported="true" />
         <activity
-            android:name=".features.vendas.gestaoerelatorios.VendasEmAbertoActivity"
+            android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity"
             android:exported="false" />
     </application>
 

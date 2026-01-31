@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager; // 1. IMPORT NECESSÁRI
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.negocio.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.AdapterExibeListaMovimentacaoContas;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.ExibirItemListaMovimentacaoContas;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.HelperExibirDatasMovimentacao;
@@ -39,7 +39,7 @@ public class FragmentContasAVencer extends Fragment implements AdapterExibeLista
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // 1. Criar dados MOCKADOS
-        List<Movimentacao> contasFuturas = criarDadosFuturos();
+        List<MovimentacaoModel> contasFuturas = criarDadosFuturos();
 
         // 2. Processar os dados
         List<ExibirItemListaMovimentacaoContas> listaProcessada =
@@ -54,18 +54,18 @@ public class FragmentContasAVencer extends Fragment implements AdapterExibeLista
 
     // --- Ações de Clique (Obrigatórias pela interface) ---
     @Override
-    public void onDeleteClick(Movimentacao movimentacao) {
-        Toast.makeText(getContext(), "Pagar conta: " + movimentacao.getDescricao(), Toast.LENGTH_SHORT).show();
+    public void onDeleteClick(MovimentacaoModel movimentacaoModel) {
+        Toast.makeText(getContext(), "Pagar conta: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onLongClick(Movimentacao movimentacao) {
-        Toast.makeText(getContext(), "Detalhes de: " + movimentacao.getDescricao(), Toast.LENGTH_SHORT).show();
+    public void onLongClick(MovimentacaoModel movimentacaoModel) {
+        Toast.makeText(getContext(), "Detalhes de: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
     }
 
     // --- MOCK DATA ---
-    private List<Movimentacao> criarDadosFuturos() {
-        List<Movimentacao> lista = new ArrayList<>();
+    private List<MovimentacaoModel> criarDadosFuturos() {
+        List<MovimentacaoModel> lista = new ArrayList<>();
 
         lista.add(mockMov("Fornecedor Bebidas", "Estoque", "28/01/2026", "08:00", 450.00, "d"));
         lista.add(mockMov("Energia Elétrica", "Fixo", "05/02/2026", "10:00", 280.90, "d"));
@@ -77,8 +77,8 @@ public class FragmentContasAVencer extends Fragment implements AdapterExibeLista
         return lista;
     }
 
-    private Movimentacao mockMov(String titulo, String cat, String data, String hora, double valor, String tipo) {
-        Movimentacao m = new Movimentacao();
+    private MovimentacaoModel mockMov(String titulo, String cat, String data, String hora, double valor, String tipo) {
+        MovimentacaoModel m = new MovimentacaoModel();
         m.setDescricao(titulo);
         m.setCategoria(cat);
         m.setData(data);

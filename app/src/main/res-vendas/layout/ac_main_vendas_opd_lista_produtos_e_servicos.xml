@@ -73,7 +73,7 @@
                 android:id="@+id/editBuscaProduto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Buscar produto ou serviço"
+                android:hint="Buscar produtoModel ou serviço"
                 android:inputType="text"
                 android:maxLines="1"
                 android:paddingStart="40dp" />

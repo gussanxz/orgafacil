@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.ItemVenda;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -42,7 +42,7 @@ import java.util.Locale;
 // CORREÇÃO 1: Ajustado o tipo do Adapter para usar o VendaViewHolder específico
 public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFiltroPorPSNovaVenda.VendaViewHolder> {
 
-        private List<ItemVenda> listaItens;
+        private List<ItemVendaModel> listaItens;
         private final OnItemClickListener listener;
         private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
@@ -52,17 +52,17 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         // Interface de clique
         public interface OnItemClickListener {
-                void onItemClick(ItemVenda item);
+                void onItemClick(ItemVendaModel item);
         }
 
         // CORREÇÃO 2: O nome do construtor deve ser IGUAL ao nome da classe
-        public AdapterFiltroPorPSNovaVenda(List<ItemVenda> listaItens, OnItemClickListener listener) {
+        public AdapterFiltroPorPSNovaVenda(List<ItemVendaModel> listaItens, OnItemClickListener listener) {
                 this.listaItens = listaItens;
                 this.listener = listener;
         }
 
         // Método para atualizar a lista (Filtro)
-        public void atualizarLista(List<ItemVenda> novaLista) {
+        public void atualizarLista(List<ItemVendaModel> novaLista) {
                 this.listaItens = novaLista;
                 notifyDataSetChanged();
         }
@@ -71,7 +71,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
         public int getItemViewType(int position) {
                 // Usa o tipo definido na sua Model ItemVenda
                 // Certifique-se que ItemVenda.TIPO_PRODUTO existe e é público na sua Model
-                return listaItens.get(position).getTipo() == ItemVenda.TIPO_PRODUTO ? TIPO_PRODUTO : TIPO_SERVICO;
+                return listaItens.get(position).getTipo() == ItemVendaModel.TIPO_PRODUTO ? TIPO_PRODUTO : TIPO_SERVICO;
         }
 
         @NonNull
@@ -93,7 +93,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         @Override
         public void onBindViewHolder(@NonNull VendaViewHolder holder, int position) {
-                ItemVenda item = listaItens.get(position);
+                ItemVendaModel item = listaItens.get(position);
                 holder.bind(item);
         }
 
@@ -125,7 +125,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
                 }
 
-                void bind(ItemVenda item) {
+                void bind(ItemVendaModel item) {
                         if (textNome != null) {
                                 textNome.setText(item.getNome());
                         }

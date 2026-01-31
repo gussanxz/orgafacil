@@ -1,6 +1,6 @@
 package com.gussanxz.orgafacil.ui.contas.movimentacao;
 
-import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.negocio.modelos.MovimentacaoModel;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -32,12 +32,12 @@ public class HelperExibirDatasMovimentacao {
     private static final SimpleDateFormat sdfDataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
     private static final SimpleDateFormat sdfDataTitulo = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-    public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<Movimentacao> movs) {
+    public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs) {
         // 1) ordenar por data+hora DECRESCENTE
-        List<Movimentacao> copia = new ArrayList<>(movs);
-        Collections.sort(copia, new Comparator<Movimentacao>() {
+        List<MovimentacaoModel> copia = new ArrayList<>(movs);
+        Collections.sort(copia, new Comparator<MovimentacaoModel>() {
             @Override
-            public int compare(Movimentacao o1, Movimentacao o2) {
+            public int compare(MovimentacaoModel o1, MovimentacaoModel o2) {
                 Date d1 = parseDataHora(o1.getData(), o1.getHora());
                 Date d2 = parseDataHora(o2.getData(), o2.getHora());
                 if (d1 == null || d2 == null) return 0;
@@ -47,11 +47,11 @@ public class HelperExibirDatasMovimentacao {
         });
 
         // 2) agrupar por data (string dd/MM/yyyy) mantendo ordem
-        Map<String, List<Movimentacao>> porDia = new LinkedHashMap<>();
-        for (Movimentacao m : copia) {
+        Map<String, List<MovimentacaoModel>> porDia = new LinkedHashMap<>();
+        for (MovimentacaoModel m : copia) {
             String data = m.getData();
             if (data == null) data = "";
-            List<Movimentacao> lista = porDia.get(data);
+            List<MovimentacaoModel> lista = porDia.get(data);
             if (lista == null) {
                 lista = new ArrayList<>();
                 porDia.put(data, lista);
@@ -65,13 +65,13 @@ public class HelperExibirDatasMovimentacao {
         Date hoje = zerarHora(new Date());
         Date ontem = new Date(hoje.getTime() - 24L*60L*60L*1000L);
 
-        for (Map.Entry<String, List<Movimentacao>> entry : porDia.entrySet()) {
+        for (Map.Entry<String, List<MovimentacaoModel>> entry : porDia.entrySet()) {
             String dataStr = entry.getKey();
-            List<Movimentacao> listaDoDia = entry.getValue();
+            List<MovimentacaoModel> listaDoDia = entry.getValue();
 
             // saldo do dia = receitas - despesas
             double saldoDia = 0.0;
-            for (Movimentacao m : listaDoDia) {
+            for (MovimentacaoModel m : listaDoDia) {
                 if ("d".equals(m.getTipo())) {
                     saldoDia -= m.getValor();
                 } else {
@@ -101,7 +101,7 @@ public class HelperExibirDatasMovimentacao {
 
             resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, saldoDia));
 
-            for (Movimentacao m : listaDoDia) {
+            for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(ExibirItemListaMovimentacaoContas.linha(m));
             }
         }

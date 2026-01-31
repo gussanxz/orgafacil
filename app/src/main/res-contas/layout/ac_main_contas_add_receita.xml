@@ -179,7 +179,7 @@
                 android:id="@+id/editDescricao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Descricao do produto ou servico"
+                android:hint="Descricao do produtoModel ou servicoModel"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 

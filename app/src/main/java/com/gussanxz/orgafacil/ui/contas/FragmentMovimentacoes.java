@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.negocio.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.AdapterExibeListaMovimentacaoContas;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.ExibirItemListaMovimentacaoContas;
 import com.gussanxz.orgafacil.ui.contas.movimentacao.HelperExibirDatasMovimentacao;
@@ -43,7 +43,7 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // 1. Carregar TODOS os dados brutos (Mockados)
-        List<Movimentacao> dadosBrutos = criarDadosFalsosParaTeste();
+        List<MovimentacaoModel> dadosBrutos = criarDadosFalsosParaTeste();
 
         // ---------------------------------------------------------
         // LÓGICA DE FILTRO: 5 MAIS RECENTES
@@ -58,7 +58,7 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
 
         // B. Cortar a lista (Pegar os 5 primeiros ou o tamanho total se for menor que 5)
         int limite = 5;
-        List<Movimentacao> dadosLimitados = new ArrayList<>();
+        List<MovimentacaoModel> dadosLimitados = new ArrayList<>();
         if (!dadosBrutos.isEmpty()) {
             dadosLimitados = dadosBrutos.subList(0, Math.min(dadosBrutos.size(), limite));
         }
@@ -79,15 +79,15 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
     // --- Implementação dos Cliques do Adapter ---
 
     @Override
-    public void onDeleteClick(Movimentacao movimentacao) {
+    public void onDeleteClick(MovimentacaoModel movimentacaoModel) {
         // Lógica para deletar
-        Toast.makeText(getContext(), "Deletar: " + movimentacao.getDescricao(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "Deletar: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onLongClick(Movimentacao movimentacao) {
+    public void onLongClick(MovimentacaoModel movimentacaoModel) {
         // Lógica do clique longo
-        Toast.makeText(getContext(), "Segurou em: " + movimentacao.getDescricao(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "Segurou em: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
     }
 
     // --- Métodos Auxiliares ---
@@ -96,7 +96,7 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
      * Converte as strings de data/hora do Model para um objeto Date Java.
      * Necessário para a ordenação funcionar corretamente.
      */
-    private Date converterData(Movimentacao m) {
+    private Date converterData(MovimentacaoModel m) {
         try {
             // Ajuste o padrão aqui se o seu banco salvar diferente (ex: "dd/MM/yyyy HH:mm")
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
@@ -111,8 +111,8 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
     }
 
     // --- Geração de Dados Falsos (MOCK) ---
-    private List<Movimentacao> criarDadosFalsosParaTeste() {
-        List<Movimentacao> lista = new ArrayList<>();
+    private List<MovimentacaoModel> criarDadosFalsosParaTeste() {
+        List<MovimentacaoModel> lista = new ArrayList<>();
 
         // Simular Hoje (21/01/2026)
         lista.add(mockMov("Compra Mercado", "Alimentação", "21/01/2026", "14:30", 150.50, "d"));
@@ -129,8 +129,8 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
         return lista;
     }
 
-    private Movimentacao mockMov(String titulo, String cat, String data, String hora, double valor, String tipo) {
-        Movimentacao m = new Movimentacao();
+    private MovimentacaoModel mockMov(String titulo, String cat, String data, String hora, double valor, String tipo) {
+        MovimentacaoModel m = new MovimentacaoModel();
         m.setDescricao(titulo);
         m.setCategoria(cat);
         m.setData(data);

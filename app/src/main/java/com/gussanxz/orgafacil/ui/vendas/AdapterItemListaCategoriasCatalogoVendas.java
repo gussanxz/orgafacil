@@ -17,7 +17,7 @@ import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.card.MaterialCardView;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 
 import java.util.List;
 

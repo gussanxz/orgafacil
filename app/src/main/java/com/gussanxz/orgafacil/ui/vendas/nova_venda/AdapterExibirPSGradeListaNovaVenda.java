@@ -13,7 +13,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.data.model.ItemVenda;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -38,16 +38,16 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     private static final int TYPE_LISTA = 1;
     private static final int TYPE_GRADE = 2;
 
-    private List<ItemVenda> listaItens;
+    private List<ItemVendaModel> listaItens;
     private boolean isGridMode = false;
     private final OnItemClickListener listener;
     private Context context;
 
     public interface OnItemClickListener {
-        void onItemClick(ItemVenda item);
+        void onItemClick(ItemVendaModel item);
     }
 
-    public AdapterExibirPSGradeListaNovaVenda(List<ItemVenda> listaItens, OnItemClickListener listener) {
+    public AdapterExibirPSGradeListaNovaVenda(List<ItemVendaModel> listaItens, OnItemClickListener listener) {
         this.listaItens = listaItens;
         this.listener = listener;
     }
@@ -58,7 +58,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         notifyDataSetChanged(); // Força o RecyclerView a redesenhar tudo
     }
 
-    public void atualizarLista(List<ItemVenda> novaLista) {
+    public void atualizarLista(List<ItemVendaModel> novaLista) {
         this.listaItens = novaLista;
         notifyDataSetChanged();
     }
@@ -87,7 +87,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        ItemVenda item = listaItens.get(position);
+        ItemVendaModel item = listaItens.get(position);
         holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
 
         if (holder instanceof GradeViewHolder) {
@@ -167,14 +167,14 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             cardIcone = itemView.findViewById(R.id.cardIcone);
         }
 
-        void bind(ItemVenda item) {
+        void bind(ItemVendaModel item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
             textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
 
             // Usa o método centralizado
             aplicarEstiloVisual(
-                    item.getTipo() == ItemVenda.TIPO_PRODUTO,
+                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO,
                     textTipoTag, imageIcone, cardIcone
             );
         }
@@ -196,14 +196,14 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             cardIcone = itemView.findViewById(R.id.cardIcone);
         }
 
-        void bind(ItemVenda item) {
+        void bind(ItemVendaModel item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
             textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
 
             // Usa o método centralizado
             aplicarEstiloVisual(
-                    item.getTipo() == ItemVenda.TIPO_PRODUTO,
+                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO,
                     textTipoTag, imageIcone, cardIcone
             );
         }

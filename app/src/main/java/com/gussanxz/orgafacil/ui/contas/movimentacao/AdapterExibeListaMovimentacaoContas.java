@@ -12,8 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.features.contas.EditarMovimentacaoActivity;
-import com.gussanxz.orgafacil.data.model.Movimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.EditarMovimentacaoActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.negocio.modelos.MovimentacaoModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -46,8 +46,8 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
 
     // Interface atualizada: Agora suporta DELETAR (via Swipe/Lixeira) e LONG CLICK
     public interface OnItemActionListener {
-        void onDeleteClick(Movimentacao movimentacao); // Usado pelo Swipe
-        void onLongClick(Movimentacao movimentacao);   // Usado pelo Segurar
+        void onDeleteClick(MovimentacaoModel movimentacaoModel); // Usado pelo Swipe
+        void onLongClick(MovimentacaoModel movimentacaoModel);   // Usado pelo Segurar
     }
 
     public AdapterExibeListaMovimentacaoContas(Context context, List<ExibirItemListaMovimentacaoContas> itens, OnItemActionListener listener) {
@@ -90,7 +90,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         if (holder instanceof HeaderViewHolder) {
             ((HeaderViewHolder) holder).bind(item);
         } else if (holder instanceof MovimentoViewHolder) {
-            ((MovimentoViewHolder) holder).bind(item.movimentacao);
+            ((MovimentoViewHolder) holder).bind(item.movimentacaoModel);
         }
     }
 
@@ -134,7 +134,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
         }
 
-        void bind(Movimentacao mov) {
+        void bind(MovimentacaoModel mov) {
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getCategoria());
             textData.setText(mov.getData());
