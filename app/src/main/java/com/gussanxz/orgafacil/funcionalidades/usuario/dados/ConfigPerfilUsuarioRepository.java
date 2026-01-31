@@ -79,26 +79,22 @@ public class ConfigPerfilUsuarioRepository {
         if (user == null) return;
         String uid = user.getUid();
 
-        // 1. Deleta o documento no Firestore (Nuvem)
+        // 1. Deleta no Servidor primeiro
         FirestoreSchema.userDoc(uid).delete().addOnSuccessListener(aVoid -> {
 
-            // 2. Limpa o Cache Local (O SEGREDO ANTI-FANTASMA)
-            // Agora isso vai funcionar porque adicionamos o getFirestore() no Schema
-            FirestoreSchema.getFirestore().clearPersistence().addOnCompleteListener(taskPersistence -> {
+            // 2. Deleta a Autenticação (Isso invalida o Token imediatamente)
+            user.delete().addOnCompleteListener(taskDeleteAuth -> {
 
-                // 3. Deleta a conta de Autenticação
-                user.delete().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseAuth.getInstance().signOut();
-                    }
-                    listener.onComplete(task);
+                // 3. Limpa o Cache Local para não sobrar rastros
+                FirestoreSchema.getFirestore().terminate().addOnCompleteListener(t -> {
+                    FirestoreSchema.getFirestore().clearPersistence().addOnCompleteListener(taskPersist -> {
+                        // Agora sim, o usuário sumiu do Auth e o cache está limpo
+                        listener.onComplete(taskDeleteAuth);
+                    });
                 });
             });
 
-        }).addOnFailureListener(e -> {
-            // Em caso de erro, notifica mesmo assim
-            listener.onComplete(null);
-        });
+        }).addOnFailureListener(e -> listener.onComplete(null));
     }
 
     // --- MÉTODOS DE LEITURA (VERIFICAÇÃO) ---

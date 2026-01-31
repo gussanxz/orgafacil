@@ -38,6 +38,9 @@ import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
  * CadastroActivity
  * Gerencia a criação de conta, validação de termos e segurança de dados.
  * Segue o padrão de delegar lógica de dados ao ConfigPerfilUsuarioRepository.
+ *
+ * REGRA:
+ * Cadastro SEMPRE cria dados.
  */
 public class CadastroActivity extends AppCompatActivity {
 
@@ -50,8 +53,8 @@ public class CadastroActivity extends AppCompatActivity {
     // Helpers e Ferramentas
     private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
-    private UsuarioService usuarioService; // Adicionado para orquestração sequencial
+    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioService usuarioService;
     private LoadingHelper loadingHelper;
 
     @Override
@@ -60,15 +63,19 @@ public class CadastroActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_cadastro);
 
-        // Ajuste de padding para barras de sistema
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(
+                    systemBars.left,
+                    systemBars.top,
+                    systemBars.right,
+                    systemBars.bottom
+            );
             return insets;
         });
 
         inicializarComponentes();
-        configurarTextoClicavelTermos(); // Ativa o link interno do CheckBox
+        configurarTextoClicavelTermos();
         configurarListeners();
     }
 
@@ -87,8 +94,11 @@ public class CadastroActivity extends AppCompatActivity {
         autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
-        // Safety Net chamada após sucesso no Login/Cadastro Google
-        googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
+        // 🔐 Google apenas autentica → cadastro sempre cria
+        googleLoginHelper = new GoogleLoginHelper(
+                this,
+                modo -> processarCadastroGoogle()
+        );
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
@@ -98,7 +108,7 @@ public class CadastroActivity extends AppCompatActivity {
         botaoCadastrar.setOnClickListener(v -> validarEProcessarCadastro());
 
         botaoGoogle.setOnClickListener(v -> {
-            loadingHelper.exibir(); // Mostra feedback enquanto abre o seletor Google
+            loadingHelper.exibir();
             resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
         });
 
@@ -130,93 +140,109 @@ public class CadastroActivity extends AppCompatActivity {
         }
 
         loadingHelper.exibir();
+
         autenticacao.createUserWithEmailAndPassword(email, senha)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Envia e-mail de verificação apenas para cadastros manuais
-                        enviarEmailVerificacao(task.getResult().getUser());
-                        iniciarFluxoSegurancaDados();
+                        FirebaseUser user = task.getResult().getUser();
+
+                        enviarEmailVerificacao(user);
+
+                        usuarioService.inicializarNovoUsuario(user, t -> {
+                            loadingHelper.ocultar();
+                            abrirTelaHome();
+                        });
+
                     } else {
                         loadingHelper.ocultar();
-                        // Mapeamento de erro via novo repositório
-                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                        String erro =
+                                perfilRepository.mapearErroAutenticacao(task.getException());
                         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    /**
+     * CADASTRO VIA GOOGLE
+     * Sempre cria dados
+     */
+    private void processarCadastroGoogle() {
+        FirebaseUser user = autenticacao.getCurrentUser();
+        if (user == null) return;
+
+        usuarioService.inicializarNovoUsuario(user, t -> {
+            loadingHelper.ocultar();
+            Toast.makeText(this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show();
+            abrirTelaHome();
+        });
     }
 
     private void enviarEmailVerificacao(FirebaseUser user) {
         if (user != null) {
             user.sendEmailVerification().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    Toast.makeText(this, "Link de verificação enviado ao e-mail!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(
+                            this,
+                            "Link de verificação enviado ao e-mail!",
+                            Toast.LENGTH_LONG
+                    ).show();
                 }
             });
         }
     }
 
     /**
-     * SAFETY NET: Garante consistência de dados no Firestore antes de navegar.
-     * Utiliza o UsuarioService para orquestrar a criação de Perfil e Carteira.
-     */
-    private void iniciarFluxoSegurancaDados() {
-        FirebaseUser user = autenticacao.getCurrentUser();
-        if (user == null) {
-            loadingHelper.ocultar();
-            return;
-        }
-
-        // A Service agora cuida do encadeamento correto de todas as coleções
-        usuarioService.inicializarNovoUsuario(user, task -> {
-            loadingHelper.ocultar();
-            abrirTelaHome();
-        });
-    }
-
-    /**
-     * Transforma parte do texto do CheckBox em link clicável.
+     * Termos clicáveis
      */
     private void configurarTextoClicavelTermos() {
-        String textoCompleto = "Ao me cadastrar, concordo com os Termos de Uso e Política de Privacidade";
+        String textoCompleto =
+                "Ao me cadastrar, concordo com os Termos de Uso e Política de Privacidade";
+
         SpannableString spannableString = new SpannableString(textoCompleto);
 
-        // Definimos o link a partir da palavra "Termos..." até o fim
         int inicioClique = textoCompleto.indexOf("Termos de Uso");
         int fimClique = textoCompleto.length();
 
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(@NonNull View widget) {
-                // Abre a Activity de Termos (Crie essa Activity depois!)
                 startActivity(new Intent(CadastroActivity.this, TermosActivity.class));
             }
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
-                ds.setUnderlineText(true); // Estilo de link
-                ds.setColor(getResources().getColor(R.color.cor_texto)); // Sua cor de destaque
+                ds.setUnderlineText(true);
+                ds.setColor(getResources().getColor(R.color.cor_texto));
                 ds.setFakeBoldText(true);
             }
         };
 
-        spannableString.setSpan(clickableSpan, inicioClique, fimClique, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableString.setSpan(
+                clickableSpan,
+                inicioClique,
+                fimClique,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
 
         checkTermos.setText(spannableString);
-        checkTermos.setMovementMethod(LinkMovementMethod.getInstance()); // Habilita o clique no Span
+        checkTermos.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
-    // Gerenciador de resultado do seletor de contas do Google
-    private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_CADASTRO);
-                } else {
-                    loadingHelper.ocultar(); // Esconde o loading se o usuário cancelar
-                }
-            }
-    );
+    private final ActivityResultLauncher<Intent> resultLauncherGoogle =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == RESULT_OK) {
+                            googleLoginHelper.lidarComResultadoGoogle(
+                                    result.getData(),
+                                    GoogleLoginHelper.MODO_CADASTRO
+                            );
+                        } else {
+                            loadingHelper.ocultar();
+                        }
+                    }
+            );
 
     public void abrirTelaHome() {
         Intent intent = new Intent(this, HomeActivity.class);

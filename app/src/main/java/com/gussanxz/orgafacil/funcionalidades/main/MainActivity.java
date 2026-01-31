@@ -17,39 +17,32 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository; // Adicionado [cite: 2026-01-22]
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService; // Adicionado [cite: 2025-11-10]
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
-import com.gussanxz.orgafacil.util_helper.LoadingHelper; // Adicionado [cite: 2025-11-10]
+import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 
 public class MainActivity extends IntroActivity {
 
-    private FirebaseAuth autenticacao;
     private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository; // [cite: 2026-01-22]
-    private UsuarioService usuarioService; // [cite: 2025-11-10]
-    private LoadingHelper loadingHelper; // Substituindo o AlertDialog antigo [cite: 2025-11-10]
+    private UsuarioService usuarioService;
+    private LoadingHelper loadingHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Inicializa as camadas de dados [cite: 2025-11-10, 2026-01-22]
-        perfilRepository = new ConfigPerfilUsuarioRepository();
         usuarioService = new UsuarioService();
-
-        // Altere para o ID do seu loading overlay no layout ac_main_intro_comece_agora
-        // Se não houver um overlay nesse layout específico, você pode usar um Toast ou Dialog provisório
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
-        // Ajuste no Helper: Agora ele chama a Safety Net unificada [cite: 2026-01-31]
-        googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
+        // Google Auth → delega tudo ao Service
+        googleLoginHelper = new GoogleLoginHelper(
+                this,
+                this::processarGoogle
+        );
 
-        // Configuração da Intro
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
@@ -62,52 +55,62 @@ public class MainActivity extends IntroActivity {
     }
 
     /**
-     * SAFETY NET UNIFICADA PARA O BOTÃO GOOGLE DA INTRO [cite: 2026-01-31]
+     * CALLBACK ÚNICO PARA GOOGLE
+     * Nenhuma decisão aqui. Apenas delegação.
      */
-    private void iniciarFluxoSegurancaDadosGoogle() {
+    private void processarGoogle(int modoOperacao) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
         if (loadingHelper != null) loadingHelper.exibir();
 
-        // Verifica se o usuário já existe no Firestore [cite: 2026-01-31]
-        perfilRepository.verificarExistenciaPerfil(user.getUid()).addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                // CENÁRIO: Usuário antigo. [cite: 2026-01-31]
-                if (loadingHelper != null) loadingHelper.ocultar();
-                Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
-                abrirTelaHome();
-            } else {
-                // CENÁRIO: Usuário novo ou dados deletados. [cite: 2026-01-31]
-                Toast.makeText(this, "Criando sua conta... Bem-vindo!", Toast.LENGTH_SHORT).show();
-                usuarioService.inicializarNovoUsuario(user, taskService -> {
+        usuarioService.processarLoginGoogle(
+                user,
+                // Usuário já existia
+                () -> {
                     if (loadingHelper != null) loadingHelper.ocultar();
+                    Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
                     abrirTelaHome();
-                });
-            }
-        });
+                },
+                // Usuário acabou de ser criado
+                () -> {
+                    if (loadingHelper != null) loadingHelper.ocultar();
+                    Toast.makeText(this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show();
+                    abrirTelaHome();
+                },
+                // Conta inválida / excluída
+                () -> {
+                    if (loadingHelper != null) loadingHelper.ocultar();
+                    Toast.makeText(
+                            this,
+                            "Conta não encontrada. Crie uma nova conta.",
+                            Toast.LENGTH_LONG
+                    ).show();
+                }
+        );
     }
 
     public void btEntrar(View view){
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    public void btCadastrar(View view){
-        startActivity(new Intent(this, CadastroActivity.class));
-    }
-
     public void btGoogle(View view) {
         resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
     }
 
-    private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_MISTO);
-                }
-            }
-    );
+    private final ActivityResultLauncher<Intent> resultLauncherGoogle =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == RESULT_OK) {
+                            // MODO_MISTO continua válido
+                            googleLoginHelper.lidarComResultadoGoogle(
+                                    result.getData(),
+                                    GoogleLoginHelper.MODO_MISTO
+                            );
+                        }
+                    }
+            );
 
     // --- NAVEGAÇÃO E BIOMETRIA ---
     public void abrirTelaHome() {
@@ -124,8 +127,6 @@ public class MainActivity extends IntroActivity {
         });
     }
 
-    // ... (restante dos métodos de biometria permanecem iguais)
-
     public void abrirTelaContas() {
         if (isPinObrigatorio()) {
             autenticarComDispositivo(() -> {
@@ -139,8 +140,6 @@ public class MainActivity extends IntroActivity {
     }
 
     private void autenticarComDispositivo(Runnable onSuccess) {
-        BiometricManager bm = BiometricManager.from(this);
-
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Desbloquear OrgaFácil")
                 .setSubtitle("Use biometria ou senha do celular")
@@ -154,7 +153,9 @@ public class MainActivity extends IntroActivity {
                 ContextCompat.getMainExecutor(this),
                 new BiometricPrompt.AuthenticationCallback() {
                     @Override
-                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                    public void onAuthenticationSucceeded(
+                            @NonNull BiometricPrompt.AuthenticationResult result
+                    ) {
                         if (onSuccess != null) onSuccess.run();
                     }
                 });
@@ -162,8 +163,8 @@ public class MainActivity extends IntroActivity {
     }
 
     private boolean isPinObrigatorio() {
-        SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
+        SharedPreferences prefs =
+                getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
         return prefs.getBoolean("pin_obrigatorio", true);
     }
-
 }
