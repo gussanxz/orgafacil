@@ -189,7 +189,7 @@ public class CadastroActivity extends AppCompatActivity {
             public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
                 ds.setUnderlineText(true); // Estilo de link
-                ds.setColor(getResources().getColor(R.color.cor_background)); // Sua cor de destaque
+                ds.setColor(getResources().getColor(R.color.cor_texto)); // Sua cor de destaque
                 ds.setFakeBoldText(true);
             }
         };

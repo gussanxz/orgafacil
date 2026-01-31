@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".funcionalidades.configuracoes.visual.ExcluirContaActivity">
+    tools:context=".funcionalidades.configuracoes.visual.ConfirmacaoEncerrarContaActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerExcluir"
@@ -66,7 +66,7 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="24dp"
                 android:gravity="center"
-                android:text="Ao excluir sua conta, todos os seus dados do OrgaFacil serão apagados permanentemente de nossos servidores."
+                android:text="Ao encerrar sua conta, todos os seus dados do OrgaFacil serão apagados permanentemente de nossos servidores."
                 android:textColor="@android:color/darker_gray" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -76,23 +76,23 @@
                 app:endIconMode="password_toggle">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editSenhaExcluir"
+                    android:id="@+id/editSenhaEncerramento"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
-                android:id="@+id/btnConfirmarExclusao"
+                android:id="@+id/btnConfirmarEncerramento"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:backgroundTint="#D32F2F"
-                android:text="Excluir minha conta agora"
+                android:text="Encerrar minha conta agora"
                 android:textColor="@android:color/white" />
 
             <Button
-                android:id="@+id/btnCancelarExclusao"
+                android:id="@+id/btnCancelarEncerramento"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
