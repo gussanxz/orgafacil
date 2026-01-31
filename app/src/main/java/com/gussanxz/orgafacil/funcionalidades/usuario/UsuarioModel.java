@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.configuracoes.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.usuario;
 
 import com.google.firebase.firestore.Exclude;
 
@@ -7,7 +7,7 @@ import com.google.firebase.firestore.Exclude;
  * Representa o "O que é" um usuário no sistema OrgaFacil.
  * Esta classe é "burra": ela não sabe que o Firebase existe.
  */
-public class Usuario {
+public class UsuarioModel {
 
     private String idUsuario;
     private String nome;
@@ -19,7 +19,7 @@ public class Usuario {
     private Double despesaTotal = 0.00;
 
     // Construtor vazio: Obrigatório para o Firebase converter o documento em objeto
-    public Usuario() {}
+    public UsuarioModel() {}
 
     // --- GETTERS E SETTERS ---
 

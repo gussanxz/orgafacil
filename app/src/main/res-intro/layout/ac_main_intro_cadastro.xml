@@ -5,23 +5,22 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".funcionalidades.autenticacao.CadastroActivity">
+    android:background="@color/white"
+    tools:context=".funcionalidades.autenticacao.visual.CadastroActivity">
 
     <RadioGroup
         android:id="@+id/meuToggleGroup"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:layout_marginLeft="60dp"
-        android:layout_marginTop="100dp"
-        android:layout_marginRight="60dp"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginEnd="60dp"
         android:background="@drawable/toggle_container_background"
         android:elevation="4dp"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed">
+        app:layout_constraintTop_toTopOf="parent">
 
         <RadioButton
             android:id="@+id/radioButtonLogin"
@@ -49,107 +48,97 @@
             android:textColor="@color/selector_toggle_button_text_color"
             android:textSize="16sp"
             android:textStyle="bold" />
-
     </RadioGroup>
 
-    <EditText
-        android:id="@+id/editNome"
-        android:layout_width="347dp"
+    <LinearLayout
+        android:id="@+id/linearLayoutCampos"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/ic_person_cinza_24"
-        android:drawablePadding="5dp"
-        android:ems="10"
-        android:hint="Nome"
-        android:inputType="text"
-        app:layout_constraintBottom_toTopOf="@+id/editEmail"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintTop_toBottomOf="@+id/meuToggleGroup">
 
-    <EditText
-        android:id="@+id/editEmail"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/ic_email_cinza_24"
-        android:drawablePadding="5dp"
-        android:ems="10"
-        android:hint="E-mail"
-        android:inputType="text|textEmailAddress"
-        app:layout_constraintBottom_toTopOf="@+id/editSenha"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editNome" />
+        <EditText
+            android:id="@+id/editNome"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:drawableStart="@drawable/ic_person_cinza_24"
+            android:drawablePadding="8dp"
+            android:hint="Nome"
+            android:inputType="textPersonName" />
 
-    <EditText
-        android:id="@+id/editSenha"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:drawableLeft="@drawable/ic_cadeado_cinza_24"
-        android:drawableRight="@drawable/ic_visibility_off_24"
-        android:drawablePadding="5dp"
-        android:ems="10"
-        android:hint="Senha"
-        android:inputType="text|textPassword"
-        app:layout_constraintBottom_toTopOf="@+id/editSenhaConfirmacao"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editEmail" />
+        <EditText
+            android:id="@+id/editEmail"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:drawableStart="@drawable/ic_email_cinza_24"
+            android:drawablePadding="8dp"
+            android:hint="E-mail"
+            android:inputType="textEmailAddress" />
 
-    <EditText
-        android:id="@+id/editSenhaConfirmacao"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:drawableLeft="@drawable/ic_cadeado_cinza_24"
-        android:drawableRight="@drawable/ic_visibility_off_24"
-        android:drawablePadding="5dp"
-        android:ems="10"
-        android:hint="Confirmar senha"
-        android:inputType="text|textPassword"
-        app:layout_constraintBottom_toTopOf="@+id/buttonCadastrar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenha" />
+        <EditText
+            android:id="@+id/editSenha"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:drawableStart="@drawable/ic_cadeado_cinza_24"
+            android:drawableEnd="@drawable/ic_visibility_off_24"
+            android:drawablePadding="8dp"
+            android:hint="Senha"
+            android:inputType="textPassword" />
 
-    <Button
-        android:id="@+id/buttonCadastrar"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:text="Cadastrar"
-        android:textColor="@color/black"
-        android:textColorLink="@color/mi_icon_color_dark"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btnCadastrarGoogle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
+        <EditText
+            android:id="@+id/editSenhaConfirmacao"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:drawableStart="@drawable/ic_cadeado_cinza_24"
+            android:drawableEnd="@drawable/ic_visibility_off_24"
+            android:drawablePadding="8dp"
+            android:hint="Confirmar senha"
+            android:inputType="textPassword" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCadastrarGoogle"
-        android:layout_width="347dp"
-        android:layout_height="48dp"
-        android:backgroundTint="@color/background_google"
-        android:drawableLeft="@drawable/ic_google_24"
-        android:drawablePadding="12dp"
-        android:fontFamily="sans-serif-medium"
-        android:text="Cadastrar com Google"
-        android:textAlignment="center"
-        android:textColor="@color/black"
-        app:cornerRadius="100dp"
-        app:iconGravity="textStart"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonCadastrar" />
+        <CheckBox
+            android:id="@+id/checkTermos"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="Concordo com os Termos e Privacidade"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/buttonCadastrar"
+            android:layout_width="347dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Cadastrar"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCadastrarGoogle"
+            android:layout_width="347dp"
+            android:layout_height="48dp"
+            android:backgroundTint="@color/background_google"
+            android:drawableStart="@drawable/ic_google_24"
+            android:drawablePadding="12dp"
+            android:text="Cadastrar com Google"
+            android:textColor="@color/black"
+            app:cornerRadius="100dp"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
+
+    <include
+        android:id="@+id/loading_overlay"
+        layout="@layout/util_loading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

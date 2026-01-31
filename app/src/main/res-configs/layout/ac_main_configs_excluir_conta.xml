@@ -48,7 +48,7 @@
                 android:layout_height="64dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="16dp"
-                android:src="@drawable/alerta"
+                android:src="@drawable/icone_alerta"
                 app:tint="#D32F2F" />
 
             <TextView

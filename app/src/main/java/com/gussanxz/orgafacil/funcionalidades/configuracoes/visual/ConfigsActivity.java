@@ -15,8 +15,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.autenticacao.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.configuracoes.dados.UsuarioRepository; // Import necessário
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
+import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository; // Import necessário
 
 
 public class ConfigsActivity extends AppCompatActivity {

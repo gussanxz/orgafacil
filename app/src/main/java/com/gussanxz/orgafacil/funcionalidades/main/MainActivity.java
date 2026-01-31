@@ -15,8 +15,8 @@ import androidx.core.content.ContextCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.autenticacao.CadastroActivity;
-import com.gussanxz.orgafacil.funcionalidades.autenticacao.LoginActivity;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper; // IMPORTANTE
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;

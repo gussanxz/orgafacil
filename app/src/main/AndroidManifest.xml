@@ -117,13 +117,15 @@
             android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.autenticacao.CadastroActivity"
+            android:name=".funcionalidades.autenticacao.visual.CadastroActivity"
             android:exported="true" />
         <activity
-            android:name=".funcionalidades.autenticacao.LoginActivity"
+            android:name=".funcionalidades.autenticacao.visual.LoginActivity"
             android:exported="true" />
         <activity
             android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity"
+            android:exported="false" />
+        <activity android:name=".funcionalidades.autenticacao.visual.TermosActivity"
             android:exported="false" />
     </application>
 

@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.configuracoes.dados;
+package com.gussanxz.orgafacil.funcionalidades.usuario;
 
 import android.util.Log;
 
@@ -6,6 +6,10 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
@@ -13,7 +17,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.configuracoes.negocio.modelos.Usuario;
 
 import java.text.Normalizer;
 import java.util.Arrays;
@@ -36,13 +39,13 @@ public class UsuarioRepository {
     /**
      * Salva o perfil completo do usuário (usado no cadastro).
      */
-    public void salvarPerfil(Usuario usuario) {
-        String uid = usuario.getIdUsuario();
+    public void salvarPerfil(UsuarioModel usuarioModel) {
+        String uid = usuarioModel.getIdUsuario();
         if (uid == null) return;
 
         Map<String, Object> perfil = new HashMap<>();
-        perfil.put("nome", usuario.getNome() != null ? usuario.getNome() : "Novo Usuário");
-        perfil.put("email", usuario.getEmail());
+        perfil.put("nome", usuarioModel.getNome() != null ? usuarioModel.getNome() : "Novo Usuário");
+        perfil.put("email", usuarioModel.getEmail());
         perfil.put("updatedAt", FieldValue.serverTimestamp());
 
         FirestoreSchema.userDoc(uid)
@@ -55,12 +58,12 @@ public class UsuarioRepository {
     /**
      * Atualiza campos específicos do perfil (usado na PerfilActivity).
      */
-    public void atualizarPerfil(Usuario usuario) {
-        String uid = usuario.getIdUsuario();
+    public void atualizarPerfil(UsuarioModel usuarioModel) {
+        String uid = usuarioModel.getIdUsuario();
         if (uid == null) return;
 
         Map<String, Object> patch = new HashMap<>();
-        if (usuario.getNome() != null) patch.put("nome", usuario.getNome());
+        if (usuarioModel.getNome() != null) patch.put("nome", usuarioModel.getNome());
         patch.put("updatedAt", FieldValue.serverTimestamp());
 
         FirestoreSchema.userDoc(uid)
@@ -118,6 +121,10 @@ public class UsuarioRepository {
         });
     }
 
+    /**
+     * Envia e-mail de redefinição de senha para o usuário.
+     * O Firebase cuidará do envio do link seguro para o endereço informado.
+     */
     public void enviarEmailRecuperacao(String email, OnCompleteListener<Void> listener) {
         FirebaseAuth.getInstance().sendPasswordResetEmail(email)
                 .addOnCompleteListener(listener);
@@ -174,5 +181,41 @@ public class UsuarioRepository {
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]", "_") // Garante apenas letras, números e underline
                 .replaceAll("_+", "_"); // Evita múltiplos underlines seguidos
+    }
+
+    /**
+     * Lógica de Safety Net: Verifica se o usuário tem o perfil criado.
+     * Se não tiver, recria os dados básicos para evitar crash.
+     */
+    public void garantirDadosIniciais(FirebaseUser user, OnCompleteListener<Void> listener) {
+        String uid = user.getUid();
+
+        FirestoreSchema.userDoc(uid)
+                .collection(FirestoreSchema.CONFIG)
+                .document(FirestoreSchema.PERFIL)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        listener.onComplete(null); // Tudo certo, pode seguir
+                    } else {
+                        // Se não existir, cria o básico
+                        UsuarioModel novo = new UsuarioModel();
+                        novo.setIdUsuario(uid);
+                        novo.setEmail(user.getEmail());
+                        novo.setNome(user.getDisplayName() != null ? user.getDisplayName() : "Usuário");
+
+                        salvarPerfil(novo);
+                        inicializarCategoriasPadrao(uid);
+                        listener.onComplete(null);
+                    }
+                });
+    }
+
+    public String mapearErroAutenticacao(Exception e) {
+        if (e instanceof FirebaseAuthWeakPasswordException) return "Digite uma senha mais forte (mínimo 6 caracteres).";
+        if (e instanceof FirebaseAuthInvalidCredentialsException) return "Por favor, digite um e-mail válido.";
+        if (e instanceof FirebaseAuthUserCollisionException) return "Esta conta já foi cadastrada!";
+        if (e instanceof FirebaseAuthInvalidUserException) return "Usuário não cadastrado.";
+        return "Erro: " + e.getLocalizedMessage();
     }
 }

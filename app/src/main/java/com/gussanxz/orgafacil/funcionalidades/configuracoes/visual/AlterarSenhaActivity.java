@@ -17,8 +17,8 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.autenticacao.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.configuracoes.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
+import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
 /**

@@ -19,8 +19,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.configuracoes.dados.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.configuracoes.negocio.modelos.Usuario;
+import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.UsuarioModel;
 
 /**
  * PerfilActivity
@@ -118,12 +118,12 @@ public class PerfilActivity extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
                         // 2. Atualiza no Firestore através do Repositório (Persistência remota)
-                        Usuario usuarioUpdate = new Usuario();
-                        usuarioUpdate.setIdUsuario(usuarioAtual.getUid());
-                        usuarioUpdate.setNome(novoNome);
+                        UsuarioModel usuarioModelUpdate = new UsuarioModel();
+                        usuarioModelUpdate.setIdUsuario(usuarioAtual.getUid());
+                        usuarioModelUpdate.setNome(novoNome);
 
                         // Chamada delegada ao Repository para isolar a lógica de rede
-                        usuarioRepository.atualizarPerfil(usuarioUpdate);
+                        usuarioRepository.atualizarPerfil(usuarioModelUpdate);
 
                         // 3. Sucesso: Atualiza a interface e volta ao modo leitura
                         textNomePerfil.setText(novoNome);
