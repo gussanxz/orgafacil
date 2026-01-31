@@ -18,6 +18,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.SetOptions;
 
@@ -48,12 +49,17 @@ public class DespesasActivity extends AppCompatActivity {
     private boolean isEdicao = false;
     private MovimentacaoModel itemEmEdicao = null; // contém key
 
+    // 🔑 UID resolvido UMA vez
+    private String uid;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_add_despesa);
         setupWindowInsets();
+
+        uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         inicializarComponentes();
         configurarListeners();
@@ -148,10 +154,8 @@ public class DespesasActivity extends AppCompatActivity {
         mov.setHora(campoHora.getText().toString());
         mov.setTipo("d"); // despesa
 
-        // Aqui está o ponto MAIS IMPORTANTE:
-        // - se for edição, NÃO zera key => não recria => não vira "último"
-        // - se for novo, key está null => cria doc novo => atualiza ultimos
-        String uid = FirestoreSchema.requireUid();
+        // - edição mantém key
+        // - novo cria doc novo
         mov.salvar(uid, mov.getData());
 
         Toast.makeText(this, isEdicao ? "Despesa atualizada!" : "Despesa adicionada!", Toast.LENGTH_SHORT).show();
@@ -171,7 +175,9 @@ public class DespesasActivity extends AppCompatActivity {
         String movId = itemEmEdicao.getKey();
         if (movId == null || movId.trim().isEmpty()) return;
 
-        FirestoreSchema.contasMovimentacaoDoc(movId)
+        FirestoreSchema
+                .contasMovimentacoesCol(uid)
+                .document(movId)
                 .delete()
                 .addOnSuccessListener(unused -> {
                     recalcularUltimoPorTipo("Despesa", () -> {
@@ -187,24 +193,20 @@ public class DespesasActivity extends AppCompatActivity {
     // ===== Sugestão: Resumos/ultimos =====
 
     private void recuperarUltimaDespesaDoFirebase() {
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) return;
 
-                    // novo schema
                     Map<String, Object> ultima = (Map<String, Object>) doc.get("ultimaSaida");
-
-                    // fallback legado (se ainda existir no banco antigo)
                     if (ultima == null) ultima = (Map<String, Object>) doc.get("ultimaDespesa");
-
                     if (ultima == null) return;
 
                     String cat = (String) ultima.get("categoriaNomeSnapshot");
                     if (cat == null) cat = (String) ultima.get("categoria");
 
-                    String desc = (String) ultima.get("descricao"); // pode não existir no snapshot novo
-                    if (desc == null) desc = (String) ultima.get("descricaoSnapshot"); // caso você crie depois
+                    String desc = (String) ultima.get("descricao");
+                    if (desc == null) desc = (String) ultima.get("descricaoSnapshot");
 
                     MovimentacaoModel m = new MovimentacaoModel();
                     m.setCategoria(cat);
@@ -239,7 +241,7 @@ public class DespesasActivity extends AppCompatActivity {
     private interface SimpleVoidCb { void done(); }
 
     private void recalcularUltimoPorTipo(String tipoNovo, SimpleVoidCb cb) {
-        FirestoreSchema.contasMovimentacoesCol()
+        FirestoreSchema.contasMovimentacoesCol(uid)
                 .whereEqualTo("tipo", tipoNovo)
                 .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
@@ -249,6 +251,7 @@ public class DespesasActivity extends AppCompatActivity {
                         limparUltimoCampo(tipoNovo, cb);
                         return;
                     }
+
                     Map<String, Object> info = new HashMap<>();
                     info.put("movId", snap.getDocuments().get(0).getId());
                     info.put("createdAt", snap.getDocuments().get(0).get("createdAt"));
@@ -262,7 +265,7 @@ public class DespesasActivity extends AppCompatActivity {
                     patch.put(campo, info);
                     patch.put("updatedAt", FieldValue.serverTimestamp());
 
-                    FirestoreSchema.contasResumoUltimosDoc()
+                    FirestoreSchema.contasResumoUltimosDoc(uid)
                             .set(patch, SetOptions.merge())
                             .addOnSuccessListener(v -> cb.done())
                             .addOnFailureListener(e -> cb.done());
@@ -277,7 +280,7 @@ public class DespesasActivity extends AppCompatActivity {
         patch.put(campo, null);
         patch.put("updatedAt", FieldValue.serverTimestamp());
 
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.done())
                 .addOnFailureListener(e -> cb.done());

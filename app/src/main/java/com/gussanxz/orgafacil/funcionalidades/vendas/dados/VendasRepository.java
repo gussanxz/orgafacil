@@ -6,6 +6,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
+
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoVoidCallback;
@@ -14,26 +15,20 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * VendasRepository
- *
- * O que faz:
- * - Centraliza o módulo Vendas:
- *   categorias, catálogo, caixa, vendas e pessoas.
- *
- * Impacto:
- * - Performance: evita "joins" (Firestore não tem join), usando snapshot na venda.
- * - Organização: regras comerciais isoladas do módulo Contas e de Config.
- * - Custo: queries previsíveis (por dia/mês, por caixa, por cliente).
- */
 public class VendasRepository {
 
+    private final String uid;
+
+    public VendasRepository(@NonNull String uid) {
+        this.uid = uid;
+    }
+
     // =========================
-    // CATEGORIAS (vendas/categorias)
+    // CATEGORIAS
     // =========================
 
     public void listarCategoriasAtivas(@NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasCategoriasCol()
+        FirestoreSchema.vendasCategoriasCol(uid)
                 .whereEqualTo("statusAtivo", true)
                 .orderBy("ordem", Query.Direction.ASCENDING)
                 .get()
@@ -41,19 +36,23 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
-    public void salvarCategoria(@NonNull String categoriaId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        FirestoreSchema.vendasCategoriaDoc(categoriaId)
+    public void salvarCategoria(
+            @NonNull String categoriaId,
+            @NonNull Map<String, Object> data,
+            @NonNull RepoVoidCallback cb
+    ) {
+        FirestoreSchema.vendasCategoriaDoc(uid, categoriaId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     // =========================
-    // CATALOGO (vendas/catalogoVendas)
+    // CATÁLOGO
     // =========================
 
     public void listarProdutosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasCatalogoCol()
+        FirestoreSchema.vendasCatalogoCol(uid)
                 .whereEqualTo("statusAtivo", true)
                 .orderBy("nome", Query.Direction.ASCENDING)
                 .get()
@@ -61,77 +60,96 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
-    public void salvarProduto(@NonNull String produtoId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        if (!data.containsKey("createdAt")) data.put("createdAt", Timestamp.now());
+    public void salvarProduto(
+            @NonNull String produtoId,
+            @NonNull Map<String, Object> data,
+            @NonNull RepoVoidCallback cb
+    ) {
+        if (!data.containsKey("createdAt")) {
+            data.put("createdAt", Timestamp.now());
+        }
         data.put("updatedAt", Timestamp.now());
 
-        FirestoreSchema.vendasProdutoDoc(produtoId)
+        FirestoreSchema.vendasProdutoDoc(uid, produtoId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
-    public void atualizarEstoque(@NonNull String produtoId, int estoqueNovo, @NonNull RepoVoidCallback cb) {
+    public void atualizarEstoque(
+            @NonNull String produtoId,
+            int estoqueNovo,
+            @NonNull RepoVoidCallback cb
+    ) {
         Map<String, Object> patch = new HashMap<>();
         patch.put("estoque", estoqueNovo);
         patch.put("updatedAt", Timestamp.now());
 
-        FirestoreSchema.vendasProdutoDoc(produtoId)
+        FirestoreSchema.vendasProdutoDoc(uid, produtoId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     // =========================
-    // CAIXA (vendas/caixa)
+    // CAIXA
     // =========================
 
-    public void abrirCaixa(@NonNull String caixaId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        if (!data.containsKey("abertoEm")) data.put("abertoEm", Timestamp.now());
-        if (!data.containsKey("status")) data.put("status", "ABERTO");
-        if (!data.containsKey("diaKey")) data.put("diaKey", FirestoreSchema.diaKey(new Date()));
-        if (!data.containsKey("mesKey")) data.put("mesKey", FirestoreSchema.mesKey(new Date()));
+    public void abrirCaixa(
+            @NonNull String caixaId,
+            @NonNull Map<String, Object> data,
+            @NonNull RepoVoidCallback cb
+    ) {
+        data.putIfAbsent("abertoEm", Timestamp.now());
+        data.putIfAbsent("status", "ABERTO");
+        data.putIfAbsent("diaKey", FirestoreSchema.diaKey(new Date()));
+        data.putIfAbsent("mesKey", FirestoreSchema.mesKey(new Date()));
 
-        FirestoreSchema.vendasCaixaDoc(caixaId)
+        FirestoreSchema.vendasCaixaDoc(uid, caixaId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
-    public void fecharCaixa(@NonNull String caixaId, @NonNull Map<String, Object> patch, @NonNull RepoVoidCallback cb) {
+    public void fecharCaixa(
+            @NonNull String caixaId,
+            @NonNull Map<String, Object> patch,
+            @NonNull RepoVoidCallback cb
+    ) {
         patch.put("fechadoEm", Timestamp.now());
         patch.put("status", "FECHADO");
 
-        FirestoreSchema.vendasCaixaDoc(caixaId)
+        FirestoreSchema.vendasCaixaDoc(uid, caixaId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     // =========================
-    // VENDAS (vendas/Vendas) - atenção ao nome "Vendas" com V maiúsculo
+    // VENDAS
     // =========================
 
-    /**
-     * Cria uma venda com snapshot de itens.
-     *
-     * Impacto:
-     * - Snapshot garante consistência histórica (preço/nome não mudam na venda).
-     * - UI fica rápida: ler 1 doc já tem tudo.
-     */
-    public void salvarVenda(@NonNull String vendaId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        if (!data.containsKey("createdAt")) data.put("createdAt", Timestamp.now());
-        if (!data.containsKey("diaKey")) data.put("diaKey", FirestoreSchema.diaKey(new Date()));
-        if (!data.containsKey("mesKey")) data.put("mesKey", FirestoreSchema.mesKey(new Date()));
+    public void salvarVenda(
+            @NonNull String vendaId,
+            @NonNull Map<String, Object> data,
+            @NonNull RepoVoidCallback cb
+    ) {
+        data.putIfAbsent("createdAt", Timestamp.now());
+        data.putIfAbsent("diaKey", FirestoreSchema.diaKey(new Date()));
+        data.putIfAbsent("mesKey", FirestoreSchema.mesKey(new Date()));
 
-        FirestoreSchema.vendaDoc(vendaId)
+        FirestoreSchema.vendaDoc(uid, vendaId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
-    public void listarVendasDoDia(@NonNull String diaKey, int limit, @NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasVendasCol()
+    public void listarVendasDoDia(
+            @NonNull String diaKey,
+            int limit,
+            @NonNull RepoCallback<QuerySnapshot> cb
+    ) {
+        FirestoreSchema.vendasVendasCol(uid)
                 .whereEqualTo("diaKey", diaKey)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(limit)
@@ -140,8 +158,12 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
-    public void listarVendasPorCaixa(@NonNull String caixaId, int limit, @NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasVendasCol()
+    public void listarVendasPorCaixa(
+            @NonNull String caixaId,
+            int limit,
+            @NonNull RepoCallback<QuerySnapshot> cb
+    ) {
+        FirestoreSchema.vendasVendasCol(uid)
                 .whereEqualTo("caixaId", caixaId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(limit)
@@ -150,8 +172,12 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
-    public void listarVendasPorCliente(@NonNull String clienteId, int limit, @NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasVendasCol()
+    public void listarVendasPorCliente(
+            @NonNull String clienteId,
+            int limit,
+            @NonNull RepoCallback<QuerySnapshot> cb
+    ) {
+        FirestoreSchema.vendasVendasCol(uid)
                 .whereEqualTo("clienteId", clienteId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(limit)
@@ -160,56 +186,40 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
-    public void atualizarStatusVenda(@NonNull String vendaId, @NonNull String status, @NonNull RepoVoidCallback cb) {
+    public void atualizarStatusVenda(
+            @NonNull String vendaId,
+            @NonNull String status,
+            @NonNull RepoVoidCallback cb
+    ) {
         Map<String, Object> patch = new HashMap<>();
         patch.put("status", status);
 
-        FirestoreSchema.vendaDoc(vendaId)
+        FirestoreSchema.vendaDoc(uid, vendaId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     // =========================
-    // PESSOAS (clientes / vendedores / fornecedores)
+    // PESSOAS
     // =========================
 
     public void salvarCliente(@NonNull String clienteId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        FirestoreSchema.clienteDoc(clienteId)
+        FirestoreSchema.clienteDoc(uid, clienteId)
                 .set(data, SetOptions.merge())
-                .addOnSuccessListener(v -> cb.onSuccess())
-                .addOnFailureListener(cb::onError);
-    }
-
-    public void atualizarUltimaCompraCliente(@NonNull String clienteId, @NonNull Timestamp ultimaCompraEm, @NonNull RepoVoidCallback cb) {
-        Map<String, Object> patch = new HashMap<>();
-        patch.put("ultimaCompraEm", ultimaCompraEm);
-
-        FirestoreSchema.clienteDoc(clienteId)
-                .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     public void salvarVendedor(@NonNull String vendedorId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        FirestoreSchema.vendedorDoc(vendedorId)
+        FirestoreSchema.vendedorDoc(uid, vendedorId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
-    public void atualizarUltimaVendaVendedor(@NonNull String vendedorId, @NonNull Timestamp ultimaVenda, @NonNull RepoVoidCallback cb) {
-        Map<String, Object> patch = new HashMap<>();
-        patch.put("ultimaVenda", ultimaVenda);
-
-        FirestoreSchema.vendedorDoc(vendedorId)
-                .set(patch, SetOptions.merge())
-                .addOnSuccessListener(v -> cb.onSuccess())
-                .addOnFailureListener(cb::onError);
-    }
-
     public void salvarFornecedor(@NonNull String fornecedorId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
-        FirestoreSchema.fornecedorDoc(fornecedorId)
+        FirestoreSchema.fornecedorDoc(uid, fornecedorId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);

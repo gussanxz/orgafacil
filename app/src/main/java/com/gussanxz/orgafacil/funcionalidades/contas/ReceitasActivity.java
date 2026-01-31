@@ -21,6 +21,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.Query;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
@@ -105,10 +107,14 @@ public class ReceitasActivity extends AppCompatActivity {
         mov.setTipo("r");
 
         // regra: edição não recria (não zera key)
-        String uid = FirestoreSchema.requireUid();
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         mov.salvar(uid, mov.getData());
 
-        Toast.makeText(this, isEdicao ? "Provento atualizado!" : "Provento adicionado!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(
+                this,
+                isEdicao ? "Provento atualizado!" : "Provento adicionado!",
+                Toast.LENGTH_SHORT
+        ).show();
         finish();
     }
 
@@ -125,7 +131,9 @@ public class ReceitasActivity extends AppCompatActivity {
         String movId = itemEmEdicao.getKey();
         if (movId == null || movId.trim().isEmpty()) return;
 
-        FirestoreSchema.contasMovimentacaoDoc(movId)
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasMovimentacaoDoc(uid, movId)
                 .delete()
                 .addOnSuccessListener(unused -> {
                     recalcularUltimoPorTipo("Receita", () -> {
@@ -176,29 +184,41 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     public Boolean validarCamposProventos() {
-        String textoValor = campoValor.getText().toString();
-        String textoData = campoData.getText().toString();
-        String textoCategoria = campoCategoria.getText().toString();
-        String textoDescricao = campoDescricao.getText().toString();
-
-        if (textoValor.isEmpty()) { Toast.makeText(this, "Valor não foi preenchido!", Toast.LENGTH_SHORT).show(); return false; }
-        if (textoData.isEmpty()) { Toast.makeText(this, "Data não foi preenchida!", Toast.LENGTH_SHORT).show(); return false; }
-        if (textoCategoria.isEmpty()) { Toast.makeText(this, "Categoria não foi preenchida!", Toast.LENGTH_SHORT).show(); return false; }
-        if (textoDescricao.isEmpty()) { Toast.makeText(this, "Descrição não foi preenchida!", Toast.LENGTH_SHORT).show(); return false; }
-
+        if (campoValor.getText().toString().isEmpty()) {
+            Toast.makeText(this, "Valor não foi preenchido!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (campoData.getText().toString().isEmpty()) {
+            Toast.makeText(this, "Data não foi preenchida!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (campoCategoria.getText().toString().isEmpty()) {
+            Toast.makeText(this, "Categoria não foi preenchida!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (campoDescricao.getText().toString().isEmpty()) {
+            Toast.makeText(this, "Descrição não foi preenchida!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
         return true;
     }
 
     // ===== Sugestão =====
 
     private void recuperarUltimoProventoDoFirebase() {
-        FirestoreSchema.contasResumoUltimosDoc()
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) return;
 
-                    Map<String, Object> ultimo = (Map<String, Object>) doc.get("ultimaEntrada");
-                    if (ultimo == null) ultimo = (Map<String, Object>) doc.get("ultimoProvento"); // fallback legado
+                    Map<String, Object> ultimo =
+                            (Map<String, Object>) doc.get("ultimaEntrada");
+
+                    if (ultimo == null)
+                        ultimo = (Map<String, Object>) doc.get("ultimoProvento");
+
                     if (ultimo == null) return;
 
                     String cat = (String) ultimo.get("categoriaNomeSnapshot");
@@ -221,12 +241,15 @@ public class ReceitasActivity extends AppCompatActivity {
         String categoria = ultimo.getCategoria();
         String descricao = ultimo.getDescricao();
 
-        String categoriaLabel = TextUtils.isEmpty(categoria) ? "sem categoria" : categoria;
-        String descricaoLabel = TextUtils.isEmpty(descricao) ? "sem descrição" : descricao;
+        String categoriaLabel =
+                TextUtils.isEmpty(categoria) ? "sem categoria" : categoria;
+        String descricaoLabel =
+                TextUtils.isEmpty(descricao) ? "sem descrição" : descricao;
 
-        String mensagem = "Deseja aproveitar as informações do último provento?\n\n"
-                + "Categoria: " + categoriaLabel + "\n"
-                + "Descrição: " + descricaoLabel;
+        String mensagem =
+                "Deseja aproveitar as informações do último provento?\n\n"
+                        + "Categoria: " + categoriaLabel + "\n"
+                        + "Descrição: " + descricaoLabel;
 
         new AlertDialog.Builder(this)
                 .setTitle("Sugestão")
@@ -244,9 +267,11 @@ public class ReceitasActivity extends AppCompatActivity {
     private interface SimpleVoidCb { void done(); }
 
     private void recalcularUltimoPorTipo(String tipoNovo, SimpleVoidCb cb) {
-        FirestoreSchema.contasMovimentacoesCol()
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasMovimentacoesCol(uid)
                 .whereEqualTo("tipo", tipoNovo)
-                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(1)
                 .get()
                 .addOnSuccessListener(snap -> {
@@ -260,15 +285,19 @@ public class ReceitasActivity extends AppCompatActivity {
                     info.put("createdAt", snap.getDocuments().get(0).get("createdAt"));
                     info.put("valorCent", snap.getDocuments().get(0).get("valorCent"));
                     info.put("categoriaId", snap.getDocuments().get(0).get("categoriaId"));
-                    info.put("categoriaNomeSnapshot", snap.getDocuments().get(0).get("categoriaNome"));
+                    info.put("categoriaNomeSnapshot",
+                            snap.getDocuments().get(0).get("categoriaNome"));
 
-                    String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+                    String campo =
+                            "Receita".equalsIgnoreCase(tipoNovo)
+                                    ? "ultimaEntrada"
+                                    : "ultimaSaida";
 
                     Map<String, Object> patch = new HashMap<>();
                     patch.put(campo, info);
                     patch.put("updatedAt", FieldValue.serverTimestamp());
 
-                    FirestoreSchema.contasResumoUltimosDoc()
+                    FirestoreSchema.contasResumoUltimosDoc(uid)
                             .set(patch, SetOptions.merge())
                             .addOnSuccessListener(v -> cb.done())
                             .addOnFailureListener(e -> cb.done());
@@ -277,13 +306,18 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     private void limparUltimoCampo(String tipoNovo, SimpleVoidCb cb) {
-        String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        String campo =
+                "Receita".equalsIgnoreCase(tipoNovo)
+                        ? "ultimaEntrada"
+                        : "ultimaSaida";
 
         Map<String, Object> patch = new HashMap<>();
         patch.put(campo, null);
         patch.put("updatedAt", FieldValue.serverTimestamp());
 
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.done())
                 .addOnFailureListener(e -> cb.done());

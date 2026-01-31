@@ -1,6 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 
 import android.net.Uri;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -40,7 +41,11 @@ public class CategoriaCatalogoRepository {
      * Salva Categoria do Catálogo (Vendas).
      * Caminho: usuarios/{uid}/moduloSistema/vendas/vendas_categorias/{id}
      */
-    public void salvar(@NonNull Categoria categoria, @Nullable Uri imagemUri, @NonNull Callback callback) {
+    public void salvar(
+            @NonNull Categoria categoria,
+            @Nullable Uri imagemUri,
+            @NonNull Callback callback
+    ) {
         if (uid == null) {
             callback.onErro("Usuário não logado");
             return;
@@ -58,58 +63,78 @@ public class CategoriaCatalogoRepository {
                 }
             });
         }
-        // 2. Se NÃO tem imagem nova, mas o usuário escolheu usar ÍCONE (index != -1)
-        // Precisamos limpar a URL antiga para não ficar inconsistente
+        // 2. Se NÃO tem imagem nova, mas o usuário escolheu usar ÍCONE
         else if (categoria.getIndexIcone() != -1) {
             categoria.setUrlImagem(null);
             salvarNoFirestore(categoria, callback);
         }
-        // 3. Mantém como estava (edição sem troca de foto)
+        // 3. Mantém como estava
         else {
             salvarNoFirestore(categoria, callback);
         }
     }
 
     private void salvarNoFirestore(Categoria categoria, Callback callback) {
-        boolean isEdicao = (categoria.getId() != null && !categoria.getId().isEmpty());
+        boolean isEdicao = categoria.getId() != null && !categoria.getId().isEmpty();
         DocumentReference docRef;
 
-        // --- MUDANÇA AQUI: USANDO O SCHEMA CORRETO ---
         if (isEdicao) {
-            docRef = FirestoreSchema.vendasCategoriaDoc(categoria.getId());
+            docRef = FirestoreSchema.vendasCategoriaDoc(uid, categoria.getId());
         } else {
-            // Cria um novo ID dentro da coleção correta
-            docRef = FirestoreSchema.vendasCategoriasCol().document();
+            docRef = FirestoreSchema.vendasCategoriasCol(uid).document();
             categoria.setId(docRef.getId());
         }
 
-        // Vendas usa .set() direto (sobrescreve o doc com o objeto)
         docRef.set(categoria)
-                .addOnSuccessListener(aVoid -> callback.onSucesso(isEdicao ? "Categoria atualizada!" : "Categoria criada!"))
-                .addOnFailureListener(e -> callback.onErro("Erro ao salvar: " + e.getMessage()));
+                .addOnSuccessListener(aVoid ->
+                        callback.onSucesso(isEdicao ? "Categoria atualizada!" : "Categoria criada!")
+                )
+                .addOnFailureListener(e ->
+                        callback.onErro("Erro ao salvar: " + e.getMessage())
+                );
     }
 
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         if (uid == null) return null;
 
-        // --- MUDANÇA AQUI: USANDO O SCHEMA CORRETO ---
-        return FirestoreSchema.vendasCategoriasCol()
+        return FirestoreSchema.vendasCategoriasCol(uid)
                 .orderBy("nome", Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         callback.onErro(error.getMessage());
                         return;
                     }
-                    List<Categoria> lista = (snapshots != null) ? snapshots.toObjects(Categoria.class) : new ArrayList<>();
+
+                    List<Categoria> lista =
+                            (snapshots != null)
+                                    ? snapshots.toObjects(Categoria.class)
+                                    : new ArrayList<>();
+
                     callback.onNovosDados(lista);
                 });
     }
 
-    // --- Helpers Privados ---
-    private void uploadImagem(Uri uri, BiConsumer<String, String> callback) {
-        String nomeArquivo = UUID.randomUUID().toString() + ".jpg";
+    public void excluir(@NonNull String idCategoria, @NonNull Callback callback) {
+        if (uid == null) {
+            callback.onErro("Usuário não logado");
+            return;
+        }
 
-        // Caminho no Storage: images/users/{uid}/vendas/categorias/{arquivo}
+        FirestoreSchema.vendasCategoriaDoc(uid, idCategoria)
+                .delete()
+                .addOnSuccessListener(aVoid ->
+                        callback.onSucesso("Categoria excluída com sucesso!")
+                )
+                .addOnFailureListener(e ->
+                        callback.onErro("Erro ao excluir: " + e.getMessage())
+                );
+    }
+
+    // --- Helpers Privados ---
+
+    private void uploadImagem(Uri uri, BiConsumer<String, String> callback) {
+        String nomeArquivo = UUID.randomUUID() + ".jpg";
+
         StorageReference fotoRef = storageRef
                 .child("images")
                 .child("users")
@@ -119,26 +144,21 @@ public class CategoriaCatalogoRepository {
                 .child(nomeArquivo);
 
         fotoRef.putFile(uri)
-                .addOnSuccessListener(task -> fotoRef.getDownloadUrl()
-                        .addOnSuccessListener(url -> callback.accept(url.toString(), null)))
-                .addOnFailureListener(e -> callback.accept(null, e.getMessage()));
+                .addOnSuccessListener(task ->
+                        fotoRef.getDownloadUrl()
+                                .addOnSuccessListener(url ->
+                                        callback.accept(url.toString(), null)
+                                )
+                )
+                .addOnFailureListener(e ->
+                        callback.accept(null, e.getMessage())
+                );
     }
 
-    private interface BiConsumer<T, U> { void accept(T t, U u); }
-
-    public void excluir(@NonNull String idCategoria, @NonNull Callback callback) {
-        if (uid == null) {
-            callback.onErro("Usuário não logado");
-            return;
-        }
-
-        // Deleta o documento no caminho: moduloSistema/vendas/vendas_categorias/{id}
-        FirestoreSchema.vendasCategoriaDoc(idCategoria)
-                .delete()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Categoria excluída com sucesso!"))
-                .addOnFailureListener(e -> callback.onErro("Erro ao excluir: " + e.getMessage()));
-
-        // Nota: Para um sistema perfeito, futuramente poderíamos deletar a imagem
-        // do Storage aqui também, mas deletando do banco já some do app.
+    private interface BiConsumer<T, U> {
+        void accept(T t, U u);
     }
 }
+
+// Nota: Para um sistema perfeito, futuramente poderíamos deletar a imagem
+        // do Storage aqui também, mas deletando do banco já some do app.

@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.dados;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -28,7 +29,9 @@ public class CategoriaMovimentacaoRepository {
      * Caminho definido em FirestoreSchema.contasCategoriasCol()
      */
     public void listarAtivas(@NonNull RepoQueryCallback cb) {
-        FirestoreSchema.contasCategoriasCol()
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasCategoriasCol(uid)
                 .whereEqualTo("ativo", true)
                 .orderBy("ordem", Query.Direction.ASCENDING)
                 .get()
@@ -40,16 +43,19 @@ public class CategoriaMovimentacaoRepository {
      * Salva ou Edita categoria financeira.
      * Regra: Usa MERGE para não perder campos extras e MAP para flexibilidade.
      */
-    public void salvar(@NonNull String categoriaId,
-                       @NonNull Map<String, Object> data,
-                       @NonNull RepoVoidCallback cb) {
+    public void salvar(
+            @NonNull String categoriaId,
+            @NonNull Map<String, Object> data,
+            @NonNull RepoVoidCallback cb
+    ) {
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Garante timestamp se for novo
         if (!data.containsKey("createdAt")) {
             data.put("createdAt", FieldValue.serverTimestamp());
         }
 
-        FirestoreSchema.contasCategoriaDoc(categoriaId)
+        FirestoreSchema.contasCategoriaDoc(uid, categoriaId)
                 .set(data, SetOptions.merge()) // O segredo do financeiro está aqui
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
@@ -59,10 +65,12 @@ public class CategoriaMovimentacaoRepository {
      * Soft Delete (apenas desativa).
      */
     public void desativar(@NonNull String categoriaId, @NonNull RepoVoidCallback cb) {
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         Map<String, Object> patch = new HashMap<>();
         patch.put("ativo", false);
 
-        FirestoreSchema.contasCategoriaDoc(categoriaId)
+        FirestoreSchema.contasCategoriaDoc(uid, categoriaId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);

@@ -77,7 +77,8 @@ public class ContasActivity extends AppCompatActivity {
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
-        repository = new ContasRepository(); // ✅ CERTO
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        repository = new ContasRepository(uid); // ✅
 
         inicializarComponentes();
         configurarRecyclerView();

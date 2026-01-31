@@ -16,31 +16,35 @@ import java.util.Locale;
 /**
  * FirestoreSchema
  *
- * Centraliza TODOS os caminhos do Firestore (rotas) do OrgaFacil.
- * Assim, qualquer mudança de estrutura exige alteração em 1 único arquivo.
+ * Centraliza TODOS os caminhos do Firestore.
  *
- * Modelo alvo:
- * usuarios/{uid}/config/{perfil|preferencias|seguranca}
- * usuarios/{uid}/moduloSistema/{contas|vendas}/...
+ * REGRA:
+ * - Firestore NÃO conhece Auth
+ * - UID é responsabilidade da aplicação
+ *
+ * Este schema oferece:
+ * ✔ API nova (UID explícito)
+ * ✔ Overloads de compatibilidade (legado)
  */
 public final class FirestoreSchema {
 
     private FirestoreSchema() {}
 
-    // ======== Ajuste rápido de "coleção raiz" ========
-    // Se um dia vocês decidirem trocar "usuarios" -> "users", muda só aqui.
+    // ================= ROOT =================
+
     public static final String ROOT = "teste";
 
-    // ======== Nomes fixos do modelo ========
+    // ================= NOMES FIXOS =================
+
     public static final String CONFIG = "config";
     public static final String MODULO = "moduloSistema";
 
-    // config docs
+    // config
     public static final String PERFIL = "config_perfil";
     public static final String PREFERENCIAS = "config_preferencias";
     public static final String SEGURANCA = "config_seguranca";
 
-    // moduloSistema/contas
+    // contas
     public static final String CONTAS = "contas";
     public static final String CONTAS_CATEGORIAS = "contas_categorias";
     public static final String CONTAS_MOV = "contas_movimentacoes";
@@ -48,7 +52,7 @@ public final class FirestoreSchema {
     public static final String CONTAS_RESUMOS = "contas_resumos";
     public static final String CONTAS_ULTIMOS = "contas_ultimos";
 
-    // moduloSistema/vendas
+    // vendas
     public static final String VENDAS = "vendas";
     public static final String VENDAS_CATEGORIAS = "vendas_categorias";
     public static final String VENDAS_CATALOGO = "vendas_catalogo";
@@ -58,11 +62,14 @@ public final class FirestoreSchema {
     public static final String VENDAS_VENDEDORES = "vendas_vendedores";
     public static final String VENDAS_FORNECEDORES = "vendas_fornecedores";
 
-    // ======== Base providers ========
+    // ================= BASE =================
+
     @NonNull
     public static FirebaseFirestore db() {
         return ConfiguracaoFirestore.getFirestore();
     }
+
+    // ================= UID HELPERS =================
 
     @Nullable
     public static String uidOrNull() {
@@ -74,149 +81,242 @@ public final class FirestoreSchema {
     @NonNull
     public static String requireUid() {
         String uid = uidOrNull();
-        if (uid == null) throw new IllegalStateException("Usuário não logado (uid null).");
+        if (uid == null) throw new IllegalStateException("Usuário não logado");
         return uid;
     }
 
-    // ======== Root: usuarios/{uid} ========
-    @NonNull
-    public static DocumentReference userDoc() {
-        return db().collection(ROOT).document(requireUid());
-    }
+    // ================= ROOT DOC =================
 
     @NonNull
     public static DocumentReference userDoc(@NonNull String uid) {
         return db().collection(ROOT).document(uid);
     }
 
-    // ======== CONFIG ========
+    // ================= CONFIG =================
+
     @NonNull
-    public static DocumentReference configPerfilDoc() {
-        return userDoc().collection(CONFIG).document(PERFIL);
+    public static DocumentReference configPerfilDoc(@NonNull String uid) {
+        return userDoc(uid).collection(CONFIG).document(PERFIL);
+    }
+
+    // ================= CONTAS =================
+
+    @NonNull
+    public static CollectionReference contasMovimentacoesCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(CONTAS)
+                .collection(CONTAS_MOV);
     }
 
     @NonNull
-    public static DocumentReference configPreferenciasDoc() {
-        return userDoc().collection(CONFIG).document(PREFERENCIAS);
+    public static DocumentReference contasMovimentacaoDoc(
+            @NonNull String uid,
+            @NonNull String movId
+    ) {
+        return contasMovimentacoesCol(uid).document(movId);
     }
 
     @NonNull
-    public static DocumentReference configSegurancaDoc() {
-        return userDoc().collection(CONFIG).document(SEGURANCA);
-    }
-
-    // ======== MODULO SISTEMA / CONTAS ========
-    @NonNull
-    public static CollectionReference contasCategoriasCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_CATEGORIAS);
+    public static CollectionReference contasCategoriasCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(CONTAS)
+                .collection(CONTAS_CATEGORIAS);
     }
 
     @NonNull
-    public static DocumentReference contasCategoriaDoc(@NonNull String categoriaId) {
-        return contasCategoriasCol().document(categoriaId);
+    public static DocumentReference contasCategoriaDoc(
+            @NonNull String uid,
+            @NonNull String categoriaId
+    ) {
+        return contasCategoriasCol(uid).document(categoriaId);
     }
 
     @NonNull
-    public static CollectionReference contasMovimentacoesCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_MOV);
+    public static DocumentReference contasResumoUltimosDoc(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(CONTAS)
+                .collection(CONTAS_RESUMOS)
+                .document(CONTAS_ULTIMOS);
+    }
+
+    // ================= VENDAS =================
+
+    public static CollectionReference vendasCategoriasCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_CATEGORIAS);
     }
 
     @NonNull
-    public static DocumentReference contasMovimentacaoDoc(@NonNull String movId) {
-        return contasMovimentacoesCol().document(movId);
+    public static DocumentReference vendasCategoriaDoc(
+            @NonNull String uid,
+            @NonNull String categoriaId
+    ) {
+        return vendasCategoriasCol(uid).document(categoriaId);
+    }
+
+    // ---------- CATÁLOGO ----------
+
+    @NonNull
+    public static CollectionReference vendasCatalogoCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_CATALOGO);
     }
 
     @NonNull
+    public static DocumentReference vendasProdutoDoc(
+            @NonNull String uid,
+            @NonNull String produtoId
+    ) {
+        return vendasCatalogoCol(uid).document(produtoId);
+    }
+
+    // ---------- CAIXA ----------
+
+    @NonNull
+    public static CollectionReference vendasCaixaCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_CAIXA);
+    }
+
+    @NonNull
+    public static DocumentReference vendasCaixaDoc(
+            @NonNull String uid,
+            @NonNull String caixaId
+    ) {
+        return vendasCaixaCol(uid).document(caixaId);
+    }
+
+    // ---------- VENDAS ----------
+
+    @NonNull
+    public static CollectionReference vendasVendasCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_VENDAS);
+    }
+
+    @NonNull
+    public static DocumentReference vendaDoc(
+            @NonNull String uid,
+            @NonNull String vendaId
+    ) {
+        return vendasVendasCol(uid).document(vendaId);
+    }
+
+    // ---------- PESSOAS ----------
+
+    @NonNull
+    public static CollectionReference vendasClientesCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_CLIENTES);
+    }
+
+    @NonNull
+    public static DocumentReference clienteDoc(
+            @NonNull String uid,
+            @NonNull String clienteId
+    ) {
+        return vendasClientesCol(uid).document(clienteId);
+    }
+
+    @NonNull
+    public static CollectionReference vendasVendedoresCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_VENDEDORES);
+    }
+
+    @NonNull
+    public static DocumentReference vendedorDoc(
+            @NonNull String uid,
+            @NonNull String vendedorId
+    ) {
+        return vendasVendedoresCol(uid).document(vendedorId);
+    }
+
+    @NonNull
+    public static CollectionReference vendasFornecedoresCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(VENDAS)
+                .collection(VENDAS_FORNECEDORES);
+    }
+
+    @NonNull
+    public static DocumentReference fornecedorDoc(
+            @NonNull String uid,
+            @NonNull String fornecedorId
+    ) {
+        return vendasFornecedoresCol(uid).document(fornecedorId);
+    }
+
+    // ================= CONTAS FUTURAS =================
+
+    @NonNull
+    public static CollectionReference contasFuturasCol(@NonNull String uid) {
+        return userDoc(uid)
+                .collection(MODULO)
+                .document(CONTAS)
+                .collection(CONTAS_FUTURAS);
+    }
+
+    @NonNull
+    public static DocumentReference contasFuturaDoc(
+            @NonNull String uid,
+            @NonNull String contaFuturaId
+    ) {
+        return contasFuturasCol(uid).document(contaFuturaId);
+    }
+
+    // ===== CONTAS FUTURAS (LEGADO) =====
+
     public static CollectionReference contasFuturasCol() {
-        return userDoc().collection(MODULO).document(CONTAS).collection(CONTAS_FUTURAS);
+        return contasFuturasCol(requireUid());
     }
 
-    @NonNull
     public static DocumentReference contasFuturaDoc(@NonNull String contaFuturaId) {
-        return contasFuturasCol().document(contaFuturaId);
+        return contasFuturaDoc(requireUid(), contaFuturaId);
     }
 
-    /**
-     * usuarios/{uid}/moduloSistema/contas/Resumos/ultimos
-     */
-    @NonNull
+
+    // ================= LEGADO (COMPAT) =================
+    // ⚠ NÃO USAR EM CÓDIGO NOVO
+
+    public static CollectionReference contasMovimentacoesCol() {
+        return contasMovimentacoesCol(requireUid());
+    }
+
+    public static DocumentReference contasMovimentacaoDoc(@NonNull String movId) {
+        return contasMovimentacaoDoc(requireUid(), movId);
+    }
+
+    public static CollectionReference contasCategoriasCol() {
+        return contasCategoriasCol(requireUid());
+    }
+
+    public static DocumentReference contasCategoriaDoc(@NonNull String categoriaId) {
+        return contasCategoriaDoc(requireUid(), categoriaId);
+    }
+
     public static DocumentReference contasResumoUltimosDoc() {
-        return userDoc().collection(MODULO).document(CONTAS)
-                .collection(CONTAS_RESUMOS).document(CONTAS_ULTIMOS);
+        return contasResumoUltimosDoc(requireUid());
     }
 
-    // ======== MODULO SISTEMA / VENDAS ========
-    @NonNull
-    public static CollectionReference vendasCategoriasCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATEGORIAS);
-    }
+    // ================= HELPERS =================
 
-    @NonNull
-    public static DocumentReference vendasCategoriaDoc(@NonNull String categoriaId) {
-        return vendasCategoriasCol().document(categoriaId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasCatalogoCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATALOGO);
-    }
-
-    @NonNull
-    public static DocumentReference vendasProdutoDoc(@NonNull String produtoId) {
-        return vendasCatalogoCol().document(produtoId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasCaixaCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CAIXA);
-    }
-
-    @NonNull
-    public static DocumentReference vendasCaixaDoc(@NonNull String caixaId) {
-        return vendasCaixaCol().document(caixaId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasVendasCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDAS);
-    }
-
-    @NonNull
-    public static DocumentReference vendaDoc(@NonNull String vendaId) {
-        return vendasVendasCol().document(vendaId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasClientesCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CLIENTES);
-    }
-
-    @NonNull
-    public static DocumentReference clienteDoc(@NonNull String clienteId) {
-        return vendasClientesCol().document(clienteId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasVendedoresCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDEDORES);
-    }
-
-    @NonNull
-    public static DocumentReference vendedorDoc(@NonNull String vendedorId) {
-        return vendasVendedoresCol().document(vendedorId);
-    }
-
-    @NonNull
-    public static CollectionReference vendasFornecedoresCol() {
-        return userDoc().collection(MODULO).document(VENDAS).collection(VENDAS_FORNECEDORES);
-    }
-
-    @NonNull
-    public static DocumentReference fornecedorDoc(@NonNull String fornecedorId) {
-        return vendasFornecedoresCol().document(fornecedorId);
-    }
-
-    // ======== Helpers de data (diaKey / mesKey) ========
     @NonNull
     public static String diaKey(@Nullable Date date) {
         Date d = (date != null) ? date : new Date();
@@ -232,9 +332,5 @@ public final class FirestoreSchema {
     @NonNull
     public static Timestamp nowTs() {
         return Timestamp.now();
-    }
-
-    public static FirebaseFirestore getFirestore() {
-        return FirebaseFirestore.getInstance();
     }
 }

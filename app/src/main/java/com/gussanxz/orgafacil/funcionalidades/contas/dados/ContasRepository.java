@@ -30,6 +30,14 @@ import java.util.Map;
  * - excluirMovimentacao(...)
  */
 public class ContasRepository {
+
+    // 🔑 UID explícito, resolvido fora
+    private final String uid;
+
+    public ContasRepository(@NonNull String uid) {
+        this.uid = uid;
+    }
+
     // ===== callbacks internos (pra poder usar ContasRepository.RepoVoidCallback) =====
     public interface RepoVoidCallback {
         void onSuccess();
@@ -65,7 +73,6 @@ public class ContasRepository {
     }
 
     private static String mapTipoNovoParaLegado(@Nullable String tipoNovo) {
-        // novo: "Receita" | "Despesa"
         if (tipoNovo == null) return "d";
         return "Receita".equalsIgnoreCase(tipoNovo) ? "r" : "d";
     }
@@ -85,20 +92,13 @@ public class ContasRepository {
     // RESUMO (compat)
     // =========================
 
-    /**
-     * Compat: usado pela ContasActivity para mostrar "Olá, nome!"
-     * Saldo pode ser calculado pela UI (ela já calcula no aplicarFiltros()).
-     */
     public void recuperarResumo(@NonNull ResumoCallback cb) {
-        FirestoreSchema.configPerfilDoc()
+        FirestoreSchema.configPerfilDoc(uid)
                 .get()
                 .addOnSuccessListener(doc -> {
-                    String nome =
-                            safeStr(doc.getString("nome"));
-
+                    String nome = safeStr(doc.getString("nome"));
                     if (nome.isEmpty()) nome = safeStr(doc.getString("name"));
                     if (nome.isEmpty()) nome = "Usuário";
-
                     cb.onSucesso(0.0, nome);
                 })
                 .addOnFailureListener(e -> cb.onErro(e.getMessage()));
@@ -108,40 +108,28 @@ public class ContasRepository {
     // MOVIMENTAÇÕES (compat)
     // =========================
 
-    /**
-     * Compat: busca movimentações do schema novo e converte pra model antigo (Movimentacao.java)
-     * - Ordena por createdAt desc
-     * - Ignora deletadas (deletedAt != null) no CLIENTE para evitar índice composto.
-     */
     public void recuperarMovimentacoes(@NonNull DadosCallback cb) {
-        FirestoreSchema.contasMovimentacoesCol()
+        FirestoreSchema.contasMovimentacoesCol(uid)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
-                .limit(500) // ajuste se quiser
+                .limit(500)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<MovimentacaoModel> lista = new ArrayList<>();
 
                     for (QueryDocumentSnapshot d : snap) {
-                        // ignora soft delete
                         if (d.contains("deletedAt") && d.get("deletedAt") != null) continue;
 
                         MovimentacaoModel m = new MovimentacaoModel();
                         m.setKey(d.getId());
-
-                        // campos antigos usados na UI
                         m.setData(d.getString("data"));
                         m.setHora(d.getString("hora"));
                         m.setDescricao(d.getString("descricao"));
 
-                        // categoria no novo schema está em "categoriaNome" (ou snapshot)
                         String cat = d.getString("categoriaNome");
                         if (cat == null) cat = d.getString("categoriaNomeSnapshot");
                         m.setCategoria(cat);
 
-                        // tipo novo -> legado "r"/"d"
                         m.setTipo(mapTipoNovoParaLegado(d.getString("tipo")));
-
-                        // valorCent -> double valor
                         m.setValor(centToDouble(d.get("valorCent")));
 
                         lista.add(m);
@@ -156,10 +144,6 @@ public class ContasRepository {
     // EXCLUSÃO (compat)
     // =========================
 
-    /**
-     * Compat: usado pela ContasActivity atual.
-     * Faz soft delete e depois recalcula o "último" do tipo (requisito seu).
-     */
     public void excluirMovimentacao(@NonNull MovimentacaoModel mov, @NonNull SimplesCallback cb) {
         String movId = mov.getKey();
         if (movId == null || movId.trim().isEmpty()) {
@@ -167,24 +151,14 @@ public class ContasRepository {
             return;
         }
 
-        // tipo legado ("r"/"d") -> tipo novo
         String tipoNovo = "r".equals(mov.getTipo()) ? "Receita" : "Despesa";
 
         softDeleteMovimentacao(movId, new RepoVoidCallback() {
             @Override
             public void onSuccess() {
-                // requisito: se deletou a última, pega a anterior do mesmo tipo; se não houver, limpa
                 recalcularUltimoPorTipo(tipoNovo, new RepoVoidCallback() {
-                    @Override
-                    public void onSuccess() {
-                        cb.onSucesso();
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        // mesmo que falhe o resumo, a exclusão ocorreu
-                        cb.onSucesso();
-                    }
+                    @Override public void onSuccess() { cb.onSucesso(); }
+                    @Override public void onError(Exception e) { cb.onSucesso(); }
                 });
             }
 
@@ -196,21 +170,21 @@ public class ContasRepository {
     }
 
     // =========================
-    // API NOVA (já existia no seu texto)
+    // API NOVA
     // =========================
 
     public void softDeleteMovimentacao(@NonNull String movId, @NonNull RepoVoidCallback cb) {
         Map<String, Object> patch = new HashMap<>();
         patch.put("deletedAt", Timestamp.now());
 
-        FirestoreSchema.contasMovimentacaoDoc(movId)
+        FirestoreSchema.contasMovimentacaoDoc(uid, movId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
 
     public void recalcularUltimoPorTipo(@NonNull String tipoMov, @NonNull RepoVoidCallback cb) {
-        FirestoreSchema.contasMovimentacoesCol()
+        FirestoreSchema.contasMovimentacoesCol(uid)
                 .whereEqualTo("tipo", tipoMov)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(1)
@@ -242,7 +216,7 @@ public class ContasRepository {
         patch.put(campo, snapshot);
         patch.put("updatedAt", Timestamp.now());
 
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
@@ -255,7 +229,7 @@ public class ContasRepository {
         patch.put(campo, null);
         patch.put("updatedAt", Timestamp.now());
 
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);

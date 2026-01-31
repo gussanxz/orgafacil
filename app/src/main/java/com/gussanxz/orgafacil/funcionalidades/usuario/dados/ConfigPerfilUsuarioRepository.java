@@ -1,6 +1,5 @@
 package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
 
-import android.util.Log;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -13,6 +12,7 @@ import com.google.firebase.auth.UserInfo;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.SetOptions;
+
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
 
@@ -21,12 +21,19 @@ import java.util.Map;
 
 public class ConfigPerfilUsuarioRepository {
 
-    private static final String TAG = "ConfigPerfilRepository";
+    // =======================
+    // CRIAÇÃO / ATUALIZAÇÃO
+    // =======================
 
-    // --- MÉTODOS DE ESCRITA (CRIAÇÃO/EDIÇÃO/EXCLUSÃO) ---
-
+    /**
+     * Inicializa metadados do documento raiz do usuário.
+     * Caminho: {ROOT}/{uid}
+     */
     public Task<Void> inicializarMetadadosRaiz(FirebaseUser user) {
+        if (user == null) return null;
+
         String uid = user.getUid();
+
         Map<String, Object> meta = new HashMap<>();
         meta.put("statusConta", ConfigPerfilUsuarioModel.StatusConta.ATIVO.name());
         meta.put("tipoPerfil", ConfigPerfilUsuarioModel.TipoPerfil.PESSOAL.name());
@@ -37,103 +44,111 @@ public class ConfigPerfilUsuarioRepository {
         return FirestoreSchema.userDoc(uid).set(meta, SetOptions.merge());
     }
 
+    /**
+     * Cria ou atualiza o perfil do usuário.
+     * Caminho: {ROOT}/{uid}/config/config_perfil
+     */
     public Task<Void> salvarPerfil(ConfigPerfilUsuarioModel perfil) {
+        if (perfil == null || perfil.getIdUsuario() == null) return null;
+
         String uid = perfil.getIdUsuario();
-        if (uid == null) return null;
 
         Map<String, Object> dados = new HashMap<>();
         dados.put("nome", perfil.getNome() != null ? perfil.getNome() : "Novo Usuário");
         dados.put("email", perfil.getEmail() != null ? perfil.getEmail() : "");
         dados.put("updatedAt", FieldValue.serverTimestamp());
 
-        return FirestoreSchema.userDoc(uid)
-                .collection("config")
-                .document("config_perfil_usuario")
+        return FirestoreSchema.configPerfilDoc(uid)
                 .set(dados, SetOptions.merge());
     }
 
+    /**
+     * Atualiza campos específicos do perfil.
+     */
     public Task<Void> atualizarPerfil(ConfigPerfilUsuarioModel perfil) {
+        if (perfil == null || perfil.getIdUsuario() == null) return null;
+
         String uid = perfil.getIdUsuario();
-        if (uid == null) return null;
 
         Map<String, Object> updates = new HashMap<>();
         if (perfil.getNome() != null) updates.put("nome", perfil.getNome());
         if (perfil.getFotoUrl() != null) updates.put("fotoUrl", perfil.getFotoUrl());
         updates.put("updatedAt", FieldValue.serverTimestamp());
 
-        return FirestoreSchema.userDoc(uid)
-                .collection("config")
-                .document("config_perfil_usuario")
-                .update(updates);
+        return FirestoreSchema.configPerfilDoc(uid).update(updates);
     }
 
+    // =======================
+    // EXCLUSÃO DE CONTA
+    // =======================
+
     /**
-     * EXCLUSÃO SIMPLIFICADA (PROVISÓRIA): Limpa Firestore e deleta Auth sem senha.
-     * Importante: O Firebase exige login recente para esta operação.
-     */
-    /**
-     * Remove os dados do Firestore e a conta do Firebase Auth.
-     * Requer OnCompleteListener para notificar o sucesso/falha à Activity.
+     * Remove Firestore + Auth.
+     * OBS: Firebase exige login recente.
      */
     public void excluirContaSemSenha(FirebaseUser user, OnCompleteListener<Void> listener) {
         if (user == null) return;
+
         String uid = user.getUid();
 
-        // 1. Deleta no Servidor primeiro
-        FirestoreSchema.userDoc(uid).delete().addOnSuccessListener(aVoid -> {
-
-            // 2. Deleta a Autenticação (Isso invalida o Token imediatamente)
-            user.delete().addOnCompleteListener(taskDeleteAuth -> {
-
-                // 3. Limpa o Cache Local para não sobrar rastros
-                FirestoreSchema.getFirestore().terminate().addOnCompleteListener(t -> {
-                    FirestoreSchema.getFirestore().clearPersistence().addOnCompleteListener(taskPersist -> {
-                        // Agora sim, o usuário sumiu do Auth e o cache está limpo
-                        listener.onComplete(taskDeleteAuth);
-                    });
-                });
-            });
-
-        }).addOnFailureListener(e -> listener.onComplete(null));
+        FirestoreSchema.userDoc(uid)
+                .delete()
+                .addOnSuccessListener(aVoid ->
+                        user.delete().addOnCompleteListener(listener)
+                )
+                .addOnFailureListener(e ->
+                        listener.onComplete(null)
+                );
     }
 
-    // --- MÉTODOS DE LEITURA (VERIFICAÇÃO) ---
+    // =======================
+    // LEITURA / VERIFICAÇÃO
+    // =======================
 
     /**
-     * NOVO: Apenas consulta se o perfil existe.
-     * Use este método na SplashActivity para decidir se o usuário entra ou sai.
+     * Usado na SplashActivity.
+     * Apenas verifica se o perfil existe.
      */
     public Task<DocumentSnapshot> verificarExistenciaPerfil(String uid) {
-        return FirestoreSchema.userDoc(uid)
-                .collection("config")
-                .document("config_perfil_usuario")
-                .get();
+        return FirestoreSchema.configPerfilDoc(uid).get();
     }
 
-    // --- MÉTODOS DE SESSÃO ---
+    // =======================
+    // SESSÃO / ERROS
+    // =======================
 
     public void deslogar() {
         FirebaseAuth.getInstance().signOut();
     }
 
     public String mapearErroAutenticacao(Exception e) {
-        if (e instanceof FirebaseAuthWeakPasswordException) return "A senha fornecida é muito fraca.";
-        if (e instanceof FirebaseAuthInvalidCredentialsException) return "As credenciais informadas são inválidas.";
-        if (e instanceof FirebaseAuthUserCollisionException) return "Este e-mail já está associado a outra conta.";
-        if (e instanceof FirebaseAuthInvalidUserException) return "Não foi possível encontrar este usuário.";
+        if (e instanceof FirebaseAuthWeakPasswordException)
+            return "A senha fornecida é muito fraca.";
+        if (e instanceof FirebaseAuthInvalidCredentialsException)
+            return "As credenciais informadas são inválidas.";
+        if (e instanceof FirebaseAuthUserCollisionException)
+            return "Este e-mail já está associado a outra conta.";
+        if (e instanceof FirebaseAuthInvalidUserException)
+            return "Não foi possível encontrar este usuário.";
 
-        // NOVO: Tratativa para operações sensíveis que exigem login recente [cite: 2025-11-10]
         if (e != null && e.getMessage() != null && e.getMessage().contains("recent login")) {
-            return "Por segurança, você precisa fazer login novamente para realizar esta ação.";
+            return "Por segurança, faça login novamente para realizar esta ação.";
         }
 
-        return "Erro na operação: " + (e != null ? e.getLocalizedMessage() : "Desconhecido");
+        return "Erro na operação: " +
+                (e != null ? e.getLocalizedMessage() : "Desconhecido");
     }
+
+    // =======================
+    // HELPERS
+    // =======================
 
     private String obterProvedorLogin(FirebaseUser user) {
         if (user != null) {
             for (UserInfo profile : user.getProviderData()) {
-                if (profile.getProviderId().equals("google.com")) return "google.com";
+                if ("google.com".equals(profile.getProviderId())) {
+                    return "google.com";
+                }
             }
         }
         return "password";

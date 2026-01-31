@@ -20,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
@@ -64,15 +65,15 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        movimentacaoModelAntiga = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
-        movId = getIntent().getStringExtra("keyFirebase"); // reutilizando seu nome antigo
+        movimentacaoModelAntiga =
+                (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
+        movId = getIntent().getStringExtra("keyFirebase");
 
         if (movimentacaoModelAntiga == null || movId == null || movId.trim().isEmpty()) {
             finish();
             return;
         }
 
-        // Mantém suas telas separadas por tipo (UI)
         if ("d".equals(movimentacaoModelAntiga.getTipo())) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
@@ -92,11 +93,14 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editDescricao = findViewById(R.id.editDescricao);
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
-
         btnExcluir = findViewById(R.id.btnExcluir);
 
         if (textViewHeader != null) {
-            textViewHeader.setText("d".equals(movimentacaoModelAntiga.getTipo()) ? "Editar Despesa" : "Editar Receita");
+            textViewHeader.setText(
+                    "d".equals(movimentacaoModelAntiga.getTipo())
+                            ? "Editar Despesa"
+                            : "Editar Receita"
+            );
         }
     }
 
@@ -127,17 +131,10 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         finish();
     }
 
-    // XML chama esses nomes nos FABs (mantidos)
     public void salvarDespesa(View view) { confirmarEdicao(); }
     public void salvarProvento(View view) { confirmarEdicao(); }
     public void salvarProventos(View view) { confirmarEdicao(); }
 
-    /**
-     * Edição no schema novo:
-     * - Atualiza o MESMO documento /contasMovimentacoes/{movId}
-     * - NÃO mexe em createdAt (para não virar "último")
-     * - Atualiza diaKey/mesKey conforme a data corrigida
-     */
     private void confirmarEdicao() {
         String novaData = editData.getText().toString().trim();
         String novaDescricao = editDescricao.getText().toString().trim();
@@ -145,7 +142,8 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         String novoValorStr = editValor.getText().toString().trim();
         String novaHora = editHora.getText().toString().trim();
 
-        if (novaData.isEmpty() || novaDescricao.isEmpty() || novaCategoria.isEmpty() || novoValorStr.isEmpty()) {
+        if (novaData.isEmpty() || novaDescricao.isEmpty()
+                || novaCategoria.isEmpty() || novoValorStr.isEmpty()) {
             Toast.makeText(this, "Preencha todos os campos", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -158,13 +156,13 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // recalcula keys
         Date dateObj = parseBrDate(novaData);
         String diaKey = FirestoreSchema.diaKey(dateObj);
         String mesKey = FirestoreSchema.mesKey(dateObj);
 
-        // tipo novo (não muda na tela)
-        String tipoNovo = "d".equals(movimentacaoModelAntiga.getTipo()) ? "Despesa" : "Receita";
+        String tipoNovo =
+                "d".equals(movimentacaoModelAntiga.getTipo()) ? "Despesa" : "Receita";
+
         int valorCent = (int) Math.round(novoValor * 100.0);
 
         Map<String, Object> patch = new HashMap<>();
@@ -172,16 +170,15 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         patch.put("mesKey", mesKey);
         patch.put("tipo", tipoNovo);
         patch.put("valorCent", valorCent);
-
         patch.put("data", novaData);
         patch.put("hora", novaHora);
         patch.put("descricao", novaDescricao);
         patch.put("categoriaNome", novaCategoria);
-
-        // crucial: só updatedAt (não altera createdAt)
         patch.put("updatedAt", FieldValue.serverTimestamp());
 
-        FirestoreSchema.contasMovimentacaoDoc(movId)
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasMovimentacaoDoc(uid, movId)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
@@ -193,23 +190,26 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 );
     }
 
-    // ===== EXCLUSÃO =====
-
     private void confirmarExclusao() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirmar_exclusao, null);
+        View view = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_confirmar_exclusao, null);
         builder.setView(view);
 
         AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setBackgroundDrawable(
+                    new ColorDrawable(Color.TRANSPARENT));
         }
 
         TextView textMensagem = view.findViewById(R.id.textMensagemDialog);
         Button btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
         Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
 
-        textMensagem.setText("Você deseja realmente excluir '" + movimentacaoModelAntiga.getDescricao() + "'?");
+        textMensagem.setText(
+                "Você deseja realmente excluir '"
+                        + movimentacaoModelAntiga.getDescricao() + "'?"
+        );
 
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
         btnConfirmar.setOnClickListener(v -> {
@@ -220,16 +220,13 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    /**
-     * Exclui o doc e recalcula o "último" do mesmo tipo.
-     * Impacto:
-     * - mantém recomendação correta: se apagou o último, pega o anterior.
-     * - se não houver anterior, limpa o campo no resumo.
-     */
     private void excluirNoFirestore() {
-        String tipoNovo = "d".equals(movimentacaoModelAntiga.getTipo()) ? "Despesa" : "Receita";
+        String tipoNovo =
+                "d".equals(movimentacaoModelAntiga.getTipo()) ? "Despesa" : "Receita";
 
-        FirestoreSchema.contasMovimentacaoDoc(movId)
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasMovimentacaoDoc(uid, movId)
                 .delete()
                 .addOnSuccessListener(unused -> {
                     recalcularUltimoPorTipo(tipoNovo, () -> {
@@ -239,16 +236,18 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                     });
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao excluir: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this,
+                                "Erro ao excluir: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show()
                 );
     }
-
-    // ===== Recalcular "ultimos" (por createdAt) =====
 
     private interface SimpleVoidCb { void done(); }
 
     private void recalcularUltimoPorTipo(String tipoNovo, SimpleVoidCb cb) {
-        FirestoreSchema.contasMovimentacoesCol()
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        FirestoreSchema.contasMovimentacoesCol(uid)
                 .whereEqualTo("tipo", tipoNovo)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(1)
@@ -268,13 +267,16 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                     info.put("categoriaId", doc.get("categoriaId"));
                     info.put("categoriaNomeSnapshot", doc.get("categoriaNome"));
 
-                    String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+                    String campo =
+                            "Receita".equalsIgnoreCase(tipoNovo)
+                                    ? "ultimaEntrada"
+                                    : "ultimaSaida";
 
                     Map<String, Object> patch = new HashMap<>();
                     patch.put(campo, info);
                     patch.put("updatedAt", FieldValue.serverTimestamp());
 
-                    FirestoreSchema.contasResumoUltimosDoc()
+                    FirestoreSchema.contasResumoUltimosDoc(uid)
                             .set(patch, SetOptions.merge())
                             .addOnSuccessListener(v -> cb.done())
                             .addOnFailureListener(e -> cb.done());
@@ -283,50 +285,85 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void limparUltimoCampo(String tipoNovo, SimpleVoidCb cb) {
-        String campo = "Receita".equalsIgnoreCase(tipoNovo) ? "ultimaEntrada" : "ultimaSaida";
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        String campo =
+                "Receita".equalsIgnoreCase(tipoNovo)
+                        ? "ultimaEntrada"
+                        : "ultimaSaida";
 
         Map<String, Object> patch = new HashMap<>();
         patch.put(campo, null);
         patch.put("updatedAt", FieldValue.serverTimestamp());
 
-        FirestoreSchema.contasResumoUltimosDoc()
+        FirestoreSchema.contasResumoUltimosDoc(uid)
                 .set(patch, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.done())
                 .addOnFailureListener(e -> cb.done());
     }
 
-    // ===== Pickers =====
-
     private void abrirDataPicker() {
         Calendar c = Calendar.getInstance();
         try {
             String[] p = editData.getText().toString().split("/");
-            c.set(Integer.parseInt(p[2]), Integer.parseInt(p[1]) - 1, Integer.parseInt(p[0]));
+            c.set(
+                    Integer.parseInt(p[2]),
+                    Integer.parseInt(p[1]) - 1,
+                    Integer.parseInt(p[0])
+            );
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (v, y, m, d) ->
-                editData.setText(String.format(Locale.getDefault(), "%02d/%02d/%04d", d, m + 1, y)),
-                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(
+                this,
+                (v, y, m, d) ->
+                        editData.setText(
+                                String.format(
+                                        Locale.getDefault(),
+                                        "%02d/%02d/%04d",
+                                        d, m + 1, y
+                                )
+                        ),
+                c.get(Calendar.YEAR),
+                c.get(Calendar.MONTH),
+                c.get(Calendar.DAY_OF_MONTH)
+        ).show();
     }
 
     private void abrirTimePicker() {
         Calendar c = Calendar.getInstance();
-        new TimePickerDialog(this, (v, h, m) ->
-                editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m)),
-                c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
+        new TimePickerDialog(
+                this,
+                (v, h, m) ->
+                        editHora.setText(
+                                String.format(
+                                        Locale.getDefault(),
+                                        "%02d:%02d",
+                                        h, m
+                                )
+                        ),
+                c.get(Calendar.HOUR_OF_DAY),
+                c.get(Calendar.MINUTE),
+                true
+        ).show();
     }
 
     private void configurarLauncherCategoria() {
-        launcherCategoria = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        editCategoria.setText(result.getData().getStringExtra("categoriaSelecionada"));
-                    }
-                });
+        launcherCategoria =
+                registerForActivityResult(
+                        new ActivityResultContracts.StartActivityForResult(),
+                        result -> {
+                            if (result.getResultCode() == Activity.RESULT_OK
+                                    && result.getData() != null) {
+                                editCategoria.setText(
+                                        result.getData()
+                                                .getStringExtra("categoriaSelecionada")
+                                );
+                            }
+                        });
 
         editCategoria.setOnClickListener(v -> {
-            Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
+            Intent intent =
+                    new Intent(this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
         });
     }
@@ -334,7 +371,10 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private Date parseBrDate(String dataBr) {
         if (dataBr == null) return new Date();
         try {
-            return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dataBr);
+            return new SimpleDateFormat(
+                    "dd/MM/yyyy",
+                    Locale.getDefault()
+            ).parse(dataBr);
         } catch (ParseException e) {
             return new Date();
         }
