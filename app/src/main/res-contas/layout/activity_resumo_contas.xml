@@ -1,322 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    android:orientation="vertical"
-    tools:context=".activity.features.contas.ResumoContasActivity">
+    tools:context=".funcionalidades.contas.ResumoContasActivity">
 
     <LinearLayout
-        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize">
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="@string/app_name"
-            android:textSize="18sp"
-            android:gravity="center_vertical|start"
-            android:padding="12dp"
-            android:textColor="@color/white"
-            android:textStyle="bold"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/headerResumoVendas"
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="@color/colorPrimary"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingBottom="70dp">
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginTop="0.5dp"
-            android:gravity="center"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize">
             <TextView
-                android:id="@+id/textVendasHoje"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="0.5dp"
-                android:text="Saldo Hoje"
-                android:textAlignment="center"
-                android:textColor="@android:color/white"
-                android:textStyle="bold" />
+                android:layout_height="match_parent"
+                android:text="@string/app_name"
+                android:textSize="18sp"
+                android:gravity="center_vertical|start"
+                android:padding="12dp"
+                android:textColor="@color/white"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/headerResumoVendas"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:gravity="center"
+            android:orientation="horizontal">
             <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-                <ImageView
-                    android:id="@+id/imgOlhoSaldo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:padding="5dp"
-                    android:src="@drawable/ic_visibility_24" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:layout_weight="1"
+                android:orientation="vertical">
                 <TextView
-                    android:id="@+id/textSaldo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Saldo Hoje"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="3dp"
-                    android:text="R$ 0,00"
-                    android:textColor="@android:color/white"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageView
+                        android:id="@+id/imgOlhoSaldo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="5dp"
+                        android:src="@drawable/ic_visibility_24" />
+                    <TextView
+                        android:id="@+id/textSaldo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="R$ 0,00"
+                        android:textColor="@android:color/white"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/scrollMeio"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@drawable/header_background"
-        android:fillViewport="true"
-        android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/scrollMeio"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/header_background"
             android:orientation="vertical"
             android:padding="16dp">
 
-            <LinearLayout
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayoutDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="12dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <LinearLayout
-                        android:id="@+id/cardCadastros"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/fundo_arredondado"
-                        android:orientation="vertical"
-                        android:layout_margin="4dp"
-                        android:onClick="acessarContasActivity">
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/ic_tune_24"
-                            android:layout_gravity="center"
-                            android:layout_marginTop="8dp"
-                            android:layout_marginBottom="8dp"/>
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="MOVIMENTAÇÕES"
-                            android:textColor="@android:color/black"
-                            android:textStyle="bold"
-                            android:textSize="12sp"
-                            android:gravity="center"
-                            android:lines="3" />
-                    </LinearLayout>
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="4dp"
-                        android:background="@drawable/fundo_arredondado"
-                        android:clipToOutline="true">
-                        <LinearLayout
-                            android:id="@+id/cardPedidosAbertos"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-                            <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:src="@drawable/ic_receipt_long_28"
-                                android:layout_gravity="center"
-                                android:layout_marginTop="8dp"
-                                android:layout_marginBottom="8dp" />
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:lines="3"
-                                android:text="CONTAS FUTURAS"
-                                android:textColor="@android:color/black"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </FrameLayout>
-                </LinearLayout>
-            </LinearLayout>
+                app:tabMode="fixed"
+                app:tabGravity="fill"/>
 
-            <LinearLayout
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerDashboard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="12dp">
-                <LinearLayout
-                    android:id="@+id/containerSlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:background="#F5F5F5">
-
-                    <com.google.android.material.tabs.TabLayout
-                        android:id="@+id/tabLayoutDashboard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@color/cor_background"
-                        app:tabIndicatorColor="@color/colorPrimary"
-                        app:tabSelectedTextColor="@color/colorPrimary"
-                        app:tabTextColor="#757575"
-                        app:tabMode="fixed"
-                        app:tabGravity="fill"/>
-
-                    <androidx.viewpager2.widget.ViewPager2
-                        android:id="@+id/viewPagerDashboard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@color/cor_background"/>
-                </LinearLayout>
-            </LinearLayout>
-
-
+                android:layout_height="match_parent" />
         </LinearLayout>
+    </LinearLayout>
 
-    </LinearLayout>
-    <LinearLayout
+
+
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/cor_background">
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        app:fabAlignmentMode="center"
+        app:fabCradleMargin="10dp"
+        app:fabCradleRoundedCornerRadius="15dp"
+        app:backgroundTint="#1A1A1A"
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp"
+        android:backgroundTint="@color/colorPrimary">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="2">
             <LinearLayout
-                android:id="@+id/cardVendas"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:id="@+id/btn_footer_movimentacoes"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
                 android:orientation="vertical"
-                android:clickable="true"
-                android:focusable="true">
+                android:paddingEnd="20dp"
+                android:onClick="acessarContasActivity">
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_monitoring_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"/>
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_tune_24"
+                    app:tint="@color/white" />
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="NOVA\nDESPESA"
-                    android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:lines="3" />
+                    android:text="MOVIMENTAÇÕES"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
             </LinearLayout>
-        </FrameLayout>
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
+
             <LinearLayout
-                android:id="@+id/cardEstoque"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:id="@+id/btn_footer_contas"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="20dp">
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_inventory_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_receipt_long_28"
+                    app:tint="@color/white" />
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="NOVA\nRECEITA"
-                    android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:lines="3" />
+                    android:text="CONTAS FUTURAS"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
             </LinearLayout>
-        </FrameLayout>
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
-            <LinearLayout
-                android:id="@+id/cardDevolucoes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_assignment_return_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="NOVA\nDÍVIDA"
-                    android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:lines="3" />
-            </LinearLayout>
-        </FrameLayout>
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
-            <LinearLayout
-                android:id="@+id/cardNovaCobranca"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_assignment_return_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="NOVA\nCOBRANÇA"
-                    android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:lines="3" />
-            </LinearLayout>
-        </FrameLayout>
-    </LinearLayout>
-</LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <View
+        android:id="@+id/overlay_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:pressedTranslationZ="10dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:id="@+id/radial_spotlight"
+        android:layout_width="350dp"
+        android:layout_height="350dp"
+        android:background="@drawable/bg_radial_spotlight"
+        android:visibility="invisible"
+        android:alpha="0"
+        android:scaleX="0"
+        android:scaleY="0"
+        app:layout_anchor="@id/fab_main"
+        app:layout_anchorGravity="center"
+        app:elevation="11dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_despesa_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#FF7043"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_event_busy_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_nova_despesa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#E53935"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_money_off_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_novo_provento"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#43A047"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_attach_money_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_provento_futuro"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#26A69A"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_event_available_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#FF4081"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_add_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

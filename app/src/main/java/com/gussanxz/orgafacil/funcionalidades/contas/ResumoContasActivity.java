@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.OvershootInterpolator;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,12 +18,19 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.ui.contas.DashboardPagerAdapter;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class ResumoContasActivity extends AppCompatActivity {
 
     private static final String TAG = "ResumoContasActivity";
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
+    // Componentes do Menu Radial
+    private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa, fabNovoProvento, fabProventoFuturo;
+    private boolean isMenuOpen = false;
+    private final OvershootInterpolator interpolator = new OvershootInterpolator();
+    private View overlayBackground;
+    private View radialSpotlight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,8 +48,114 @@ public class ResumoContasActivity extends AppCompatActivity {
         // 1. Inicializar componentes
         tabLayout = findViewById(R.id.tabLayoutDashboard);
         viewPager = findViewById(R.id.viewPagerDashboard);
+        overlayBackground = findViewById(R.id.overlay_background);
 
         setupSlideView();
+        // 2. Fechar o menu ao clicar na parte escura (fora dos botões)
+        overlayBackground.setOnClickListener(v -> fecharMenu());
+        setupMenuRadial();
+    }
+    private void setupMenuRadial() {
+        fabMain = findViewById(R.id.fab_main);
+        fabDespesaFutura = findViewById(R.id.fab_despesa_futura);
+        fabNovaDespesa = findViewById(R.id.fab_nova_despesa);
+        fabNovoProvento = findViewById(R.id.fab_novo_provento);
+        fabProventoFuturo = findViewById(R.id.fab_provento_futuro);
+        radialSpotlight = findViewById(R.id.radial_spotlight);
+
+        // 2. Clique no botão principal para abrir/fechar
+        fabMain.setOnClickListener(v -> {
+            if (!isMenuOpen) abrirMenu();
+            else fecharMenu();
+        });
+
+        // 3. Configurar ações para cada botão secundário
+        fabDespesaFutura.setOnClickListener(v -> acaoRapida("Despesa Futura"));
+        fabNovaDespesa.setOnClickListener(v -> acaoRapida("Nova Despesa"));
+        fabNovoProvento.setOnClickListener(v -> acaoRapida("Novo Provento"));
+        fabProventoFuturo.setOnClickListener(v -> acaoRapida("Provento Futuro"));
+    }
+
+    private void abrirMenu() {
+        isMenuOpen = true;
+
+        // Ativa e anima o fundo escuro
+        overlayBackground.setVisibility(View.VISIBLE);
+        overlayBackground.animate().alpha(1f).setDuration(300).start();
+
+        // ANIMAÇÃO DO HOLOFOTE (SPOTLIGHT)
+        radialSpotlight.setVisibility(View.VISIBLE);
+        radialSpotlight.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(200f)
+                .setInterpolator(interpolator) // Usa o efeito de mola
+                .setDuration(400)
+                .start();
+
+        fabMain.animate().setInterpolator(interpolator).rotation(45f).setDuration(300).start();
+
+        // Animação em leque (Ajuste os valores de X e Y se precisar de mais abertura)
+        animarBotao(fabDespesaFutura, -320f, -200f); // Extrema esquerda, mais baixo
+        animarBotao(fabProventoFuturo, -150f, -420f);    // Esquerda central, bem alto
+        animarBotao(fabNovaDespesa, 150f, -420f);   // Direita central, bem alto
+        animarBotao(fabNovoProvento, 320f, -200f); // Extrema direita, mais baixo
+    }
+
+    private void fecharMenu() {
+        isMenuOpen = false;
+
+        // Esconde o fundo escuro
+        overlayBackground.animate()
+                .alpha(0f)
+                .setDuration(300)
+                .withEndAction(() -> overlayBackground.setVisibility(View.GONE))
+                .start();
+
+        // RECOLHER O HOLOFOTE
+        radialSpotlight.animate()
+                .alpha(0f)
+                .scaleX(0f)
+                .scaleY(0f)
+                .setDuration(300)
+                .withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE))
+                .start();
+
+        fabMain.animate().setInterpolator(interpolator).rotation(0f).setDuration(300).start();
+
+        recolherBotao(fabDespesaFutura);
+        recolherBotao(fabNovaDespesa);
+        recolherBotao(fabNovoProvento);
+        recolherBotao(fabProventoFuturo);
+    }
+
+    private void animarBotao(View view, float x, float y) {
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(0f);
+        view.animate()
+                .translationX(x)
+                .translationY(y)
+                .alpha(1f)
+                .setInterpolator(interpolator)
+                .setDuration(300)
+                .start();
+    }
+
+    private void recolherBotao(View view) {
+        view.animate()
+                .translationX(0f)
+                .translationY(0f)
+                .alpha(0f)
+                .setInterpolator(interpolator)
+                .setDuration(300)
+                .withEndAction(() -> view.setVisibility(View.INVISIBLE))
+                .start();
+    }
+
+    private void acaoRapida(String mensagem) {
+        Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
+        fecharMenu(); // Fecha o menu após selecionar uma opção
     }
     public void acessarContasActivity(View view) {
         startActivity(new Intent(this, com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity.class));
