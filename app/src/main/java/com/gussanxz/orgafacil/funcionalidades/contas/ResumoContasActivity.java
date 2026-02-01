@@ -26,7 +26,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
     // Componentes do Menu Radial
-    private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa, fabNovoProvento, fabProventoFuturo;
+    private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa, fabNovaReceita, fabReceitaFutura;
     private boolean isMenuOpen = false;
     private final OvershootInterpolator interpolator = new OvershootInterpolator();
     private View overlayBackground;
@@ -59,8 +59,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         fabMain = findViewById(R.id.fab_main);
         fabDespesaFutura = findViewById(R.id.fab_despesa_futura);
         fabNovaDespesa = findViewById(R.id.fab_nova_despesa);
-        fabNovoProvento = findViewById(R.id.fab_novo_provento);
-        fabProventoFuturo = findViewById(R.id.fab_provento_futuro);
+        fabNovaReceita = findViewById(R.id.fab_nova_receita);
+        fabReceitaFutura = findViewById(R.id.fab_receita_futura);
         radialSpotlight = findViewById(R.id.radial_spotlight);
 
         // 2. Clique no botão principal para abrir/fechar
@@ -70,11 +70,44 @@ public class ResumoContasActivity extends AppCompatActivity {
         });
 
         // 3. Configurar ações para cada botão secundário
-        fabDespesaFutura.setOnClickListener(v -> acaoRapida("Despesa Futura"));
-        fabNovaDespesa.setOnClickListener(v -> acaoRapida("Nova Despesa"));
-        fabNovoProvento.setOnClickListener(v -> acaoRapida("Novo Provento"));
-        fabProventoFuturo.setOnClickListener(v -> acaoRapida("Provento Futuro"));
+        fabDespesaFutura.setOnClickListener(v -> {
+            acaoRapida("Abrindo Despesa Futura");
+            adicionarDespesaFutura(v);
+        });
+        fabNovaDespesa.setOnClickListener(v -> {
+            acaoRapida("Abrindo Nova Despesa");
+            adicionarDespesa(v);
+        });
+        fabNovaReceita.setOnClickListener(v -> {
+            acaoRapida("Abrindo Nova Receita");
+            adicionarReceita(v);
+        });
+        fabReceitaFutura.setOnClickListener(v -> {
+            acaoRapida("Abrindo Receita Futura");
+            adicionarReceitaFutura(v);
+        });
     }
+    public void adicionarReceita(View v) {
+        Intent intent = new Intent(this, ReceitasActivity.class);
+        intent.putExtra("EH_ATALHO", true);
+        startActivity(intent);
+    }
+    public void adicionarDespesa(View v) {
+        Intent intent = new Intent(this, DespesasActivity.class);
+        startActivity(intent);
+    }
+    public void adicionarReceitaFutura(View v) {
+        Intent intent = new Intent(this, ReceitasActivity.class);
+        intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
+        startActivity(intent);
+    }
+    public void adicionarDespesaFutura(View v) {
+        Intent intent = new Intent(this, DespesasActivity.class);
+        intent.putExtra("TITULO_TELA", "Agendar Despesa Futura");
+        intent.putExtra("EH_ATALHO", true);
+        startActivity(intent);
+    }
+
 
     private void abrirMenu() {
         isMenuOpen = true;
@@ -98,9 +131,9 @@ public class ResumoContasActivity extends AppCompatActivity {
 
         // Animação em leque (Ajuste os valores de X e Y se precisar de mais abertura)
         animarBotao(fabDespesaFutura, -320f, -200f); // Extrema esquerda, mais baixo
-        animarBotao(fabProventoFuturo, -150f, -420f);    // Esquerda central, bem alto
+        animarBotao(fabReceitaFutura, -150f, -420f);    // Esquerda central, bem alto
         animarBotao(fabNovaDespesa, 150f, -420f);   // Direita central, bem alto
-        animarBotao(fabNovoProvento, 320f, -200f); // Extrema direita, mais baixo
+        animarBotao(fabNovaReceita, 320f, -200f); // Extrema direita, mais baixo
     }
 
     private void fecharMenu() {
@@ -126,8 +159,8 @@ public class ResumoContasActivity extends AppCompatActivity {
 
         recolherBotao(fabDespesaFutura);
         recolherBotao(fabNovaDespesa);
-        recolherBotao(fabNovoProvento);
-        recolherBotao(fabProventoFuturo);
+        recolherBotao(fabNovaReceita);
+        recolherBotao(fabReceitaFutura);
     }
 
     private void animarBotao(View view, float x, float y) {
@@ -161,6 +194,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         startActivity(new Intent(this, com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity.class));
         Log.i(TAG, "acessou ContasActivity");
     }
+
 
     private void setupSlideView() {
         // 2. Criar e definir o Adaptador

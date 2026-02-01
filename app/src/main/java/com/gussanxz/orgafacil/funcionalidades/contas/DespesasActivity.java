@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -29,6 +31,7 @@ import java.util.Map;
 
 public class DespesasActivity extends AppCompatActivity {
 
+    private final String TAG = "DespesasActivity";
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private ImageButton btnExcluir;
@@ -57,6 +60,24 @@ public class DespesasActivity extends AppCompatActivity {
         configurarListeners();
         configurarLauncherCategoria();
         verificarModoEdicao();
+
+        TextView textViewHeader = findViewById(R.id.textViewHeader);
+        // Captura o "bilhete" enviado pela tela anterior
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            String titulo = extras.getString("TITULO_TELA");
+            boolean ehAtalho = extras.getBoolean("EH_ATALHO", false);
+
+            // Ação 1: Mudar o texto do Header
+            if (titulo != null) {
+                textViewHeader.setText(titulo);
+            }
+
+            // Ação 2: Aplicar regras de negócio direto no Java
+            if (ehAtalho) {
+                aplicarRegrasAtalho();
+            }
+        }
     }
 
     private void inicializarComponentes() {
@@ -213,4 +234,10 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     public void retornarPrincipal(View view){ finish(); }
+
+    private void aplicarRegrasAtalho() {
+        // Exemplo de regra: desabilitar o campo "Data de Recebimento"
+        // ou mudar a cor do botão para indicar agendamento.
+        Log.i(TAG, "Regras de atalho aplicada!");
+    }
 }

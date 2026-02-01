@@ -143,7 +143,8 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingStart="20dp">
+                android:paddingStart="20dp"
+                android:onClick="acessarContasActivity">
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
@@ -213,7 +214,7 @@
         app:pressedTranslationZ="12dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_novo_provento"
+        android:id="@+id/fab_nova_receita"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible"
@@ -227,7 +228,7 @@
         app:pressedTranslationZ="12dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_provento_futuro"
+        android:id="@+id/fab_receita_futura"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible"
@@ -250,6 +251,7 @@
         app:srcCompat="@drawable/ic_add_24"
         app:tint="@color/white"
         app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
+        app:pressedTranslationZ="12dp"
+        android:translationY="-40dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
