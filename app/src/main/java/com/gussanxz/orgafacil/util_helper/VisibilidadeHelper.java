@@ -12,33 +12,40 @@ import com.gussanxz.orgafacil.R;
 
 public class VisibilidadeHelper {
 
-
     @SuppressLint("ClickableViewAccessibility")
     public static void ativarAlternanciaSenha(EditText campoSenha) {
         final boolean[] senhaVisivel = {false};
 
         Drawable olhoAberto = ContextCompat.getDrawable(campoSenha.getContext(), R.drawable.ic_visibility_24);
         Drawable olhoFechado = ContextCompat.getDrawable(campoSenha.getContext(), R.drawable.ic_visibility_off_24);
+
+        // DICA: Buscamos o ícone da esquerda que já está no XML ou o padrão
         Drawable cadeado = ContextCompat.getDrawable(campoSenha.getContext(), R.drawable.ic_cadeado_cinza_24);
 
+        // Inicializa o campo
         campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, olhoFechado, null);
 
         campoSenha.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 final int DRAWABLE_RIGHT = 2;
 
-                if (event.getRawX() >= (campoSenha.getRight() - campoSenha.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+                // PEGA O DRAWABLE ATUAL (Evita NullPointer se ele mudar dinamicamente)
+                Drawable drawableDireita = campoSenha.getCompoundDrawables()[DRAWABLE_RIGHT];
 
-                    // Executa como se fosse um clique, útil para TalkBack e acessibilidade
+                // CORREÇÃO: Verificamos se o drawable não é nulo antes de medir o clique
+                if (drawableDireita != null && event.getRawX() >= (campoSenha.getRight() - drawableDireita.getBounds().width())) {
+
                     v.performClick();
 
-                    // Alterna visibilidade
+                    // Pegamos o ícone da esquerda atual para não perdê-lo (caso a CadastroActivity tenha mudado ele)
+                    Drawable iconeEsquerdaAtual = campoSenha.getCompoundDrawables()[0];
+
                     if (senhaVisivel[0]) {
                         campoSenha.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                        campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, olhoFechado, null);
+                        campoSenha.setCompoundDrawablesWithIntrinsicBounds(iconeEsquerdaAtual, null, olhoFechado, null);
                     } else {
                         campoSenha.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                        campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, olhoAberto, null);
+                        campoSenha.setCompoundDrawablesWithIntrinsicBounds(iconeEsquerdaAtual, null, olhoAberto, null);
                     }
 
                     senhaVisivel[0] = !senhaVisivel[0];
@@ -49,23 +56,18 @@ public class VisibilidadeHelper {
             }
             return false;
         });
-
     }
 
     public static void alternarVisibilidadeSaldo(TextView txtSaldo, ImageView imgOlho, String valorReal) {
-
         boolean saldoEstaVisivel;
-
         if (imgOlho.getTag() == null) {
             saldoEstaVisivel = true;
-
         } else {
             saldoEstaVisivel = (boolean) imgOlho.getTag();
         }
 
-        //Se o saldo esta visivel, torna invisivel
         if (saldoEstaVisivel) {
-            txtSaldo.setText("R$ **** "); //mascara o valor
+            txtSaldo.setText("R$ **** ");
             imgOlho.setImageResource(R.drawable.ic_visibility_off_24);
             imgOlho.setTag(false);
         } else {

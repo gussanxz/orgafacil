@@ -3,8 +3,9 @@ package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,19 +13,17 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository; // Import atualizado
-
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 
 public class ConfigsActivity extends AppCompatActivity {
 
     private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSair;
     private FirebaseUser user;
-
-    // 1. Declarar o repositório para usar o logout centralizado (Nome atualizado)
     private ConfigPerfilUsuarioRepository perfilRepository;
 
     @Override
@@ -39,7 +38,6 @@ public class ConfigsActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 2. Inicializar o repositório atualizado
         perfilRepository = new ConfigPerfilUsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
@@ -53,53 +51,66 @@ public class ConfigsActivity extends AppCompatActivity {
     }
 
     private void inicializarComponentes() {
-        itemPerfil       = findViewById(R.id.itemPerfil);
+        itemPerfil = findViewById(R.id.itemPerfil);
         itemPreferencias = findViewById(R.id.itemPreferencias);
-        itemSeguranca    = findViewById(R.id.itemSeguranca);
-        itemSair         = findViewById(R.id.itemSair);
+        itemSeguranca = findViewById(R.id.itemSeguranca);
+        itemSair = findViewById(R.id.itemSair);
     }
 
     private void configurarCliques() {
         itemPerfil.setOnClickListener(v -> navegarParaPerfil());
+        itemPreferencias.setOnClickListener(v -> startActivity(new Intent(this, PreferenciasActivity.class)));
+        itemSeguranca.setOnClickListener(v -> startActivity(new Intent(this, SegurancaActivity.class)));
 
-        itemPreferencias.setOnClickListener(v ->
-                startActivity(new Intent(this, PreferenciasActivity.class))
-        );
+        // Chamada do método corrigida para coincidir com o nome abaixo
+        itemSair.setOnClickListener(v -> confirmarSairDoApp());
+    }
 
-        itemSeguranca.setOnClickListener(v ->
-                startActivity(new Intent(this, SegurancaActivity.class))
-        );
+    private void confirmarSairDoApp() {
+        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_logout, null);
+        bottomSheet.setContentView(viewDialog);
 
-        // 3. Unificado: Usa o método que utiliza o repositório
-        itemSair.setOnClickListener(v -> executarLogout());
+        // Remove o fundo padrão para o arredondado aparecer
+        View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheetInternal != null) {
+            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
+        }
+
+        Button btnSair = viewDialog.findViewById(R.id.btnConfirmarSair);
+        Button btnCancelar = viewDialog.findViewById(R.id.btnCancelarSair);
+
+        btnSair.setOnClickListener(v -> {
+            bottomSheet.dismiss();
+            // CORREÇÃO: Agora chama o método correto existente na classe
+            executarLogout();
+        });
+
+        btnCancelar.setOnClickListener(v -> bottomSheet.dismiss());
+
+        bottomSheet.show();
     }
 
     private void navegarParaPerfil() {
         if (user != null) {
-            System.out.println("--- DEBUG PERFIL: " + user.getDisplayName() + " ---");
             Intent intent = new Intent(this, PerfilActivity.class);
             intent.putExtra("nomeUsuario", user.getDisplayName());
             intent.putExtra("emailUsuario", user.getEmail());
-
             Uri fotoUrl = user.getPhotoUrl();
-            if (fotoUrl != null) {
-                intent.putExtra("fotoUsuario", fotoUrl.toString());
-            }
+            if (fotoUrl != null) intent.putExtra("fotoUsuario", fotoUrl.toString());
             startActivity(intent);
         }
     }
 
-    /**
-     * Executa o logout através do repositório centralizado.
-     */
     private void executarLogout() {
-        // 4. Usa o metodo centralizado conforme planejado através do perfilRepository
+        // Usa o repositório para deslogar conforme sua estrutura
         perfilRepository.deslogar();
         abrirTelaLogin();
     }
 
     private void abrirTelaLogin() {
         Intent intent = new Intent(this, LoginActivity.class);
+        // Limpa a pilha de atividades para segurança
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

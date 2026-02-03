@@ -31,17 +31,25 @@ public class ConfigPerfilUsuarioRepository {
         meta.put("dataCriacao", FieldValue.serverTimestamp());
         meta.put("provedor", obterProvedorLogin(user));
 
-        // Usa o userDoc(uid) do Schema passando o UID do objeto user recém-criado
+        // [AUDITORIA] Registramos o aceite inicial na raiz por segurança extra
+        meta.put("aceitouTermos", true);
+        meta.put("versaoTermosCriacao", "1.0");
+
         return FirestoreSchema.userDoc(user.getUid()).set(meta, SetOptions.merge());
     }
-
     public Task<Void> salvarPerfil(ConfigPerfilUsuarioModel perfil) {
         Map<String, Object> dados = new HashMap<>();
         dados.put("nome", perfil.getNome() != null ? perfil.getNome() : "Novo Usuário");
         dados.put("email", perfil.getEmail() != null ? perfil.getEmail() : "");
         dados.put("updatedAt", FieldValue.serverTimestamp());
 
-        // Agora usa o caminho centralizado no Schema
+        // [NOVO] Salvando os dados de consentimento obrigatórios
+        dados.put("aceitouTermos", perfil.isAceitouTermos());
+        dados.put("versaoTermos", perfil.getVersaoTermos() != null ? perfil.getVersaoTermos() : "1.0");
+
+        // Usamos serverTimestamp diretamente para garantir a precisão do horário do Google
+        dados.put("dataAceite", FieldValue.serverTimestamp());
+
         return FirestoreSchema.configPerfilDoc().set(dados, SetOptions.merge());
     }
 

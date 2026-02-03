@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_top_rounded">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Termos e Privacidade"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="12dp"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="280dp"
+        android:fadeScrollbars="false">
+
+        <TextView
+            android:id="@+id/txtConteudoTermos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/texto_termos_exemplo"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#666666"/>
+    </ScrollView>
+
+    <CheckBox
+        android:id="@+id/checkDialogTermos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:buttonTint="@color/black"
+        android:text="Li e concordo com os termos acima"
+        android:textColor="#444444"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/btnAceitarTermos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Continuar"
+        android:textStyle="bold"
+        android:enabled="false"
+        android:backgroundTint="@color/selector_botao_aceite"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

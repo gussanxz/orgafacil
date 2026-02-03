@@ -4,15 +4,18 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ResumoContasActivity;
@@ -29,30 +32,35 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 1. APLICAÇÃO IMEDIATA: Deve vir antes do super.onCreate para evitar o "flash" branco
         TemaHelper.aplicarTemaDoCache(this);
-
         super.onCreate(savedInstanceState);
-
-        // 2. CONFIGURAÇÃO DE INTERFACE
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_home);
 
-        // 3. INICIALIZAÇÃO DE DADOS
         prefsRepository = new PreferenciasRepository();
-        carregarPreferenciasUsuario();
-
-        // 4. CONFIGURAÇÃO DE VIEWS
         inicializarComponentes();
         configurarBotoesBloqueados();
+
+        // [NOVO] Captura o botão voltar do Android para exibir o Logout
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                confirmarSairDoApp();
+            }
+        });
+
+        carregarPreferenciasUsuario();
     }
 
     private void inicializarComponentes() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.main);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         textoContas = findViewById(R.id.textViewContas);
         textoVendas = findViewById(R.id.textViewVendas);
@@ -62,42 +70,31 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void carregarPreferenciasUsuario() {
-        // CORREÇÃO: Passando 'this' como primeiro argumento para o repositório.
-        // Isso resolve o erro "Required type: Context, Provided: Callback" [cite: 2026-01-31]
         prefsRepository.obter(this, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
                 if (prefs != null) {
-                    // Como o Repositório agora já salva no cache internamente,
-                    // você só precisa aplicar o tema visualmente aqui.
                     TemaHelper.aplicarTema(prefs.getTema());
-
-                    Log.i(TAG, "Preferências sincronizadas e cache atualizado via Repository.");
                 }
             }
             @Override
             public void onErro(String erro) {
-                Log.e(TAG, "Erro ao sincronizar: " + erro);
+                Log.e(TAG, "Erro ao sincronizar preferências: " + erro);
             }
         });
     }
+
     private void configurarBotoesBloqueados() {
         View.OnClickListener listenerBloqueio = view ->
-                Toast.makeText(HomeActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Funcionalidade disponível em breve!", Toast.LENGTH_SHORT).show();
 
-        int[] idsBloqueados = {
-                R.id.imageViewMercado,
-                R.id.imageViewTodo,
-                R.id.imageViewBoletoCPF
-        };
-
+        int[] idsBloqueados = {R.id.imageViewMercado, R.id.imageViewTodo, R.id.imageViewBoletoCPF};
         for (int id : idsBloqueados) {
-            View overlay = findViewById(id);
-            if (overlay != null) overlay.setOnClickListener(listenerBloqueio);
+            View v = findViewById(id);
+            if (v != null) v.setOnClickListener(listenerBloqueio);
         }
     }
 
-    // --- Métodos de Navegação ---
     public void acessarResumoContasActivity(View view) {
         startActivity(new Intent(this, ResumoContasActivity.class));
     }
@@ -108,5 +105,38 @@ public class HomeActivity extends AppCompatActivity {
 
     public void acessarConfigs(View view) {
         startActivity(new Intent(this, ConfigsActivity.class));
+    }
+
+    private void confirmarSairDoApp() {
+        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_logout, null);
+        bottomSheet.setContentView(viewDialog);
+
+        // ESSA PARTE É ESSENCIAL:
+        // Remove o fundo padrão para o seu @drawable/bg_dialog_top_rounded aparecer
+        View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheetInternal != null) {
+            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
+        }
+
+        Button btnSair = viewDialog.findViewById(R.id.btnConfirmarSair);
+        Button btnCancelar = viewDialog.findViewById(R.id.btnCancelarSair);
+
+        btnSair.setOnClickListener(v -> {
+            bottomSheet.dismiss();
+            executarLogoutReal(); // Ou perfilRepository.deslogar() na Configs
+        });
+
+        btnCancelar.setOnClickListener(v -> bottomSheet.dismiss());
+
+        bottomSheet.show();
+    }
+
+    private void executarLogoutReal() {
+        com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
+        Intent intent = new Intent(this, com.gussanxz.orgafacil.funcionalidades.main.MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

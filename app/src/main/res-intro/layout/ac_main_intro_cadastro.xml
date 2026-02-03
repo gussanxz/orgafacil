@@ -109,20 +109,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editSenha" />
 
-    <CheckBox
-        android:id="@+id/checkTermos"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:paddingStart="12dp"
-        android:paddingEnd="0dp"
-        android:minHeight="48dp"
-        android:text="Ao me cadastrar, concordo com os Termos de Uso e Política de Privacidade"
-        android:textSize="14sp"
-        android:textColor="@color/cor_texto"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
     <Button
         android:id="@+id/buttonCadastrar"
         android:layout_width="347dp"
@@ -133,10 +119,10 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkTermos" />
+        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCadastrarGoogle"
+        android:id="@+id/btnGoogle"
         android:layout_width="347dp"
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
@@ -144,7 +130,7 @@
         android:drawableLeft="@drawable/ic_google_24"
         android:drawablePadding="12dp"
         android:fontFamily="sans-serif-medium"
-        android:text="Cadastrar com Google"
+        android:text="Continuar com Google"
         android:textColor="@color/black"
         app:cornerRadius="100dp"
         app:iconGravity="textStart"

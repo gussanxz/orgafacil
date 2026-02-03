@@ -100,20 +100,20 @@
         android:textColor="@color/black"
         android:text="Fazer Login"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btnLoginGoogle"
+        app:layout_constraintBottom_toTopOf="@+id/btnGoogle"
         app:layout_constraintEnd_toEndOf="@+id/editSenha"
         app:layout_constraintStart_toStartOf="@+id/editSenha"
         app:layout_constraintTop_toBottomOf="@+id/editSenha" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLoginGoogle"
+        android:id="@+id/btnGoogle"
         android:layout_width="347dp"
         android:layout_height="48dp"
         android:backgroundTint="@color/background_google"
         android:drawableLeft="@drawable/ic_google_24"
         android:drawablePadding="12dp"
         android:fontFamily="sans-serif-medium"
-        android:text="Login com Google"
+        android:text="Continuar com Google"
         android:textAlignment="center"
         android:textColor="@color/black"
         app:cornerRadius="100dp"

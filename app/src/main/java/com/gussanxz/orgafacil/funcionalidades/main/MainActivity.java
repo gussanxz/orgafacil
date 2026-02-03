@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.content.SharedPreferences;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -20,6 +21,7 @@ import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivi
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
+import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
@@ -27,6 +29,10 @@ import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 
+/**
+ * MainActivity (Intro)
+ * Gerencia a apresentação inicial e o acesso rápido via Google com proteção de dados.
+ */
 public class MainActivity extends IntroActivity {
 
     private GoogleLoginHelper googleLoginHelper;
@@ -36,21 +42,51 @@ public class MainActivity extends IntroActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // [AUTO-LOGIN] 1. Checagem imediata de sessão antes de qualquer outra coisa
+        if (com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession.isUserLogged()) {
+            // Se já está logado, pula direto para a Home (passando pela biometria)
+            abrirTelaHome();
+
+            // Importante: chamamos o super e o resto apenas se NÃO estiver logado
+            // mas como abrirTelaHome já chama finish(), o return impede carregar a Intro.
+            super.onCreate(savedInstanceState);
+            return;
+        }
+
         super.onCreate(savedInstanceState);
 
-        // Inicializa as camadas de dados através da arquitetura stateless [cite: 2025-11-10]
+        // [SEGURANÇA] Impede prints e gravação de tela
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+
         perfilRepository = new ConfigPerfilUsuarioRepository();
         usuarioService = new UsuarioService();
 
-        loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
-
-        // Helper utiliza a Session para gerenciar o estado da autenticação [cite: 2025-11-10]
-        googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
-
+        // ... restante do seu código de inicialização de slides ...
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
+        // Slides
         addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_1)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_2)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_3)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
+//                .background(android.R.color.white)
+//                .fragment(R.layout.intro_4)
+//                .build()
+//        );
+//        addSlide(new FragmentSlide.Builder()
                 .background(android.R.color.white)
                 .fragment(R.layout.ac_main_intro_comece_agora)
                 .canGoForward(false)
@@ -59,27 +95,25 @@ public class MainActivity extends IntroActivity {
     }
 
     /**
-     * Fluxo de segurança que utiliza a Session para validar o usuário [cite: 2025-11-10, 2026-01-31]
+     * SAFETY NET: Verifica integridade entre Auth e Firestore.
      */
     private void iniciarFluxoSegurancaDadosGoogle() {
         if (!FirebaseSession.isUserLogged()) return;
-
         if (loadingHelper != null) loadingHelper.exibir();
 
-        // O repositório agora obtém o UID automaticamente via Session [cite: 2025-11-10]
         perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                 if (loadingHelper != null) loadingHelper.ocultar();
-                Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
                 abrirTelaHome();
             } else {
-                Toast.makeText(this, "Criando sua conta...", Toast.LENGTH_SHORT).show();
-                // O Service também utiliza a Session internamente [cite: 2025-11-10]
+                // Caso o usuário se cadastre pelo botão do Google na tela inicial
                 FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
-                usuarioService.inicializarNovoUsuario(user, taskService -> {
-                    if (loadingHelper != null) loadingHelper.ocultar();
-                    abrirTelaHome();
-                });
+                if (user != null) {
+                    usuarioService.inicializarNovoUsuario(user, taskService -> {
+                        if (loadingHelper != null) loadingHelper.ocultar();
+                        abrirTelaHome();
+                    });
+                }
             }
         });
     }
@@ -100,21 +134,21 @@ public class MainActivity extends IntroActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_MISTO);
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                } else {
+                    if (loadingHelper != null) loadingHelper.ocultar();
                 }
             }
     );
 
+    // --- NAVEGAÇÃO COM BIOMETRIA ---
+
     public void abrirTelaHome() {
         runOnUiThread(() -> {
             Intent intent = new Intent(this, HomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             verificarBiometriaENavegar(intent);
         });
-    }
-
-    public void abrirTelaContas() {
-        Intent intent = new Intent(this, ContasActivity.class);
-        verificarBiometriaENavegar(intent);
     }
 
     private void verificarBiometriaENavegar(Intent intent) {
@@ -132,15 +166,11 @@ public class MainActivity extends IntroActivity {
     private void autenticarComDispositivo(Runnable onSuccess) {
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Desbloquear OrgaFácil")
-                .setSubtitle("Use biometria ou senha do celular")
-                .setAllowedAuthenticators(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG
-                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                .setSubtitle("Use biometria ou senha do dispositivo")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                 .build();
 
-        BiometricPrompt prompt = new BiometricPrompt(
-                this,
-                ContextCompat.getMainExecutor(this),
+        BiometricPrompt prompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
                 new BiometricPrompt.AuthenticationCallback() {
                     @Override
                     public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
@@ -151,7 +181,6 @@ public class MainActivity extends IntroActivity {
     }
 
     private boolean isPinObrigatorio() {
-        SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
-        return prefs.getBoolean("pin_obrigatorio", true);
+        return getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE).getBoolean("pin_obrigatorio", true);
     }
 }

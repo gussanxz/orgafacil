@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/cor_background"
     tools:context=".funcionalidades.main.HomeActivity">
 
     <ImageView
@@ -31,7 +32,7 @@
     <TextView
         android:id="@+id/textViewContas"
         android:layout_width="wrap_content"
-        android:layout_height="19dp"
+        android:layout_height="wrap_content"
         android:text="Contas"
         app:layout_constraintEnd_toEndOf="@+id/imageViewContas"
         app:layout_constraintStart_toStartOf="@+id/imageViewContas"
@@ -42,6 +43,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em teste"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewContas"
         app:layout_constraintStart_toStartOf="@+id/textViewContas"
         app:layout_constraintTop_toBottomOf="@+id/textViewContas" />
@@ -51,9 +53,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="64dp"
+        android:onClick="acessarResumoVendasAcitivity"
         app:layout_constraintBottom_toTopOf="@+id/imageViewTodo"
         app:layout_constraintEnd_toEndOf="parent"
-        android:onClick="acessarResumoVendasAcitivity"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/imageViewContas"
         app:layout_constraintTop_toTopOf="parent"
@@ -74,9 +76,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em desenvolvimento"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewVendas"
         app:layout_constraintStart_toStartOf="@+id/textViewVendas"
         app:layout_constraintTop_toBottomOf="@+id/textViewVendas" />
+
+    <ImageView
+        android:id="@+id/imageViewMercado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
+        android:onClick="acessarResumoListaMercado"
+        app:layout_constraintEnd_toStartOf="@+id/imageViewTodo"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/imageViewTodo"
+        app:srcCompat="@drawable/ic_shopping_cart_96" />
 
     <ImageView
         android:layout_width="wrap_content"
@@ -88,19 +104,6 @@
         app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
         app:layout_constraintTop_toTopOf="@id/imageViewMercado"
         app:tint="@android:color/white" />
-        
-    <ImageView
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:id="@+id/imageViewMercado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toStartOf="@+id/imageViewTodo"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        android:onClick="acessarResumoListaMercado"
-        app:layout_constraintTop_toTopOf="@+id/imageViewTodo"
-        app:srcCompat="@drawable/ic_shopping_cart_96" />
 
     <TextView
         android:id="@+id/textViewMercado"
@@ -116,9 +119,25 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em breve"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewMercado"
         app:layout_constraintStart_toStartOf="@+id/textViewMercado"
         app:layout_constraintTop_toBottomOf="@+id/textViewMercado" />
+
+    <ImageView
+        android:id="@+id/imageViewTodo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
+        android:onClick="acessarListaAtividades"
+        app:layout_constraintBottom_toTopOf="@+id/imageViewConfigs"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/imageViewMercado"
+        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas"
+        app:srcCompat="@drawable/ic_checklist_96" />
 
     <ImageView
         android:layout_width="wrap_content"
@@ -130,21 +149,6 @@
         app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
         app:layout_constraintTop_toTopOf="@id/imageViewTodo"
         app:tint="@android:color/white" />
-
-    <ImageView
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:id="@+id/imageViewTodo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="64dp"
-        android:onClick="acessarListaAtividades"
-        app:layout_constraintBottom_toTopOf="@+id/imageViewConfigs"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/imageViewMercado"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas"
-        app:srcCompat="@drawable/ic_checklist_96" />
 
     <TextView
         android:id="@+id/textViewAtividades"
@@ -160,10 +164,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em breve"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewAtividades"
-        app:layout_constraintHorizontal_bias="0.35"
         app:layout_constraintStart_toStartOf="@+id/textViewAtividades"
         app:layout_constraintTop_toBottomOf="@+id/textViewAtividades" />
+
+    <ImageView
+        android:id="@+id/imageViewBoletoCPF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/fundo_arredondado"
+        android:backgroundTint="#CC000000"
+        android:onClick="acessarBoletos"
+        app:layout_constraintEnd_toStartOf="@+id/imageViewConfigs"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/imageViewConfigs"
+        app:srcCompat="@drawable/ic_barcode_96" />
 
     <ImageView
         android:layout_width="wrap_content"
@@ -175,19 +192,6 @@
         app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
         app:layout_constraintTop_toTopOf="@id/imageViewBoletoCPF"
         app:tint="@android:color/white" />
-
-    <ImageView
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:id="@+id/imageViewBoletoCPF"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toStartOf="@+id/imageViewConfigs"
-        android:onClick="acessarBoletos"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/imageViewConfigs"
-        app:srcCompat="@drawable/ic_barcode_96" />
 
     <TextView
         android:id="@+id/textViewBoletoCPF"
@@ -203,6 +207,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em breve"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewBoletoCPF"
         app:layout_constraintStart_toStartOf="@+id/textViewBoletoCPF"
         app:layout_constraintTop_toBottomOf="@+id/textViewBoletoCPF" />
@@ -211,9 +216,9 @@
         android:id="@+id/imageViewConfigs"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:onClick="acessarConfigs"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:onClick="acessarConfigs"
         app:layout_constraintStart_toEndOf="@+id/imageViewBoletoCPF"
         app:layout_constraintTop_toBottomOf="@+id/imageViewTodo"
         app:srcCompat="@drawable/ic_manage_accounts_96" />
@@ -232,6 +237,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Em desenvolvimento"
+        android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@+id/textViewConfigs"
         app:layout_constraintStart_toStartOf="@+id/textViewConfigs"
         app:layout_constraintTop_toBottomOf="@+id/textViewConfigs" />

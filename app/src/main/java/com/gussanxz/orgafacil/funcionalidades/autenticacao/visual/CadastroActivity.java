@@ -1,13 +1,19 @@
 package com.gussanxz.orgafacil.funcionalidades.autenticacao.visual;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.text.Editable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -18,41 +24,27 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
 
-/**
- * CadastroActivity
- * Gerencia a criação de conta, validação de termos e segurança de dados.
- * Segue o padrão de delegar lógica de dados ao ConfigPerfilUsuarioRepository.
- */
-public class CadastroActivity extends AppCompatActivity {
+public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.autenticacao.regras.BaseAuthActivity {
 
-    // Componentes de UI
     private RadioButton acessarTelaLogin;
     private EditText campoNome, campoEmail, campoSenha, campoSenhaConfirmacao;
     private Button botaoCadastrar, botaoGoogle;
-    private CheckBox checkTermos;
-
-    // Helpers e Ferramentas
-    private FirebaseAuth autenticacao;
-    private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
-    private UsuarioService usuarioService; // Adicionado para orquestração sequencial
+    // Removido o CheckBox da tela principal pois ele não existe mais no seu XML
     private LoadingHelper loadingHelper;
+    private GoogleLoginHelper googleLoginHelper;
+
+    private final Handler debounceHandler = new Handler();
+    private Runnable runnableSenha;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,16 +52,27 @@ public class CadastroActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_cadastro);
 
-        // Ajuste de padding para barras de sistema
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+
+        View mainView = findViewById(R.id.main);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                v.setPadding(insets.getInsets(WindowInsetsCompat.Type.systemBars()).left,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).top,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).right,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom);
+                return insets;
+            });
+        }
 
         inicializarComponentes();
-        configurarTextoClicavelTermos(); // Ativa o link interno do CheckBox
+        configurarMonitoresCampos();
         configurarListeners();
+    }
+
+    @Override
+    protected LoadingHelper getLoadingHelper() {
+        return loadingHelper;
     }
 
     private void inicializarComponentes() {
@@ -78,152 +81,152 @@ public class CadastroActivity extends AppCompatActivity {
         campoSenha = findViewById(R.id.editSenha);
         campoSenhaConfirmacao = findViewById(R.id.editSenhaConfirmacao);
         botaoCadastrar = findViewById(R.id.buttonCadastrar);
-        botaoGoogle = findViewById(R.id.btnCadastrarGoogle);
+        botaoGoogle = findViewById(R.id.btnGoogle);
         acessarTelaLogin = findViewById(R.id.radioButtonLogin);
-        checkTermos = findViewById(R.id.checkTermos);
 
-        perfilRepository = new ConfigPerfilUsuarioRepository();
-        usuarioService = new UsuarioService();
-        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
-
-        // Safety Net chamada após sucesso no Login/Cadastro Google
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenhaConfirmacao);
+
+        botaoCadastrar.setEnabled(false);
+        botaoCadastrar.setAlpha(0.5f);
     }
 
     private void configurarListeners() {
-        botaoCadastrar.setOnClickListener(v -> validarEProcessarCadastro());
+        botaoCadastrar.setOnClickListener(v -> validarEPreProcessarCadastro());
 
-        botaoGoogle.setOnClickListener(v -> {
-            loadingHelper.exibir(); // Mostra feedback enquanto abre o seletor Google
-            resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
-        });
+        // PASSO B: Interceptando o clique do Google para mostrar os termos primeiro
+        botaoGoogle.setOnClickListener(v -> exibirDialogoTermos(true));
 
         acessarTelaLogin.setOnClickListener(v -> abrirTelaLogin());
     }
 
-    /**
-     * Valida os campos e termos antes de criar a conta no Firebase.
-     */
-    private void validarEProcessarCadastro() {
+    private void configurarMonitoresCampos() {
+        TextWatcher commonWatcher = new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                atualizarEstadoBotao();
+            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+        };
+
+        campoNome.addTextChangedListener(commonWatcher);
+        campoEmail.addTextChangedListener(commonWatcher);
+        campoSenhaConfirmacao.addTextChangedListener(commonWatcher);
+
+        campoSenha.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (runnableSenha != null) debounceHandler.removeCallbacks(runnableSenha);
+                runnableSenha = () -> {
+                    validarForcaSenha(s.toString());
+                    atualizarEstadoBotao();
+                };
+                debounceHandler.postDelayed(runnableSenha, 300);
+            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void validarForcaSenha(String senha) {
+        Drawable cadeado = ContextCompat.getDrawable(this, R.drawable.ic_cadeado_cinza_24);
+        Drawable olhoAtual = campoSenha.getCompoundDrawables()[2];
+
+        if (senha.matches("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$")) {
+            Drawable checkIcon = ContextCompat.getDrawable(this, R.drawable.ic_check_circle_24);
+            if (checkIcon != null) checkIcon.setTint(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+            campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, checkIcon, null);
+            campoSenha.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_green_dark)));
+        } else {
+            campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, olhoAtual, null);
+            campoSenha.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.cor_texto)));
+        }
+    }
+
+    private void atualizarEstadoBotao() {
         String nome = campoNome.getText().toString().trim();
         String email = campoEmail.getText().toString().trim();
+        String senha = campoSenha.getText().toString();
+
+        boolean senhaForte = senha.matches("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$");
+        boolean emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+
+        // Agora não depende mais do CheckBox principal, apenas dos dados
+        boolean tudoOk = !nome.isEmpty() && emailValido && senhaForte;
+
+        botaoCadastrar.setEnabled(tudoOk);
+        botaoCadastrar.setAlpha(tudoOk ? 1.0f : 0.5f);
+    }
+
+    // PASSO C: Dialog Inteligente que decide o próximo passo
+    private void exibirDialogoTermos(boolean viaGoogle) {
+        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_termos, null);
+        bottomSheet.setContentView(view);
+
+        CheckBox checkDialog = view.findViewById(R.id.checkDialogTermos);
+        Button btnAceitar = view.findViewById(R.id.btnAceitarTermos);
+
+        checkDialog.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // A mágica acontece aqui: ao mudar o enabled, o backgroundTint muda de cor sozinho
+            btnAceitar.setEnabled(isChecked);
+        });
+
+        btnAceitar.setOnClickListener(v -> {
+            bottomSheet.dismiss();
+            if (viaGoogle) {
+                resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
+            } else {
+                executarCadastroFirebase();
+            }
+        });
+
+        bottomSheet.show();
+    }
+
+    private void validarEPreProcessarCadastro() {
         String senha = campoSenha.getText().toString().trim();
         String conf = campoSenhaConfirmacao.getText().toString().trim();
-
-        if (nome.isEmpty() || email.isEmpty() || senha.isEmpty() || conf.isEmpty()) {
-            Toast.makeText(this, "Preencha todos os campos.", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         if (!senha.equals(conf)) {
             campoSenhaConfirmacao.setError("As senhas não coincidem!");
             return;
         }
 
-        if (!checkTermos.isChecked()) {
-            Toast.makeText(this, "Você precisa aceitar os termos para continuar.", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        // Se os dados estão OK, abre os termos para o "aperto de mão" final
+        exibirDialogoTermos(false);
+    }
 
+    private void executarCadastroFirebase() {
         loadingHelper.exibir();
+        String email = campoEmail.getText().toString().trim();
+        String senha = campoSenha.getText().toString().trim();
+
         autenticacao.createUserWithEmailAndPassword(email, senha)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Envia e-mail de verificação apenas para cadastros manuais
-                        enviarEmailVerificacao(task.getResult().getUser());
                         iniciarFluxoSegurancaDados();
                     } else {
                         loadingHelper.ocultar();
-                        // Mapeamento de erro via novo repositório
-                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
-                        Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, perfilRepository.mapearErroAutenticacao(task.getException()), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    private void enviarEmailVerificacao(FirebaseUser user) {
-        if (user != null) {
-            user.sendEmailVerification().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Toast.makeText(this, "Link de verificação enviado ao e-mail!", Toast.LENGTH_LONG).show();
-                }
-            });
-        }
-    }
-
-    /**
-     * SAFETY NET: Garante consistência de dados no Firestore antes de navegar.
-     * Utiliza o UsuarioService para orquestrar a criação de Perfil e Carteira.
-     */
-    private void iniciarFluxoSegurancaDados() {
-        FirebaseUser user = autenticacao.getCurrentUser();
-        if (user == null) {
-            loadingHelper.ocultar();
-            return;
-        }
-
-        // A Service agora cuida do encadeamento correto de todas as coleções
-        usuarioService.inicializarNovoUsuario(user, task -> {
-            loadingHelper.ocultar();
-            abrirTelaHome();
-        });
-    }
-
-    /**
-     * Transforma parte do texto do CheckBox em link clicável.
-     */
-    private void configurarTextoClicavelTermos() {
-        String textoCompleto = "Ao me cadastrar, concordo com os Termos de Uso e Política de Privacidade";
-        SpannableString spannableString = new SpannableString(textoCompleto);
-
-        // Definimos o link a partir da palavra "Termos..." até o fim
-        int inicioClique = textoCompleto.indexOf("Termos de Uso");
-        int fimClique = textoCompleto.length();
-
-        ClickableSpan clickableSpan = new ClickableSpan() {
-            @Override
-            public void onClick(@NonNull View widget) {
-                // Abre a Activity de Termos (Crie essa Activity depois!)
-                startActivity(new Intent(CadastroActivity.this, TermosActivity.class));
-            }
-
-            @Override
-            public void updateDrawState(@NonNull TextPaint ds) {
-                super.updateDrawState(ds);
-                ds.setUnderlineText(true); // Estilo de link
-                ds.setColor(getResources().getColor(R.color.cor_texto)); // Sua cor de destaque
-                ds.setFakeBoldText(true);
-            }
-        };
-
-        spannableString.setSpan(clickableSpan, inicioClique, fimClique, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        checkTermos.setText(spannableString);
-        checkTermos.setMovementMethod(LinkMovementMethod.getInstance()); // Habilita o clique no Span
-    }
-
-    // Gerenciador de resultado do seletor de contas do Google
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_CADASTRO);
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
                 } else {
-                    loadingHelper.ocultar(); // Esconde o loading se o usuário cancelar
+                    loadingHelper.ocultar();
                 }
             }
     );
-
-    public void abrirTelaHome() {
-        Intent intent = new Intent(this, HomeActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
 
     public void abrirTelaLogin() {
         startActivity(new Intent(this, LoginActivity.class));
