@@ -3,9 +3,11 @@ package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -103,11 +105,27 @@ public class ConfigsActivity extends AppCompatActivity {
     }
 
     private void executarLogout() {
-        // Usa o repositório para deslogar conforme sua estrutura
-        perfilRepository.deslogar();
-        abrirTelaLogin();
-    }
+        if (user == null) return;
 
+        String uid = user.getUid();
+
+        // 1. Alteramos o status no Firestore primeiro
+        perfilRepository.desativarContaLogica(uid).addOnCompleteListener(task -> {
+
+            // 2. Independente se o banco atualizou ou deu erro de rede,
+            // nós limpamos a sessão local por segurança.
+            perfilRepository.deslogar();
+
+            // 3. Redirecionamos para a tela de Login/Intro
+            abrirTelaLogin();
+
+            if (task.isSuccessful()) {
+                Toast.makeText(this, "Conta desativada com sucesso.", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.e("ConfigsActivity", "Erro ao atualizar status no banco: " + task.getException());
+            }
+        });
+    }
     private void abrirTelaLogin() {
         Intent intent = new Intent(this, LoginActivity.class);
         // Limpa a pilha de atividades para segurança

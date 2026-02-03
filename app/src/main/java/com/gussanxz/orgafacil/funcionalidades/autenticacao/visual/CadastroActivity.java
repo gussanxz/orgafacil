@@ -1,29 +1,23 @@
 package com.gussanxz.orgafacil.funcionalidades.autenticacao.visual;
 
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.drawable.Drawable;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextPaint;
 import android.text.TextWatcher;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -32,6 +26,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
+import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
 public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.autenticacao.regras.BaseAuthActivity {
@@ -39,7 +34,9 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
     private RadioButton acessarTelaLogin;
     private EditText campoNome, campoEmail, campoSenha, campoSenhaConfirmacao;
     private Button botaoCadastrar, botaoGoogle;
-    // Removido o CheckBox da tela principal pois ele não existe mais no seu XML
+    private View v1, v2, v3, v4; // Barras de força
+    private TextView textDicaSenha;
+
     private LoadingHelper loadingHelper;
     private GoogleLoginHelper googleLoginHelper;
 
@@ -48,6 +45,7 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        TemaHelper.aplicarTemaDoCache(this);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_cadastro);
@@ -84,6 +82,13 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
         botaoGoogle = findViewById(R.id.btnGoogle);
         acessarTelaLogin = findViewById(R.id.radioButtonLogin);
 
+        // Inicialização das barras de força
+        v1 = findViewById(R.id.viewForca1);
+        v2 = findViewById(R.id.viewForca2);
+        v3 = findViewById(R.id.viewForca3);
+        v4 = findViewById(R.id.viewForca4);
+        textDicaSenha = findViewById(R.id.textDicaSenha);
+
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
@@ -96,10 +101,7 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
 
     private void configurarListeners() {
         botaoCadastrar.setOnClickListener(v -> validarEPreProcessarCadastro());
-
-        // PASSO B: Interceptando o clique do Google para mostrar os termos primeiro
         botaoGoogle.setOnClickListener(v -> exibirDialogoTermos(true));
-
         acessarTelaLogin.setOnClickListener(v -> abrirTelaLogin());
     }
 
@@ -122,28 +124,69 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (runnableSenha != null) debounceHandler.removeCallbacks(runnableSenha);
                 runnableSenha = () -> {
-                    validarForcaSenha(s.toString());
+                    String senha = s.toString();
+                    int forca = calcularForcaSenha(senha);
+                    atualizarBarraVisual(forca, senha.isEmpty());
                     atualizarEstadoBotao();
                 };
-                debounceHandler.postDelayed(runnableSenha, 300);
+                debounceHandler.postDelayed(runnableSenha, 200);
             }
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
         });
     }
 
-    private void validarForcaSenha(String senha) {
-        Drawable cadeado = ContextCompat.getDrawable(this, R.drawable.ic_cadeado_cinza_24);
-        Drawable olhoAtual = campoSenha.getCompoundDrawables()[2];
+    private int calcularForcaSenha(String senha) {
+        int nivel = 0;
+        if (senha.length() >= 6) nivel++;
+        if (senha.matches(".*[A-Z].*")) nivel++;
+        if (senha.matches(".*[0-9].*")) nivel++;
+        if (senha.matches(".*[@#$%^&+=!].*")) nivel++;
+        return nivel;
+    }
 
-        if (senha.matches("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$")) {
-            Drawable checkIcon = ContextCompat.getDrawable(this, R.drawable.ic_check_circle_24);
-            if (checkIcon != null) checkIcon.setTint(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-            campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, checkIcon, null);
-            campoSenha.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_green_dark)));
-        } else {
-            campoSenha.setCompoundDrawablesWithIntrinsicBounds(cadeado, null, olhoAtual, null);
-            campoSenha.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.cor_texto)));
+    private void atualizarBarraVisual(int nivel, boolean vazia) {
+        int neutro = Color.parseColor("#DDDDDD");
+        v1.setBackgroundColor(neutro);
+        v2.setBackgroundColor(neutro);
+        v3.setBackgroundColor(neutro);
+        v4.setBackgroundColor(neutro);
+
+        if (vazia) {
+            textDicaSenha.setVisibility(View.GONE);
+            return;
+        }
+
+        textDicaSenha.setVisibility(View.VISIBLE);
+
+        if (nivel >= 1) {
+            v1.setBackgroundColor(Color.RED);
+            textDicaSenha.setText("Muito fraca");
+            textDicaSenha.setTextColor(Color.RED);
+        }
+        if (nivel >= 2) {
+            int laranja = Color.parseColor("#FF9800");
+            v1.setBackgroundColor(laranja);
+            v2.setBackgroundColor(laranja);
+            textDicaSenha.setText("Fraca");
+            textDicaSenha.setTextColor(laranja);
+        }
+        if (nivel >= 3) {
+            int amarelo = Color.parseColor("#FBC02D");
+            v1.setBackgroundColor(amarelo);
+            v2.setBackgroundColor(amarelo);
+            v3.setBackgroundColor(amarelo);
+            textDicaSenha.setText("Boa");
+            textDicaSenha.setTextColor(amarelo);
+        }
+        if (nivel >= 4) {
+            int verde = Color.parseColor("#4CAF50");
+            v1.setBackgroundColor(verde);
+            v2.setBackgroundColor(verde);
+            v3.setBackgroundColor(verde);
+            v4.setBackgroundColor(verde);
+            textDicaSenha.setText("Forte");
+            textDicaSenha.setTextColor(verde);
         }
     }
 
@@ -152,17 +195,15 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
         String email = campoEmail.getText().toString().trim();
         String senha = campoSenha.getText().toString();
 
-        boolean senhaForte = senha.matches("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$");
+        // O botão só habilita se a senha for no mínimo "Boa" (nível 3)
+        boolean senhaSegura = calcularForcaSenha(senha) >= 3;
         boolean emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
-
-        // Agora não depende mais do CheckBox principal, apenas dos dados
-        boolean tudoOk = !nome.isEmpty() && emailValido && senhaForte;
+        boolean tudoOk = !nome.isEmpty() && emailValido && senhaSegura;
 
         botaoCadastrar.setEnabled(tudoOk);
         botaoCadastrar.setAlpha(tudoOk ? 1.0f : 0.5f);
     }
 
-    // PASSO C: Dialog Inteligente que decide o próximo passo
     private void exibirDialogoTermos(boolean viaGoogle) {
         BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_termos, null);
@@ -171,10 +212,7 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
         CheckBox checkDialog = view.findViewById(R.id.checkDialogTermos);
         Button btnAceitar = view.findViewById(R.id.btnAceitarTermos);
 
-        checkDialog.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // A mágica acontece aqui: ao mudar o enabled, o backgroundTint muda de cor sozinho
-            btnAceitar.setEnabled(isChecked);
-        });
+        checkDialog.setOnCheckedChangeListener((buttonView, isChecked) -> btnAceitar.setEnabled(isChecked));
 
         btnAceitar.setOnClickListener(v -> {
             bottomSheet.dismiss();
@@ -196,8 +234,6 @@ public class CadastroActivity extends com.gussanxz.orgafacil.funcionalidades.aut
             campoSenhaConfirmacao.setError("As senhas não coincidem!");
             return;
         }
-
-        // Se os dados estão OK, abre os termos para o "aperto de mão" final
         exibirDialogoTermos(false);
     }
 

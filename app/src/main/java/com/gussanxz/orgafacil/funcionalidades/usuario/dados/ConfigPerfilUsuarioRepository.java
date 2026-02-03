@@ -30,24 +30,32 @@ public class ConfigPerfilUsuarioRepository {
         meta.put("planoAtivo", ConfigPerfilUsuarioModel.PlanoAtivo.GRATUITO.name());
         meta.put("dataCriacao", FieldValue.serverTimestamp());
         meta.put("provedor", obterProvedorLogin(user));
-
-        // [AUDITORIA] Registramos o aceite inicial na raiz por segurança extra
         meta.put("aceitouTermos", true);
         meta.put("versaoTermosCriacao", "1.0");
 
         return FirestoreSchema.userDoc(user.getUid()).set(meta, SetOptions.merge());
     }
+
+    /**
+     * SOFT DELETE: Não exige re-autenticação/login recente.
+     * Apenas marca o status como DESATIVADO no banco.
+     */
+    public Task<Void> desativarContaLogica(String uid) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("statusConta", ConfigPerfilUsuarioModel.StatusConta.DESATIVADO.name());
+        updates.put("dataDesativacao", FieldValue.serverTimestamp());
+
+        return FirestoreSchema.userDoc(uid).update(updates);
+    }
+
     public Task<Void> salvarPerfil(ConfigPerfilUsuarioModel perfil) {
         Map<String, Object> dados = new HashMap<>();
         dados.put("nome", perfil.getNome() != null ? perfil.getNome() : "Novo Usuário");
         dados.put("email", perfil.getEmail() != null ? perfil.getEmail() : "");
         dados.put("updatedAt", FieldValue.serverTimestamp());
-
-        // [NOVO] Salvando os dados de consentimento obrigatórios
+        dados.put("status", perfil.getStatus() != null ? perfil.getStatus().name() : ConfigPerfilUsuarioModel.StatusConta.ATIVO.name());
         dados.put("aceitouTermos", perfil.isAceitouTermos());
         dados.put("versaoTermos", perfil.getVersaoTermos() != null ? perfil.getVersaoTermos() : "1.0");
-
-        // Usamos serverTimestamp diretamente para garantir a precisão do horário do Google
         dados.put("dataAceite", FieldValue.serverTimestamp());
 
         return FirestoreSchema.configPerfilDoc().set(dados, SetOptions.merge());
@@ -62,31 +70,13 @@ public class ConfigPerfilUsuarioRepository {
         return FirestoreSchema.configPerfilDoc().update(updates);
     }
 
-    public void excluirContaSemSenha(FirebaseUser user, OnCompleteListener<Void> listener) {
-        if (user == null) return;
-
-        // 1. Deleta a raiz do usuário no Firestore via Schema
-        FirestoreSchema.userDoc(user.getUid()).delete().addOnSuccessListener(aVoid -> {
-
-            // 2. Limpa Cache via ConfiguracaoFirestore (Singleton centralizado)
-            ConfiguracaoFirestore.getFirestore().clearPersistence().addOnCompleteListener(taskPersistence -> {
-
-                // 3. Deleta Auth
-                user.delete().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        deslogar();
-                    }
-                    listener.onComplete(task);
-                });
-            });
-
-        }).addOnFailureListener(e -> listener.onComplete(null));
-    }
-
     // --- MÉTODOS DE LEITURA ---
 
+    public Task<DocumentSnapshot> obterMetadadosRaiz(String uid) {
+        return FirestoreSchema.userDoc(uid).get();
+    }
+
     public Task<DocumentSnapshot> verificarExistenciaPerfil() {
-        // Usa myUserDoc() implicitamente através do configPerfilDoc()
         return FirestoreSchema.configPerfilDoc().get();
     }
 
@@ -108,6 +98,7 @@ public class ConfigPerfilUsuarioRepository {
         if (e instanceof FirebaseAuthUserCollisionException) return "Este e-mail já está associado a outra conta.";
         if (e instanceof FirebaseAuthInvalidUserException) return "Não foi possível encontrar este usuário.";
 
+        // Este erro de "recent login" só ocorreria se você usasse o user.delete() real.
         if (e != null && e.getMessage() != null && e.getMessage().contains("recent login")) {
             return "Por segurança, você precisa fazer login novamente para realizar esta ação.";
         }

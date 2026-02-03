@@ -13,6 +13,10 @@ public class ConfigPerfilUsuarioModel {
     private String email;
     private String fotoUrl;
 
+    // --- CAMPOS DE STATUS E SOFT DELETE ---
+    private StatusConta status;
+    private Object dataDesativacao;
+
     // --- NOVOS CAMPOS DE AUDITORIA E CONSENTIMENTO ---
     private boolean aceitouTermos;
     private Object dataAceite; // Usamos Object para suportar FieldValue.serverTimestamp()
@@ -21,12 +25,18 @@ public class ConfigPerfilUsuarioModel {
     // --- ENUMS DE NEGÓCIO INTERNOS ---
     public enum TipoPerfil { PESSOAL, NEGOCIOS }
     public enum PlanoAtivo { GRATUITO, PREMIUM }
-    public enum StatusConta { ATIVO, SUSPENSO, PENDENTE_EXCLUSAO }
+
+    // Atualizado para incluir o estado de DESATIVADO
+    public enum StatusConta { ATIVO, SUSPENSO, PENDENTE_EXCLUSAO, DESATIVADO }
 
     public ConfigPerfilUsuarioModel() {
         // Por padrão, garantimos que comece como falso até que o fluxo de aceite ocorra
         this.aceitouTermos = false;
+        // Toda conta nova nasce com status ATIVO
+        this.status = StatusConta.ATIVO;
     }
+
+    // --- GETTERS E SETTERS BÁSICOS ---
 
     @Exclude
     public String getIdUsuario() { return idUsuario; }
@@ -41,12 +51,21 @@ public class ConfigPerfilUsuarioModel {
     public String getFotoUrl() { return fotoUrl; }
     public void setFotoUrl(String fotoUrl) { this.fotoUrl = fotoUrl; }
 
+    // --- GETTERS E SETTERS DE STATUS (Soft Delete) ---
+
+    public StatusConta getStatus() { return status; }
+    public void setStatus(StatusConta status) { this.status = status; }
+
+    @ServerTimestamp // Gera o carimbo de data automaticamente no servidor Firebase
+    public Object getDataDesativacao() { return dataDesativacao; }
+    public void setDataDesativacao(Object dataDesativacao) { this.dataDesativacao = dataDesativacao; }
+
     // --- GETTERS E SETTERS DOS TERMOS ---
 
     public boolean isAceitouTermos() { return aceitouTermos; }
     public void setAceitouTermos(boolean aceitouTermos) { this.aceitouTermos = aceitouTermos; }
 
-    @ServerTimestamp // Anotação para o Firestore entender que deve gerar a data no servidor
+    @ServerTimestamp
     public Object getDataAceite() { return dataAceite; }
     public void setDataAceite(Object dataAceite) { this.dataAceite = dataAceite; }
 

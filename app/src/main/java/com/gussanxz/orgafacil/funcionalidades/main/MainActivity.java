@@ -3,7 +3,6 @@ package com.gussanxz.orgafacil.funcionalidades.main;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.content.SharedPreferences;
 import android.view.WindowManager;
 import android.widget.Toast;
 
@@ -16,14 +15,13 @@ import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
@@ -31,7 +29,7 @@ import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 
 /**
  * MainActivity (Intro)
- * Gerencia a apresentação inicial e o acesso rápido via Google com proteção de dados.
+ * Gerencia a apresentação inicial, Auto-Login e validação de status da conta.
  */
 public class MainActivity extends IntroActivity {
 
@@ -42,27 +40,56 @@ public class MainActivity extends IntroActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 1. Inicialize os objetos ESSENCIAIS antes de qualquer check de login
+        // 1. Inicialização de objetos essenciais (Evita NullPointerException)
         perfilRepository = new ConfigPerfilUsuarioRepository();
         usuarioService = new UsuarioService();
-        // Inicialize o helper do Google logo no início
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
 
-        // 2. Agora sim, faça o Auto-Login
-        if (com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession.isUserLogged()) {
-            abrirTelaHome();
-            super.onCreate(savedInstanceState); // Chamada mínima necessária para a biblioteca de Intro
+        // 2. AUTO-LOGIN com Validação de Status (Soft Delete)
+        if (FirebaseSession.isUserLogged()) {
+            verificarStatusEBaterPonto();
+            super.onCreate(savedInstanceState);
             return;
         }
 
         super.onCreate(savedInstanceState);
 
-        // [SEGURANÇA] Impede prints e gravação de tela
+        // [SEGURANÇA] Bloqueia capturas de tela
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
         View overlay = findViewById(R.id.loading_overlay);
         if (overlay != null) loadingHelper = new LoadingHelper(overlay);
 
+        configurarSlides();
+    }
+
+    /**
+     * Checa se a conta está ativa no Firestore antes de permitir o acesso.
+     */
+    private void verificarStatusEBaterPonto() {
+        FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
+        if (user == null) return;
+
+        perfilRepository.obterMetadadosRaiz(user.getUid()).addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                String status = task.getResult().getString("statusConta");
+
+                // Se a conta estiver desativada, bloqueia e desloga
+                if (ConfigPerfilUsuarioModel.StatusConta.DESATIVADO.name().equals(status)) {
+                    Toast.makeText(this, "Esta conta foi desativada.", Toast.LENGTH_LONG).show();
+                    perfilRepository.deslogar();
+                    recreate(); // Recarrega a tela para mostrar os slides de login
+                } else {
+                    abrirTelaHome();
+                }
+            } else {
+                // Em caso de erro de rede ou documento inexistente, tentamos abrir a home por segurança
+                abrirTelaHome();
+            }
+        });
+    }
+
+    private void configurarSlides() {
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
@@ -74,9 +101,6 @@ public class MainActivity extends IntroActivity {
         );
     }
 
-    /**
-     * SAFETY NET: Verifica integridade entre Auth e Firestore.
-     */
     private void iniciarFluxoSegurancaDadosGoogle() {
         if (!FirebaseSession.isUserLogged()) return;
         if (loadingHelper != null) loadingHelper.exibir();
@@ -86,7 +110,6 @@ public class MainActivity extends IntroActivity {
                 if (loadingHelper != null) loadingHelper.ocultar();
                 abrirTelaHome();
             } else {
-                // Caso o usuário se cadastre pelo botão do Google na tela inicial
                 FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
                 if (user != null) {
                     usuarioService.inicializarNovoUsuario(user, taskService -> {
@@ -98,11 +121,11 @@ public class MainActivity extends IntroActivity {
         });
     }
 
-    public void btEntrar(View view){
+    public void btEntrar(View view) {
         startActivity(new Intent(this, LoginActivity.class));
     }
 
-    public void btCadastrar(View view){
+    public void btCadastrar(View view) {
         startActivity(new Intent(this, CadastroActivity.class));
     }
 
