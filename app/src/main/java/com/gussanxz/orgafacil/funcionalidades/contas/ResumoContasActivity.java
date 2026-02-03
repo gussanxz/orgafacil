@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -23,6 +24,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 public class ResumoContasActivity extends AppCompatActivity {
 
     private static final String TAG = "ResumoContasActivity";
+    private LinearLayout btnFooterContas, btnFooterMovimentacoes;
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
     // Componentes do Menu Radial
@@ -53,7 +55,22 @@ public class ResumoContasActivity extends AppCompatActivity {
         setupSlideView();
         // 2. Fechar o menu ao clicar na parte escura (fora dos botões)
         overlayBackground.setOnClickListener(v -> fecharMenu());
+        setupMenuFooter();
         setupMenuRadial();
+    }
+    private void setupMenuFooter() {
+        btnFooterMovimentacoes = findViewById(R.id.btn_footer_movimentacoes);
+
+        btnFooterMovimentacoes.setOnClickListener(v -> {
+            acaoRapida("Abrindo Contas");
+            acessarContasActivity(v);
+        });
+
+        btnFooterContas = findViewById(R.id.btn_footer_contas);
+        btnFooterContas.setOnClickListener(v -> {
+            acaoRapida("Abrindo Contas Futuras");
+            acessarContasFuturas(v);
+        });
     }
     private void setupMenuRadial() {
         fabMain = findViewById(R.id.fab_main);
@@ -89,6 +106,16 @@ public class ResumoContasActivity extends AppCompatActivity {
     }
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
+        intent.putExtra("EH_ATALHO", true);
+
+        intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
+        startActivity(intent);
+    }
+    public void acessarContasFuturas(View v) {
+        Intent intent = new Intent(this, ContasActivity.class);
+        intent.putExtra("TEXTO_SALDO", "Saldo futuro");
+        intent.putExtra("BTN_DESPESA_FUTURA", "DESPESA FUTURA");
+        intent.putExtra("BTN_RECEITA_FUTURA", "RECEITA FUTURA");
         intent.putExtra("EH_ATALHO", true);
         startActivity(intent);
     }

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -49,7 +50,10 @@ import java.util.Locale;
 public class ContasActivity extends AppCompatActivity {
 
     // UI
-    private TextView textoSaudacao, textoSaldo, textoSaldoLegenda;
+    private final String TAG = "ContasActivity";
+    private boolean ehAtalho = false;
+    private Bundle extrasAtalho = null;
+    private TextView textoSaudacao, textoSaldo, textSaldoAtual;
     private RecyclerView recyclerView;
     private SearchView searchView;
     private EditText editDataInicial, editDataFinal;
@@ -89,6 +93,13 @@ public class ContasActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK) carregarDados();
                 }
         );
+
+        extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
+        ehAtalho = (extrasAtalho != null) && extrasAtalho.getBoolean("EH_ATALHO", false);
+
+        if (ehAtalho) {
+            aplicarRegrasAtalho(extrasAtalho);
+        }
     }
 
     @Override
@@ -221,9 +232,13 @@ public class ContasActivity extends AppCompatActivity {
         DecimalFormat df = new DecimalFormat("0.##");
         textoSaldo.setText("R$ " + df.format(saldoFiltrado));
 
-        if (dataInicialSelecionada != null) textoSaldoLegenda.setText("Saldo do período");
-        else if (!texto.isEmpty()) textoSaldoLegenda.setText("Saldo da pesquisa");
-        else textoSaldoLegenda.setText("Saldo total");
+        if (ehAtalho) {
+            textSaldoAtual.setText("Saldo futuro");
+        } else {
+            if (dataInicialSelecionada != null) textSaldoAtual.setText("Saldo do período");
+            else if (!texto.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");
+            else textSaldoAtual.setText("Saldo total");
+        }
     }
 
     private boolean estaNoPeriodo(MovimentacaoModel m) {
@@ -244,7 +259,7 @@ public class ContasActivity extends AppCompatActivity {
     private void inicializarComponentes() {
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
-        textoSaldoLegenda = findViewById(R.id.textView16);
+        textSaldoAtual = findViewById(R.id.textSaldoAtual);
         recyclerView = findViewById(R.id.recyclesMovimentos);
         editDataInicial = findViewById(R.id.editDataInicial);
         editDataFinal = findViewById(R.id.editDataFinal);
@@ -374,6 +389,44 @@ public class ContasActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void adicionarReceita(View v) { startActivity(new Intent(this, ReceitasActivity.class)); }
-    public void adicionarDespesa(View v) { startActivity(new Intent(this, DespesasActivity.class)); }
+    public void adicionarReceita(View v) {
+        if(ehAtalho){
+            Intent intent = new Intent(this, ReceitasActivity.class);
+            intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
+            startActivity(intent);
+            return;
+        }
+        startActivity(new Intent(this, ReceitasActivity.class));
+    }
+    public void adicionarDespesa(View v) {
+        if(ehAtalho){
+            Intent intent = new Intent(this, DespesasActivity.class);
+            intent.putExtra("TITULO_TELA", "Agendar Despesa Futura");
+            startActivity(intent);
+            return;
+        }
+        startActivity(new Intent(this, DespesasActivity.class));
+    }
+    private void aplicarRegrasAtalho(Bundle extras) {
+        if (extras == null) return;
+
+        String textoSaldo = extras.getString("TEXTO_SALDO","Saldo futuro");
+        String textoDespesa = extras.getString("BTN_DESPESA_FUTURA", "DESPESA FUTURA");
+        String textoReceita = extras.getString("BTN_RECEITA_FUTURA", "RECEITA FUTURA");
+
+        // Se for legenda:
+        if (textSaldoAtual != null) textSaldoAtual.setText(textoSaldo);
+
+        // Se for valor do saldo, use o ID correto do saldo (provavelmente textSaldo):
+        // TextView tvSaldoValor = findViewById(R.id.textSaldo);
+        // if (tvSaldoValor != null) tvSaldoValor.setText("...");
+
+        Button btnNovaDespesa = findViewById(R.id.btnNovaDespesa);
+        Button btnNovaReceita = findViewById(R.id.btnNovaReceita);
+
+        if (btnNovaDespesa != null) btnNovaDespesa.setText(textoDespesa);
+        if (btnNovaReceita != null) btnNovaReceita.setText(textoReceita);
+
+        Log.i(TAG, "Regras de atalho aplicada!");
+    }
 }

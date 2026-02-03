@@ -113,6 +113,7 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:weightSum="2">
+
             <LinearLayout
                 android:id="@+id/btn_footer_movimentacoes"
                 android:layout_width="0dp"
@@ -143,8 +144,7 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:onClick="acessarContasActivity">
+                android:paddingStart="20dp">
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
