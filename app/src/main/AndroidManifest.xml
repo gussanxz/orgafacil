@@ -19,7 +19,7 @@
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
         <activity
-            android:name=".funcionalidades.contas.ResumoContasActivity"
+            android:name=".funcionalidades.contas.comum.visual.ui.ResumoContasActivity"
             android:exported="false" />
         <activity
             android:name=".funcionalidades.autenticacao.visual.SplashActivity"
@@ -48,10 +48,10 @@
             android:name=".funcionalidades.configuracoes.visual.SegurancaActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.contas.EditarMovimentacaoActivity"
+            android:name=".funcionalidades.contas.movimentacoes.r_negocio.regras.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.contas.SelecionarCategoriaContasActivity"
+            android:name=".funcionalidades.contas.comum.visual.ui.SelecionarCategoriaContasActivity"
             android:exported="false" />
         <activity
             android:name=".funcionalidades.vendas.visual.listas.ListaPsActivty"
@@ -84,15 +84,15 @@
             android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.contas.DespesasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.DespesasActivity"
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".funcionalidades.contas.ReceitasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.ReceitasActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".funcionalidades.contas.ContasActivity"
+            android:name=".funcionalidades.contas.comum.visual.ui.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity

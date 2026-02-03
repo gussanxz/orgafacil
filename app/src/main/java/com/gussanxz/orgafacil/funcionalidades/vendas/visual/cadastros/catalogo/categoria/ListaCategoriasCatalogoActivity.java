@@ -22,7 +22,6 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 // IMPORTANTE: Use o Repository específico de Vendas
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
-import com.gussanxz.orgafacil.ui.vendas.AdapterItemListaCategoriasCatalogoVendas;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;

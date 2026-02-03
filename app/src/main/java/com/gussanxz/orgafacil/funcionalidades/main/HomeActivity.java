@@ -15,8 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.ConfigsActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.ResumoContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
+import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ResumoContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.PreferenciasModel;
