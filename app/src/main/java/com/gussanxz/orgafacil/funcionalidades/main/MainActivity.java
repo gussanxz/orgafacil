@@ -42,14 +42,16 @@ public class MainActivity extends IntroActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // [AUTO-LOGIN] 1. Checagem imediata de sessão antes de qualquer outra coisa
-        if (com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession.isUserLogged()) {
-            // Se já está logado, pula direto para a Home (passando pela biometria)
-            abrirTelaHome();
+        // 1. Inicialize os objetos ESSENCIAIS antes de qualquer check de login
+        perfilRepository = new ConfigPerfilUsuarioRepository();
+        usuarioService = new UsuarioService();
+        // Inicialize o helper do Google logo no início
+        googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
 
-            // Importante: chamamos o super e o resto apenas se NÃO estiver logado
-            // mas como abrirTelaHome já chama finish(), o return impede carregar a Intro.
-            super.onCreate(savedInstanceState);
+        // 2. Agora sim, faça o Auto-Login
+        if (com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession.isUserLogged()) {
+            abrirTelaHome();
+            super.onCreate(savedInstanceState); // Chamada mínima necessária para a biblioteca de Intro
             return;
         }
 
@@ -58,35 +60,13 @@ public class MainActivity extends IntroActivity {
         // [SEGURANÇA] Impede prints e gravação de tela
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
-        perfilRepository = new ConfigPerfilUsuarioRepository();
-        usuarioService = new UsuarioService();
+        View overlay = findViewById(R.id.loading_overlay);
+        if (overlay != null) loadingHelper = new LoadingHelper(overlay);
 
-        // ... restante do seu código de inicialização de slides ...
         setButtonBackVisible(false);
         setButtonNextVisible(false);
 
-        // Slides
         addSlide(new FragmentSlide.Builder()
-//                .background(android.R.color.white)
-//                .fragment(R.layout.intro_1)
-//                .build()
-//        );
-//        addSlide(new FragmentSlide.Builder()
-//                .background(android.R.color.white)
-//                .fragment(R.layout.intro_2)
-//                .build()
-//        );
-//        addSlide(new FragmentSlide.Builder()
-//                .background(android.R.color.white)
-//                .fragment(R.layout.intro_3)
-//                .build()
-//        );
-//        addSlide(new FragmentSlide.Builder()
-//                .background(android.R.color.white)
-//                .fragment(R.layout.intro_4)
-//                .build()
-//        );
-//        addSlide(new FragmentSlide.Builder()
                 .background(android.R.color.white)
                 .fragment(R.layout.ac_main_intro_comece_agora)
                 .canGoForward(false)
