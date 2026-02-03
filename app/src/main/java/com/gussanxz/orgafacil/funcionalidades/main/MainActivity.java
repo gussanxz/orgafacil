@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.main;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler; // Importado para o delay do Splash
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -40,14 +41,18 @@ public class MainActivity extends IntroActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 1. Inicialização de objetos essenciais (Evita NullPointerException)
+        // 1. Inicialização de objetos essenciais
         perfilRepository = new ConfigPerfilUsuarioRepository();
         usuarioService = new UsuarioService();
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
 
-        // 2. AUTO-LOGIN com Validação de Status (Soft Delete)
+        // 2. AUTO-LOGIN com Delay para Splash e Validação de Status
         if (FirebaseSession.isUserLogged()) {
-            verificarStatusEBaterPonto();
+            // [MODIFICADO] Adiciona 2 segundos para o Splash aparecer antes de processar
+            new Handler().postDelayed(this::verificarStatusEBaterPonto, 2000);
+
+            // Define o layout de carregamento/splash enquanto o Handler espera
+            setContentView(R.layout.util_loading);
             super.onCreate(savedInstanceState);
             return;
         }
@@ -74,16 +79,13 @@ public class MainActivity extends IntroActivity {
             if (task.isSuccessful() && task.getResult() != null) {
                 String status = task.getResult().getString("statusConta");
 
-                // Se a conta estiver desativada, bloqueia e desloga
+                // [CORRIGIDO] Se desativada, usa o seu método de Diálogo de Reativação
                 if (ConfigPerfilUsuarioModel.StatusConta.DESATIVADO.name().equals(status)) {
-                    Toast.makeText(this, "Esta conta foi desativada.", Toast.LENGTH_LONG).show();
-                    perfilRepository.deslogar();
-                    recreate(); // Recarrega a tela para mostrar os slides de login
+                    exibirDialogoReativacao(user.getUid());
                 } else {
                     abrirTelaHome();
                 }
             } else {
-                // Em caso de erro de rede ou documento inexistente, tentamos abrir a home por segurança
                 abrirTelaHome();
             }
         });
@@ -144,8 +146,6 @@ public class MainActivity extends IntroActivity {
             }
     );
 
-    // --- NAVEGAÇÃO COM BIOMETRIA ---
-
     public void abrirTelaHome() {
         runOnUiThread(() -> {
             Intent intent = new Intent(this, HomeActivity.class);
@@ -164,6 +164,24 @@ public class MainActivity extends IntroActivity {
             startActivity(intent);
             finish();
         }
+    }
+
+    private void exibirDialogoReativacao(String uid) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Conta Desativada")
+                .setMessage("Identificamos que sua conta está desativada. Deseja reativá-la agora para acessar seus dados?")
+                .setCancelable(false)
+                .setPositiveButton("Reativar Conta", (dialog, which) -> {
+                    perfilRepository.reativarContaLogica(uid).addOnSuccessListener(v -> {
+                        Toast.makeText(this, "Bem-vindo de volta! Conta reativada.", Toast.LENGTH_SHORT).show();
+                        abrirTelaHome();
+                    });
+                })
+                .setNegativeButton("Sair", (dialog, which) -> {
+                    perfilRepository.deslogar();
+                    recreate();
+                })
+                .show();
     }
 
     private void autenticarComDispositivo(Runnable onSuccess) {

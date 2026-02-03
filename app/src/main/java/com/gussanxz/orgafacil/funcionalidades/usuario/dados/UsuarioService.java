@@ -26,27 +26,44 @@ public class UsuarioService {
     public void inicializarNovoUsuario(FirebaseUser user, OnCompleteListener<Void> listener) {
         // 1. Etapa Inicial: Metadados na Raiz
         // Note: Passamos 'user' aqui apenas porque o repository extrai o provedor (google/senha)
-        perfilRepository.inicializarMetadadosRaiz(user).addOnSuccessListener(aVoid -> {
+        perfilRepository.inicializarMetadadosRaiz(user).addOnCompleteListener(taskRaiz -> {
+
+            if (!taskRaiz.isSuccessful()) {
+                if (listener != null) listener.onComplete(taskRaiz);
+                return;
+            }
 
             // 2. Criar Perfil (O Repository agora já sabe o UID via FirebaseSession)
             ConfigPerfilUsuarioModel perfil = new ConfigPerfilUsuarioModel();
             perfil.setNome(user.getDisplayName() != null ? user.getDisplayName() : "Usuário");
             perfil.setEmail(user.getEmail());
 
-            perfilRepository.salvarPerfil(perfil).addOnSuccessListener(aVoid1 -> {
+            perfilRepository.salvarPerfil(perfil).addOnCompleteListener(taskPerfil -> {
+
+                if (!taskPerfil.isSuccessful()) {
+                    if (listener != null) listener.onComplete(taskPerfil);
+                    return;
+                }
 
                 // 3. Criar Carteira (Saldo inicial em centavos)
-                carteiraRepository.inicializarSaldosContas().addOnSuccessListener(aVoid2 -> {
+                carteiraRepository.inicializarSaldosContas().addOnCompleteListener(taskCarteira -> {
+
+                    if (!taskCarteira.isSuccessful()) {
+                        if (listener != null) listener.onComplete(taskCarteira);
+                        return;
+                    }
 
                     // 4. Criar Categorias Padrão
-                    carteiraRepository.inicializarCategoriasPadrao().addOnSuccessListener(aVoid3 -> {
+                    carteiraRepository.inicializarCategoriasPadrao().addOnCompleteListener(taskCategorias -> {
 
-                        // SUCESSO TOTAL
-                        listener.onComplete(null);
-
-                    }).addOnFailureListener(e -> listener.onComplete(null));
+                        // SUCESSO OU FALHA FINAL
+                        // [CORREÇÃO] Passamos a última task (taskCategorias) em vez de null
+                        if (listener != null) {
+                            listener.onComplete(taskCategorias);
+                        }
+                    });
                 });
             });
-        }).addOnFailureListener(e -> listener.onComplete(null));
+        });
     }
 }

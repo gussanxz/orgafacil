@@ -1,7 +1,9 @@
 package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
@@ -18,6 +20,7 @@ import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPe
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class ConfigPerfilUsuarioRepository {
 
@@ -29,23 +32,59 @@ public class ConfigPerfilUsuarioRepository {
         meta.put("tipoPerfil", ConfigPerfilUsuarioModel.TipoPerfil.PESSOAL.name());
         meta.put("planoAtivo", ConfigPerfilUsuarioModel.PlanoAtivo.GRATUITO.name());
         meta.put("dataCriacao", FieldValue.serverTimestamp());
+        meta.put("ultimaAtividade", FieldValue.serverTimestamp());
         meta.put("provedor", obterProvedorLogin(user));
         meta.put("aceitouTermos", true);
         meta.put("versaoTermosCriacao", "1.0");
+
+        meta.put("fusoHorario", TimeZone.getDefault().getID());
+        meta.put("versaoApp", obterVersaoApp());
 
         return FirestoreSchema.userDoc(user.getUid()).set(meta, SetOptions.merge());
     }
 
     /**
-     * SOFT DELETE: Não exige re-autenticação/login recente.
-     * Apenas marca o status como DESATIVADO no banco.
+     * Atualiza dados específicos do perfil via Update para não sobrescrever metadados.
      */
+    public Task<Void> atualizarPerfil(ConfigPerfilUsuarioModel perfil) {
+        Map<String, Object> updates = new HashMap<>();
+        if (perfil.getNome() != null) updates.put("nome", perfil.getNome());
+        if (perfil.getEmail() != null) updates.put("email", perfil.getEmail());
+        if (perfil.getFotoUrl() != null) updates.put("fotoUrl", perfil.getFotoUrl());
+        updates.put("updatedAt", FieldValue.serverTimestamp());
+
+        return FirestoreSchema.configPerfilDoc().update(updates);
+    }
+
+    public Task<Void> atualizarUltimaAtividade(String uid) {
+        return FirestoreSchema.userDoc(uid).update("ultimaAtividade", FieldValue.serverTimestamp());
+    }
+
     public Task<Void> desativarContaLogica(String uid) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("statusConta", ConfigPerfilUsuarioModel.StatusConta.DESATIVADO.name());
         updates.put("dataDesativacao", FieldValue.serverTimestamp());
 
         return FirestoreSchema.userDoc(uid).update(updates);
+    }
+
+    public Task<Void> reativarContaLogica(String uid) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("statusConta", ConfigPerfilUsuarioModel.StatusConta.ATIVO.name());
+        updates.put("dataDesativacao", FieldValue.delete());
+
+        return FirestoreSchema.userDoc(uid).update(updates);
+    }
+
+    /**
+     * Vínculo de Contas: Permite que um usuário logado adicione um novo provedor.
+     */
+    public Task<AuthResult> vincularCredencial(AuthCredential credential) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            return user.linkWithCredential(credential);
+        }
+        return null;
     }
 
     public Task<Void> salvarPerfil(ConfigPerfilUsuarioModel perfil) {
@@ -59,15 +98,6 @@ public class ConfigPerfilUsuarioRepository {
         dados.put("dataAceite", FieldValue.serverTimestamp());
 
         return FirestoreSchema.configPerfilDoc().set(dados, SetOptions.merge());
-    }
-
-    public Task<Void> atualizarPerfil(ConfigPerfilUsuarioModel perfil) {
-        Map<String, Object> updates = new HashMap<>();
-        if (perfil.getNome() != null) updates.put("nome", perfil.getNome());
-        if (perfil.getFotoUrl() != null) updates.put("fotoUrl", perfil.getFotoUrl());
-        updates.put("updatedAt", FieldValue.serverTimestamp());
-
-        return FirestoreSchema.configPerfilDoc().update(updates);
     }
 
     // --- MÉTODOS DE LEITURA ---
@@ -92,18 +122,15 @@ public class ConfigPerfilUsuarioRepository {
 
     // --- HELPERS ---
 
-    public String mapearErroAutenticacao(Exception e) {
-        if (e instanceof FirebaseAuthWeakPasswordException) return "A senha fornecida é muito fraca.";
-        if (e instanceof FirebaseAuthInvalidCredentialsException) return "As credenciais informadas são inválidas.";
-        if (e instanceof FirebaseAuthUserCollisionException) return "Este e-mail já está associado a outra conta.";
-        if (e instanceof FirebaseAuthInvalidUserException) return "Não foi possível encontrar este usuário.";
-
-        // Este erro de "recent login" só ocorreria se você usasse o user.delete() real.
-        if (e != null && e.getMessage() != null && e.getMessage().contains("recent login")) {
-            return "Por segurança, você precisa fazer login novamente para realizar esta ação.";
+    private String obterVersaoApp() {
+        try {
+            return com.google.firebase.FirebaseApp.getInstance().getApplicationContext()
+                    .getPackageManager()
+                    .getPackageInfo(com.google.firebase.FirebaseApp.getInstance().getApplicationContext().getPackageName(), 0)
+                    .versionName;
+        } catch (Exception e) {
+            return "1.0.0";
         }
-
-        return "Erro na operação: " + (e != null ? e.getLocalizedMessage() : "Desconhecido");
     }
 
     private String obterProvedorLogin(FirebaseUser user) {
@@ -113,5 +140,18 @@ public class ConfigPerfilUsuarioRepository {
             }
         }
         return "password";
+    }
+
+    public String mapearErroAutenticacao(Exception e) {
+        if (e instanceof FirebaseAuthWeakPasswordException) return "A senha fornecida é muito fraca.";
+        if (e instanceof FirebaseAuthInvalidCredentialsException) return "As credenciais informadas são inválidas.";
+
+        // Melhoria: Sugere explicitamente a ação para o usuário
+        if (e instanceof FirebaseAuthUserCollisionException)
+            return "Este e-mail já está em uso. Se você já tem uma conta, tente entrar com o método original ou recupere sua senha.";
+
+        if (e instanceof FirebaseAuthInvalidUserException) return "Não foi possível encontrar este usuário.";
+
+        return "Erro na operação: " + (e != null ? e.getLocalizedMessage() : "Desconhecido");
     }
 }

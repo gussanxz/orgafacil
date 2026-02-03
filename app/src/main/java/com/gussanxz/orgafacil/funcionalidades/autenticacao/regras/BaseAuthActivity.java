@@ -30,29 +30,26 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
     }
 
     /**
-     * SAFETY NET UNIFICADA: Agora verifica também o aceite dos termos no banco.
+     * SAFETY NET UNIFICADA: Verifica existência do perfil e termos.
      */
     protected void iniciarFluxoSegurancaDados() {
         if (!FirebaseSession.isUserLogged()) return;
         if (getLoadingHelper() != null) getLoadingHelper().exibir();
 
         perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
+            // [BOA PRÁTICA] Null check na task antes de verificar sucesso
+            if (task != null && task.isSuccessful() && task.getResult() != null) {
                 if (task.getResult().exists()) {
 
-                    // [BLOQUEIO LÓGICO] Verifica se o aceite dos termos está registrado
                     Boolean aceitouTermos = task.getResult().getBoolean("aceitouTermos");
 
                     if (aceitouTermos != null && aceitouTermos) {
-                        // Tudo ok: Usuário logado e com termos aceitos
                         navegarParaHome("Bem-vindo de volta!");
                     } else {
-                        // Usuário existe no Auth, mas documento está incompleto ou sem aceite
                         tratarNovoUsuario(autenticacao.getCurrentUser());
                     }
 
                 } else {
-                    // Documento não existe: Novo usuário ou erro na criação anterior
                     tratarNovoUsuario(autenticacao.getCurrentUser());
                 }
             } else {
@@ -64,13 +61,16 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
 
     private void tratarNovoUsuario(FirebaseUser user) {
         if (user == null) return;
-        // O UsuarioService agora salva 'aceitouTermos' como true automaticamente
+
         usuarioService.inicializarNovoUsuario(user, task -> {
             if (getLoadingHelper() != null) getLoadingHelper().ocultar();
-            if (task.isSuccessful()) {
+
+            // [CORREÇÃO CRITICAL] Verificamos se a task não é nula antes de isSuccessful()
+            // Isso evita o erro fatal caso o service falhe em retornar a task.
+            if (task != null && task.isSuccessful()) {
                 navegarParaHome("Conta configurada com sucesso!");
             } else {
-                Toast.makeText(this, "Erro ao configurar perfil.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Erro ao configurar perfil de usuário.", Toast.LENGTH_SHORT).show();
             }
         });
     }

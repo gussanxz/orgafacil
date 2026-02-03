@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -22,9 +23,12 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
 
+import java.util.TimeZone;
+
 public class ConfigsActivity extends AppCompatActivity {
 
-    private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSair;
+    private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSobre, itemSair;
+    private TextView textVersaoRodape;
     private FirebaseUser user;
     private ConfigPerfilUsuarioRepository perfilRepository;
 
@@ -53,19 +57,49 @@ public class ConfigsActivity extends AppCompatActivity {
     }
 
     private void inicializarComponentes() {
-        itemPerfil = findViewById(R.id.itemPerfil);
+        itemPerfil       = findViewById(R.id.itemPerfil);
         itemPreferencias = findViewById(R.id.itemPreferencias);
-        itemSeguranca = findViewById(R.id.itemSeguranca);
-        itemSair = findViewById(R.id.itemSair);
+        itemSeguranca    = findViewById(R.id.itemSeguranca);
+        itemSobre        = findViewById(R.id.itemSobre);
+        itemSair         = findViewById(R.id.itemSair);
+        textVersaoRodape = findViewById(R.id.textVersaoRodape);
+
+        configurarVersaoApp();
     }
 
     private void configurarCliques() {
         itemPerfil.setOnClickListener(v -> navegarParaPerfil());
-        itemPreferencias.setOnClickListener(v -> startActivity(new Intent(this, PreferenciasActivity.class)));
-        itemSeguranca.setOnClickListener(v -> startActivity(new Intent(this, SegurancaActivity.class)));
 
-        // Chamada do método corrigida para coincidir com o nome abaixo
+        itemPreferencias.setOnClickListener(v ->
+                startActivity(new Intent(this, PreferenciasActivity.class)));
+
+        itemSeguranca.setOnClickListener(v ->
+                startActivity(new Intent(this, SegurancaActivity.class)));
+
+        itemSobre.setOnClickListener(v -> exibirDialogoSobre());
+
+        // Aciona o diálogo de confirmação antes de qualquer ação destrutiva
         itemSair.setOnClickListener(v -> confirmarSairDoApp());
+    }
+
+    private void configurarVersaoApp() {
+        try {
+            String versao = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            textVersaoRodape.setText("Versão " + versao);
+        } catch (Exception e) {
+            textVersaoRodape.setText("Versão 1.0.0");
+        }
+    }
+
+    private void exibirDialogoSobre() {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Sobre o OrgaFácil")
+                .setMessage("Desenvolvido por: Gussanxz/Tomeki\n\n" +
+                        "Organize sua vida financeira com simplicidade.\n\n" +
+                        "Fuso Horário: " + TimeZone.getDefault().getID() + "\n" +
+                        textVersaoRodape.getText().toString())
+                .setPositiveButton("Fechar", null)
+                .show();
     }
 
     private void confirmarSairDoApp() {
@@ -73,7 +107,7 @@ public class ConfigsActivity extends AppCompatActivity {
         View viewDialog = getLayoutInflater().inflate(R.layout.dialog_logout, null);
         bottomSheet.setContentView(viewDialog);
 
-        // Remove o fundo padrão para o arredondado aparecer
+        // Remove o container cinza padrão para respeitar o bg_dialog_top_rounded
         View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (bottomSheetInternal != null) {
             bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
@@ -84,7 +118,6 @@ public class ConfigsActivity extends AppCompatActivity {
 
         btnSair.setOnClickListener(v -> {
             bottomSheet.dismiss();
-            // CORREÇÃO: Agora chama o método correto existente na classe
             executarLogout();
         });
 
@@ -104,31 +137,33 @@ public class ConfigsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Realiza o Soft Delete (Desativação Lógica) e encerra a sessão local.
+     */
     private void executarLogout() {
         if (user == null) return;
 
         String uid = user.getUid();
 
-        // 1. Alteramos o status no Firestore primeiro
+        // 1. Alteramos o status no Firestore primeiro (Garante auditoria)
         perfilRepository.desativarContaLogica(uid).addOnCompleteListener(task -> {
 
-            // 2. Independente se o banco atualizou ou deu erro de rede,
-            // nós limpamos a sessão local por segurança.
+            // 2. Limpamos a sessão do Firebase Auth (Segurança local)
             perfilRepository.deslogar();
 
             // 3. Redirecionamos para a tela de Login/Intro
             abrirTelaLogin();
 
             if (task.isSuccessful()) {
-                Toast.makeText(this, "Conta desativada com sucesso.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Sessão encerrada com sucesso.", Toast.LENGTH_SHORT).show();
             } else {
-                Log.e("ConfigsActivity", "Erro ao atualizar status no banco: " + task.getException());
+                Log.e("ConfigsActivity", "Falha na sincronização de status: " + task.getException());
             }
         });
     }
+
     private void abrirTelaLogin() {
         Intent intent = new Intent(this, LoginActivity.class);
-        // Limpa a pilha de atividades para segurança
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
