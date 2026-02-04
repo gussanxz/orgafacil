@@ -1,33 +1,40 @@
 package com.gussanxz.orgafacil.funcionalidades.main;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ResumoContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
+import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
+
+import java.util.concurrent.Executor;
 
 public class HomeActivity extends AppCompatActivity {
     private static final String TAG = "HomeActivity";
 
     private TextView textoContas, textoVendas, textoMercado, textoAtividades, textoConfigs;
+    private View layoutPrincipal; // Para esconder o conteúdo até autenticar
     private PreferenciasRepository prefsRepository;
 
     @Override
@@ -38,24 +45,79 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.ac_main_intro_home);
 
         prefsRepository = new PreferenciasRepository();
+
         inicializarComponentes();
         configurarBotoesBloqueados();
+        configurarBotaoVoltar();
 
-        // [NOVO] Captura o botão voltar do Android para exibir o Logout
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                confirmarSairDoApp();
-            }
-        });
+        // [SEGURANÇA] Biometria é checada ANTES de carregar qualquer dado
+        verificarSegurancaBiometrica();
 
         carregarPreferenciasUsuario();
     }
 
+    // --- NOVA LÓGICA DE SEGURANÇA ---
+
+    private void verificarSegurancaBiometrica() {
+        boolean pinObrigatorio = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE)
+                .getBoolean("pin_obrigatorio", true);
+
+        if (pinObrigatorio) {
+            // Esconde o conteúdo sensível imediatamente
+            if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.INVISIBLE);
+            autenticarComDispositivo();
+        } else {
+            // Se não tiver PIN, garante que está visível
+            if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void autenticarComDispositivo() {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                // Sucesso: Mostra a tela
+                if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+
+                // Evita crash se a activity já estiver fechando
+                if (isFinishing() || isDestroyed()) return;
+
+                // Erro crítico ou cancelamento pelo usuário: Fecha o app para proteger os dados
+                if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                        errorCode == BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL) {
+
+                    finishAffinity(); // Fecha o app todo
+                } else {
+                    Toast.makeText(HomeActivity.this, "Autenticação necessária: " + errString, Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("OrgaFácil Protegido")
+                .setSubtitle("Toque no sensor para acessar seus dados")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    // --- FIM DA LÓGICA DE SEGURANÇA ---
+
     private void inicializarComponentes() {
-        View mainView = findViewById(R.id.main);
-        if (mainView != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+        layoutPrincipal = findViewById(R.id.main);
+
+        if (layoutPrincipal != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(layoutPrincipal, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
                 return insets;
@@ -69,17 +131,34 @@ public class HomeActivity extends AppCompatActivity {
         textoConfigs = findViewById(R.id.textViewConfigs);
     }
 
+    private void configurarBotaoVoltar() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // [CORREÇÃO] O Helper atual só pede o Contexto, não precisa passar Repository
+                DialogLogoutHelper.mostrarDialogo(HomeActivity.this);
+            }
+        });
+    }
+
     private void carregarPreferenciasUsuario() {
+        // Usa SharedPreferences padrão para comparar o cache local
+        SharedPreferences sharedPreferences = getSharedPreferences(TemaHelper.PREF_NAME, MODE_PRIVATE);
+        String temaCache = sharedPreferences.getString(TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
+
         prefsRepository.obter(this, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
                 if (prefs != null) {
-                    TemaHelper.aplicarTema(prefs.getTema());
+                    // Se o tema no banco for diferente do cache atual, aplica e recria
+                    if (!temaCache.equals(prefs.getTema())) {
+                        TemaHelper.aplicarTema(prefs.getTema());
+                    }
                 }
             }
             @Override
             public void onErro(String erro) {
-                Log.e(TAG, "Erro ao sincronizar preferências: " + erro);
+                Log.e(TAG, "Erro ao buscar preferências: " + erro);
             }
         });
     }
@@ -95,6 +174,8 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    // --- Navegação ---
+
     public void acessarResumoContasActivity(View view) {
         startActivity(new Intent(this, ResumoContasActivity.class));
     }
@@ -105,38 +186,5 @@ public class HomeActivity extends AppCompatActivity {
 
     public void acessarConfigs(View view) {
         startActivity(new Intent(this, ConfigsActivity.class));
-    }
-
-    private void confirmarSairDoApp() {
-        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
-        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_logout, null);
-        bottomSheet.setContentView(viewDialog);
-
-        // ESSA PARTE É ESSENCIAL:
-        // Remove o fundo padrão para o seu @drawable/bg_dialog_top_rounded aparecer
-        View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-        if (bottomSheetInternal != null) {
-            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
-        }
-
-        Button btnSair = viewDialog.findViewById(R.id.btnConfirmarSair);
-        Button btnCancelar = viewDialog.findViewById(R.id.btnCancelarSair);
-
-        btnSair.setOnClickListener(v -> {
-            bottomSheet.dismiss();
-            executarLogoutReal(); // Ou perfilRepository.deslogar() na Configs
-        });
-
-        btnCancelar.setOnClickListener(v -> bottomSheet.dismiss());
-
-        bottomSheet.show();
-    }
-
-    private void executarLogoutReal() {
-        com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
-        Intent intent = new Intent(this, com.gussanxz.orgafacil.funcionalidades.main.MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 }

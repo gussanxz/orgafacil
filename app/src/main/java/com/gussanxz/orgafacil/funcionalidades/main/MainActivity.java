@@ -1,94 +1,61 @@
 package com.gussanxz.orgafacil.funcionalidades.main;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.os.Handler; // Importado para o delay do Splash
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.biometric.BiometricManager;
-import androidx.biometric.BiometricPrompt;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AlertDialog;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
+import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.heinrichreimersoftware.materialintro.app.IntroActivity;
 import com.heinrichreimersoftware.materialintro.slide.FragmentSlide;
 
-/**
- * MainActivity (Intro)
- * Gerencia a apresentação inicial, Auto-Login e validação de status da conta.
- */
 public class MainActivity extends IntroActivity {
 
     private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioRepository usuarioRepository;
     private UsuarioService usuarioService;
     private LoadingHelper loadingHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 1. Inicialização de objetos essenciais
-        perfilRepository = new ConfigPerfilUsuarioRepository();
-        usuarioService = new UsuarioService();
-        googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDadosGoogle);
-
-        // 2. AUTO-LOGIN com Delay para Splash e Validação de Status
-        if (FirebaseSession.isUserLogged()) {
-            // [MODIFICADO] Adiciona 2 segundos para o Splash aparecer antes de processar
-            new Handler().postDelayed(this::verificarStatusEBaterPonto, 2000);
-
-            // Define o layout de carregamento/splash enquanto o Handler espera
-            setContentView(R.layout.util_loading);
-            super.onCreate(savedInstanceState);
-            return;
-        }
-
+        TemaHelper.aplicarTemaDoCache(this);
+        // Bloqueia prints por segurança
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         super.onCreate(savedInstanceState);
 
-        // [SEGURANÇA] Bloqueia capturas de tela
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+        usuarioRepository = new UsuarioRepository();
+        usuarioService = new UsuarioService();
 
+        // Tenta encontrar o loading no layout da Intro (se você adicionou lá)
         View overlay = findViewById(R.id.loading_overlay);
         if (overlay != null) loadingHelper = new LoadingHelper(overlay);
 
+        googleLoginHelper = new GoogleLoginHelper(this, this::processarLoginGoogle);
+
         configurarSlides();
-    }
-
-    /**
-     * Checa se a conta está ativa no Firestore antes de permitir o acesso.
-     */
-    private void verificarStatusEBaterPonto() {
-        FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
-        if (user == null) return;
-
-        perfilRepository.obterMetadadosRaiz(user.getUid()).addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                String status = task.getResult().getString("statusConta");
-
-                // [CORRIGIDO] Se desativada, usa o seu método de Diálogo de Reativação
-                if (ConfigPerfilUsuarioModel.StatusConta.DESATIVADO.name().equals(status)) {
-                    exibirDialogoReativacao(user.getUid());
-                } else {
-                    abrirTelaHome();
-                }
-            } else {
-                abrirTelaHome();
-            }
-        });
     }
 
     private void configurarSlides() {
@@ -103,25 +70,118 @@ public class MainActivity extends IntroActivity {
         );
     }
 
-    private void iniciarFluxoSegurancaDadosGoogle() {
-        if (!FirebaseSession.isUserLogged()) return;
+    /**
+     * Chamado quando o Google retorna SUCESSO.
+     * Verifica banco de dados e exibe Termos se necessário, tudo nesta tela.
+     */
+    private void processarLoginGoogle() {
+        FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
+        if (user == null) return;
+
         if (loadingHelper != null) loadingHelper.exibir();
 
-        perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                if (loadingHelper != null) loadingHelper.ocultar();
-                abrirTelaHome();
-            } else {
-                FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
-                if (user != null) {
-                    usuarioService.inicializarNovoUsuario(user, taskService -> {
+        // 1. Verifica se o usuário já existe
+        usuarioRepository.verificarSeUsuarioExiste(user.getUid()).addOnCompleteListener(task -> {
+
+            if (!task.isSuccessful()) {
+                abortarLogin("Erro de conexão.");
+                return;
+            }
+
+            DocumentSnapshot doc = task.getResult();
+
+            if (doc != null && doc.exists()) {
+                // ---> USUÁRIO EXISTE <---
+                try {
+                    UsuarioModel usuarioModel = doc.toObject(UsuarioModel.class);
+                    // Se desativado, manda pro Login lidar com a reativação
+                    if (usuarioModel != null && usuarioModel.getStatus() == UsuarioModel.StatusConta.DESATIVADO) {
                         if (loadingHelper != null) loadingHelper.ocultar();
-                        abrirTelaHome();
-                    });
+                        startActivity(new Intent(this, LoginActivity.class));
+                        // Não damos finish() para caso ele cancele a reativação, voltar pra cá
+                    } else {
+                        // Ativo: Entra direto
+                        usuarioRepository.atualizarUltimaAtividade();
+                        irParaHome();
+                    }
+                } catch (Exception e) {
+                    irParaHome(); // Fallback
                 }
+            } else {
+                // ---> USUÁRIO NOVO <---
+                if (loadingHelper != null) loadingHelper.ocultar();
+                exibirDialogoTermos(user);
             }
         });
     }
+
+    private void exibirDialogoTermos(FirebaseUser user) {
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_termos, null);
+        CheckBox checkTermos = viewDialog.findViewById(R.id.checkDialogTermos);
+        Button btnAceitar = viewDialog.findViewById(R.id.btnAceitarTermos);
+        // Botão Cancelar removido do código
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(viewDialog)
+                .setCancelable(true) // Permite usar o botão "Voltar" do celular
+                .create();
+
+        // AÇÃO DE RECUSA: Se o usuário fechar o dialog (botão voltar), deslogamos.
+        dialog.setOnCancelListener(d -> {
+            ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
+            GoogleSignIn.getClient(this, new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()).signOut();
+            Toast.makeText(this, "Cadastro cancelado.", Toast.LENGTH_SHORT).show();
+        });
+
+        if (checkTermos != null && btnAceitar != null) {
+            checkTermos.setOnCheckedChangeListener((bv, isChecked) -> btnAceitar.setEnabled(isChecked));
+
+            btnAceitar.setOnClickListener(v -> {
+                dialog.dismiss(); // Isso NÃO dispara o OnCancelListener, então não desloga
+                if (loadingHelper != null) loadingHelper.exibir();
+                criarConta(user);
+            });
+        }
+
+        dialog.show();
+
+        // Configura Visual Transparente
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            android.util.DisplayMetrics displayMetrics = new android.util.DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            int displayWidth = (int) (displayMetrics.widthPixels * 0.90);
+            int displayHeight = (int) (displayMetrics.heightPixels * 0.85);
+            dialog.getWindow().setLayout(displayWidth, displayHeight);
+        }
+    }
+
+    private void criarConta(FirebaseUser user) {
+        usuarioService.inicializarNovoUsuario(user, task -> {
+            if (loadingHelper != null) loadingHelper.ocultar();
+
+            if (task != null && task.isSuccessful()) {
+                irParaHome();
+            } else {
+                abortarLogin("Erro ao criar conta. Tente novamente.");
+            }
+        });
+    }
+
+    private void irParaHome() {
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void abortarLogin(String erro) {
+        if (loadingHelper != null) loadingHelper.ocultar();
+        ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
+        Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
+    }
+
+    // --- Métodos chamados pelo XML (ac_main_intro_comece_agora) ---
 
     public void btEntrar(View view) {
         startActivity(new Intent(this, LoginActivity.class));
@@ -138,70 +198,9 @@ public class MainActivity extends IntroActivity {
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == RESULT_OK) {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     googleLoginHelper.lidarComResultadoGoogle(result.getData());
-                } else {
-                    if (loadingHelper != null) loadingHelper.ocultar();
                 }
             }
     );
-
-    public void abrirTelaHome() {
-        runOnUiThread(() -> {
-            Intent intent = new Intent(this, HomeActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            verificarBiometriaENavegar(intent);
-        });
-    }
-
-    private void verificarBiometriaENavegar(Intent intent) {
-        if (isPinObrigatorio()) {
-            autenticarComDispositivo(() -> {
-                startActivity(intent);
-                finish();
-            });
-        } else {
-            startActivity(intent);
-            finish();
-        }
-    }
-
-    private void exibirDialogoReativacao(String uid) {
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle("Conta Desativada")
-                .setMessage("Identificamos que sua conta está desativada. Deseja reativá-la agora para acessar seus dados?")
-                .setCancelable(false)
-                .setPositiveButton("Reativar Conta", (dialog, which) -> {
-                    perfilRepository.reativarContaLogica(uid).addOnSuccessListener(v -> {
-                        Toast.makeText(this, "Bem-vindo de volta! Conta reativada.", Toast.LENGTH_SHORT).show();
-                        abrirTelaHome();
-                    });
-                })
-                .setNegativeButton("Sair", (dialog, which) -> {
-                    perfilRepository.deslogar();
-                    recreate();
-                })
-                .show();
-    }
-
-    private void autenticarComDispositivo(Runnable onSuccess) {
-        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Desbloquear OrgaFácil")
-                .setSubtitle("Use biometria ou senha do dispositivo")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                .build();
-
-        BiometricPrompt prompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this),
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                        if (onSuccess != null) onSuccess.run();
-                    }
-                });
-        prompt.authenticate(promptInfo);
-    }
-
-    private boolean isPinObrigatorio() {
-        return getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE).getBoolean("pin_obrigatorio", true);
-    }
 }

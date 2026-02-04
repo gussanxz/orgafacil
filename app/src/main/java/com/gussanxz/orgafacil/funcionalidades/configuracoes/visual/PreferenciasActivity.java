@@ -10,7 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.PreferenciasModel;
+// CORREÇÃO 1: Importando do local correto agora
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 
 public class PreferenciasActivity extends AppCompatActivity {
@@ -26,37 +27,32 @@ public class PreferenciasActivity extends AppCompatActivity {
         repository = new PreferenciasRepository();
         radioGroupTema = findViewById(R.id.radioGroupTema);
 
-        // 1. Executa o Check Automático ao abrir
         marcarOpcaoAtual();
-
-        // 2. Configura o Salvamento Silencioso
         configurarListeners();
     }
 
-    /**
-     * Etapa 1: Check Automático.
-     * Agora utiliza a FirebaseSession para ler o cache centralizado. [cite: 2026-01-31]
-     */
     private void marcarOpcaoAtual() {
-        String temaSalvo = FirebaseSession.getString(this, TemaHelper.KEY_TEMA, "SISTEMA");
+        // CORREÇÃO 2: Usando constantes em vez de "string solta"
+        String temaSalvo = FirebaseSession.getString(this, TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
 
-        if (temaSalvo.equals("CLARO")) {
+        if (temaSalvo.equals(PreferenciasModel.TEMA_CLARO)) {
             ((RadioButton) findViewById(R.id.rbClaro)).setChecked(true);
-        } else if (temaSalvo.equals("ESCURO")) {
+        } else if (temaSalvo.equals(PreferenciasModel.TEMA_ESCURO)) {
             ((RadioButton) findViewById(R.id.rbEscuro)).setChecked(true);
         } else {
             ((RadioButton) findViewById(R.id.rbSistema)).setChecked(true);
         }
     }
 
-    /**
-     * Etapa 2: Salvamento Silencioso.
-     */
     private void configurarListeners() {
         radioGroupTema.setOnCheckedChangeListener((group, checkedId) -> {
-            String novoTema = "SISTEMA";
-            if (checkedId == R.id.rbClaro) novoTema = "CLARO";
-            else if (checkedId == R.id.rbEscuro) novoTema = "ESCURO";
+            String novoTema = PreferenciasModel.TEMA_SISTEMA;
+
+            if (checkedId == R.id.rbClaro) {
+                novoTema = PreferenciasModel.TEMA_CLARO;
+            } else if (checkedId == R.id.rbEscuro) {
+                novoTema = PreferenciasModel.TEMA_ESCURO;
+            }
 
             aplicarESalvar(novoTema);
         });
@@ -66,14 +62,16 @@ public class PreferenciasActivity extends AppCompatActivity {
         // Ação visual imediata (UX)
         TemaHelper.aplicarTema(tema);
 
-        // Sincronização via Repository
-        // Agora passando o Context (this) como 1º argumento para resolver o erro do print [cite: 2026-01-31]
-        PreferenciasModel pref = new PreferenciasModel(tema, "BRL", false);
+        // CORREÇÃO 3: Usando construtor vazio + Setter
+        // O construtor vazio já define BRL, false, etc.
+        PreferenciasModel pref = new PreferenciasModel();
+        pref.setTema(tema);
 
+        // Sincronização via Repository
         repository.salvar(this, pref, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
-                // Sincronização silenciosa concluída com sucesso
+                // Sincronização silenciosa concluída
             }
 
             @Override

@@ -18,7 +18,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
 /**
@@ -35,7 +35,7 @@ public class AlterarSenhaActivity extends AppCompatActivity {
     private LoadingHelper loadingHelper;
 
     private FirebaseUser user;
-    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo repositório
+    private UsuarioRepository perfilRepository; // Atualizado para o novo repositório
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +51,7 @@ public class AlterarSenhaActivity extends AppCompatActivity {
         });
 
         // Inicialização de repositório e autenticação
-        perfilRepository = new ConfigPerfilUsuarioRepository();
+        perfilRepository = new UsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         inicializarComponentes();

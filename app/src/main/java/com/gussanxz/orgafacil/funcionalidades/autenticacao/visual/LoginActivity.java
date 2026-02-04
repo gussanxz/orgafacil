@@ -21,12 +21,9 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.regras.BaseAuthActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
+import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
-/**
- * LoginActivity herdando de BaseAuthActivity.
- * Centraliza o acesso e utiliza a Safety Net da classe mãe.
- */
 public class LoginActivity extends BaseAuthActivity {
 
     private EditText campoEmail, campoSenha;
@@ -36,9 +33,12 @@ public class LoginActivity extends BaseAuthActivity {
     private LoadingHelper loadingHelper;
     private GoogleLoginHelper googleLoginHelper;
 
+    // [LIMPEZA] Não declaramos 'usuarioRepository' aqui porque HERDAMOS da BaseAuthActivity
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState); // Ativa o FLAG_SECURE da Base
+        TemaHelper.aplicarTemaDoCache(this);
+        super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_login);
 
@@ -57,16 +57,11 @@ public class LoginActivity extends BaseAuthActivity {
         configurarListeners();
     }
 
-    /**
-     * [CORREÇÃO CRÍTICA]
-     * Verifica se JÁ existe uma sessão ativa ao abrir a tela.
-     * Se existir, dispara a verificação de termos/perfil imediatamente.
-     */
     @Override
     protected void onStart() {
         super.onStart();
-        // Se o usuário fechou o app sem aceitar termos, ele ainda está "logado" no Auth.
-        // Essa chamada força a verificação do banco de dados novamente.
+        // Se o usuário já estiver logado (ex: rotacionou a tela),
+        // a BaseAuthActivity assume e checa o banco.
         if (autenticacao.getCurrentUser() != null) {
             iniciarFluxoSegurancaDados();
         }
@@ -87,7 +82,7 @@ public class LoginActivity extends BaseAuthActivity {
 
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
 
-        // O callback aponta para o método herdado da BaseAuthActivity
+        // Se o usuário clicar em Google DENTRO desta tela, também usamos a lógica da mãe
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
@@ -117,14 +112,17 @@ public class LoginActivity extends BaseAuthActivity {
 
         loadingHelper.exibir();
 
-        // Usa o objeto 'autenticacao' herdado da classe mãe
         autenticacao.signInWithEmailAndPassword(email, senha)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        iniciarFluxoSegurancaDados(); // Método da classe mãe que checa os termos
+                        // [O PULO DO GATO]
+                        // O Login técnico funcionou. Agora chamamos a MÃE (BaseAuthActivity)
+                        // para checar se a conta está ativa, desativada ou pendente.
+                        iniciarFluxoSegurancaDados();
                     } else {
                         loadingHelper.ocultar();
-                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                        // Usamos o 'usuarioRepository' que veio da HERANÇA
+                        String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
                         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -134,6 +132,11 @@ public class LoginActivity extends BaseAuthActivity {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_recuperar_senha, null);
         dialog.setContentView(view);
+
+        View bottomSheetInternal = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheetInternal != null) {
+            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
+        }
 
         TextInputEditText editEmailRecuperar = view.findViewById(R.id.editEmailRecuperar);
         Button btnEnviar = view.findViewById(R.id.btnEnviarLink);
@@ -147,10 +150,10 @@ public class LoginActivity extends BaseAuthActivity {
 
             autenticacao.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    Toast.makeText(this, "Link enviado! Verifique seu e-mail.", Toast.LENGTH_LONG).show();
                     dialog.dismiss();
+                    Toast.makeText(this, "Link enviado! Verifique seu e-mail.", Toast.LENGTH_LONG).show();
                 } else {
-                    String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                    String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
                     Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                 }
             });
@@ -165,7 +168,7 @@ public class LoginActivity extends BaseAuthActivity {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     googleLoginHelper.lidarComResultadoGoogle(result.getData());
                 } else {
-                    Toast.makeText(this, "Login Google cancelado.", Toast.LENGTH_SHORT).show();
+                    loadingHelper.ocultar();
                 }
             }
     );

@@ -3,7 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.view.WindowManager; // [NOVO] Segurança
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -15,13 +15,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
 
 public class PerfilActivity extends AppCompatActivity {
 
@@ -33,7 +31,7 @@ public class PerfilActivity extends AppCompatActivity {
     private ProgressBar progressBar;
 
     private FirebaseUser usuarioAtual;
-    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioRepository usuarioRepository; // Renomeado para consistência
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +41,7 @@ public class PerfilActivity extends AppCompatActivity {
         // [SEGURANÇA] Impede prints em tela de dados sensíveis
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
-        perfilRepository = new ConfigPerfilUsuarioRepository();
+        usuarioRepository = new UsuarioRepository();
         usuarioAtual = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
 
         if (usuarioAtual == null) {
@@ -83,7 +81,7 @@ public class PerfilActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         btnSalvarEdicao.setEnabled(false);
 
-        // 1. Atualiza no Firebase Auth (Identidade da Sessão)
+        // 1. Atualiza no Firebase Auth (Identidade da Sessão - Local e Nuvem)
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setDisplayName(novoNome)
                 .build();
@@ -91,19 +89,18 @@ public class PerfilActivity extends AppCompatActivity {
         usuarioAtual.updateProfile(profileUpdates).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
 
-                // 2. [CORREÇÃO] Criamos um modelo apenas com os campos que DEVEM ser alterados.
-                // O Repository usará o merge para não apagar fusoHorario, versaoApp, etc.
-                ConfigPerfilUsuarioModel perfilUpdate = new ConfigPerfilUsuarioModel();
-                perfilUpdate.setNome(novoNome);
-                perfilUpdate.setEmail(usuarioAtual.getEmail());
-
-                perfilRepository.atualizarPerfil(perfilUpdate)
+                // 2. [CORREÇÃO] Atualiza no Banco de Dados usando o novo método simplificado
+                // Passamos null na fotoUrl pois não estamos alterando a foto agora
+                usuarioRepository.atualizarDadosPerfil(novoNome, null)
                         .addOnSuccessListener(aVoid -> {
-                            // 3. [AUDITORIA] Registra que o usuário esteve ativo hoje
-                            perfilRepository.atualizarUltimaAtividade(usuarioAtual.getUid());
+
+                            // 3. [AUDITORIA] Registra atividade (método sem argumentos agora)
+                            usuarioRepository.atualizarUltimaAtividade();
 
                             progressBar.setVisibility(View.GONE);
                             btnSalvarEdicao.setEnabled(true);
+
+                            // Atualiza a tela
                             textNomePerfil.setText(novoNome);
                             Toast.makeText(this, "Perfil atualizado com sucesso!", Toast.LENGTH_SHORT).show();
                             alternarModo(false);
@@ -111,7 +108,7 @@ public class PerfilActivity extends AppCompatActivity {
                         .addOnFailureListener(e -> {
                             progressBar.setVisibility(View.GONE);
                             btnSalvarEdicao.setEnabled(true);
-                            String msg = perfilRepository.mapearErroAutenticacao(e);
+                            String msg = usuarioRepository.mapearErroAutenticacao(e);
                             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                         });
             } else {
@@ -125,16 +122,18 @@ public class PerfilActivity extends AppCompatActivity {
     private void carregarDados() {
         textEmailPerfil.setText(usuarioAtual.getEmail());
 
-        // Carrega foto com placeholder para evitar espaços vazios
+        // Carrega foto com placeholder
         Uri urlFoto = usuarioAtual.getPhotoUrl();
         Glide.with(this)
                 .load(urlFoto)
-                .placeholder(R.drawable.ic_account_circle_24)
+                .placeholder(R.drawable.ic_account_circle_24) // Certifique-se que este ícone existe
                 .circleCrop()
                 .into(imagePerfilUsuario);
 
         // Prioridade de exibição do nome
         String nome = usuarioAtual.getDisplayName();
+
+        // Fallback: Tenta pegar do Intent se o Auth ainda não tiver carregado (raro, mas possível)
         if (nome == null || nome.isEmpty()) {
             Bundle bundle = getIntent().getExtras();
             if (bundle != null) nome = bundle.getString("nomeUsuario");

@@ -1,14 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
 
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.CarteiraUsuarioModel;
 
 import java.text.Normalizer;
 import java.util.Arrays;
@@ -18,66 +14,75 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * REPOSITORY: CARTEIRA E FINANCEIRO
- * Gerencia a inicialização da estrutura financeira do usuário.
- */
 public class CarteiraRepository {
 
-    /**
-     * Inicializa o documento 'geral' de resumos com saldo zerado.
-     * Usa o caminho centralizado: contas_resumos/geral
-     */
-    public Task<Void> inicializarSaldosContas() {
-        CarteiraUsuarioModel carteira = new CarteiraUsuarioModel();
+    private final FirebaseFirestore db;
 
-        // Seguindo o padrão de centavos que estabelecemos
-        Map<String, Object> dadosIniciais = new HashMap<>();
-        dadosIniciais.put("saldoTotalCent", 0);
-        dadosIniciais.put("updatedAt", FieldValue.serverTimestamp());
-
-        // Documento central de saldos: usuarios/{uid}/moduloSistema/contas/contas_resumos/geral
-        return FirestoreSchema.myUserDoc()
-                .collection(FirestoreSchema.MODULO)
-                .document(FirestoreSchema.CONTAS)
-                .collection(FirestoreSchema.CONTAS_RESUMOS)
-                .document("geral")
-                .set(dadosIniciais, SetOptions.merge());
+    public CarteiraRepository() {
+        this.db = ConfiguracaoFirestore.getFirestore();
     }
 
     /**
-     * Cria as categorias padrão usando as coleções mapeadas no Schema.
+     * Adiciona a criação da carteira ao Batch (Não salva ainda, apenas prepara).
      */
-    public Task<Void> inicializarCategoriasPadrao() {
-        List<String> categorias = Arrays.asList(
-                "Alimentação", "Aluguel", "Educação", "Lazer", "Mercado", "Saúde"
+    public void prepararCarteiraInicial(WriteBatch batch, String uid) {
+        // Caminho: users/{uid}/carteira/geral
+        DocumentReference ref = db.collection("users").document(uid)
+                .collection("carteira").document("geral");
+
+        Map<String, Object> dadosIniciais = new HashMap<>();
+        dadosIniciais.put("nome", "Carteira Principal");
+        dadosIniciais.put("saldo", 0.0); // Usando double para facilitar visualização
+        dadosIniciais.put("tipo", "Principal");
+        dadosIniciais.put("criadoEm", FieldValue.serverTimestamp());
+        dadosIniciais.put("atualizadoEm", FieldValue.serverTimestamp());
+
+        batch.set(ref, dadosIniciais);
+    }
+
+    /**
+     * Adiciona a criação das categorias ao Batch.
+     */
+    public void prepararCategoriasPadrao(WriteBatch batch, String uid) {
+        List<String> despesas = Arrays.asList(
+                "Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Educação"
         );
 
-        WriteBatch batch = ConfiguracaoFirestore.getFirestore().batch();
+        List<String> receitas = Arrays.asList(
+                "Salário", "Investimentos", "Extra"
+        );
 
+        // Cria Despesas
         int ordem = 0;
-        for (String nome : categorias) {
-            String slugId = gerarSlug(nome);
+        for (String nome : despesas) {
+            String slug = gerarSlug(nome);
+            DocumentReference ref = db.collection("users").document(uid)
+                    .collection("categorias_despesas").document(slug);
 
-            // Usa o método do Schema para pegar a coleção correta sem hardcode
-            DocumentReference ref = FirestoreSchema.contasCategoriasCol().document(slugId);
-
-            Map<String, Object> doc = new HashMap<>();
-            doc.put("nome", nome);
-            doc.put("tipo", "Despesa");
-            doc.put("ativo", true);
-            doc.put("ordem", ordem++);
-            doc.put("createdAt", FieldValue.serverTimestamp());
-
-            batch.set(ref, doc, SetOptions.merge());
+            batch.set(ref, montarMapaCategoria(nome, "Despesa", ordem++));
         }
 
-        return batch.commit();
+        // Cria Receitas
+        ordem = 0;
+        for (String nome : receitas) {
+            String slug = gerarSlug(nome);
+            DocumentReference ref = db.collection("users").document(uid)
+                    .collection("categorias_receitas").document(slug);
+
+            batch.set(ref, montarMapaCategoria(nome, "Receita", ordem++));
+        }
     }
 
-    /**
-     * Transforma nomes em IDs amigáveis (slugs).
-     */
+    private Map<String, Object> montarMapaCategoria(String nome, String tipo, int ordem) {
+        Map<String, Object> doc = new HashMap<>();
+        doc.put("nome", nome);
+        doc.put("tipo", tipo);
+        doc.put("ativa", true);
+        doc.put("ordem", ordem);
+        doc.put("icone", "ic_cat_padrao"); // Placeholder para ícone
+        return doc;
+    }
+
     private String gerarSlug(String input) {
         if (input == null) return "";
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);

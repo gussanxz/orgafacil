@@ -7,25 +7,28 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
 
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
-import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.main.MainActivity; // Assumindo que esta é a tela de "Bem-vindo/Opções"
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
 
 /**
  * SplashActivity
- * Atua como o "porteiro" do aplicativo, decidindo o destino do usuário. [cite: 2026-01-31]
+ * Gerencia a entrada, animação e verifica o STATUS da conta (Ativo/Desativado).
  */
 public class SplashActivity extends AppCompatActivity {
 
     private boolean isVerificacaoConcluida = false;
-    private ConfigPerfilUsuarioRepository perfilRepository;
+    private UsuarioRepository usuarioRepository; // Renomeado para consistência
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,28 +38,33 @@ public class SplashActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        // Inicializa a camada de repositório [cite: 2025-11-10]
-        perfilRepository = new ConfigPerfilUsuarioRepository();
+        // Se você tiver um layout XML para a splash (para versões antigas do Android), set aqui.
+        // Se for só API 12+, pode não precisar de setContentView se o tema cuidar disso.
+        // setContentView(R.layout.ac_splash);
 
-        // 2. Mantém a logo na tela enquanto verificamos a sessão [cite: 2026-01-31]
+        usuarioRepository = new UsuarioRepository();
+
+        // 2. Mantém a logo na tela enquanto verificamos a sessão
         splashScreen.setKeepOnScreenCondition(() -> !isVerificacaoConcluida);
 
         verificarSessao();
     }
 
     private void verificarSessao() {
-        if (!FirebaseSession.isUserLogged()) {
+        // Se não tem usuário no Auth, vai pra Intro
+        if (ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser() == null) {
             irParaIntro();
             return;
         }
 
         FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
 
+        // Recarrega o usuário para garantir que não foi desabilitado no console do Firebase
         user.reload().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                garantirIntegridadeFirestore();
+                validarStatusNoBanco(user.getUid());
             } else {
-                // CORREÇÃO: Passando 'this' para limpar o cache no logout [cite: 2026-01-31]
+                // Token expirou ou usuário deletado no console
                 FirebaseSession.logOut(this);
                 irParaIntro();
             }
@@ -64,16 +72,39 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     /**
-     * TRAVA 2: Verifica se os dados existem no banco.
-     * Agora usa o método stateless do repository. [cite: 2025-11-10, 2026-01-31]
+     * Verifica se o usuário existe E se está ATIVO.
      */
-    private void garantirIntegridadeFirestore() {
-        perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                irParaHome();
+    private void validarStatusNoBanco(String uid) {
+        usuarioRepository.verificarSeUsuarioExiste(uid).addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                DocumentSnapshot doc = task.getResult();
+
+                if (doc.exists()) {
+                    try {
+                        UsuarioModel usuario = doc.toObject(UsuarioModel.class);
+
+                        // [LÓGICA CRÍTICA] Só entra se estiver ATIVO.
+                        if (usuario != null && usuario.getStatus() == UsuarioModel.StatusConta.ATIVO) {
+                            usuarioRepository.atualizarUltimaAtividade();
+                            irParaHome();
+                        } else {
+                            // Se estiver DESATIVADO, SUSPENSO ou null -> Manda pro Login/Intro.
+                            // Lá na Intro/Login, ao tentar logar, a BaseAuthActivity vai oferecer a Reativação.
+                            FirebaseSession.logOut(this);
+                            irParaIntro();
+                        }
+                    } catch (Exception e) {
+                        // Erro ao converter dados (banco corrompido ou antigo) -> Logout por segurança
+                        FirebaseSession.logOut(this);
+                        irParaIntro();
+                    }
+                } else {
+                    // Logado no Auth mas sem dados no Banco (Inconsistência) -> Logout
+                    FirebaseSession.logOut(this);
+                    irParaIntro();
+                }
             } else {
-                // CORREÇÃO: Passando 'this' para limpar o cache no logout [cite: 2026-01-31]
-                FirebaseSession.logOut(this);
+                // Erro de conexão ou Firestore offline -> Tenta mandar pro login
                 irParaIntro();
             }
         });
@@ -89,6 +120,9 @@ public class SplashActivity extends AppCompatActivity {
 
     private void irParaIntro() {
         isVerificacaoConcluida = true;
+        // Importante: Certifique-se que MainActivity aqui é a tela de "Bem-vindo / Login / Cadastro"
+        // e não aquela MainActivity "Dispatcher" que criamos no passo anterior.
+        // Se a MainActivity for o Dispatcher, aponte aqui direto para LoginActivity.class
         startActivity(new Intent(this, MainActivity.class));
         finish();
     }

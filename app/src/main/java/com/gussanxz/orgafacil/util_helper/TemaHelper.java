@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 import androidx.appcompat.app.AppCompatDelegate;
 
 public class TemaHelper {
-    private static final String PREF_NAME = "OrgaFacilPrefs";
+    public static final String PREF_NAME = "OrgaFacilPrefs";
     public static final String KEY_TEMA = "tema_escolhido";
 
     public static void aplicarTema(String tema) {

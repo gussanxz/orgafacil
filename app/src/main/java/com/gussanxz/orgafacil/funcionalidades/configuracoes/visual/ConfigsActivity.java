@@ -3,12 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,21 +11,19 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 
 import java.util.TimeZone;
 
 public class ConfigsActivity extends AppCompatActivity {
 
-    private LinearLayout itemPerfil, itemPreferencias, itemSeguranca, itemSobre, itemSair;
     private TextView textVersaoRodape;
     private FirebaseUser user;
-    private ConfigPerfilUsuarioRepository perfilRepository;
+    // [REFATORAÇÃO] Removido UsuarioRepository pois não é mais usado aqui
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,42 +37,41 @@ public class ConfigsActivity extends AppCompatActivity {
             return insets;
         });
 
-        perfilRepository = new ConfigPerfilUsuarioRepository();
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user == null) {
-            abrirTelaLogin();
+            navegarParaLogin();
             return;
         }
 
-        inicializarComponentes();
-        configurarCliques();
+        inicializarViews();
     }
 
-    private void inicializarComponentes() {
-        itemPerfil       = findViewById(R.id.itemPerfil);
-        itemPreferencias = findViewById(R.id.itemPreferencias);
-        itemSeguranca    = findViewById(R.id.itemSeguranca);
-        itemSobre        = findViewById(R.id.itemSobre);
-        itemSair         = findViewById(R.id.itemSair);
-        textVersaoRodape = findViewById(R.id.textVersaoRodape);
+    private void inicializarViews() {
+        // --- NAVEGAÇÃO ---
 
-        configurarVersaoApp();
-    }
+        // Perfil
+        findViewById(R.id.itemPerfil).setOnClickListener(v -> navegarParaPerfil());
 
-    private void configurarCliques() {
-        itemPerfil.setOnClickListener(v -> navegarParaPerfil());
-
-        itemPreferencias.setOnClickListener(v ->
+        // Preferências
+        findViewById(R.id.itemPreferencias).setOnClickListener(v ->
                 startActivity(new Intent(this, PreferenciasActivity.class)));
 
-        itemSeguranca.setOnClickListener(v ->
+        // Segurança
+        findViewById(R.id.itemSeguranca).setOnClickListener(v ->
                 startActivity(new Intent(this, SegurancaActivity.class)));
 
-        itemSobre.setOnClickListener(v -> exibirDialogoSobre());
+        // Sobre
+        findViewById(R.id.itemSobre).setOnClickListener(v -> exibirDialogoSobre());
 
-        // Aciona o diálogo de confirmação antes de qualquer ação destrutiva
-        itemSair.setOnClickListener(v -> confirmarSairDoApp());
+        // --- AÇÃO DE SAIR ---
+        // [CORREÇÃO] Passamos apenas o contexto 'this'
+        findViewById(R.id.itemSair).setOnClickListener(v ->
+                DialogLogoutHelper.mostrarDialogo(this));
+
+        // --- VERSÃO DO APP ---
+        textVersaoRodape = findViewById(R.id.textVersaoRodape);
+        configurarVersaoApp();
     }
 
     private void configurarVersaoApp() {
@@ -95,40 +87,16 @@ public class ConfigsActivity extends AppCompatActivity {
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Sobre o OrgaFácil")
                 .setMessage("Desenvolvido por: Gussanxz/Tomeki\n\n" +
-                        "Organize sua vida financeira com simplicidade.\n\n" +
                         "Fuso Horário: " + TimeZone.getDefault().getID() + "\n" +
                         textVersaoRodape.getText().toString())
                 .setPositiveButton("Fechar", null)
                 .show();
     }
 
-    private void confirmarSairDoApp() {
-        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
-        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_logout, null);
-        bottomSheet.setContentView(viewDialog);
-
-        // Remove o container cinza padrão para respeitar o bg_dialog_top_rounded
-        View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
-        if (bottomSheetInternal != null) {
-            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
-        }
-
-        Button btnSair = viewDialog.findViewById(R.id.btnConfirmarSair);
-        Button btnCancelar = viewDialog.findViewById(R.id.btnCancelarSair);
-
-        btnSair.setOnClickListener(v -> {
-            bottomSheet.dismiss();
-            executarLogout();
-        });
-
-        btnCancelar.setOnClickListener(v -> bottomSheet.dismiss());
-
-        bottomSheet.show();
-    }
-
     private void navegarParaPerfil() {
         if (user != null) {
             Intent intent = new Intent(this, PerfilActivity.class);
+            // Passamos dados básicos para evitar delay de carregamento na próxima tela
             intent.putExtra("nomeUsuario", user.getDisplayName());
             intent.putExtra("emailUsuario", user.getEmail());
             Uri fotoUrl = user.getPhotoUrl();
@@ -137,34 +105,9 @@ public class ConfigsActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Realiza o Soft Delete (Desativação Lógica) e encerra a sessão local.
-     */
-    private void executarLogout() {
-        if (user == null) return;
-
-        String uid = user.getUid();
-
-        // 1. Alteramos o status no Firestore primeiro (Garante auditoria)
-        perfilRepository.desativarContaLogica(uid).addOnCompleteListener(task -> {
-
-            // 2. Limpamos a sessão do Firebase Auth (Segurança local)
-            perfilRepository.deslogar();
-
-            // 3. Redirecionamos para a tela de Login/Intro
-            abrirTelaLogin();
-
-            if (task.isSuccessful()) {
-                Toast.makeText(this, "Sessão encerrada com sucesso.", Toast.LENGTH_SHORT).show();
-            } else {
-                Log.e("ConfigsActivity", "Falha na sincronização de status: " + task.getException());
-            }
-        });
-    }
-
-    private void abrirTelaLogin() {
+    private void navegarParaLogin() {
         Intent intent = new Intent(this, LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
