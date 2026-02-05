@@ -2,51 +2,78 @@ package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.auth.FirebaseUser;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.ConfigPerfilUsuarioModel;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
+import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
 
-/**
- * SERVICE: USUÁRIO
- * Orquestra a criação coordenada entre Perfil e Carteira.
- * Agora utiliza a nova arquitetura onde os repositórios resolvem o UID internamente.
- */
 public class UsuarioService {
 
-    private final ConfigPerfilUsuarioRepository perfilRepository;
+    private final FirebaseFirestore db;
     private final CarteiraRepository carteiraRepository;
 
     public UsuarioService() {
-        this.perfilRepository = new ConfigPerfilUsuarioRepository();
+        this.db = ConfiguracaoFirestore.getFirestore();
         this.carteiraRepository = new CarteiraRepository();
     }
 
     /**
-     * Inicializa toda a estrutura do usuário de forma sequencial.
-     * Pensa fora da caixa: Menos parâmetros, mais segurança.
+     * Interface para retorno simples
      */
-    public void inicializarNovoUsuario(FirebaseUser user, OnCompleteListener<Void> listener) {
-        // 1. Etapa Inicial: Metadados na Raiz
-        // Note: Passamos 'user' aqui apenas porque o repository extrai o provedor (google/senha)
-        perfilRepository.inicializarMetadadosRaiz(user).addOnSuccessListener(aVoid -> {
+    public interface CriacaoCallback {
+        void onConcluido(com.google.android.gms.tasks.Task<Void> task);
+    }
 
-            // 2. Criar Perfil (O Repository agora já sabe o UID via FirebaseSession)
-            ConfigPerfilUsuarioModel perfil = new ConfigPerfilUsuarioModel();
-            perfil.setNome(user.getDisplayName() != null ? user.getDisplayName() : "Usuário");
-            perfil.setEmail(user.getEmail());
+    /**
+     * Cria Usuário + Carteira + Categorias em uma única transação atômica.
+     */
+    public void inicializarNovoUsuario(FirebaseUser user, CriacaoCallback callback) {
+        if (user == null) return;
 
-            perfilRepository.salvarPerfil(perfil).addOnSuccessListener(aVoid1 -> {
+        String uid = user.getUid();
 
-                // 3. Criar Carteira (Saldo inicial em centavos)
-                carteiraRepository.inicializarSaldosContas().addOnSuccessListener(aVoid2 -> {
+        // 1. Inicia o Batch
+        WriteBatch batch = db.batch();
 
-                    // 4. Criar Categorias Padrão
-                    carteiraRepository.inicializarCategoriasPadrao().addOnSuccessListener(aVoid3 -> {
+        // 2. Prepara dados do Usuário (Raiz)
+        DocumentReference userRef = com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema.userDoc(uid);
 
-                        // SUCESSO TOTAL
-                        listener.onComplete(null);
+        UsuarioModel novoUsuario = new UsuarioModel(
+                uid,
+                obterNome(user),
+                user.getEmail(),
+                obterProvedor(user)
+        );
 
-                    }).addOnFailureListener(e -> listener.onComplete(null));
-                });
-            });
-        }).addOnFailureListener(e -> listener.onComplete(null));
+        if (user.getPhotoUrl() != null) {
+            novoUsuario.setFotoUrl(user.getPhotoUrl().toString());
+        }
+
+        batch.set(userRef, novoUsuario);
+
+        // 3. Prepara dados Financeiros
+        carteiraRepository.prepararCarteiraInicial(batch, uid);
+        carteiraRepository.prepararCategoriasPadrao(batch, uid);
+
+        // 4. Commit
+        batch.commit().addOnCompleteListener(task -> {
+            if (callback != null) {
+                callback.onConcluido(task);
+            }
+        });
+    }
+
+    // --- Helpers Privados ---
+
+    private String obterNome(FirebaseUser user) {
+        return (user.getDisplayName() != null && !user.getDisplayName().isEmpty())
+                ? user.getDisplayName() : "Usuário";
+    }
+
+    private String obterProvedor(FirebaseUser user) {
+        if (user.getProviderData() == null || user.getProviderData().isEmpty()) return "password";
+        // Se tiver mais de 1 provider data, geralmente o segundo é o do Google/Facebook
+        return (user.getProviderData().size() > 1) ? "google.com" : "password";
     }
 }

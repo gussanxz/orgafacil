@@ -18,119 +18,97 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OrgaFacil"
         tools:targetApi="31">
-        <activity
-            android:name=".funcionalidades.contas.ResumoContasActivity"
-            android:exported="false" />
+
         <activity
             android:name=".funcionalidades.autenticacao.visual.SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".funcionalidades.main.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.OrgaFacil" />
+
         <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity"
+            android:name=".funcionalidades.autenticacao.visual.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity"
+            android:name=".funcionalidades.autenticacao.visual.CadastroActivity"
             android:exported="false" />
+
         <activity
-            android:name=".funcionalidades.configuracoes.visual.AlterarSenhaActivity"
+            android:name=".funcionalidades.autenticacao.visual.TermosActivity"
             android:exported="false" />
-        <activity
-            android:name=".funcionalidades.configuracoes.visual.SegurancaActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.contas.EditarMovimentacaoActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.contas.SelecionarCategoriaContasActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.listas.ListaPsActivty"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.listas.ListaPagamentosActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.configuracoes.visual.ConfigsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.boletos.BoletosActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.todo.ListaAtividadesActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.mercado.ResumoListaMercadoActivity"
-            android:exported="false" />
+
         <activity
             android:name=".funcionalidades.main.HomeActivity"
             android:exported="false" />
+
         <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.ResumoVendasActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.contas.DespesasActivity"
-            android:exported="false"
-            android:theme="@style/despesaTheme" />
-        <activity
-            android:name=".funcionalidades.contas.ReceitasActivity"
-            android:exported="false"
-            android:theme="@style/proventosTheme" />
-        <activity
-            android:name=".funcionalidades.contas.ContasActivity"
-            android:exported="false"
-            android:theme="@style/principalTheme" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity"
+            android:name=".funcionalidades.configuracoes.visual.ConfigsActivity"
             android:exported="false" />
         <activity
             android:name=".funcionalidades.configuracoes.visual.PerfilActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity"
+            android:name=".funcionalidades.configuracoes.visual.SegurancaActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity"
+            android:name=".funcionalidades.configuracoes.visual.ConfirmacaoDesativacaoContaActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.autenticacao.visual.CadastroActivity"
-            android:exported="true" />
-        <activity
-            android:name=".funcionalidades.autenticacao.visual.LoginActivity"
-            android:exported="true" />
-        <activity
-            android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity"
+            android:name=".funcionalidades.configuracoes.visual.AlterarSenhaActivity"
             android:exported="false" />
-        <activity android:name=".funcionalidades.autenticacao.visual.TermosActivity"
+        <activity
+            android:name=".funcionalidades.configuracoes.visual.PreferenciasActivity"
             android:exported="false" />
-        <activity android:name=".funcionalidades.configuracoes.visual.ConfirmacaoEncerrarContaActivity"
-            android:exported="false"></activity>
-        <activity android:name=".funcionalidades.configuracoes.visual.PreferenciasActivity"
-            android:exported="false"></activity>
-    </application>
 
+        <activity android:name=".funcionalidades.vendas.ResumoVendasActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.listas.ListaPagamentosActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity" android:exported="false" />
+
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
+
+        <activity
+            android:name=".funcionalidades.contas.comum.visual.ui.ResumoContasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".funcionalidades.contas.comum.visual.ui.ContasActivity"
+            android:exported="false"
+            android:theme="@style/principalTheme" />
+        <activity
+            android:name=".funcionalidades.contas.comum.visual.ui.SelecionarCategoriaContasActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".funcionalidades.contas.movimentacoes.visual.DespesasActivity"
+            android:exported="false"
+            android:theme="@style/despesaTheme" />
+        <activity
+            android:name=".funcionalidades.contas.movimentacoes.visual.ReceitasActivity"
+            android:exported="false"
+            android:theme="@style/proventosTheme" />
+        <activity
+            android:name=".funcionalidades.contas.movimentacoes.r_negocio.regras.EditarMovimentacaoActivity"
+            android:exported="false" />
+
+        <activity android:name=".funcionalidades.boletos.BoletosActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.todo.ListaAtividadesActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.mercado.ResumoListaMercadoActivity" android:exported="false" />
+
+    </application>
 </manifest>

@@ -1,6 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.main;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -8,52 +9,120 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.ConfigsActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.ResumoContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ResumoContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
+import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
+
+import java.util.concurrent.Executor;
 
 public class HomeActivity extends AppCompatActivity {
     private static final String TAG = "HomeActivity";
 
     private TextView textoContas, textoVendas, textoMercado, textoAtividades, textoConfigs;
+    private View layoutPrincipal; // Para esconder o conteúdo até autenticar
     private PreferenciasRepository prefsRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // 1. APLICAÇÃO IMEDIATA: Deve vir antes do super.onCreate para evitar o "flash" branco
         TemaHelper.aplicarTemaDoCache(this);
-
         super.onCreate(savedInstanceState);
-
-        // 2. CONFIGURAÇÃO DE INTERFACE
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_home);
 
-        // 3. INICIALIZAÇÃO DE DADOS
         prefsRepository = new PreferenciasRepository();
-        carregarPreferenciasUsuario();
 
-        // 4. CONFIGURAÇÃO DE VIEWS
         inicializarComponentes();
         configurarBotoesBloqueados();
+        configurarBotaoVoltar();
+
+        // [SEGURANÇA] Biometria é checada ANTES de carregar qualquer dado
+        verificarSegurancaBiometrica();
+
+        carregarPreferenciasUsuario();
     }
 
-    private void inicializarComponentes() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+    // --- NOVA LÓGICA DE SEGURANÇA ---
+
+    private void verificarSegurancaBiometrica() {
+        boolean pinObrigatorio = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE)
+                .getBoolean("pin_obrigatorio", true);
+
+        if (pinObrigatorio) {
+            // Esconde o conteúdo sensível imediatamente
+            if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.INVISIBLE);
+            autenticarComDispositivo();
+        } else {
+            // Se não tiver PIN, garante que está visível
+            if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void autenticarComDispositivo() {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                // Sucesso: Mostra a tela
+                if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+
+                // Evita crash se a activity já estiver fechando
+                if (isFinishing() || isDestroyed()) return;
+
+                // Erro crítico ou cancelamento pelo usuário: Fecha o app para proteger os dados
+                if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                        errorCode == BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL) {
+
+                    finishAffinity(); // Fecha o app todo
+                } else {
+                    Toast.makeText(HomeActivity.this, "Autenticação necessária: " + errString, Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
         });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("OrgaFácil Protegido")
+                .setSubtitle("Toque no sensor para acessar seus dados")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    // --- FIM DA LÓGICA DE SEGURANÇA ---
+
+    private void inicializarComponentes() {
+        layoutPrincipal = findViewById(R.id.main);
+
+        if (layoutPrincipal != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(layoutPrincipal, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         textoContas = findViewById(R.id.textViewContas);
         textoVendas = findViewById(R.id.textViewVendas);
@@ -62,43 +131,51 @@ public class HomeActivity extends AppCompatActivity {
         textoConfigs = findViewById(R.id.textViewConfigs);
     }
 
+    private void configurarBotaoVoltar() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // [CORREÇÃO] O Helper atual só pede o Contexto, não precisa passar Repository
+                DialogLogoutHelper.mostrarDialogo(HomeActivity.this);
+            }
+        });
+    }
+
     private void carregarPreferenciasUsuario() {
-        // CORREÇÃO: Passando 'this' como primeiro argumento para o repositório.
-        // Isso resolve o erro "Required type: Context, Provided: Callback" [cite: 2026-01-31]
+        // Usa SharedPreferences padrão para comparar o cache local
+        SharedPreferences sharedPreferences = getSharedPreferences(TemaHelper.PREF_NAME, MODE_PRIVATE);
+        String temaCache = sharedPreferences.getString(TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
+
         prefsRepository.obter(this, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
                 if (prefs != null) {
-                    // Como o Repositório agora já salva no cache internamente,
-                    // você só precisa aplicar o tema visualmente aqui.
-                    TemaHelper.aplicarTema(prefs.getTema());
-
-                    Log.i(TAG, "Preferências sincronizadas e cache atualizado via Repository.");
+                    // Se o tema no banco for diferente do cache atual, aplica e recria
+                    if (!temaCache.equals(prefs.getTema())) {
+                        TemaHelper.aplicarTema(prefs.getTema());
+                    }
                 }
             }
             @Override
             public void onErro(String erro) {
-                Log.e(TAG, "Erro ao sincronizar: " + erro);
+                Log.e(TAG, "Erro ao buscar preferências: " + erro);
             }
         });
     }
+
     private void configurarBotoesBloqueados() {
         View.OnClickListener listenerBloqueio = view ->
-                Toast.makeText(HomeActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Funcionalidade disponível em breve!", Toast.LENGTH_SHORT).show();
 
-        int[] idsBloqueados = {
-                R.id.imageViewMercado,
-                R.id.imageViewTodo,
-                R.id.imageViewBoletoCPF
-        };
-
+        int[] idsBloqueados = {R.id.imageViewMercado, R.id.imageViewTodo, R.id.imageViewBoletoCPF};
         for (int id : idsBloqueados) {
-            View overlay = findViewById(id);
-            if (overlay != null) overlay.setOnClickListener(listenerBloqueio);
+            View v = findViewById(id);
+            if (v != null) v.setOnClickListener(listenerBloqueio);
         }
     }
 
-    // --- Métodos de Navegação ---
+    // --- Navegação ---
+
     public void acessarResumoContasActivity(View view) {
         startActivity(new Intent(this, ResumoContasActivity.class));
     }

@@ -94,11 +94,65 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editEmail" />
 
+    <LinearLayout
+        android:id="@+id/layoutForcaSenha"
+        android:layout_width="347dp"
+        android:layout_height="6dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        app:layout_constraintEnd_toEndOf="@+id/editSenha"
+        app:layout_constraintStart_toStartOf="@+id/editSenha"
+        app:layout_constraintTop_toBottomOf="@+id/editSenha">
+
+        <View
+            android:id="@+id/viewForca1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="#DDDDDD" />
+
+        <View
+            android:id="@+id/viewForca2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="#DDDDDD" />
+
+        <View
+            android:id="@+id/viewForca3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="#DDDDDD" />
+
+        <View
+            android:id="@+id/viewForca4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#DDDDDD" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textDicaSenha"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Senha muito curta"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@+id/layoutForcaSenha"
+        app:layout_constraintTop_toBottomOf="@+id/layoutForcaSenha" />
+
     <EditText
         android:id="@+id/editSenhaConfirmacao"
         android:layout_width="347dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:drawableLeft="@drawable/ic_cadeado_cinza_24"
         android:drawableRight="@drawable/ic_visibility_off_24"
         android:drawablePadding="5dp"
@@ -107,22 +161,8 @@
         android:inputType="textPassword"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenha" />
+        app:layout_constraintTop_toBottomOf="@+id/textDicaSenha" />
 
-    <CheckBox
-        android:id="@+id/checkTermos"
-        android:layout_width="347dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:paddingStart="12dp"
-        android:paddingEnd="0dp"
-        android:minHeight="48dp"
-        android:text="Ao me cadastrar, concordo com os Termos de Uso e Política de Privacidade"
-        android:textSize="14sp"
-        android:textColor="@color/cor_texto"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
     <Button
         android:id="@+id/buttonCadastrar"
         android:layout_width="347dp"
@@ -133,10 +173,10 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkTermos" />
+        app:layout_constraintTop_toBottomOf="@+id/editSenhaConfirmacao" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCadastrarGoogle"
+        android:id="@+id/btnGoogle"
         android:layout_width="347dp"
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
@@ -144,7 +184,7 @@
         android:drawableLeft="@drawable/ic_google_24"
         android:drawablePadding="12dp"
         android:fontFamily="sans-serif-medium"
-        android:text="Cadastrar com Google"
+        android:text="Continuar com Google"
         android:textColor="@color/black"
         app:cornerRadius="100dp"
         app:iconGravity="textStart"

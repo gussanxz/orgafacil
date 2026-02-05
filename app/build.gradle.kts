@@ -109,4 +109,7 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:5.0.5")
 
+    implementation ("com.facebook.shimmer:shimmer:0.5.0")
+
+
 }

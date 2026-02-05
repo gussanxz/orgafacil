@@ -3,24 +3,19 @@ package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
 import android.content.Context;
 import androidx.annotation.NonNull;
 
+import com.google.firebase.firestore.DocumentReference;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 
-/**
- * PreferenciasRepository
- * Gerencia a persistência das configurações no Firestore e
- * sincroniza automaticamente o cache local (SharedPreferences).
- */
 public class PreferenciasRepository {
 
     private final String uid;
     private static final String COL_CONFIG = "config";
-    private static final String DOC_PREFERENCIAS = "config_preferencias";
+    private static final String DOC_PREFERENCIAS = "config_preferencias"; //
 
     public PreferenciasRepository() {
-        // Utiliza sua classe centralizada para obter o UID
         this.uid = FirebaseSession.isUserLogged() ? FirebaseSession.getUserId() : null;
     }
 
@@ -29,60 +24,73 @@ public class PreferenciasRepository {
         void onErro(String erro);
     }
 
-    /**
-     * Salva na nuvem e atualiza o cache local imediatamente.
-     */
+    // ============================================================================================
+    // 1. SALVAR (Create & Update)
+    // Atualiza o banco e o cache local ao mesmo tempo.
+    // ============================================================================================
     public void salvar(@NonNull Context context, @NonNull PreferenciasModel prefs, @NonNull Callback callback) {
         if (uid == null) {
             callback.onErro("Usuário não logado");
             return;
         }
 
-        prefs.setUpdatedAt(System.currentTimeMillis());
+        // Força atualização da data pelo servidor (ServerTimestamp)
+        prefs.setDataAtualizacao(null);
 
-        // 1. Sincroniza o Cache Local antes/durante a escrita na nuvem [cite: 2026-01-31]
+        // Atualiza cache local imediatamente (UX rápida)
         atualizarCacheLocal(context, prefs);
 
-        FirestoreSchema.userDoc(uid)
-                .collection(COL_CONFIG)
-                .document(DOC_PREFERENCIAS)
+        getDocumentoRef()
                 .set(prefs)
                 .addOnSuccessListener(aVoid -> callback.onSucesso(prefs))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar"));
+                .addOnFailureListener(e -> callback.onErro("Erro ao salvar: " + e.getMessage()));
     }
 
-    /**
-     * Recupera da nuvem e garante que o cache local esteja atualizado.
-     */
+    // ============================================================================================
+    // 2. OBTER (Read)
+    // Busca do servidor. Se não existir, cria o padrão.
+    // ============================================================================================
     public void obter(@NonNull Context context, @NonNull Callback callback) {
         if (uid == null) return;
 
-        FirestoreSchema.userDoc(uid)
-                .collection(COL_CONFIG)
-                .document(DOC_PREFERENCIAS)
-                .get()
+        getDocumentoRef().get()
                 .addOnSuccessListener(documentSnapshot -> {
                     PreferenciasModel prefs = documentSnapshot.toObject(PreferenciasModel.class);
+
                     if (prefs == null) {
-                        // Padrão de segurança caso o documento não exista
-                        prefs = new PreferenciasModel("SISTEMA", "BRL", false);
+                        prefs = new PreferenciasModel(); // Retorna padrão se não existir (sem salvar no banco ainda)
                     }
 
-                    // 2. Sincroniza o Cache Local com os dados vindos da nuvem [cite: 2026-01-31]
                     atualizarCacheLocal(context, prefs);
-
                     callback.onSucesso(prefs);
                 })
-                .addOnFailureListener(e -> callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao carregar"));
+                .addOnFailureListener(e -> callback.onErro("Erro ao baixar: " + e.getMessage()));
     }
 
-    /**
-     * Método centralizado para garantir que as SharedPreferences
-     * reflitam os dados mais recentes do modelo.
-     */
+    // ============================================================================================
+    // 3. RESETAR (Delete / Restaurar Padrões)
+    // Útil para botão "Restaurar Configurações de Fábrica"
+    // ============================================================================================
+    public void resetar(@NonNull Context context, @NonNull Callback callback) {
+        // Cria um modelo novo zerado (padrões definidos no construtor vazio)
+        PreferenciasModel padrao = new PreferenciasModel();
+        salvar(context, padrao, callback);
+    }
+
+    // ============================================================================================
+    // MÉTODOS AUXILIARES
+    // ============================================================================================
+
+    private DocumentReference getDocumentoRef() {
+        return FirestoreSchema.userDoc(uid)
+                .collection(COL_CONFIG)
+                .document(DOC_PREFERENCIAS);
+    }
+
     private void atualizarCacheLocal(Context context, PreferenciasModel prefs) {
+        if (prefs == null) return;
         TemaHelper.salvarTemaCache(context, prefs.getTema());
-        FirebaseSession.putString(context, FirebaseSession.KEY_MOEDA, prefs.getMoeda());
-        FirebaseSession.putBoolean(context, "esconder_saldo", prefs.isEsconderSaldo());
+        FirebaseSession.putString(context, "moeda_pref", prefs.getMoeda());
+        FirebaseSession.putBoolean(context, "esconder_saldo_pref", prefs.isEsconderSaldo());
     }
 }

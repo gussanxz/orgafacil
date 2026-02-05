@@ -21,7 +21,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity;
-import com.gussanxz.orgafacil.ui.vendas.nova_venda.AdapterExibirPSGradeListaNovaVenda;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.AdapterExibirPSGradeListaNovaVenda;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;

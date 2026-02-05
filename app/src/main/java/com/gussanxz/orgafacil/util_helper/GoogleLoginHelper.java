@@ -18,23 +18,15 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 
 /**
- * Helper responsável exclusivamente pela autenticação via Google.
- * A lógica de decisão sobre o estado do usuário (novo/antigo) foi movida para o fluxo
- * de Safety Net na LoginActivity/Repository para garantir integridade com o Firestore.
+ * Helper responsável exclusivamente pela autenticação técnica via Google.
+ * A lógica de negócio (Login vs Cadastro) é delegada à Activity via callback.
  */
 public class GoogleLoginHelper {
 
     private final Activity activity;
     private final FirebaseAuth autenticacao;
     private GoogleSignInClient mGoogleSignInClient;
-
-    // Callback executado após o sucesso no Firebase Auth
     private final Runnable onSuccessCallback;
-
-    // Constantes de modo de operação
-    public static final int MODO_MISTO = 0;
-    public static final int MODO_LOGIN = 1;
-    public static final int MODO_CADASTRO = 2;
 
     public GoogleLoginHelper(Activity activity, Runnable onSuccessCallback) {
         this.activity = activity;
@@ -51,14 +43,17 @@ public class GoogleLoginHelper {
         mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
     }
 
+    /**
+     * Retorna a Intent para abrir o seletor de contas do Google.
+     * Faz o signOut prévio para garantir que o usuário possa trocar de conta se desejar.
+     */
     public Intent getSignInIntent() {
-        // Força o seletor de contas a aparecer, essencial para o fluxo de "Criar Conta"
         mGoogleSignInClient.signOut();
         return mGoogleSignInClient.getSignInIntent();
     }
+
     /**
-     * NOVO: Método para limpar a sessão do Google explicitamente.
-     * Use isso ao excluir a conta para evitar que o Google logue sozinho em seguida.
+     * Limpa a sessão do Google. Útil para fluxos de logout ou segurança.
      */
     public void recarregarSessaoGoogle() {
         mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
@@ -66,13 +61,18 @@ public class GoogleLoginHelper {
         });
     }
 
-    public void lidarComResultadoGoogle(Intent data, int modoOperacao) {
+    /**
+     * Lida com o resultado vindo do ActivityResultLauncher.
+     */
+    public void lidarComResultadoGoogle(Intent data) {
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
         try {
             GoogleSignInAccount account = task.getResult(ApiException.class);
-            if (account != null) firebaseAuthWithGoogle(account, modoOperacao);
+            if (account != null) {
+                firebaseAuthWithGoogle(account);
+            }
         } catch (ApiException e) {
-            // StatusCode 12501 é quando o usuário apenas fecha o seletor (não é um erro real)
+            // Código 12501: Usuário cancelou a seleção da conta.
             if (e.getStatusCode() != 12501) {
                 Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
             }
@@ -81,23 +81,20 @@ public class GoogleLoginHelper {
     }
 
     /**
-     * Realiza a troca da credencial do Google por uma sessão no Firebase Auth.
+     * Vincula a conta Google autenticada à sessão do Firebase Auth.
      */
-    private void firebaseAuthWithGoogle(GoogleSignInAccount acct, int modoOperacao) {
+    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
 
         autenticacao.signInWithCredential(credential)
                 .addOnCompleteListener(activity, task -> {
-                    if (!task.isSuccessful()) {
+                    if (task.isSuccessful()) {
+                        // Notifica a Activity para iniciar a "Safety Net" (verificação Firestore)
+                        if (onSuccessCallback != null) {
+                            onSuccessCallback.run();
+                        }
+                    } else {
                         Toast.makeText(activity, "Falha na autenticação com Firebase.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    // ✅ DELEGAÇÃO: Notifica a Activity que o login Auth foi feito.
-                    // Agora a LoginActivity usará a Safety Net para verificar se os dados
-                    // existem no Firestore e decidir se mostra "Bem-vindo" ou "Criando conta".
-                    if (onSuccessCallback != null) {
-                        onSuccessCallback.run();
                     }
                 });
     }

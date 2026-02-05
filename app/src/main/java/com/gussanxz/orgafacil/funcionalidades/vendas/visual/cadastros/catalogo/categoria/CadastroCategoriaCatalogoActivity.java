@@ -31,7 +31,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.ui.vendas.opd.CadastroCategoriaVendasViewModel;
+
 import android.graphics.drawable.ColorDrawable;
 import android.view.LayoutInflater;
 

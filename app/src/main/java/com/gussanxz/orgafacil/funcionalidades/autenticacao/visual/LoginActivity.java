@@ -12,57 +12,64 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
-import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.regras.BaseAuthActivity;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
+import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
-/**
- * LoginActivity
- * Orquestra o acesso do usuário, validando integridade entre Auth e Firestore.
- */
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseAuthActivity {
 
     private EditText campoEmail, campoSenha;
-    private Button botaoEntrar, btnLoginGoogle;
+    private Button botaoEntrar, botaoGoogle;
     private TextView recuperarSenha;
     private RadioButton acessarTelaCadastro;
-
-    private FirebaseAuth autenticacao;
-    private GoogleLoginHelper googleLoginHelper;
-    private ConfigPerfilUsuarioRepository perfilRepository;
-    private UsuarioService usuarioService;
     private LoadingHelper loadingHelper;
+    private GoogleLoginHelper googleLoginHelper;
+
+    // [LIMPEZA] Não declaramos 'usuarioRepository' aqui porque HERDAMOS da BaseAuthActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        TemaHelper.aplicarTemaDoCache(this);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_intro_login);
 
-        // Aplica padding das barras de sistema (Status/Nav)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.main);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                v.setPadding(insets.getInsets(WindowInsetsCompat.Type.systemBars()).left,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).top,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).right,
+                        insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom);
+                return insets;
+            });
+        }
 
         inicializarComponentes();
         configurarListeners();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Se o usuário já estiver logado (ex: rotacionou a tela),
+        // a BaseAuthActivity assume e checa o banco.
+        if (autenticacao.getCurrentUser() != null) {
+            iniciarFluxoSegurancaDados();
+        }
+    }
+
+    @Override
+    protected LoadingHelper getLoadingHelper() {
+        return loadingHelper;
     }
 
     private void inicializarComponentes() {
@@ -71,15 +78,11 @@ public class LoginActivity extends AppCompatActivity {
         botaoEntrar = findViewById(R.id.buttonEntrar);
         acessarTelaCadastro = findViewById(R.id.radioButtonCadastreSe);
         recuperarSenha = findViewById(R.id.textViewRecuperarSenha);
-        btnLoginGoogle = findViewById(R.id.btnLoginGoogle);
+        botaoGoogle = findViewById(R.id.btnGoogle);
 
-        // Instancia as camadas de negócio
-        perfilRepository = new ConfigPerfilUsuarioRepository();
-        usuarioService = new UsuarioService();
-        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
-
-        // Inicializa helpers
         loadingHelper = new LoadingHelper(findViewById(R.id.loading_overlay));
+
+        // Se o usuário clicar em Google DENTRO desta tela, também usamos a lógica da mãe
         googleLoginHelper = new GoogleLoginHelper(this, this::iniciarFluxoSegurancaDados);
 
         VisibilidadeHelper.ativarAlternanciaSenha(campoSenha);
@@ -88,8 +91,8 @@ public class LoginActivity extends AppCompatActivity {
     private void configurarListeners() {
         botaoEntrar.setOnClickListener(v -> validarEntradasLogin());
 
-        if (btnLoginGoogle != null) {
-            btnLoginGoogle.setOnClickListener(v ->
+        if (botaoGoogle != null) {
+            botaoGoogle.setOnClickListener(v ->
                     resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent())
             );
         }
@@ -112,70 +115,28 @@ public class LoginActivity extends AppCompatActivity {
         autenticacao.signInWithEmailAndPassword(email, senha)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        // [O PULO DO GATO]
+                        // O Login técnico funcionou. Agora chamamos a MÃE (BaseAuthActivity)
+                        // para checar se a conta está ativa, desativada ou pendente.
                         iniciarFluxoSegurancaDados();
                     } else {
                         loadingHelper.ocultar();
-                        String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                        // Usamos o 'usuarioRepository' que veio da HERANÇA
+                        String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
                         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                     }
                 });
-    }
-
-    /**
-     * SAFETY NET: Verifica se os dados do Firestore acompanham a conta Auth.
-     */
-    private void iniciarFluxoSegurancaDados() {
-        if (!FirebaseSession.isUserLogged()) return;
-
-        loadingHelper.exibir();
-
-        // O repositório agora resolve o UID internamente via FirebaseSession
-        perfilRepository.verificarExistenciaPerfil().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                if (task.getResult().exists()) {
-                    // SUCESSO: Usuário já tem tudo configurado
-                    loadingHelper.ocultar();
-                    Toast.makeText(this, "Bem-vindo de volta!", Toast.LENGTH_SHORT).show();
-                    abrirTelaHome();
-                } else {
-                    // ALERTA: Usuário logou mas não tem documento (Login novo ou erro de sincronia)
-                    tratarUsuarioSemDocumento(autenticacao.getCurrentUser());
-                }
-            } else {
-                loadingHelper.ocultar();
-                String erro = perfilRepository.mapearErroAutenticacao(task.getException());
-                Toast.makeText(this, "Erro de sincronização: " + erro, Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    private void tratarUsuarioSemDocumento(FirebaseUser user) {
-        if (user == null) return;
-
-        long momentoLogin = user.getMetadata().getLastSignInTimestamp();
-        long agora = System.currentTimeMillis();
-
-        // Se o login for recente (legítimo), inicializamos a conta
-        if (agora - momentoLogin < 30000) {
-            Toast.makeText(this, "Configurando sua conta... Aguarde.", Toast.LENGTH_SHORT).show();
-
-            usuarioService.inicializarNovoUsuario(user, taskService -> {
-                loadingHelper.ocultar();
-                abrirTelaHome();
-            });
-        } else {
-            // Se a sessão for antiga e não houver documento, limpamos para evitar erro de "fantasma"
-            loadingHelper.ocultar();
-            FirebaseSession.logOut(this);
-            if (googleLoginHelper != null) googleLoginHelper.recarregarSessaoGoogle();
-            Toast.makeText(this, "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show();
-        }
     }
 
     private void exibirDialogoRecuperacao() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = getLayoutInflater().inflate(R.layout.dialog_recuperar_senha, null);
         dialog.setContentView(view);
+
+        View bottomSheetInternal = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheetInternal != null) {
+            bottomSheetInternal.setBackgroundResource(android.R.color.transparent);
+        }
 
         TextInputEditText editEmailRecuperar = view.findViewById(R.id.editEmailRecuperar);
         Button btnEnviar = view.findViewById(R.id.btnEnviarLink);
@@ -189,10 +150,10 @@ public class LoginActivity extends AppCompatActivity {
 
             autenticacao.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    Toast.makeText(this, "Link enviado! Verifique seu e-mail.", Toast.LENGTH_LONG).show();
                     dialog.dismiss();
+                    Toast.makeText(this, "Link enviado! Verifique seu e-mail.", Toast.LENGTH_LONG).show();
                 } else {
-                    String erro = perfilRepository.mapearErroAutenticacao(task.getException());
+                    String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
                     Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
                 }
             });
@@ -204,18 +165,13 @@ public class LoginActivity extends AppCompatActivity {
     private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData(), GoogleLoginHelper.MODO_LOGIN);
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
                 } else {
-                    Toast.makeText(this, "Login Google cancelado.", Toast.LENGTH_SHORT).show();
+                    loadingHelper.ocultar();
                 }
             }
     );
-
-    public void abrirTelaHome() {
-        startActivity(new Intent(this, HomeActivity.class));
-        finish();
-    }
 
     public void abrirTelaCadastro() {
         startActivity(new Intent(this, CadastroActivity.class));

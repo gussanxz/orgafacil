@@ -16,12 +16,11 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.ConfigPerfilUsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
 
 /**
  * SegurancaActivity
- * Atua como um HUB de navegação para as opções de proteção da conta.
- * Segue a melhor prática de desacoplamento, delegando fluxos complexos para Activities dedicadas. [cite: 2025-10-26]
+ * Gerencia PIN, Troca de Senha e Navegação para Desativação de Conta.
  */
 public class SegurancaActivity extends AppCompatActivity {
 
@@ -30,7 +29,7 @@ public class SegurancaActivity extends AppCompatActivity {
     private SharedPreferences prefs;
 
     private FirebaseUser usuarioAtual;
-    private ConfigPerfilUsuarioRepository perfilRepository; // Atualizado para o novo nome [cite: 2026-01-22]
+    private UsuarioRepository usuarioRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,15 +37,13 @@ public class SegurancaActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_configs_seguranca);
 
-        // Ajuste de padding para barras do sistema (Status e Navigation)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets sb = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(sb.left, sb.top, sb.right, sb.bottom);
             return insets;
         });
 
-        // Inicialização de Repositório e Instâncias
-        perfilRepository = new ConfigPerfilUsuarioRepository(); // Atualizado para o novo nome [cite: 2026-01-22]
+        usuarioRepository = new UsuarioRepository();
         usuarioAtual = FirebaseAuth.getInstance().getCurrentUser();
         prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
 
@@ -59,12 +56,11 @@ public class SegurancaActivity extends AppCompatActivity {
         switchAtivarPin = findViewById(R.id.switchAtivarPin);
         itemAlterarSenha = findViewById(R.id.itemAlterarSenha);
         itemRecuperarSenha = findViewById(R.id.itemRecuperarSenha);
-        // Lembre-se de atualizar o ID no XML para algo como itemEncerrarConta, se desejar
         itemEncerrarConta = findViewById(R.id.itemExcluirConta);
     }
 
     private void carregarPreferencias() {
-        boolean pinObrigatorio = prefs.getBoolean("pin_obrigatorio", true);
+        boolean pinObrigatorio = prefs.getBoolean("pin_obrigatorio", false);
         switchAtivarPin.setChecked(pinObrigatorio);
     }
 
@@ -74,36 +70,33 @@ public class SegurancaActivity extends AppCompatActivity {
                 prefs.edit().putBoolean("pin_obrigatorio", isChecked).apply()
         );
 
-        // Navegação: Alterar Senha (Fluxo para usuário logado)
+        // Alterar Senha (Placeholder)
         itemAlterarSenha.setOnClickListener(v ->
-                startActivity(new Intent(this, AlterarSenhaActivity.class))
+                Toast.makeText(this, "Para alterar a senha, use a opção 'Recuperar Senha' por enquanto.", Toast.LENGTH_LONG).show()
         );
 
-        // Ação: Disparo de E-mail de Recuperação (Ação atômica, delegada ao Repository)
+        // Disparo de E-mail de Recuperação
         itemRecuperarSenha.setOnClickListener(v -> dispararEmailRecuperacao());
 
-        // Navegação: Encerrar Conta (Redireciona para tela de confirmação e reautenticação) [cite: 2025-11-10]
+        // Navegação: Desativação de Conta (Soft Delete)
+        // [CORREÇÃO] Aponta para a nova Activity renomeada
         itemEncerrarConta.setOnClickListener(v ->
-                startActivity(new Intent(this, ConfirmacaoEncerrarContaActivity.class))
+                startActivity(new Intent(this, ConfirmacaoDesativacaoContaActivity.class))
         );
     }
 
-    /**
-     * Solicita o envio de e-mail de reset.
-     * Mantido aqui por não exigir inputs adicionais do usuário nesta tela.
-     */
     private void dispararEmailRecuperacao() {
         if (usuarioAtual != null && usuarioAtual.getEmail() != null) {
-            // Nota: Certifique-se de que o método enviarEmailRecuperacao esteja descomentado no perfilRepository [cite: 2025-11-10]
-            FirebaseAuth.getInstance().sendPasswordResetEmail(usuarioAtual.getEmail()).addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Toast.makeText(this, "E-mail de recuperação enviado!", Toast.LENGTH_LONG).show();
-                } else {
-                    // Delegamos o mapeamento de erro para o novo Repositório [cite: 2025-11-10]
-                    String erro = perfilRepository.mapearErroAutenticacao(task.getException());
-                    Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
-                }
-            });
+            FirebaseAuth.getInstance().sendPasswordResetEmail(usuarioAtual.getEmail())
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(this, "E-mail de recuperação enviado!", Toast.LENGTH_LONG).show();
+                        } else {
+                            // Usa o mapeamento de erro do novo Repository
+                            String erro = usuarioRepository.mapearErroAutenticacao(task.getException());
+                            Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
+                        }
+                    });
         }
     }
 }
