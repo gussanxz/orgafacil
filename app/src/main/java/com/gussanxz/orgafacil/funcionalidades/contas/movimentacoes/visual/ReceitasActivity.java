@@ -4,11 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-<<<<<<< HEAD:app/src/main/java/com/gussanxz/orgafacil/funcionalidades/contas/ReceitasActivity.java
 import android.text.TextUtils;
 import android.util.Log;
-=======
->>>>>>> firestone/desativarConta:app/src/main/java/com/gussanxz/orgafacil/funcionalidades/contas/movimentacoes/visual/ReceitasActivity.java
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
