@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.usuario.modelos;
 
 import com.google.firebase.firestore.ServerTimestamp;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * Modelo para as configurações de interface (UI) e comportamento do app.
@@ -34,7 +35,8 @@ public class PreferenciasModel implements Serializable {
     private Funcionalidades funcionalidades;
 
     // Metadados na raiz
-    private Object dataAtualizacao;
+    @ServerTimestamp
+    private Date dataAtualizacao;
 
     // =========================================================================
     // CONSTRUTOR
@@ -59,9 +61,8 @@ public class PreferenciasModel implements Serializable {
     public Funcionalidades getFuncionalidades() { return funcionalidades; }
     public void setFuncionalidades(Funcionalidades funcionalidades) { this.funcionalidades = funcionalidades; }
 
-    @ServerTimestamp
-    public Object getDataAtualizacao() { return dataAtualizacao; }
-    public void setDataAtualizacao(Object dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
+    public Date getDataAtualizacao() { return dataAtualizacao; }
+    public void setDataAtualizacao(Date dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
 
     // =========================================================================
     // CLASSES INTERNAS (Mapas do Firestore)

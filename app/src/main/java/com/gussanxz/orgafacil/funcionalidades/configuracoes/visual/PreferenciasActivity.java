@@ -17,6 +17,8 @@ public class PreferenciasActivity extends AppCompatActivity {
 
     private RadioGroup radioGroupTema;
     private PreferenciasRepository repository;
+    // Adicionado para manter o estado atual das preferências
+    private PreferenciasModel preferenciasAtuais;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,12 +28,29 @@ public class PreferenciasActivity extends AppCompatActivity {
         repository = new PreferenciasRepository();
         radioGroupTema = findViewById(R.id.radioGroupTema);
 
+        // Carregar as preferências reais do banco/cache ao abrir
+        carregarPreferencias();
+
         marcarOpcaoAtual();
         configurarListeners();
     }
 
+    private void carregarPreferencias() {
+        repository.obter(this, new PreferenciasRepository.Callback() {
+            @Override
+            public void onSucesso(PreferenciasModel prefs) {
+                preferenciasAtuais = prefs;
+            }
+
+            @Override
+            public void onErro(String erro) {
+                // Se falhar, inicializamos com o padrão para evitar NullPointerException
+                preferenciasAtuais = new PreferenciasModel();
+            }
+        });
+    }
+
     private void marcarOpcaoAtual() {
-        // Agora buscamos o tema padrão através da classe interna Visual
         String temaSalvo = FirebaseSession.getString(this, TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
 
         if (temaSalvo.equals(PreferenciasModel.TEMA_CLARO)) {
@@ -42,6 +61,7 @@ public class PreferenciasActivity extends AppCompatActivity {
             ((RadioButton) findViewById(R.id.rbSistema)).setChecked(true);
         }
     }
+
     private void configurarListeners() {
         radioGroupTema.setOnCheckedChangeListener((group, checkedId) -> {
             String novoTema = PreferenciasModel.TEMA_SISTEMA;
@@ -57,18 +77,18 @@ public class PreferenciasActivity extends AppCompatActivity {
     }
 
     private void aplicarESalvar(String tema) {
-        // Ação visual imediata
         TemaHelper.aplicarTema(tema);
 
-        // CORREÇÃO: Acessando o objeto Visual dentro do modelo
-        PreferenciasModel pref = new PreferenciasModel();
+        // Se ainda não carregou do repositório, garantimos que não esteja nulo
+        if (preferenciasAtuais == null) {
+            preferenciasAtuais = new PreferenciasModel();
+        }
 
-        // Como o construtor de PreferenciasModel já faz 'this.visual = new Visual()',
-        // basta acessar o getter e setar o tema lá dentro.
-        pref.getVisual().setTema(tema);
+        // Atualizamos apenas o campo de tema dentro do objeto existente
+        // Isso evita que 'esconderSaldo' ou 'moeda' voltem ao padrão de fábrica
+        preferenciasAtuais.getVisual().setTema(tema);
 
-        // Sincronização via Repository
-        repository.salvar(this, pref, new PreferenciasRepository.Callback() {
+        repository.salvar(this, preferenciasAtuais, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
                 // Sucesso

@@ -6,7 +6,7 @@ import androidx.annotation.NonNull;
 import com.google.firebase.firestore.DocumentReference;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel; // [ATUALIZADO] Pacote correto
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 
 public class PreferenciasRepository {
@@ -35,13 +35,14 @@ public class PreferenciasRepository {
         }
 
         // Força atualização da data pelo servidor (ServerTimestamp)
+        // Isso garante que o campo no Java seja nulo para o Firestore preencher no Cloud.
         prefs.setDataAtualizacao(null);
 
         // Atualiza cache local imediatamente (UX rápida)
         atualizarCacheLocal(context, prefs);
 
         getDocumentoRef()
-                .set(prefs)
+                .set(prefs) // Linha 44: O Model agora corrigido permite a serialização correta
                 .addOnSuccessListener(aVoid -> callback.onSucesso(prefs))
                 .addOnFailureListener(e -> callback.onErro("Erro ao salvar: " + e.getMessage()));
     }
@@ -55,10 +56,11 @@ public class PreferenciasRepository {
 
         getDocumentoRef().get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    // O método toObject agora funcionará sem o erro de retorno 'Object'
                     PreferenciasModel prefs = documentSnapshot.toObject(PreferenciasModel.class);
 
                     if (prefs == null) {
-                        prefs = new PreferenciasModel(); // Construtor já cria os sub-objetos com defaults
+                        prefs = new PreferenciasModel();
                     }
 
                     atualizarCacheLocal(context, prefs);
@@ -69,10 +71,8 @@ public class PreferenciasRepository {
 
     // ============================================================================================
     // 3. RESETAR (Delete / Restaurar Padrões)
-    // Útil para botão "Restaurar Configurações de Fábrica"
     // ============================================================================================
     public void resetar(@NonNull Context context, @NonNull Callback callback) {
-        // Cria um modelo novo zerado (padrões definidos no construtor vazio)
         PreferenciasModel padrao = new PreferenciasModel();
         salvar(context, padrao, callback);
     }
@@ -87,20 +87,14 @@ public class PreferenciasRepository {
                 .document(DOC_PREFERENCIAS);
     }
 
-    /**
-     * Atualiza o SharedPreferences local para acesso rápido sem internet.
-     * [ATUALIZADO]: Acessa os campos através dos grupos (Visual, Regional).
-     */
     private void atualizarCacheLocal(Context context, PreferenciasModel prefs) {
         if (prefs == null) return;
 
-        // Atualiza Visual (Tema e Saldo)
         if (prefs.getVisual() != null) {
             TemaHelper.salvarTemaCache(context, prefs.getVisual().getTema());
             FirebaseSession.putBoolean(context, "esconder_saldo_pref", prefs.getVisual().isEsconderSaldo());
         }
 
-        // Atualiza Regional (Moeda)
         if (prefs.getRegional() != null) {
             FirebaseSession.putString(context, "moeda_pref", prefs.getRegional().getMoeda());
         }
