@@ -94,13 +94,15 @@ public class UsuarioRepository {
     }
 
     public Task<Void> reativarContaLogica() {
-        if (uidAtual == null) return null;
+        // Busca o UID via Schema para garantir que não está nulo
+        String uid = FirestoreSchema.requireUid();
 
-        Map<String, Object> updates = new HashMap<>();
-        updates.put(UsuarioModel.CAMPO_STATUS, "ATIVO");
-        updates.put(UsuarioModel.CAMPO_DATA_DESATIVACAO, null);
-
-        return FirestoreSchema.userDoc(uidAtual).update(updates);
+        // Atualiza apenas os campos específicos dentro do objeto dadosConta
+        return FirestoreSchema.userDoc(uid)
+                .update(
+                        "dadosConta.status", "ATIVO",
+                        "dadosConta.dataDesativacao", null
+                );
     }
 
     // ============================================================================================

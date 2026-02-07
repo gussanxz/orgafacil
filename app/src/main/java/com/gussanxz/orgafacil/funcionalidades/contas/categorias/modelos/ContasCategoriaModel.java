@@ -8,46 +8,37 @@ import java.io.Serializable;
 
 /**
  * Modelo para as categorias de gastos/receitas.
- * Estrutura:
- * - Raiz: id, tipo, ativa
+ * Estrutura Firestore:
  * - visual: { nome, icone, cor }
- * - financeiro: { limiteMensal, totalGasto }
+ * - financeiro: { limiteMensal, totalGastoMesAtual }
  */
 public class ContasCategoriaModel implements Serializable {
 
-    // --- CONSTANTES DE CAMINHO (Dot Notation para Updates) ---
+    // --- CONSTANTES DE CAMINHO ---
     public static final String CAMPO_ID = "id";
     public static final String CAMPO_TIPO = "tipo";
     public static final String CAMPO_ATIVA = "ativa";
-
-    // Caminhos Visual
     public static final String CAMPO_NOME = "visual.nome";
     public static final String CAMPO_ICONE = "visual.icone";
     public static final String CAMPO_COR = "visual.cor";
-
-    // Caminhos Financeiro
     public static final String CAMPO_LIMITE_MENSAL = "financeiro.limiteMensal";
     public static final String CAMPO_TOTAL_GASTO_MES = "financeiro.totalGastoMesAtual";
 
-    // --- ATRIBUTOS DA RAIZ ---
     private String id;
-    private int tipo = 0; // 0=Indefinido, 1=Receita, 2=Despesa
+    private int tipo = 0;
     private boolean ativa = true;
 
-    // --- GRUPOS DE DADOS (Mapas) ---
     private Visual visual;
     private Financeiro financeiro;
 
-    // =========================================================================
-    // CONSTRUTOR
-    // =========================================================================
     public ContasCategoriaModel() {
+        // Inicialização obrigatória para evitar NullPointer ao usar setters imediatamente
         this.visual = new Visual();
         this.financeiro = new Financeiro();
     }
 
     // =========================================================================
-    // GETTERS E SETTERS DA RAIZ
+    // GETTERS E SETTERS (Padrão Firestore)
     // =========================================================================
 
     public String getId() { return id; }
@@ -56,7 +47,10 @@ public class ContasCategoriaModel implements Serializable {
     public int getTipo() { return tipo; }
     public void setTipo(int tipo) { this.tipo = tipo; }
 
+    @PropertyName("ativa") // Garante que o Firebase use "ativa" e não "isAtiva"
     public boolean isAtiva() { return ativa; }
+
+    @PropertyName("ativa")
     public void setAtiva(boolean ativa) { this.ativa = ativa; }
 
     public Visual getVisual() { return visual; }
@@ -66,7 +60,7 @@ public class ContasCategoriaModel implements Serializable {
     public void setFinanceiro(Financeiro financeiro) { this.financeiro = financeiro; }
 
     // =========================================================================
-    // CLASSES INTERNAS (Mapas)
+    // CLASSES INTERNAS (Mapeadas como Sub-Objetos)
     // =========================================================================
 
     public static class Visual implements Serializable {
@@ -85,9 +79,8 @@ public class ContasCategoriaModel implements Serializable {
     }
 
     public static class Financeiro implements Serializable {
-        // Valores em CENTAVOS (INT)
-        private int limiteMensal = 0;
-        private int totalGastoMesAtual = 0;
+        private int limiteMensal = 0; // CENTAVOS
+        private int totalGastoMesAtual = 0; // CENTAVOS
 
         public Financeiro() {}
 
@@ -98,25 +91,17 @@ public class ContasCategoriaModel implements Serializable {
     }
 
     // =========================================================================
-    // HELPERS DE LÓGICA (Mantidos e Adaptados)
+    // HELPERS DE LÓGICA (Excluídos do Firestore para evitar dados redundantes)
     // =========================================================================
 
-    // Atalho para pegar o nome direto (útil para Adapters)
     @Exclude
     public String getNome() {
-        return visual != null ? visual.getNome() : "";
+        return (visual != null && visual.getNome() != null) ? visual.getNome() : "";
     }
 
-    // Atalho para pegar o Total Gasto direto
     @Exclude
     public int getTotalGasto() {
         return financeiro != null ? financeiro.getTotalGastoMesAtual() : 0;
-    }
-
-    // Atalho para setar o Total Gasto direto
-    @Exclude
-    public void setTotalGasto(int valor) {
-        if(financeiro != null) financeiro.setTotalGastoMesAtual(valor);
     }
 
     @Exclude
@@ -125,15 +110,9 @@ public class ContasCategoriaModel implements Serializable {
     }
 
     @Exclude
-    public void setTipoEnum(TipoCategoriaContas tipoEnum) {
-        if (tipoEnum != null) {
-            this.tipo = tipoEnum.getId();
-        }
-    }
-
-    @Exclude
     public double getPercentualUso() {
         if (financeiro == null || financeiro.getLimiteMensal() <= 0) return 0.0;
+        // Cálculo entre inteiros: Multiplicamos por 100.0 (double) para não perder precisão
         return (double) financeiro.getTotalGastoMesAtual() / financeiro.getLimiteMensal() * 100.0;
     }
 

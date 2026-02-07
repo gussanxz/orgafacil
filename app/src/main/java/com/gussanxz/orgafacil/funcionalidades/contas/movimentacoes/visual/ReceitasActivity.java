@@ -22,48 +22,39 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.Timestamp; // [IMPORTANTE] Import do Timestamp
+import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
-// [CORREÇÃO]: Import do Model correto (sem r_negocio)
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
+import com.gussanxz.orgafacil.util_helper.MoedaHelper; // [ADICIONADO]
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * ReceitasActivity
- * Responsável por criar ou editar uma receita (entrada financeira).
- */
 public class ReceitasActivity extends AppCompatActivity {
 
     private final String TAG = "ReceitasActivity";
 
-    // Componentes de UI
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private ImageButton btnExcluir;
 
-    // Dependências e Estado
     private ActivityResultLauncher<Intent> launcherCategoria;
     private MovimentacaoRepository repository;
     private boolean isEdicao = false;
     private MovimentacaoModel itemEmEdicao = null;
 
-    // Controle de Categoria
     private String categoriaIdSelecionada;
 
-    // Formatação de Moeda
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-    private double valorAtualDigitado = 0.0;
+    // [ATUALIZADO] O valor agora é controlado como centavos (int) para precisão
+    private int valorCentavosAtual = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,13 +74,9 @@ public class ReceitasActivity extends AppCompatActivity {
         configurarListeners();
         configurarLauncherCategoria();
 
-        // Setup da máscara monetária
         setupCurrencyMask();
-
-        // Verifica edição
         verificarModoEdicao();
 
-        // Processamento de Intent (Atalhos e Headers Dinâmicos)
         TextView textViewHeader = findViewById(R.id.textViewHeader);
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
@@ -119,6 +106,7 @@ public class ReceitasActivity extends AppCompatActivity {
 
         campoCategoria.setOnClickListener(v -> {
             Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
+            intent.putExtra("TIPO_CATEGORIA", TipoCategoriaContas.RECEITA.getId()); // Passa o tipo
             launcherCategoria.launch(intent);
         });
 
@@ -141,9 +129,13 @@ public class ReceitasActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * [ATUALIZADO] Lógica de máscara sequencial: 0,00 -> 0,01 -> 0,10
+     */
     private void setupCurrencyMask() {
         campoValor.addTextChangedListener(new TextWatcher() {
             private String current = "";
+
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
@@ -152,17 +144,28 @@ public class ReceitasActivity extends AppCompatActivity {
                 if (!s.toString().equals(current)) {
                     campoValor.removeTextChangedListener(this);
 
-                    String cleanString = s.toString().replaceAll("[R$,.\\s]", "");
+                    // Remove tudo que não for dígito
+                    String cleanString = s.toString().replaceAll("[^\\d]", "");
+
                     if (!cleanString.isEmpty()) {
-                        double parsed = Double.parseDouble(cleanString);
-                        // Armazena valor real (Ex: 1050 -> 10.50)
-                        valorAtualDigitado = parsed / 100;
-                        String formatted = currencyFormat.format(valorAtualDigitado);
-                        current = formatted;
-                        campoValor.setText(formatted);
-                        campoValor.setSelection(formatted.length());
+                        try {
+                            // Transforma a string de números em centavos (int)
+                            valorCentavosAtual = Integer.parseInt(cleanString);
+
+                            // Converte centavos para double para formatação visual
+                            double valorDouble = MoedaHelper.centavosParaDouble(valorCentavosAtual);
+
+                            // Formata como R$ 0,00 usando o Helper
+                            String formatted = MoedaHelper.formatarParaBRL(valorDouble);
+
+                            current = formatted;
+                            campoValor.setText(formatted);
+                            campoValor.setSelection(formatted.length());
+                        } catch (NumberFormatException e) {
+                            Log.e(TAG, "Erro ao formatar valor");
+                        }
                     } else {
-                        valorAtualDigitado = 0.0;
+                        valorCentavosAtual = 0;
                         campoValor.setText("");
                     }
                     campoValor.addTextChangedListener(this);
@@ -178,21 +181,18 @@ public class ReceitasActivity extends AppCompatActivity {
             if (movRecebida != null) {
                 isEdicao = true;
                 itemEmEdicao = movRecebida;
-
-                // Recupera ID (via helper @Exclude)
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
 
-                // Converte Centavos (int) para Double
-                double valorReais = itemEmEdicao.getValor() / 100.0;
-                valorAtualDigitado = valorReais;
+                // [CORREÇÃO] Inicializa o valor em centavos
+                valorCentavosAtual = itemEmEdicao.getValor();
 
-                // Seta o texto (o TextWatcher pode formatar novamente, mas garantimos o valor inicial)
-                campoValor.setText(currencyFormat.format(valorReais));
+                // Converte e formata para a tela
+                double valorReais = MoedaHelper.centavosParaDouble(valorCentavosAtual);
+                campoValor.setText(MoedaHelper.formatarParaBRL(valorReais));
 
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 
-                // Converte Timestamp para String
                 if (itemEmEdicao.getData_movimentacao() != null) {
                     Date data = itemEmEdicao.getData_movimentacao().toDate();
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
@@ -212,38 +212,32 @@ public class ReceitasActivity extends AppCompatActivity {
     public void salvarProventos(View view) {
         if (!validarCamposProventos()) return;
 
-        // Se edição, usa o objeto existente. Se novo, cria.
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        // 1. Valor: Usa a variável controlada pelo TextWatcher convertida para centavos
-        mov.setValor((int) Math.round(valorAtualDigitado * 100));
+        // [CORREÇÃO] Salva o valor exato em centavos acumulado na máscara
+        mov.setValor(valorCentavosAtual);
 
-        // 2. Dados básicos
         mov.setDescricao(campoDescricao.getText().toString());
-        mov.setTipo(TipoCategoriaContas.RECEITA.getId()); // ID = 1
+        mov.setTipo(TipoCategoriaContas.RECEITA.getId());
 
-        // 3. Categoria
         mov.setCategoria_nome(campoCategoria.getText().toString());
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
         } else if (!isEdicao) {
-            mov.setCategoria_id("geral_receita"); // Fallback
+            mov.setCategoria_id("geral_receita");
         }
 
-        // 4. Data e Hora -> Timestamp
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
             Date date = sdf.parse(dataHoraStr);
             if (date != null) {
-                // [ATUALIZADO] Usa a classe Timestamp corretamente
                 mov.setData_movimentacao(new Timestamp(date));
             }
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
         }
 
-        // Salvar ou Editar
         if (isEdicao) {
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
@@ -275,8 +269,6 @@ public class ReceitasActivity extends AppCompatActivity {
         });
     }
 
-    // --- Helpers de UI ---
-
     private void finalizarSucesso(String msg) {
         Toast.makeText(ReceitasActivity.this, msg, Toast.LENGTH_SHORT).show();
         setResult(RESULT_OK);
@@ -288,7 +280,7 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     public Boolean validarCamposProventos() {
-        if (valorAtualDigitado <= 0) {
+        if (valorCentavosAtual <= 0) {
             campoValor.setError("Valor inválido");
             return false;
         }

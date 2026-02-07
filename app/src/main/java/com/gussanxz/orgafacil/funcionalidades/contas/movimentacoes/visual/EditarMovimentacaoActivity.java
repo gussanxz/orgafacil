@@ -1,7 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual;
 
 import android.app.Activity;
-import android.app.AlertDialog; // Cuidado: Use androidx.appcompat.app.AlertDialog preferencialmente
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -18,10 +17,10 @@ import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
-// [ATUALIZADO] Import correto (sem r_negocio)
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
+import com.gussanxz.orgafacil.util_helper.MoedaHelper; // Importado
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.SimpleDateFormat;
@@ -30,24 +29,20 @@ import java.util.Locale;
 
 public class EditarMovimentacaoActivity extends AppCompatActivity {
 
-    // UI
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
     private TextView textViewHeader;
     private ImageButton btnExcluir;
 
-    // Estado
     private MovimentacaoModel movOriginal;
     private MovimentacaoRepository repository;
     private ActivityResultLauncher<Intent> launcherCategoria;
 
-    // Controle de Categoria (ID é crucial)
     private String novoCategoriaId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Recupera o objeto
         movOriginal = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
         repository = new MovimentacaoRepository();
 
@@ -56,7 +51,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. Define o Layout (Reusa os layouts de criação)
         if (movOriginal.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
@@ -68,39 +62,33 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         configurarListeners();
         configurarLauncherCategoria();
 
-        // Inicializa o ID da categoria com o atual
         novoCategoriaId = movOriginal.getCategoria_id();
     }
 
     private void inicializarComponentes() {
-        // IDs devem bater com o layout XML (ac_main_contas_add_despesa / receita)
         textViewHeader = findViewById(R.id.textViewHeader);
         editData = findViewById(R.id.editData);
-        editHora = findViewById(R.id.editHora); // Certifique-se que existe no XML
+        editHora = findViewById(R.id.editHora);
         editDescricao = findViewById(R.id.editDescricao);
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
         btnExcluir = findViewById(R.id.btnExcluir);
 
         if (textViewHeader != null) textViewHeader.setText("Editar Lançamento");
-
-        // Se o botão excluir existir no layout, deixa visível
         if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
 
-        // Bloqueia a edição manual da categoria
         editCategoria.setFocusable(false);
         editCategoria.setClickable(true);
     }
 
     private void preencherCampos() {
-        // Converte Centavos -> Double
-        double valorExibicao = movOriginal.getValor() / 100.0;
+        // [CORRIGIDO] Usa o MoedaHelper para converter centavos em double para a tela
+        double valorExibicao = MoedaHelper.centavosParaDouble(movOriginal.getValor());
         editValor.setText(String.format(Locale.US, "%.2f", valorExibicao));
 
         editDescricao.setText(movOriginal.getDescricao());
         editCategoria.setText(movOriginal.getCategoria_nome());
 
-        // Converte Timestamp -> String
         if (movOriginal.getData_movimentacao() != null) {
             Date date = movOriginal.getData_movimentacao().toDate();
             editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date));
@@ -111,15 +99,11 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void configurarListeners() {
-        // Usa os Helpers de Data/Hora se disponíveis
         editData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(this, editData));
-
         if (editHora != null) {
             editHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, editHora));
         }
-
         editCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
-
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
         }
@@ -137,47 +121,38 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         String nomeCat = result.getData().getStringExtra("categoriaSelecionada");
                         String idCat = result.getData().getStringExtra("categoriaId");
-
                         editCategoria.setText(nomeCat);
-                        novoCategoriaId = idCat; // Atualiza o ID para salvar
+                        novoCategoriaId = idCat;
                     }
                 });
     }
 
-    // --- AÇÃO DE SALVAR ---
-
-    // Vinculado ao botão "Salvar" no XML (onClick)
     public void salvarDespesa(View v) { confirmarEdicao(); }
     public void salvarProvento(View v) { confirmarEdicao(); }
 
     private void confirmarEdicao() {
         try {
-            // 1. Cria objeto NOVO com os dados da tela
             MovimentacaoModel movNova = new MovimentacaoModel();
 
-            // Mantém IDs e Metadados imutáveis
             movNova.setId(movOriginal.getId());
             movNova.setTipo(movOriginal.getTipo());
             movNova.setData_criacao(movOriginal.getData_criacao());
 
-            // Atualiza Valor (Double -> Centavos)
+            // [CORRIGIDO] Captura o double e converte para centavos (int) via MoedaHelper
             String valorStr = editValor.getText().toString().replace(",", ".");
-            int novoValorCentavos = (int) Math.round(Double.parseDouble(valorStr) * 100);
+            double valorDigitado = Double.parseDouble(valorStr);
+            int novoValorCentavos = MoedaHelper.doubleParaCentavos(valorDigitado);
             movNova.setValor(novoValorCentavos);
 
-            // Atualiza Descrição
             movNova.setDescricao(editDescricao.getText().toString());
-
-            // Atualiza Categoria
             movNova.setCategoria_nome(editCategoria.getText().toString());
-            movNova.setCategoria_id(novoCategoriaId); // Usa o ID atualizado ou o original
+            movNova.setCategoria_id(novoCategoriaId);
 
-            // Atualiza Data e Hora
             String dataHoraStr = editData.getText().toString();
             if (editHora != null) {
                 dataHoraStr += " " + editHora.getText().toString();
             } else {
-                dataHoraStr += " 00:00"; // Fallback
+                dataHoraStr += " 00:00";
             }
 
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -186,7 +161,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 movNova.setData_movimentacao(new Timestamp(date));
             }
 
-            // 2. Chama o Repository para fazer a troca (Estorno + Novo Lançamento)
             repository.editar(movOriginal, movNova, new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {

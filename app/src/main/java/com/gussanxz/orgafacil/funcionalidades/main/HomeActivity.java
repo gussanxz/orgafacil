@@ -23,7 +23,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
@@ -39,6 +39,7 @@ public class HomeActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Aplica o tema imediatamente antes de inflar a View
         TemaHelper.aplicarTemaDoCache(this);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
@@ -50,24 +51,26 @@ public class HomeActivity extends AppCompatActivity {
         configurarBotoesBloqueados();
         configurarBotaoVoltar();
 
-        // [SEGURANÇA] Biometria é checada ANTES de carregar qualquer dado
+        // [SEGURANÇA] Biometria é checada ANTES de carregar qualquer dado sensível
         verificarSegurancaBiometrica();
 
+        // Sincroniza preferências do Firestore
         carregarPreferenciasUsuario();
     }
 
-    // --- NOVA LÓGICA DE SEGURANÇA ---
+    // --- LÓGICA DE SEGURANÇA BIOMÉTRICA ---
 
     private void verificarSegurancaBiometrica() {
+        // Verifica no SharedPreferences local se o PIN está habilitado
         boolean pinObrigatorio = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE)
                 .getBoolean("pin_obrigatorio", true);
 
         if (pinObrigatorio) {
-            // Esconde o conteúdo sensível imediatamente
+            // Esconde o conteúdo sensível imediatamente para garantir privacidade
             if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.INVISIBLE);
             autenticarComDispositivo();
         } else {
-            // Se não tiver PIN, garante que está visível
+            // Se não tiver proteção ativa, garante visibilidade
             if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
         }
     }
@@ -78,7 +81,7 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                // Sucesso: Mostra a tela
+                // Sucesso: Revela a interface do app
                 if (layoutPrincipal != null) layoutPrincipal.setVisibility(View.VISIBLE);
             }
 
@@ -86,15 +89,14 @@ public class HomeActivity extends AppCompatActivity {
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
 
-                // Evita crash se a activity já estiver fechando
                 if (isFinishing() || isDestroyed()) return;
 
-                // Erro crítico ou cancelamento pelo usuário: Fecha o app para proteger os dados
+                // Se o usuário cancelar ou o dispositivo não tiver credenciais, fecha o app por segurança
                 if (errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
                         errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
                         errorCode == BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL) {
 
-                    finishAffinity(); // Fecha o app todo
+                    finishAffinity();
                 } else {
                     Toast.makeText(HomeActivity.this, "Autenticação necessária: " + errString, Toast.LENGTH_SHORT).show();
                     finish();
@@ -111,11 +113,12 @@ public class HomeActivity extends AppCompatActivity {
         biometricPrompt.authenticate(promptInfo);
     }
 
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
+    // --- COMPONENTES E INICIALIZAÇÃO ---
 
     private void inicializarComponentes() {
         layoutPrincipal = findViewById(R.id.main);
 
+        // Ajuste de insets para EdgeToEdge
         if (layoutPrincipal != null) {
             ViewCompat.setOnApplyWindowInsetsListener(layoutPrincipal, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -132,33 +135,38 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void configurarBotaoVoltar() {
+        // Callback para gerenciar o encerramento da sessão ao voltar
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                // [CORREÇÃO] O Helper atual só pede o Contexto, não precisa passar Repository
                 DialogLogoutHelper.mostrarDialogo(HomeActivity.this);
             }
         });
     }
 
+    /**
+     * CORREÇÃO: Sincronização de preferências adaptada para a nova estrutura de mapas.
+     */
     private void carregarPreferenciasUsuario() {
-        // Usa SharedPreferences padrão para comparar o cache local
         SharedPreferences sharedPreferences = getSharedPreferences(TemaHelper.PREF_NAME, MODE_PRIVATE);
         String temaCache = sharedPreferences.getString(TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
 
         prefsRepository.obter(this, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
-                if (prefs != null) {
-                    // Se o tema no banco for diferente do cache atual, aplica e recria
-                    if (!temaCache.equals(prefs.getTema())) {
-                        TemaHelper.aplicarTema(prefs.getTema());
+                // CORREÇÃO: Acessando o tema através do sub-objeto 'Visual'
+                if (prefs != null && prefs.getVisual() != null) {
+                    String temaFirestore = prefs.getVisual().getTema();
+
+                    // Se o tema no banco for diferente do cache local, sincroniza e aplica
+                    if (!temaCache.equals(temaFirestore)) {
+                        TemaHelper.aplicarTema(temaFirestore);
                     }
                 }
             }
             @Override
             public void onErro(String erro) {
-                Log.e(TAG, "Erro ao buscar preferências: " + erro);
+                Log.e(TAG, "Erro ao buscar preferências do Firestore: " + erro);
             }
         });
     }
@@ -174,7 +182,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    // --- Navegação ---
+    // --- MÉTODOS DE NAVEGAÇÃO ---
 
     public void acessarResumoContasActivity(View view) {
         startActivity(new Intent(this, ResumoContasActivity.class));

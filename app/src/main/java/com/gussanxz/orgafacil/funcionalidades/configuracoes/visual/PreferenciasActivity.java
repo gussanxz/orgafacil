@@ -10,8 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
-// CORREÇÃO 1: Importando do local correto agora
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 
 public class PreferenciasActivity extends AppCompatActivity {
@@ -32,7 +31,7 @@ public class PreferenciasActivity extends AppCompatActivity {
     }
 
     private void marcarOpcaoAtual() {
-        // CORREÇÃO 2: Usando constantes em vez de "string solta"
+        // Agora buscamos o tema padrão através da classe interna Visual
         String temaSalvo = FirebaseSession.getString(this, TemaHelper.KEY_TEMA, PreferenciasModel.TEMA_SISTEMA);
 
         if (temaSalvo.equals(PreferenciasModel.TEMA_CLARO)) {
@@ -43,7 +42,6 @@ public class PreferenciasActivity extends AppCompatActivity {
             ((RadioButton) findViewById(R.id.rbSistema)).setChecked(true);
         }
     }
-
     private void configurarListeners() {
         radioGroupTema.setOnCheckedChangeListener((group, checkedId) -> {
             String novoTema = PreferenciasModel.TEMA_SISTEMA;
@@ -59,19 +57,21 @@ public class PreferenciasActivity extends AppCompatActivity {
     }
 
     private void aplicarESalvar(String tema) {
-        // Ação visual imediata (UX)
+        // Ação visual imediata
         TemaHelper.aplicarTema(tema);
 
-        // CORREÇÃO 3: Usando construtor vazio + Setter
-        // O construtor vazio já define BRL, false, etc.
+        // CORREÇÃO: Acessando o objeto Visual dentro do modelo
         PreferenciasModel pref = new PreferenciasModel();
-        pref.setTema(tema);
+
+        // Como o construtor de PreferenciasModel já faz 'this.visual = new Visual()',
+        // basta acessar o getter e setar o tema lá dentro.
+        pref.getVisual().setTema(tema);
 
         // Sincronização via Repository
         repository.salvar(this, pref, new PreferenciasRepository.Callback() {
             @Override
             public void onSucesso(PreferenciasModel prefs) {
-                // Sincronização silenciosa concluída
+                // Sucesso
             }
 
             @Override

@@ -126,23 +126,25 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
                 .setTitle("Reativar Conta?")
                 .setMessage("Sua conta está desativada. Deseja reativá-la para recuperar seus dados?")
                 .setCancelable(false)
+                // Dentro de exibirConfirmacaoReativacao
                 .setPositiveButton("Sim, Reativar", (dialog, which) -> {
                     if (loadingHelper != null) loadingHelper.exibir();
 
-                    // [ATUALIZADO] Chama o método do Repository para reativar
-                    usuarioRepository.reativarContaLogica().addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            usuarioRepository.atualizarUltimaAtividade();
-                            navegarParaHome("Conta reativada com sucesso!");
-                        } else {
-                            abortarLogin("Falha ao reativar conta. Tente novamente.");
-                        }
-                    });
-                })
-                .setNegativeButton("Não, Sair", (dialog, which) -> {
-                    abortarLogin("Reativação cancelada.");
-                })
-                .show();
+                    Task<Void> task = usuarioRepository.reativarContaLogica();
+
+                    if (task != null) {
+                        task.addOnCompleteListener(t -> {
+                            if (t.isSuccessful()) {
+                                usuarioRepository.atualizarUltimaAtividade();
+                                navegarParaHome("Conta reativada!");
+                            } else {
+                                abortarLogin("Erro ao reativar.");
+                            }
+                        });
+                    } else {
+                        abortarLogin("Erro crítico: Usuário não identificado.");
+                    }
+                });
     }
 
     private void exibirDialogoTermos(FirebaseUser user) {

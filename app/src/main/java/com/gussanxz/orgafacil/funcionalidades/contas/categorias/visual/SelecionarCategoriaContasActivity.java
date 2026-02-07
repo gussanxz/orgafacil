@@ -69,35 +69,47 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     /**
      * Busca as categorias no Firestore e inicializa padrões caso o banco esteja vazio.
      */
-    private void carregarCategorias() {
-        // O Repository ordena por "visual.nome" automaticamente
-        repository.listarAtivasPorTipo(TipoCategoriaContas.DESPESA.getId())
+   private void carregarCategorias() {
+
+        // [CORREÇÃO] Recupera o tipo enviado pela Activity anterior (Receita ou Despesa)
+        // Se não vier nada, assume DESPESA por segurança.
+        int tipoId = getIntent().getIntExtra("TIPO_CATEGORIA", TipoCategoriaContas.DESPESA.getId());
+        TipoCategoriaContas tipoEnum = (tipoId == TipoCategoriaContas.RECEITA.getId())
+                ? TipoCategoriaContas.RECEITA
+                : TipoCategoriaContas.DESPESA;
+
+        // Filtra no banco apenas as categorias do tipo solicitado
+        repository.listarAtivasPorTipo(tipoEnum)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     listaCategorias.clear();
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
-                        listaCategorias.add(cat);
+                    if (snapshot != null) {
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
+                            listaCategorias.add(cat);
+                        }
                     }
 
-                    // Se estiver vazio, cria os padrões
+                    // Se estiver vazio para esse tipo específico, inicializa os padrões
                     if (listaCategorias.isEmpty()) {
                         repository.inicializarPadroes(new ContasCategoriaRepository.Callback() {
                             @Override
                             public void onSucesso() {
-                                carregarCategorias(); // Recarrega
+                                carregarCategorias(); // Recarrega para mostrar os novos padrões
                             }
 
                             @Override
                             public void onErro(String erro) {
-                                Toast.makeText(SelecionarCategoriaContasActivity.this, "Erro ao criar padrões: " + erro, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                                        "Erro ao criar padrões: " + erro, Toast.LENGTH_SHORT).show();
                             }
                         });
                     } else {
                         adapter.notifyDataSetChanged();
                     }
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Erro ao carregar banco", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast.makeText(this,
+                        "Erro ao carregar banco: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     /**
@@ -116,10 +128,11 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
                 ContasCategoriaModel novaCat = new ContasCategoriaModel();
 
-                // [ATUALIZADO] Define o nome dentro do grupo Visual
+                // Define o nome dentro do grupo Visual (Mapa aninhado)
                 novaCat.getVisual().setNome(nome);
+                novaCat.getVisual().setIcone("ic_default");
 
-                // Define os dados da raiz
+                // Define os dados da raiz usando o ID do Enum
                 novaCat.setTipo(TipoCategoriaContas.DESPESA.getId());
                 novaCat.setAtiva(true);
 
@@ -127,7 +140,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                     @Override
                     public void onSucesso() {
                         Toast.makeText(SelecionarCategoriaContasActivity.this, "Categoria criada!", Toast.LENGTH_SHORT).show();
-                        carregarCategorias();
+                        carregarCategorias(); // Atualiza a lista
                     }
 
                     @Override
@@ -142,7 +155,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     }
 
     /**
-     * Implementa o "Deslizar para excluir" com trava de segurança.
+     * Implementa o "Deslizar para excluir" com trava de segurança (verificação de uso).
      */
     private void configurarSwipeParaExcluir() {
         ItemTouchHelper.SimpleCallback itemTouch = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
@@ -164,7 +177,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
                     @Override
                     public void onErro(String erro) {
-                        // Se houver erro (categoria em uso), desfaz o swipe
+                        // Se houver erro (categoria em uso nas movimentações), desfaz o movimento visual do swipe
                         Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
                         adapter.notifyItemChanged(pos);
                     }
