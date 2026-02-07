@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.configuracoes.visual;
+package com.gussanxz.orgafacil.funcionalidades.configuracoes;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -15,6 +15,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
+import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.PerfilActivity;
+import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.PreferenciasActivity;
+import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.SegurancaActivity;
 import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 
 import java.util.TimeZone;

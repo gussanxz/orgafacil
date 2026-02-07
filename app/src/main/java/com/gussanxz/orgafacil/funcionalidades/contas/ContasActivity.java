@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual;
+package com.gussanxz.orgafacil.funcionalidades.contas;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;

@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient; // Adicionado import faltante
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,8 +25,9 @@ import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivi
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioService; // Serviço de Negócio (se houver)
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioService;
+// Import do novo Model
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.UsuarioModel;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
@@ -44,6 +46,7 @@ public class MainActivity extends IntroActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    // O Helper vai processar o resultado e chamar o callback 'processarLoginGoogle'
                     googleLoginHelper.lidarComResultadoGoogle(result.getData());
                 }
             }
@@ -57,13 +60,13 @@ public class MainActivity extends IntroActivity {
         super.onCreate(savedInstanceState);
 
         usuarioRepository = new UsuarioRepository();
-        usuarioService = new UsuarioService(); // Certifique-se que essa classe existe ou adapte a lógica de criação
+        usuarioService = new UsuarioService();
 
         // Configuração de Loading (Se houver overlay no XML da intro)
         View overlay = findViewById(R.id.loading_overlay);
         if (overlay != null) loadingHelper = new LoadingHelper(overlay);
 
-        // Helper de Login Google com Callback de Sucesso
+        // Helper de Login Google com Callback de Sucesso (Referência de Método ::)
         googleLoginHelper = new GoogleLoginHelper(this, this::processarLoginGoogle);
 
         configurarSlides();
@@ -106,14 +109,18 @@ public class MainActivity extends IntroActivity {
                 try {
                     UsuarioModel usuarioModel = doc.toObject(UsuarioModel.class);
 
-                    // [CORREÇÃO]: Comparação de Status via String (Enum.name())
-                    if (usuarioModel != null &&
-                            UsuarioModel.StatusConta.DESATIVADO.name().equals(usuarioModel.getStatus())) {
+                    // [ATUALIZADO] Verifica status no grupo DadosConta
+                    String statusAtual = "ATIVO";
+                    if (usuarioModel != null && usuarioModel.getDadosConta() != null) {
+                        statusAtual = usuarioModel.getDadosConta().getStatus();
+                    }
 
+                    if ("DESATIVADO".equals(statusAtual)) {
                         if (loadingHelper != null) loadingHelper.ocultar();
                         // Conta desativada: manda para LoginActivity lidar com a reativação
+                        // (Pois a intro não tem UI para confirmar reativação)
+                        Toast.makeText(this, "Conta desativada. Faça login para reativar.", Toast.LENGTH_LONG).show();
                         startActivity(new Intent(this, LoginActivity.class));
-
                     } else {
                         // Conta Ativa: Atualiza timestamp e entra
                         usuarioRepository.atualizarUltimaAtividade();
@@ -147,7 +154,8 @@ public class MainActivity extends IntroActivity {
         // AÇÃO DE RECUSA: Se cancelar/fechar o dialog, desloga do Google
         dialog.setOnCancelListener(d -> {
             ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
-            GoogleSignIn.getClient(this, new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()).signOut();
+            GoogleSignInClient googleClient = GoogleSignIn.getClient(this, new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build());
+            googleClient.signOut();
             Toast.makeText(this, "Cadastro cancelado.", Toast.LENGTH_SHORT).show();
         });
 
@@ -176,7 +184,7 @@ public class MainActivity extends IntroActivity {
     }
 
     private void criarConta(FirebaseUser user) {
-        // [ATENÇÃO]: Certifique-se de que UsuarioService.inicializarNovoUsuario usa o novo UsuarioRepository
+        // [ATUALIZADO]: O UsuarioService já usa a nova estrutura internamente
         usuarioService.inicializarNovoUsuario(user, task -> {
             if (loadingHelper != null) loadingHelper.ocultar();
 
@@ -189,7 +197,7 @@ public class MainActivity extends IntroActivity {
     }
 
     private void irParaHome() {
-        Intent intent = new Intent(this, HomeActivity.class); // Certifique-se que HomeActivity existe
+        Intent intent = new Intent(this, HomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

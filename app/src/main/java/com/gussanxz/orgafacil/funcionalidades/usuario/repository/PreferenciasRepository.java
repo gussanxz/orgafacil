@@ -6,14 +6,14 @@ import androidx.annotation.NonNull;
 import com.google.firebase.firestore.DocumentReference;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel; // [ATUALIZADO] Pacote correto
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 
 public class PreferenciasRepository {
 
     private final String uid;
     private static final String COL_CONFIG = "config";
-    private static final String DOC_PREFERENCIAS = "config_preferencias"; //
+    private static final String DOC_PREFERENCIAS = "config_preferencias";
 
     public PreferenciasRepository() {
         this.uid = FirebaseSession.isUserLogged() ? FirebaseSession.getUserId() : null;
@@ -58,7 +58,7 @@ public class PreferenciasRepository {
                     PreferenciasModel prefs = documentSnapshot.toObject(PreferenciasModel.class);
 
                     if (prefs == null) {
-                        prefs = new PreferenciasModel(); // Retorna padrão se não existir (sem salvar no banco ainda)
+                        prefs = new PreferenciasModel(); // Construtor já cria os sub-objetos com defaults
                     }
 
                     atualizarCacheLocal(context, prefs);
@@ -87,10 +87,22 @@ public class PreferenciasRepository {
                 .document(DOC_PREFERENCIAS);
     }
 
+    /**
+     * Atualiza o SharedPreferences local para acesso rápido sem internet.
+     * [ATUALIZADO]: Acessa os campos através dos grupos (Visual, Regional).
+     */
     private void atualizarCacheLocal(Context context, PreferenciasModel prefs) {
         if (prefs == null) return;
-        TemaHelper.salvarTemaCache(context, prefs.getTema());
-        FirebaseSession.putString(context, "moeda_pref", prefs.getMoeda());
-        FirebaseSession.putBoolean(context, "esconder_saldo_pref", prefs.isEsconderSaldo());
+
+        // Atualiza Visual (Tema e Saldo)
+        if (prefs.getVisual() != null) {
+            TemaHelper.salvarTemaCache(context, prefs.getVisual().getTema());
+            FirebaseSession.putBoolean(context, "esconder_saldo_pref", prefs.getVisual().isEsconderSaldo());
+        }
+
+        // Atualiza Regional (Moeda)
+        if (prefs.getRegional() != null) {
+            FirebaseSession.putString(context, "moeda_pref", prefs.getRegional().getMoeda());
+        }
     }
 }

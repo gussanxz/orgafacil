@@ -1,9 +1,5 @@
 package com.gussanxz.orgafacil.funcionalidades.usuario.repository;
 
-import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
@@ -19,77 +15,65 @@ import com.google.firebase.firestore.FieldValue;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.UsuarioModel;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * UsuarioRepository
- * O que esta classe faz:
- * 1. Gerencia a persistência da Identidade (UsuarioModel) no Firestore.
- * 2. Utiliza as constantes do Model para evitar erros de digitação (Blindagem).
- * 3. Centraliza lógicas de Auth e mapeamento de erros.
+ * Responsável pela persistência e leitura de dados do usuário.
+ * ATUALIZADO: Usa as constantes de caminho (Dot Notation) do UsuarioModel.
  */
 public class UsuarioRepository {
 
     private final String uidAtual;
 
     public UsuarioRepository() {
-        // Pensa fora da caixa: Carregamos o UID da sessão para evitar NullPointer nas chamadas
         this.uidAtual = FirebaseSession.isUserLogged() ? FirebaseSession.getUserId() : null;
     }
 
     // ============================================================================================
-    // 1. CRIAÇÃO E VERIFICAÇÃO (Login/Cadastro)
+    // 1. CRIAÇÃO E VERIFICAÇÃO
     // ============================================================================================
 
-    /**
-     * Verifica se o documento do usuário já existe no Firestore.
-     */
     public Task<DocumentSnapshot> verificarSeUsuarioExiste(String uid) {
         return FirestoreSchema.userDoc(uid).get();
     }
 
     /**
-     * Salva um NOVO usuário.
-     * Implementa a lógica de garantir que timestamps iniciais venham do servidor.
+     * Salva o objeto completo.
+     * O UsuarioService já montou a estrutura de mapas corretamente.
      */
     public Task<Void> salvarNovoUsuario(UsuarioModel usuario) {
-        // Blindagem: Garantimos que datas críticas iniciem nulas para o @ServerTimestamp atuar
-        usuario.setDataCriacaoConta(null);
-        usuario.setUltimaAtividade(null);
-
-        // Se a versão do app não foi setada, obtemos via PackageManager
-        if (usuario.getVersaoApp() == null) {
-            usuario.setVersaoApp(obterVersaoAppGlobal());
-        }
-
         return FirestoreSchema.userDoc(usuario.getUid()).set(usuario);
     }
 
     // ============================================================================================
-    // 2. ATUALIZAÇÕES PARCIAIS (Update)
+    // 2. ATUALIZAÇÕES PARCIAIS (Usando Constantes Blindadas)
     // ============================================================================================
 
-    /**
-     * Atualiza o timestamp de última atividade usando a constante do Model.
-     */
     public Task<Void> atualizarUltimaAtividade() {
         if (uidAtual == null) return null;
+
+        // CAMPO_ULTIMA_ATIVIDADE já vale "dadosApp.ultimaAtividade"
         return FirestoreSchema.userDoc(uidAtual)
                 .update(UsuarioModel.CAMPO_ULTIMA_ATIVIDADE, FieldValue.serverTimestamp());
     }
 
-    /**
-     * Atualiza dados de perfil usando mapeamento por constantes (Blindagem).
-     */
     public Task<Void> atualizarDadosPerfil(String nome, String fotoUrl) {
         if (uidAtual == null) return null;
 
         Map<String, Object> updates = new HashMap<>();
-        if (nome != null) updates.put(UsuarioModel.CAMPO_NOME, nome);
-        if (fotoUrl != null) updates.put(UsuarioModel.CAMPO_FOTO, fotoUrl);
+
+        if (nome != null) {
+            // CAMPO_NOME já vale "dadosPessoais.nome"
+            updates.put(UsuarioModel.CAMPO_NOME, nome);
+        }
+        if (fotoUrl != null) {
+            // CAMPO_FOTO já vale "dadosPessoais.fotoUrl"
+            updates.put(UsuarioModel.CAMPO_FOTO, fotoUrl);
+        }
 
         return FirestoreSchema.userDoc(uidAtual).update(updates);
     }
@@ -98,34 +82,52 @@ public class UsuarioRepository {
     // 3. GERENCIAMENTO DE CONTA (Status)
     // ============================================================================================
 
-    /**
-     * Desativa a conta logicamente (Soft Delete) alterando o Status para DESATIVADO.
-     */
     public Task<Void> desativarContaLogica() {
         if (uidAtual == null) return null;
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put(UsuarioModel.CAMPO_STATUS, UsuarioModel.StatusConta.DESATIVADO.name());
-        updates.put("dataDesativacaoConta", FieldValue.serverTimestamp());
+        // Atualiza status e data de desativação nos caminhos corretos
+        updates.put(UsuarioModel.CAMPO_STATUS, "DESATIVADO"); // Ou use o Enum se preferir
+        updates.put(UsuarioModel.CAMPO_DATA_DESATIVACAO, FieldValue.serverTimestamp());
 
         return FirestoreSchema.userDoc(uidAtual).update(updates);
     }
 
-    /**
-     * Reativa a conta e limpa a data de desativação.
-     */
     public Task<Void> reativarContaLogica() {
         if (uidAtual == null) return null;
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put(UsuarioModel.CAMPO_STATUS, UsuarioModel.StatusConta.ATIVO.name());
-        updates.put("dataDesativacaoConta", null);
+        updates.put(UsuarioModel.CAMPO_STATUS, "ATIVO");
+        updates.put(UsuarioModel.CAMPO_DATA_DESATIVACAO, null);
 
         return FirestoreSchema.userDoc(uidAtual).update(updates);
     }
 
     // ============================================================================================
-    // 4. AUTH & SESSÃO (Helpers)
+    // 4. LEITURA DE DADOS
+    // ============================================================================================
+
+    /**
+     * Recupera o nome para exibição.
+     */
+    public void obterNomeUsuario(final OnNomeRecuperadoCallback callback) {
+        if (uidAtual == null) return;
+
+        FirestoreSchema.userDoc(uidAtual).get().addOnSuccessListener(doc -> {
+            if (doc.exists()) {
+                // O Firestore entende "dadosPessoais.nome" automaticamente no getString
+                String nome = doc.getString(UsuarioModel.CAMPO_NOME);
+                callback.onResultado(nome != null ? nome : "Usuário");
+            }
+        });
+    }
+
+    public interface OnNomeRecuperadoCallback {
+        void onResultado(String nome);
+    }
+
+    // ============================================================================================
+    // 5. AUTH HELPERS (Mantidos)
     // ============================================================================================
 
     public void deslogar() {
@@ -140,26 +142,6 @@ public class UsuarioRepository {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         return (user != null) ? user.linkWithCredential(credential) : null;
     }
-
-    /**
-     * Recupera o nome do usuário para saudações na UI.
-     */
-    public void obterNomeUsuario(final OnNomeRecuperadoCallback callback) {
-        if (uidAtual == null) return;
-
-        FirestoreSchema.userDoc(uidAtual).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                String nome = doc.getString(UsuarioModel.CAMPO_NOME);
-                callback.onResultado(nome != null ? nome : "Usuário");
-            }
-        });
-    }
-
-    public interface OnNomeRecuperadoCallback {
-        void onResultado(String nome);
-    }
-
-    // --- MÉTODOS UTILITÁRIOS ---
 
     public String mapearErroAutenticacao(Exception e) {
         if (e instanceof FirebaseAuthWeakPasswordException) return "A senha fornecida é muito fraca.";
@@ -176,15 +158,5 @@ public class UsuarioRepository {
             }
         }
         return "password";
-    }
-
-    private String obterVersaoAppGlobal() {
-        try {
-            Context c = com.google.firebase.FirebaseApp.getInstance().getApplicationContext();
-            PackageInfo pInfo = c.getPackageManager().getPackageInfo(c.getPackageName(), 0);
-            return pInfo.versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            return "1.0.0";
-        }
     }
 }

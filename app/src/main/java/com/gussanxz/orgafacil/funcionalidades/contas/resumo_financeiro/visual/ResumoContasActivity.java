@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.DashboardPagerAdapter;

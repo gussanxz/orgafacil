@@ -50,7 +50,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.configuracoes.visual.ConfigsActivity"
+            android:name=".funcionalidades.configuracoes.ConfigsActivity"
             android:exported="false" />
         <activity
             android:name=".funcionalidades.configuracoes.visual.PerfilActivity"
@@ -84,7 +84,7 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.resumo_financeiro.visual.ContasActivity"
+            android:name=".funcionalidades.contas.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity

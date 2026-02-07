@@ -18,7 +18,8 @@ import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
+// [ATUALIZADO] Import do pacote correto
+import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.UsuarioModel;
 
 /**
  * SplashActivity
@@ -55,6 +56,7 @@ public class SplashActivity extends AppCompatActivity {
 
         FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
 
+        // Recarrega o user para garantir que o token não expirou ou foi revogado
         user.reload().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 validarStatusNoBanco(user.getUid());
@@ -74,10 +76,14 @@ public class SplashActivity extends AppCompatActivity {
                     try {
                         UsuarioModel usuario = doc.toObject(UsuarioModel.class);
 
-                        // [CORREÇÃO]: Comparação segura de String vs Enum.name()
-                        // Usamos o .equals() porque getStatus() retorna String no novo Model.
-                        if (usuario != null &&
-                                UsuarioModel.StatusConta.ATIVO.name().equals(usuario.getStatus())) {
+                        // [ATUALIZADO] Recupera o status de dentro do grupo "DadosConta"
+                        String statusConta = "DESCONHECIDO";
+                        if (usuario != null && usuario.getDadosConta() != null) {
+                            statusConta = usuario.getDadosConta().getStatus();
+                        }
+
+                        // Verifica se está ATIVO
+                        if ("ATIVO".equals(statusConta)) {
 
                             usuarioRepository.atualizarUltimaAtividade();
                             irParaHome();
@@ -88,14 +94,17 @@ public class SplashActivity extends AppCompatActivity {
                             irParaIntro();
                         }
                     } catch (Exception e) {
+                        // Erro ao converter (estrutura antiga ou corrompida) -> Logout por segurança
                         FirebaseSession.logOut(this);
                         irParaIntro();
                     }
                 } else {
+                    // Documento não existe -> Logout
                     FirebaseSession.logOut(this);
                     irParaIntro();
                 }
             } else {
+                // Erro de conexão -> Intro
                 irParaIntro();
             }
         });
