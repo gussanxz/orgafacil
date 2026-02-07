@@ -6,15 +6,15 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.EditarMovimentacaoActivity;
-// [IMPORTANTE]: O import deve ser EXATAMENTE este:
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 
 import java.text.NumberFormat;
@@ -89,6 +89,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         void bind(ExibirItemListaMovimentacaoContas item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
+                // [PRECISÃO]: Converte centavos para double na exibição [cite: 2026-02-07]
                 double saldoReal = item.saldoDia / 100.0;
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
                 int color = item.saldoDia >= 0 ? Color.parseColor("#008000") : Color.parseColor("#B00020");
@@ -100,6 +101,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
         TextView textTitulo, textCategoria, textValor, textData, textHora;
         View viewIndicadorCor;
+        ImageView imgStatus; // [ADICIONADO]: Para mostrar se está pago ou pendente
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,10 +111,10 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             textData = itemView.findViewById(R.id.textAdapterData);
             textHora = itemView.findViewById(R.id.textAdapterHora);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
+            //imgStatus = itemView.findViewById(R.id.imgStatusPagamento); // Vincule no seu XML
         }
 
         void bind(MovimentacaoModel mov) {
-            // Graças aos métodos @Exclude no seu Model, isso funciona direto!
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getCategoria_nome());
 
@@ -120,14 +122,13 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
                 Date date = mov.getData_movimentacao().toDate();
                 textData.setText(dateFormat.format(date));
                 textHora.setText(hourFormat.format(date));
-            } else {
-                textData.setText("--/--");
-                textHora.setText("--:--");
             }
 
+            // [PRECISÃO]: Inteiro centavos para double exibição [cite: 2026-02-07]
             double valorReais = mov.getValor() / 100.0;
 
-            if (mov.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
+            // [CLEAN CODE]: Uso de Enum em vez de IDs mágicos
+            if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#E53935"));
@@ -135,6 +136,18 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
                 textValor.setText("+ " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#00D39E"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
+            }
+
+            // [LOGICA STATUS]: Diferencia visualmente itens PAGOS de PENDENTES
+            if (!mov.isPago()) {
+                itemView.setAlpha(0.6f); // Deixa o item levemente transparente se for futuro/pendente
+                if (imgStatus != null) {
+                    imgStatus.setVisibility(View.VISIBLE);
+                    //imgStatus.setImageResource(R.drawable.ic_clock_pending); // Ícone de relógio
+                }
+            } else {
+                itemView.setAlpha(1.0f);
+                if (imgStatus != null) imgStatus.setVisibility(View.GONE);
             }
 
             itemView.setOnClickListener(v -> {

@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -25,12 +25,12 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
-import com.gussanxz.orgafacil.util_helper.MoedaHelper; // [ADICIONADO]
+import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.ParseException;
@@ -38,6 +38,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * ReceitasActivity
+ * Agora utiliza o MovimentacaoModel unificado.
+ * Identifica automaticamente se é uma Receita Atual ou um Agendamento Futuro.
+ */
 public class ReceitasActivity extends AppCompatActivity {
 
     private final String TAG = "ReceitasActivity";
@@ -53,7 +58,7 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private String categoriaIdSelecionada;
 
-    // [ATUALIZADO] O valor agora é controlado como centavos (int) para precisão
+    // [PRECISÃO]: O valor é controlado em centavos (int) para evitar erros matemáticos [cite: 2026-02-07]
     private int valorCentavosAtual = 0;
 
     @Override
@@ -106,7 +111,8 @@ public class ReceitasActivity extends AppCompatActivity {
 
         campoCategoria.setOnClickListener(v -> {
             Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
-            intent.putExtra("TIPO_CATEGORIA", TipoCategoriaContas.RECEITA.getId()); // Passa o tipo
+            // Passa o tipo para filtrar apenas categorias de RECEITA
+            intent.putExtra("TIPO_CATEGORIA", TipoCategoriaContas.RECEITA.getId());
             launcherCategoria.launch(intent);
         });
 
@@ -129,35 +135,21 @@ public class ReceitasActivity extends AppCompatActivity {
                 });
     }
 
-    /**
-     * [ATUALIZADO] Lógica de máscara sequencial: 0,00 -> 0,01 -> 0,10
-     */
     private void setupCurrencyMask() {
         campoValor.addTextChangedListener(new TextWatcher() {
             private String current = "";
-
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
                 if (!s.toString().equals(current)) {
                     campoValor.removeTextChangedListener(this);
-
-                    // Remove tudo que não for dígito
                     String cleanString = s.toString().replaceAll("[^\\d]", "");
-
                     if (!cleanString.isEmpty()) {
                         try {
-                            // Transforma a string de números em centavos (int)
                             valorCentavosAtual = Integer.parseInt(cleanString);
-
-                            // Converte centavos para double para formatação visual
                             double valorDouble = MoedaHelper.centavosParaDouble(valorCentavosAtual);
-
-                            // Formata como R$ 0,00 usando o Helper
                             String formatted = MoedaHelper.formatarParaBRL(valorDouble);
-
                             current = formatted;
                             campoValor.setText(formatted);
                             campoValor.setSelection(formatted.length());
@@ -177,19 +169,14 @@ public class ReceitasActivity extends AppCompatActivity {
     private void verificarModoEdicao() {
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
             MovimentacaoModel movRecebida = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
-
             if (movRecebida != null) {
                 isEdicao = true;
                 itemEmEdicao = movRecebida;
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
-
-                // [CORREÇÃO] Inicializa o valor em centavos
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                // Converte e formata para a tela
                 double valorReais = MoedaHelper.centavosParaDouble(valorCentavosAtual);
                 campoValor.setText(MoedaHelper.formatarParaBRL(valorReais));
-
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 
@@ -198,7 +185,6 @@ public class ReceitasActivity extends AppCompatActivity {
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
                 }
-
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
             }
         } else {
@@ -209,17 +195,23 @@ public class ReceitasActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * SALVAR PROVENTOS
+     * [ATUALIZADO]: Define status 'pago' automaticamente e usa Enum para legibilidade no Firestore.
+     */
     public void salvarProventos(View view) {
         if (!validarCamposProventos()) return;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        // [CORREÇÃO] Salva o valor exato em centavos acumulado na máscara
+        // 1. Valores (Sempre em Centavos)
         mov.setValor(valorCentavosAtual);
-
         mov.setDescricao(campoDescricao.getText().toString());
-        mov.setTipo(TipoCategoriaContas.RECEITA.getId());
 
+        // [ATUALIZADO]: Salva como String "RECEITA" no banco
+        mov.setTipoEnum(TipoCategoriaContas.RECEITA);
+
+        // 2. Categoria
         mov.setCategoria_nome(campoCategoria.getText().toString());
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
@@ -227,17 +219,24 @@ public class ReceitasActivity extends AppCompatActivity {
             mov.setCategoria_id("geral_receita");
         }
 
+        // 3. Data e Status Inteligente
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
             Date date = sdf.parse(dataHoraStr);
             if (date != null) {
                 mov.setData_movimentacao(new Timestamp(date));
+
+                // Se a data for amanhã em diante, marca como 'não recebido' (Conta Futura)
+                boolean ehFuturo = date.after(new Date());
+                mov.setPago(!ehFuturo);
             }
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
+            mov.setPago(true);
         }
 
+        // 4. Persistência
         if (isEdicao) {
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
@@ -262,7 +261,6 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private void excluirReceita() {
         if (itemEmEdicao == null) return;
-
         repository.excluir(itemEmEdicao, new MovimentacaoRepository.Callback() {
             @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
             @Override public void onErro(String erro) { mostrarErro(erro); }

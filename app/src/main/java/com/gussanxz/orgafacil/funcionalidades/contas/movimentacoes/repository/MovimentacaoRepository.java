@@ -6,7 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos.ContasCategoriaModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
@@ -33,7 +33,7 @@ public class MovimentacaoRepository {
     }
 
     /**
-     * Recupera lista ordenada por data.
+     * Recupera lista completa ordenada por data.
      * [ATUALIZADO]: Usa a constante CAMPO_DATA_MOVIMENTACAO para acessar "detalhes.data_movimentacao".
      */
     public void recuperarMovimentacoes(DadosCallback callback) {
@@ -41,7 +41,38 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // O toObjects converte automaticamente o mapa aninhado para o objeto Java
+                    List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
+                    callback.onSucesso(lista);
+                })
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
+
+    /**
+     * [BUG FIX]: Recupera apenas o HISTÓRICO (Data igual ou menor que agora).
+     * Resolve o problema de exibir contas futuras na tela de movimentações passadas.
+     */
+    public void recuperarHistorico(long timestampReferencia, DadosCallback callback) {
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, timestampReferencia)
+                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
+                    callback.onSucesso(lista);
+                })
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
+
+    /**
+     * [BUG FIX]: Recupera apenas as CONTAS FUTURAS (Data maior que agora).
+     * Filtra para que o agendamento não se misture com o que já foi gasto/recebido.
+     */
+    public void recuperarContasFuturas(long timestampReferencia, DadosCallback callback) {
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereGreaterThan(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, timestampReferencia)
+                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
                     callback.onSucesso(lista);
                 })
@@ -54,13 +85,10 @@ public class MovimentacaoRepository {
     public void salvar(MovimentacaoModel mov, Callback callback) {
         WriteBatch batch = db.batch();
 
-        // 1. Gera ID e salva o documento
-        // O Model já cuida de criar a estrutura de mapas (detalhes/categoria)
         DocumentReference movRef = FirestoreSchema.contasMovimentacoesCol().document();
         mov.setId(movRef.getId());
         batch.set(movRef, mov);
 
-        // 2. Aplica o impacto financeiro (fator 1 = somar impacto)
         atualizarSaldosNoBatch(batch, mov, 1);
 
         batch.commit()
@@ -77,7 +105,6 @@ public class MovimentacaoRepository {
         DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
         batch.delete(movRef);
 
-        // Estorno (fator -1 = inverter impacto)
         atualizarSaldosNoBatch(batch, mov, -1);
 
         batch.commit()
@@ -94,10 +121,7 @@ public class MovimentacaoRepository {
         DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(movNovo.getId());
         batch.set(movRef, movNovo);
 
-        // 1. Estorna o antigo (-1)
         atualizarSaldosNoBatch(batch, movAntigo, -1);
-
-        // 2. Aplica o novo (1)
         atualizarSaldosNoBatch(batch, movNovo, 1);
 
         batch.commit()
@@ -111,32 +135,21 @@ public class MovimentacaoRepository {
      */
     private void atualizarSaldosNoBatch(WriteBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-
-        // helper getCategoria_id() funciona pegando de "categoria.id"
         DocumentReference catRef = FirestoreSchema.contasCategoriaDoc(mov.getCategoria_id());
 
-        // helper getValor() funciona pegando de "detalhes.valor"
         int valorCentavos = mov.getValor();
         boolean isReceita = (mov.getTipo() == TipoCategoriaContas.RECEITA.getId());
 
-        // Calculo do Delta para o Balanço (Receita soma, Despesa subtrai)
-        // Se for Despesa, o valor entra negativo no balanço
         int deltaBalanco = (isReceita ? valorCentavos : -valorCentavos) * fator;
 
-        // [IMPORTANTE]: Usando as Constantes atualizadas dos Models (Dot Notation)
-        // Isso atualiza "balanco.balancoMes"
         batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, FieldValue.increment(deltaBalanco));
 
         if (isReceita) {
-            // Atualiza "balanco.saldoAtual" e "balanco.receitasMes"
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_SALDO_ATUAL, FieldValue.increment(valorCentavos * fator));
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, FieldValue.increment(valorCentavos * fator));
         } else {
-            // Atualiza "balanco.saldoAtual" (-) e "balanco.despesasMes" (+)
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_SALDO_ATUAL, FieldValue.increment(-valorCentavos * fator));
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, FieldValue.increment(valorCentavos * fator));
-
-            // Impacto na Categoria: "financeiro.totalGastoMesAtual"
             batch.update(catRef, ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, FieldValue.increment(valorCentavos * fator));
         }
     }

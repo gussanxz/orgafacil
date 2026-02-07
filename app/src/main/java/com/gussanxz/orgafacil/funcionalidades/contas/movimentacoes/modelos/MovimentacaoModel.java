@@ -4,16 +4,16 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 
 import java.io.Serializable;
 
 /**
- * MovimentacaoModel
- * Representa uma transação real (Receita ou Despesa).
- * Estrutura:
- * - Raiz: id, data_criacao
- * - detalhes: { descricao, valor, tipo, data_movimentacao }
+ * MovimentacaoModel (Versão Final Unificada)
+ * Representa transações reais e agendamentos (Contas Futuras).
+ * Organizado por Mapas no Firestore para máxima legibilidade.
+ * * Estrutura:
+ * - detalhes: { descricao, valor, tipo (String), data_movimentacao, pago, fixo }
  * - categoria: { id, nome, icone, cor }
  */
 public class MovimentacaoModel implements Serializable {
@@ -27,6 +27,8 @@ public class MovimentacaoModel implements Serializable {
     public static final String CAMPO_VALOR = "detalhes.valor";
     public static final String CAMPO_TIPO = "detalhes.tipo";
     public static final String CAMPO_DATA_MOVIMENTACAO = "detalhes.data_movimentacao";
+    public static final String CAMPO_PAGO = "detalhes.pago";
+    public static final String CAMPO_FIXO = "detalhes.fixo";
 
     // Grupo Categoria
     public static final String CAMPO_CAT_ID = "categoria.id";
@@ -36,7 +38,6 @@ public class MovimentacaoModel implements Serializable {
 
     // --- ATRIBUTOS DA RAIZ ---
     private String id;
-
     private Detalhes detalhes;
     private CategoriaDados categoria;
 
@@ -78,20 +79,36 @@ public class MovimentacaoModel implements Serializable {
 
     public static class Detalhes implements Serializable {
         private String descricao;
-        private int valor = 0; // Centavos
-        private int tipo = 0;  // 1=Receita, 2=Despesa
+        private int valor = 0; // Centavos para precisão [cite: 2026-02-07]
+
+        // [ATUALIZADO]: String para legibilidade no Firestore (Ex: "RECEITA")
+        private String tipo;
+
         private Timestamp data_movimentacao;
+
+        // [NOVO]: Campos para suporte a Contas Futuras
+        private boolean pago = true;  // Padrão true para movimentações passadas
+        private boolean fixo = false; // Se a conta se repete mensalmente
 
         public Detalhes() {}
 
         public String getDescricao() { return descricao; }
         public void setDescricao(String descricao) { this.descricao = descricao; }
+
         public int getValor() { return valor; }
         public void setValor(int valor) { this.valor = valor; }
-        public int getTipo() { return tipo; }
-        public void setTipo(int tipo) { this.tipo = tipo; }
+
+        public String getTipo() { return tipo; }
+        public void setTipo(String tipo) { this.tipo = tipo; }
+
         public Timestamp getData_movimentacao() { return data_movimentacao; }
         public void setData_movimentacao(Timestamp data_movimentacao) { this.data_movimentacao = data_movimentacao; }
+
+        public boolean isPago() { return pago; }
+        public void setPago(boolean pago) { this.pago = pago; }
+
+        public boolean isFixo() { return fixo; }
+        public void setFixo(boolean fixo) { this.fixo = fixo; }
     }
 
     public static class CategoriaDados implements Serializable {
@@ -115,8 +132,7 @@ public class MovimentacaoModel implements Serializable {
 
     // =========================================================================
     // MÉTODOS DE COMPATIBILIDADE (@Exclude)
-    // Esses métodos garantem que o restante do App continue funcionando
-    // sem precisar refatorar todas as Activities agora.
+    // Esses métodos garantem que o restante do App continue funcionando.
     // =========================================================================
 
     @Exclude
@@ -129,16 +145,37 @@ public class MovimentacaoModel implements Serializable {
     @Exclude
     public void setValor(int valor) { detalhes.setValor(valor); }
 
+    /**
+     * Retorna o ID numérico do Enum para manter compatibilidade com códigos antigos.
+     */
     @Exclude
-    public int getTipo() { return detalhes.getTipo(); }
+    public int getTipo() {
+        TipoCategoriaContas enumTipo = getTipoEnum();
+        return (enumTipo != null) ? enumTipo.getId() : 0;
+    }
+
     @Exclude
-    public void setTipo(int tipo) { detalhes.setTipo(tipo); }
+    public void setTipo(int tipoId) {
+        setTipoEnum(TipoCategoriaContas.desdeId(tipoId));
+    }
 
     @Exclude
     public Timestamp getData_movimentacao() { return detalhes.getData_movimentacao(); }
     @Exclude
     public void setData_movimentacao(Timestamp data) { detalhes.setData_movimentacao(data); }
 
+    // --- Helpers de Status de Pagamento ---
+    @Exclude
+    public boolean isPago() { return detalhes.isPago(); }
+    @Exclude
+    public void setPago(boolean pago) { detalhes.setPago(pago); }
+
+    @Exclude
+    public boolean isFixo() { return detalhes.isFixo(); }
+    @Exclude
+    public void setFixo(boolean fixo) { detalhes.setFixo(fixo); }
+
+    // --- Helpers de Categoria ---
     @Exclude
     public String getCategoria_id() { return categoria.getId(); }
     @Exclude
@@ -159,17 +196,30 @@ public class MovimentacaoModel implements Serializable {
     @Exclude
     public void setCategoria_cor(String cor) { categoria.setCor(cor); }
 
-    // --- Helpers de Enum ---
+    // =========================================================================
+    // LÓGICA DE ENUM (Conversão String <-> Enum)
+    // =========================================================================
 
     @Exclude
     public TipoCategoriaContas getTipoEnum() {
-        return TipoCategoriaContas.desdeId(detalhes.getTipo());
+        if (detalhes.getTipo() == null) return null;
+        try {
+            // Tenta converter o nome (Ex: "RECEITA") para o Enum
+            return TipoCategoriaContas.valueOf(detalhes.getTipo());
+        } catch (IllegalArgumentException e) {
+            // Se falhar (ex: dados antigos com números), tenta pelo ID
+            try {
+                int id = Integer.parseInt(detalhes.getTipo());
+                return TipoCategoriaContas.desdeId(id);
+            } catch (Exception ex) { return null; }
+        }
     }
 
     @Exclude
     public void setTipoEnum(TipoCategoriaContas tipoEnum) {
         if (tipoEnum != null) {
-            detalhes.setTipo(tipoEnum.getId());
+            // Persiste no banco como String legível (name do Enum)
+            detalhes.setTipo(tipoEnum.name());
         }
     }
 }

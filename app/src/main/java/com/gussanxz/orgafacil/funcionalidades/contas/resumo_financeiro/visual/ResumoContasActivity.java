@@ -1,19 +1,14 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
@@ -22,14 +17,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.DespesasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ReceitasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.DashboardPagerAdapter;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.ReceitasActivity;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.ContasActivity;
 
 public class ResumoContasActivity extends AppCompatActivity {
 

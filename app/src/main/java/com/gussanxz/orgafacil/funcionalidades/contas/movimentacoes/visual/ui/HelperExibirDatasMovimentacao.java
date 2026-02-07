@@ -1,12 +1,11 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui;
 
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -18,12 +17,19 @@ public class HelperExibirDatasMovimentacao {
 
     private static final SimpleDateFormat sdfKey = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
-    public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs) {
-        // 1. Ordenação
+    public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs, boolean ehModoFuturo) {
+        // 1. Ordenação Inteligente baseada na aba selecionada
         List<MovimentacaoModel> copia = new ArrayList<>(movs);
         Collections.sort(copia, (o1, o2) -> {
             if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
-            return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
+
+            if (ehModoFuturo) {
+                // [FUTURO]: O que vence MAIS CEDO primeiro (10/02 antes de 15/02)
+                return o1.getData_movimentacao().compareTo(o2.getData_movimentacao());
+            } else {
+                // [HISTÓRICO]: O mais RECENTE primeiro (Hoje antes de Ontem)
+                return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
+            }
         });
 
         // 2. Agrupamento em Map
@@ -53,10 +59,14 @@ public class HelperExibirDatasMovimentacao {
 
             long saldoDiaCentavos = 0;
             for (MovimentacaoModel m : listaDoDia) {
-                if (m.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
-                    saldoDiaCentavos -= m.getValor();
-                } else {
-                    saldoDiaCentavos += m.getValor();
+                // [REGRA FINANCEIRA]: Apenas movimentações PAGAS alteram o saldo do cabeçalho
+                // Contas agendadas (pago = false) são exibidas, mas não somadas ao saldo real.
+                if (m.isPago()) {
+                    if (m.getTipoEnum() == TipoCategoriaContas.DESPESA) {
+                        saldoDiaCentavos -= m.getValor();
+                    } else {
+                        saldoDiaCentavos += m.getValor();
+                    }
                 }
             }
 
@@ -70,7 +80,7 @@ public class HelperExibirDatasMovimentacao {
                 }
             } catch (Exception ignored) {}
 
-            // Passando int para o header
+            // Passando saldo real (centavos) para o header [cite: 2026-02-07]
             resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, (int) saldoDiaCentavos));
 
             for (MovimentacaoModel m : listaDoDia) {

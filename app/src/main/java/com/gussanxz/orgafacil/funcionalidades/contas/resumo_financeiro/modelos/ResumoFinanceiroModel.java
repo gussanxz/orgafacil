@@ -3,8 +3,8 @@ package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.ServerTimestamp;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.StatusSaudeFinanceira;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.StatusSaudeFinanceira;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 
 import java.io.Serializable;
 

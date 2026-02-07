@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas;
+package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -31,22 +31,20 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.EditarMovimentacaoActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.DespesasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ReceitasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.repository.ResumoFinanceiroRepository;
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-// [CORREÇÃO]: Import correto (sem r_negocio)
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.AdapterExibeListaMovimentacaoContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.ExibirItemListaMovimentacaoContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.HelperExibirDatasMovimentacao;
-import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual.ContasViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,6 +53,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * ContasActivity Refatorada
+ * Centraliza a exibição de movimentações e contas futuras através do ViewModel.
+ */
 public class ContasActivity extends AppCompatActivity {
 
     private final String TAG = "ContasActivity";
@@ -110,8 +112,13 @@ public class ContasActivity extends AppCompatActivity {
                 result -> { if (result.getResultCode() == RESULT_OK) carregarDados(); }
         );
 
+        // Lógica de Identificação de Modo (Histórico vs Futuras)
         extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
         ehAtalho = (extrasAtalho != null) && extrasAtalho.getBoolean("EH_ATALHO", false);
+
+        // Define o modo no ViewModel antes de carregar
+        viewModel.setModoContasFuturas(ehAtalho);
+
         if (ehAtalho) aplicarRegrasAtalho(extrasAtalho);
     }
 
@@ -124,17 +131,17 @@ public class ContasActivity extends AppCompatActivity {
     // --- CONEXÃO COM A VIEWMODEL (OBSERVERS) ---
 
     private void setupObservers() {
-        // Observa mudanças na lista filtrada para atualizar o RecyclerView
         viewModel.listaFiltrada.observe(this, lista -> {
             itensAgrupados.clear();
-            // Helper agora aceita o MovimentacaoModel correto
-            itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista));
+            // [CORREÇÃO]: Passando o modo atual para o Helper organizar a ordem das datas
+            // Se for modo futuro: Ascendente. Se for histórico: Descendente.
+            itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, viewModel.isModoContasFuturas()));
             adapterAgrupado.notifyDataSetChanged();
             atualizarLegendasFiltro(searchView.getQuery().toString());
         });
 
-        // Observa o saldo calculado do período/filtro (em centavos)
         viewModel.saldoPeriodo.observe(this, saldoCentavos -> {
+            // [PRECISÃO] Converte centavos (long) para exibição apenas na UI [cite: 2026-02-07]
             double saldoExibicao = saldoCentavos / 100.0;
             textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
         });
@@ -143,47 +150,42 @@ public class ContasActivity extends AppCompatActivity {
     // --- MÉTODOS DE DADOS ---
 
     private void carregarDados() {
-        // 1. Identidade
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
-        // 2. Dashboard
+        // Escuta o resumo geral apenas para o saldo total quando não houver filtros
         resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
             @Override
             public void onUpdate(ResumoFinanceiroModel resumo) {
-                if (resumo != null) {
-                    if (dataInicialFiltro == null && searchView.getQuery().length() == 0) {
-
-                        // [ATUALIZADO] Acesso ao saldo via Mapa (balanco.getSaldoAtual)
-                        int saldoCentavos = 0;
-                        if (resumo.getBalanco() != null) {
-                            saldoCentavos = resumo.getBalanco().getSaldoAtual();
-                        }
-
-                        double saldoDouble = saldoCentavos / 100.0;
-                        textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
+                // Só atualiza o saldo global se o usuário não estiver filtrando nada
+                if (resumo != null && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
+                    int saldoCentavos = 0;
+                    if (resumo.getBalanco() != null) {
+                        saldoCentavos = resumo.getBalanco().getSaldoAtual();
                     }
+                    double saldoDouble = saldoCentavos / 100.0;
+                    textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
                 }
             }
-
-            @Override
-            public void onError(String erro) {
-                Log.e(TAG, "Erro no resumo: " + erro);
-            }
+            @Override public void onError(String erro) { Log.e(TAG, "Erro no resumo: " + erro); }
         });
 
         recuperarMovimentacoesDoBanco();
     }
 
+    /**
+     * Delega a busca para o ViewModel.
+     * O ViewModel decide se busca histórico ou agendamentos com base no modo setado no onCreate.
+     */
     private void recuperarMovimentacoesDoBanco() {
-        movRepository.recuperarMovimentacoes(new MovimentacaoRepository.DadosCallback() {
+        viewModel.fetchDados(movRepository, new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
-                viewModel.carregarLista(lista);
+                // ViewModel processa a lista e notifica o Observer em setupObservers
             }
 
             @Override
             public void onErro(String erro) {
-                Toast.makeText(ContasActivity.this, "Erro ao atualizar extrato.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ContasActivity.this, "Erro ao atualizar dados: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -217,7 +219,7 @@ public class ContasActivity extends AppCompatActivity {
                 @Override
                 public void onSucesso(String msg) {
                     Toast.makeText(ContasActivity.this, "Lançamento excluído!", Toast.LENGTH_SHORT).show();
-                    carregarDados();
+                    carregarDados(); // Recarrega para atualizar saldo global e lista
                 }
                 @Override public void onErro(String erro) {
                     Toast.makeText(ContasActivity.this, erro, Toast.LENGTH_SHORT).show();
@@ -265,14 +267,19 @@ public class ContasActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapterAgrupado);
 
+        // Adiciona funcionalidade de Swipe (Arrastar para os lados)
         new ItemTouchHelper(new SwipeCallback(this) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int dir) {
                 int pos = vh.getAdapterPosition();
-                MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
-
-                if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
-                else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
+                // Verifica se a posição é um cabeçalho (não tem model) ou item
+                if (itensAgrupados.get(pos).type == ExibirItemListaMovimentacaoContas.TYPE_MOVIMENTO) {
+                    MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
+                    if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
+                    else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
+                } else {
+                    adapterAgrupado.notifyItemChanged(pos); // Ignora swipe em headers
+                }
             }
         }).attachToRecyclerView(recyclerView);
     }
@@ -311,11 +318,14 @@ public class ContasActivity extends AppCompatActivity {
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    /**
+     * Atualiza o rótulo do saldo com base no contexto (Modo ou Filtro).
+     */
     private void atualizarLegendasFiltro(String query) {
-        if (ehAtalho) textSaldoAtual.setText("Saldo futuro");
+        if (viewModel.isModoContasFuturas()) textSaldoAtual.setText("Saldo futuro estimado");
         else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
         else if (!query.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");
-        else textSaldoAtual.setText("Saldo total");
+        else textSaldoAtual.setText("Saldo total atual");
     }
 
     @Override
@@ -343,6 +353,6 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void aplicarRegrasAtalho(Bundle extras) {
-        Log.i(TAG, "Regras de atalho aplicada!");
+        Log.i(TAG, "Exibindo tela em modo de Contas Futuras via atalho.");
     }
 }

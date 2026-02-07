@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.enums;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums;
 
 /**
  * Define se a categoria ou movimentação é de entrada ou saída.
@@ -6,9 +6,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.enums;
  */
 public enum TipoCategoriaContas {
     RECEITA(1, "RECEITA"),
-    DESPESA(2, "DESPESA"),
-    RECEITA_FUTURA(3, "Receita Futura"),
-    DESPESA_FUTURA(4, "Despesa Futura");
+    DESPESA(2, "DESPESA");
 
     private final int id;
     private final String descricao;

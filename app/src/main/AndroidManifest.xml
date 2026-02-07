@@ -84,7 +84,7 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.ContasActivity"
+            android:name=".funcionalidades.contas.resumo_financeiro.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
@@ -92,15 +92,15 @@
             android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.DespesasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity"
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.ReceitasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.activity.ReceitasActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.EditarMovimentacaoActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
             android:name=".funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity"

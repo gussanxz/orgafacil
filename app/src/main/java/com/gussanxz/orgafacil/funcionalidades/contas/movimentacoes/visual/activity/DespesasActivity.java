@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -25,12 +25,12 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
-import com.gussanxz.orgafacil.util_helper.MoedaHelper; // [ADICIONADO]
+import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.ParseException;
@@ -38,6 +38,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * DespesasActivity
+ * Agora utiliza o MovimentacaoModel unificado com suporte a Mapas (Dot Notation).
+ * Define automaticamente o status 'pago' com base na data escolhida.
+ */
 public class DespesasActivity extends AppCompatActivity {
 
     private final String TAG = "DespesasActivity";
@@ -52,8 +57,6 @@ public class DespesasActivity extends AppCompatActivity {
     private MovimentacaoModel itemEmEdicao = null;
 
     private String categoriaIdSelecionada;
-
-    // [ATUALIZADO] Controle por centavos para bater com a regra de negócio
     private int valorCentavosAtual = 0;
 
     @Override
@@ -73,10 +76,7 @@ public class DespesasActivity extends AppCompatActivity {
         inicializarComponentes();
         configurarListeners();
         configurarLauncherCategoria();
-
-        // Setup da máscara monetária dinâmica
         setupCurrencyMask();
-
         verificarModoEdicao();
 
         TextView textViewHeader = findViewById(R.id.textViewHeader);
@@ -131,38 +131,26 @@ public class DespesasActivity extends AppCompatActivity {
                 });
     }
 
-    /**
-     * [ATUALIZADO] Máscara Monetária Sequencial (0,00 -> 0,01 -> 0,10)
-     */
     private void setupCurrencyMask() {
         campoValor.addTextChangedListener(new TextWatcher() {
             private String current = "";
-
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
             @Override
             public void afterTextChanged(Editable s) {
                 if (!s.toString().equals(current)) {
                     campoValor.removeTextChangedListener(this);
-
-                    // Limpa formatação anterior (mantém apenas dígitos)
                     String cleanString = s.toString().replaceAll("[^\\d]", "");
-
                     if (!cleanString.isEmpty()) {
                         try {
-                            // Converte a string numérica diretamente para centavos
                             valorCentavosAtual = Integer.parseInt(cleanString);
-
-                            // Formata centavos para a visualização R$ 0,00 via MoedaHelper
                             double valorDouble = MoedaHelper.centavosParaDouble(valorCentavosAtual);
                             String formatted = MoedaHelper.formatarParaBRL(valorDouble);
-
                             current = formatted;
                             campoValor.setText(formatted);
                             campoValor.setSelection(formatted.length());
                         } catch (NumberFormatException e) {
-                            Log.e(TAG, "Erro ao processar máscara de despesa");
+                            Log.e(TAG, "Erro ao processar máscara");
                         }
                     } else {
                         valorCentavosAtual = 0;
@@ -177,19 +165,14 @@ public class DespesasActivity extends AppCompatActivity {
     private void verificarModoEdicao() {
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
             MovimentacaoModel movRecebida = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
-
             if (movRecebida != null) {
                 isEdicao = true;
                 itemEmEdicao = movRecebida;
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
-
-                // Recupera o valor original (centavos)
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                // Exibe formatado na tela
                 double valorReais = MoedaHelper.centavosParaDouble(valorCentavosAtual);
                 campoValor.setText(MoedaHelper.formatarParaBRL(valorReais));
-
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 
@@ -198,7 +181,6 @@ public class DespesasActivity extends AppCompatActivity {
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
                 }
-
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
             }
         } else {
@@ -209,17 +191,23 @@ public class DespesasActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * SALVAR DESPESA
+     * [ATUALIZADO]: Usa setTipoEnum para salvar como String no banco e define status pago.
+     */
     public void salvarDespesa(View view) {
         if (!validarCamposDespesas()) return;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        // [CORREÇÃO] Atribui o valor já convertido em centavos pela máscara
+        // 1. Dados Financeiros (Sempre Centavos) [cite: 2026-02-07]
         mov.setValor(valorCentavosAtual);
-
         mov.setDescricao(campoDescricao.getText().toString());
-        mov.setTipo(TipoCategoriaContas.DESPESA.getId());
 
+        // [ATUALIZADO]: Usa o Enum para salvar "DESPESA" como String no Firestore
+        mov.setTipoEnum(TipoCategoriaContas.DESPESA);
+
+        // 2. Categoria
         mov.setCategoria_nome(campoCategoria.getText().toString());
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
@@ -227,6 +215,7 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setCategoria_id("geral_despesa");
         }
 
+        // 3. Data e Status de Pagamento Inteligente
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -234,11 +223,18 @@ public class DespesasActivity extends AppCompatActivity {
 
             if (date != null) {
                 mov.setData_movimentacao(new Timestamp(date));
+
+                // LÓGICA: Se a data for futura, marca como 'não pago' (Conta Futura)
+                // Se for hoje ou passado, marca como 'pago' (Movimentação Real)
+                boolean ehFuturo = date.after(new Date());
+                mov.setPago(!ehFuturo);
             }
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
+            mov.setPago(true);
         }
 
+        // 4. Persistência
         if (isEdicao) {
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
@@ -263,7 +259,6 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void excluirDespesa() {
         if (itemEmEdicao == null) return;
-
         repository.excluir(itemEmEdicao, new MovimentacaoRepository.Callback() {
             @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
             @Override public void onErro(String erro) { mostrarErro(erro); }
@@ -281,7 +276,6 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     public Boolean validarCamposDespesas() {
-        // [CORREÇÃO] Valida usando o valor em centavos
         if (valorCentavosAtual <= 0) {
             campoValor.setError("Preencha um valor válido");
             return false;

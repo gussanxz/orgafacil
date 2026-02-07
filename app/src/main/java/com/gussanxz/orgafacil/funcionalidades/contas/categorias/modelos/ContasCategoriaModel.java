@@ -2,7 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos;
 
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 
 import java.io.Serializable;
 

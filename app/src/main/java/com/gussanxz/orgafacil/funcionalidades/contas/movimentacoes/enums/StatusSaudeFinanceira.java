@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.enums;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums;
 
 /**
  * Enum que mapeia o status da saúde financeira do usuário.

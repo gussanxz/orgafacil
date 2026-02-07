@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.repository.ContasCategoriaRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos.ContasCategoriaModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 

@@ -1,11 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.categorias.repository;
 
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos.ContasCategoriaModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.util_helper.CategoriaIdHelper;

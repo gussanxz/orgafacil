@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -16,17 +16,22 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
-import com.gussanxz.orgafacil.util_helper.MoedaHelper; // Importado
+import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * EditarMovimentacaoActivity
+ * Gerencia a edição de lançamentos existentes.
+ * [ATUALIZADO]: Sincronizado com o modelo unificado e mapas do Firestore.
+ */
 public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
@@ -43,6 +48,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Recupera o objeto enviado para edição
         movOriginal = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
         repository = new MovimentacaoRepository();
 
@@ -51,6 +57,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
+        // Define o layout com base no tipo original (Receita ou Despesa)
         if (movOriginal.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
@@ -81,8 +88,11 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editCategoria.setClickable(true);
     }
 
+    /**
+     * Preenche a UI com os dados do modelo via métodos @Exclude (compatibilidade)
+     */
     private void preencherCampos() {
-        // [CORRIGIDO] Usa o MoedaHelper para converter centavos em double para a tela
+        // [PRECISÃO]: Converte centavos para Double apenas para exibição
         double valorExibicao = MoedaHelper.centavosParaDouble(movOriginal.getValor());
         editValor.setText(String.format(Locale.US, "%.2f", valorExibicao));
 
@@ -127,29 +137,35 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 });
     }
 
+    // Handlers para os botões do XML (tanto de receita quanto despesa)
     public void salvarDespesa(View v) { confirmarEdicao(); }
     public void salvarProvento(View v) { confirmarEdicao(); }
 
+    /**
+     * Confirma a edição e envia para o Repository
+     */
     private void confirmarEdicao() {
         try {
+            // Criamos uma nova instância baseada na original para preservar IDs e metadados
             MovimentacaoModel movNova = new MovimentacaoModel();
 
             movNova.setId(movOriginal.getId());
-            movNova.setTipo(movOriginal.getTipo());
+            movNova.setTipoEnum(movOriginal.getTipoEnum()); // Preserva o Tipo original como Enum
             movNova.setData_criacao(movOriginal.getData_criacao());
 
-            // [CORRIGIDO] Captura o double e converte para centavos (int) via MoedaHelper
+            // 1. Processamento Financeiro (Converte de volta para Centavos)
             String valorStr = editValor.getText().toString().replace(",", ".");
             double valorDigitado = Double.parseDouble(valorStr);
-            int novoValorCentavos = MoedaHelper.doubleParaCentavos(valorDigitado);
-            movNova.setValor(novoValorCentavos);
+            movNova.setValor(MoedaHelper.doubleParaCentavos(valorDigitado));
 
+            // 2. Dados de Texto e Categoria
             movNova.setDescricao(editDescricao.getText().toString());
             movNova.setCategoria_nome(editCategoria.getText().toString());
             movNova.setCategoria_id(novoCategoriaId);
 
+            // 3. Data e Lógica de Status (Pago/Pendente)
             String dataHoraStr = editData.getText().toString();
-            if (editHora != null) {
+            if (editHora != null && !editHora.getText().toString().isEmpty()) {
                 dataHoraStr += " " + editHora.getText().toString();
             } else {
                 dataHoraStr += " 00:00";
@@ -159,8 +175,14 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             Date date = sdf.parse(dataHoraStr);
             if (date != null) {
                 movNova.setData_movimentacao(new Timestamp(date));
+
+                // [ATUALIZAÇÃO]: Se o usuário mudar a data para o futuro na edição,
+                // o status 'pago' deve mudar automaticamente.
+                boolean ehFuturo = date.after(new Date());
+                movNova.setPago(!ehFuturo);
             }
 
+            // 4. Envio via Repository (Batch Update)
             repository.editar(movOriginal, movNova, new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {
@@ -183,7 +205,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private void confirmarExclusao() {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Excluir Lançamento")
-                .setMessage("Deseja realmente excluir? O saldo será corrigido.")
+                .setMessage("Deseja realmente excluir? O saldo será corrigido automaticamente.")
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Excluir", (dialog, which) -> {
                     repository.excluir(movOriginal, new MovimentacaoRepository.Callback() {
