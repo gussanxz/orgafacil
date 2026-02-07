@@ -16,7 +16,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 
 /**
  * SegurancaActivity

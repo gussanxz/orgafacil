@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.contas.contas_a_pagar.modelos;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
@@ -6,49 +6,50 @@ import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 
-import java.io.Serializable;
-
 /**
- * MovimentacaoModel
- * Representa uma transação real (Receita ou Despesa).
- * REGRA DE OURO: Dinheiro é INT (centavos).
+ * Modelo para Contas a Pagar ou Receber (Agendamentos).
+ * Alimenta os indicadores de "Pendências" e "Previsão" no ResumoFinanceiro.
+ * REGRA DE OURO: Valores monetários em INT (centavos).
  */
-public class MovimentacaoModel implements Serializable {
+public class ContaFuturaModel {
 
-    // --- Constantes para Mapeamento (Âncoras) ---
+    // --- Constantes para Mapeamento (Âncoras para Repositories) ---
     public static final String CAMPO_ID = "id";
     public static final String CAMPO_DESCRICAO = "descricao";
     public static final String CAMPO_VALOR = "valor";
     public static final String CAMPO_TIPO = "tipo";
-    public static final String CAMPO_DATA_MOVIMENTACAO = "data_movimentacao";
-
-    // Campos de Categoria (Denormalização para performance)
+    public static final String CAMPO_DATA_VENCIMENTO = "data_vencimento";
     public static final String CAMPO_CAT_ID = "categoria_id";
     public static final String CAMPO_CAT_NOME = "categoria_nome";
     public static final String CAMPO_CAT_ICONE = "categoria_icone";
     public static final String CAMPO_CAT_COR = "categoria_cor";
-
+    public static final String CAMPO_PAGO = "pago";
+    public static final String CAMPO_FIXO = "fixo";
     public static final String CAMPO_DATA_CRIACAO = "data_criacao";
 
     private String id;
     private String descricao;
-    private int valor = 0; // Centavos (Ex: 1050 para R$ 10,50)
+    private int valor = 0; // Centavos
 
-    // 1 para RECEITA, 2 para DESPESA (via TipoCategoriaContas Enum)
+    // 1 para RECEBER, 2 para PAGAR
     private int tipo = 0;
 
-    private Timestamp data_movimentacao;
+    private Timestamp data_vencimento;
 
-    // Dados da Categoria
+    // Denormalização para exibição rápida
     private String categoria_id;
     private String categoria_nome;
     private String categoria_icone;
     private String categoria_cor;
 
+    // Controle de Status
+    private boolean pago = false;
+    private boolean fixo = false; // Se a conta se repete mensalmente
+
     @ServerTimestamp
     private Timestamp data_criacao;
 
-    public MovimentacaoModel() {}
+    public ContaFuturaModel() {}
 
     // --- Getters e Setters com PropertyName ---
 
@@ -72,10 +73,10 @@ public class MovimentacaoModel implements Serializable {
     @PropertyName(CAMPO_TIPO)
     public void setTipo(int tipo) { this.tipo = tipo; }
 
-    @PropertyName(CAMPO_DATA_MOVIMENTACAO)
-    public Timestamp getData_movimentacao() { return data_movimentacao; }
-    @PropertyName(CAMPO_DATA_MOVIMENTACAO)
-    public void setData_movimentacao(Timestamp data_movimentacao) { this.data_movimentacao = data_movimentacao; }
+    @PropertyName(CAMPO_DATA_VENCIMENTO)
+    public Timestamp getData_vencimento() { return data_vencimento; }
+    @PropertyName(CAMPO_DATA_VENCIMENTO)
+    public void setData_vencimento(Timestamp data_vencimento) { this.data_vencimento = data_vencimento; }
 
     @PropertyName(CAMPO_CAT_ID)
     public String getCategoria_id() { return categoria_id; }
@@ -97,11 +98,22 @@ public class MovimentacaoModel implements Serializable {
     @PropertyName(CAMPO_CAT_COR)
     public void setCategoria_cor(String categoria_cor) { this.categoria_cor = categoria_cor; }
 
+    @PropertyName(CAMPO_PAGO)
+    public boolean isPago() { return pago; }
+    @PropertyName(CAMPO_PAGO)
+    public void setPago(boolean pago) { this.pago = pago; }
+
+    @PropertyName(CAMPO_FIXO)
+    public boolean isFixo() { return fixo; }
+    @PropertyName(CAMPO_FIXO)
+    public void setFixo(boolean fixo) { this.fixo = fixo; }
+
     @PropertyName(CAMPO_DATA_CRIACAO)
     public Timestamp getData_criacao() { return data_criacao; }
     @PropertyName(CAMPO_DATA_CRIACAO)
     public void setData_criacao(Timestamp data_criacao) { this.data_criacao = data_criacao; }
-    // --- Helpers de Enum (Não salvos no banco) ---
+
+    // --- Helpers de Enum e Lógica (Excluídos via @Exclude) ---
 
     @Exclude
     public TipoCategoriaContas getTipoEnum() {
@@ -113,5 +125,11 @@ public class MovimentacaoModel implements Serializable {
         if (tipoEnum != null) {
             this.tipo = tipoEnum.getId();
         }
+    }
+
+    @Exclude
+    public boolean isAtrasada() {
+        if (pago || data_vencimento == null) return false;
+        return data_vencimento.toDate().before(new java.util.Date());
     }
 }

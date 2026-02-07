@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui;
+package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -16,6 +16,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.DespesasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.DashboardPagerAdapter;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -134,7 +136,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         intent.putExtra("EH_ATALHO", true);
         startActivity(intent);
     }
-
 
     private void abrirMenu() {
         isMenuOpen = true;

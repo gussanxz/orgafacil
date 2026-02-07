@@ -5,7 +5,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.gussanxz.orgafacil.funcionalidades.contas.contas_a_pagar.visual.ui.FragmentContasAVencer;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual.FragmentContasAVencer;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual.FragmentMovimentacoes;
 
 public class DashboardPagerAdapter extends FragmentStateAdapter {
 

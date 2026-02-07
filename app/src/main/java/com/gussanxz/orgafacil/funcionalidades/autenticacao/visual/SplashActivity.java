@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
@@ -17,8 +16,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
-import com.gussanxz.orgafacil.funcionalidades.main.MainActivity; // Assumindo que esta é a tela de "Bem-vindo/Opções"
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
 
 /**
@@ -28,19 +27,17 @@ import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioM
 public class SplashActivity extends AppCompatActivity {
 
     private boolean isVerificacaoConcluida = false;
-    private UsuarioRepository usuarioRepository; // Renomeado para consistência
+    private UsuarioRepository usuarioRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // 1. Instala a Splash Screen oficial do sistema
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+
+        // Configura animação ANTES do super.onCreate
         configurarAnimacaoSaida(splashScreen);
 
         super.onCreate(savedInstanceState);
-
-        // Se você tiver um layout XML para a splash (para versões antigas do Android), set aqui.
-        // Se for só API 12+, pode não precisar de setContentView se o tema cuidar disso.
-        // setContentView(R.layout.ac_splash);
 
         usuarioRepository = new UsuarioRepository();
 
@@ -51,7 +48,6 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void verificarSessao() {
-        // Se não tem usuário no Auth, vai pra Intro
         if (ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser() == null) {
             irParaIntro();
             return;
@@ -59,21 +55,16 @@ public class SplashActivity extends AppCompatActivity {
 
         FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
 
-        // Recarrega o usuário para garantir que não foi desabilitado no console do Firebase
         user.reload().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 validarStatusNoBanco(user.getUid());
             } else {
-                // Token expirou ou usuário deletado no console
                 FirebaseSession.logOut(this);
                 irParaIntro();
             }
         });
     }
 
-    /**
-     * Verifica se o usuário existe E se está ATIVO.
-     */
     private void validarStatusNoBanco(String uid) {
         usuarioRepository.verificarSeUsuarioExiste(uid).addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
@@ -83,34 +74,32 @@ public class SplashActivity extends AppCompatActivity {
                     try {
                         UsuarioModel usuario = doc.toObject(UsuarioModel.class);
 
-                        // [LÓGICA CRÍTICA] Só entra se estiver ATIVO.
-                        if (usuario != null && usuario.getStatus() == UsuarioModel.StatusConta.ATIVO) {
+                        // [CORREÇÃO]: Comparação segura de String vs Enum.name()
+                        // Usamos o .equals() porque getStatus() retorna String no novo Model.
+                        if (usuario != null &&
+                                UsuarioModel.StatusConta.ATIVO.name().equals(usuario.getStatus())) {
+
                             usuarioRepository.atualizarUltimaAtividade();
                             irParaHome();
+
                         } else {
-                            // Se estiver DESATIVADO, SUSPENSO ou null -> Manda pro Login/Intro.
-                            // Lá na Intro/Login, ao tentar logar, a BaseAuthActivity vai oferecer a Reativação.
+                            // Conta DESATIVADA ou SUSPENSA -> Logout
                             FirebaseSession.logOut(this);
                             irParaIntro();
                         }
                     } catch (Exception e) {
-                        // Erro ao converter dados (banco corrompido ou antigo) -> Logout por segurança
                         FirebaseSession.logOut(this);
                         irParaIntro();
                     }
                 } else {
-                    // Logado no Auth mas sem dados no Banco (Inconsistência) -> Logout
                     FirebaseSession.logOut(this);
                     irParaIntro();
                 }
             } else {
-                // Erro de conexão ou Firestore offline -> Tenta mandar pro login
                 irParaIntro();
             }
         });
     }
-
-    // --- Navegação ---
 
     private void irParaHome() {
         isVerificacaoConcluida = true;
@@ -120,9 +109,6 @@ public class SplashActivity extends AppCompatActivity {
 
     private void irParaIntro() {
         isVerificacaoConcluida = true;
-        // Importante: Certifique-se que MainActivity aqui é a tela de "Bem-vindo / Login / Cadastro"
-        // e não aquela MainActivity "Dispatcher" que criamos no passo anterior.
-        // Se a MainActivity for o Dispatcher, aponte aqui direto para LoginActivity.class
         startActivity(new Intent(this, MainActivity.class));
         finish();
     }

@@ -1,12 +1,12 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui;
 
+import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,93 +14,94 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * HELPER: MovimentacoesGrouper
+ * HELPER: HelperExibirDatasMovimentacao
  *
- * RESPONSABILIDADE: Processar a lista bruta de movimentações, realizando ordenação cronológica e agrupamento por data.
- * Localizado em: helper (ou ui.contas, se preferir manter a lógica de funcionalidade).
+ * RESPONSABILIDADE: Processar a lista de MovimentacaoModel (com Timestamp e Centavos)
+ * para exibir na RecyclerView agrupada por dia.
  *
- * * O QUE ELA FAZ:
- * 1. Ordenação Cronológica: Organiza os itens do mais recente para o mais antigo (data + hora).
- * 2. Agrupamento por Dia: Reúne todas as movimentações de uma mesma data sob um único cabeçalho.
- * 3. Cálculo de Saldo Diário: Soma receitas e subtrai despesas de cada dia para exibir o saldo parcial no Header.
- * 4. Humanização de Datas: Converte datas estáticas em títulos amigáveis como "Hoje" ou "Ontem".
- * 5. Preparação de Dados: Converte a lista de 'Movimentacao' em uma lista achatada de 'MovimentoItem'.
+ * ATUALIZAÇÕES:
+ * 1. Uso de Timestamp para ordenação direta.
+ * 2. Cálculo de saldo diário usando INT (centavos).
+ * 3. Comparação de tipo via Enum ID.
  */
 public class HelperExibirDatasMovimentacao {
 
-    private static final SimpleDateFormat sdfData = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-    private static final SimpleDateFormat sdfDataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-    private static final SimpleDateFormat sdfDataTitulo = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    // Formatador apenas para gerar a "Chave" do grupo (ex: "07/02/2026")
+    private static final SimpleDateFormat sdfKey = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs) {
-        // 1) ordenar por data+hora DECRESCENTE
+
+        // 1) Ordenar por Data (Mais recente primeiro) usando Timestamp
         List<MovimentacaoModel> copia = new ArrayList<>(movs);
-        Collections.sort(copia, new Comparator<MovimentacaoModel>() {
-            @Override
-            public int compare(MovimentacaoModel o1, MovimentacaoModel o2) {
-                Date d1 = parseDataHora(o1.getData(), o1.getHora());
-                Date d2 = parseDataHora(o2.getData(), o2.getHora());
-                if (d1 == null || d2 == null) return 0;
-                // mais recente primeiro
-                return d2.compareTo(d1);
-            }
+        Collections.sort(copia, (o1, o2) -> {
+            if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
+            // Ordem decrescente (o2 compareTo o1)
+            return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
         });
 
-        // 2) agrupar por data (string dd/MM/yyyy) mantendo ordem
+        // 2) Agrupar por dia (String dd/MM/yyyy) mantendo a ordem de inserção (LinkedHashMap)
         Map<String, List<MovimentacaoModel>> porDia = new LinkedHashMap<>();
+
         for (MovimentacaoModel m : copia) {
-            String data = m.getData();
-            if (data == null) data = "";
-            List<MovimentacaoModel> lista = porDia.get(data);
+            if (m.getData_movimentacao() == null) continue;
+
+            Date date = m.getData_movimentacao().toDate();
+            String dataKey = sdfKey.format(date);
+
+            List<MovimentacaoModel> lista = porDia.get(dataKey);
             if (lista == null) {
                 lista = new ArrayList<>();
-                porDia.put(data, lista);
+                porDia.put(dataKey, lista);
             }
             lista.add(m);
         }
 
-        // 3) montar lista achatada com header + linhas
+        // 3) Montar lista achatada (Header + Itens)
         List<ExibirItemListaMovimentacaoContas> resultado = new ArrayList<>();
 
+        // Datas de referência para "Hoje" e "Ontem"
         Date hoje = zerarHora(new Date());
-        Date ontem = new Date(hoje.getTime() - 24L*60L*60L*1000L);
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(hoje);
+        cal.add(Calendar.DAY_OF_YEAR, -1);
+        Date ontem = cal.getTime();
 
         for (Map.Entry<String, List<MovimentacaoModel>> entry : porDia.entrySet()) {
             String dataStr = entry.getKey();
             List<MovimentacaoModel> listaDoDia = entry.getValue();
 
-            // saldo do dia = receitas - despesas
-            double saldoDia = 0.0;
+            // --- CÁLCULO DE SALDO DO DIA (Centavos) ---
+            // Usamos long para somar e evitar overflow, depois cast para int
+            long saldoDiaCentavos = 0;
+
             for (MovimentacaoModel m : listaDoDia) {
-                if ("d".equals(m.getTipo())) {
-                    saldoDia -= m.getValor();
+                // Verificação pelo ID do Enum (Inteiro)
+                if (m.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
+                    saldoDiaCentavos -= m.getValor();
                 } else {
-                    saldoDia += m.getValor();
+                    saldoDiaCentavos += m.getValor();
                 }
             }
 
-            // título: Hoje / Ontem / data normal
+            // --- DEFINIÇÃO DO TÍTULO (Hoje/Ontem) ---
             String tituloDia = dataStr;
-            Date data;
             try {
-                data = sdfData.parse(dataStr);
-            } catch (ParseException e) {
-                data = null;
-            }
-
-            if (data != null) {
-                Date dataZerada = zerarHora(data);
-                if (dataZerada.equals(hoje)) {
-                    tituloDia = "Hoje - " + dataStr;
-                } else if (dataZerada.equals(ontem)) {
-                    tituloDia = "Ontem - " + dataStr;
-                } else {
-                    tituloDia = dataStr;
+                Date dataGrupo = sdfKey.parse(dataStr);
+                if (dataGrupo != null) {
+                    Date dataZerada = zerarHora(dataGrupo);
+                    if (dataZerada.equals(hoje)) {
+                        tituloDia = "Hoje";
+                    } else if (dataZerada.equals(ontem)) {
+                        tituloDia = "Ontem";
+                    }
                 }
-            }
+            } catch (Exception ignored) { }
 
-            resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, saldoDia));
+            // Adiciona o Header (Passando o saldo em centavos - int)
+            // Nota: O método .header deve esperar (String data, String titulo, int saldo)
+            resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, (int) saldoDiaCentavos));
 
+            // Adiciona os itens individuais
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(ExibirItemListaMovimentacaoContas.linha(m));
             }
@@ -109,23 +110,13 @@ public class HelperExibirDatasMovimentacao {
         return resultado;
     }
 
-    private static Date parseDataHora(String dataStr, String horaStr) {
-        if (dataStr == null || dataStr.isEmpty()) return null;
-        if (horaStr == null || horaStr.isEmpty()) horaStr = "00:00";
-        try {
-            return sdfDataHora.parse(dataStr + " " + horaStr);
-        } catch (ParseException e) {
-            return null;
-        }
-    }
-
     private static Date zerarHora(Date d) {
-        java.util.Calendar c = java.util.Calendar.getInstance();
+        Calendar c = Calendar.getInstance();
         c.setTime(d);
-        c.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        c.set(java.util.Calendar.MINUTE, 0);
-        c.set(java.util.Calendar.SECOND, 0);
-        c.set(java.util.Calendar.MILLISECOND, 0);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
         return c.getTime();
     }
 }

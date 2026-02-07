@@ -84,14 +84,11 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.comum.visual.ui.ResumoContasActivity"
-            android:exported="false" />
-        <activity
-            android:name=".funcionalidades.contas.comum.visual.ui.ContasActivity"
+            android:name=".funcionalidades.contas.resumo_financeiro.visual.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
-            android:name=".funcionalidades.contas.comum.visual.ui.SelecionarCategoriaContasActivity"
+            android:name=".funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity"
             android:exported="false" />
 
         <activity
@@ -103,8 +100,12 @@
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.r_negocio.regras.EditarMovimentacaoActivity"
+            android:name=".funcionalidades.contas.movimentacoes.visual.EditarMovimentacaoActivity"
             android:exported="false" />
+        <activity
+            android:name=".funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity"
+            android:exported="false" />
+
 
         <activity android:name=".funcionalidades.boletos.BoletosActivity" android:exported="false" />
         <activity android:name=".funcionalidades.todo.ListaAtividadesActivity" android:exported="false" />
