@@ -94,7 +94,6 @@
     </LinearLayout>
 
 
-
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
@@ -103,12 +102,13 @@
         app:fabAlignmentMode="center"
         app:fabCradleMargin="10dp"
         app:fabCradleRoundedCornerRadius="15dp"
-        app:backgroundTint="#1A1A1A"
+        app:backgroundTint="@color/cor_background"
         app:contentInsetStart="0dp"
         app:contentInsetEnd="0dp"
         android:backgroundTint="@color/colorPrimary">
 
         <LinearLayout
+            android:id="@+id/linear_footer_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
@@ -123,16 +123,17 @@
                 android:orientation="vertical"
                 android:paddingEnd="20dp"
                 android:onClick="acessarContasActivity">
+
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_tune_24"
-                    app:tint="@color/cor_background" />
+                    app:tint="#FFFFFF" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MOVIMENTAÇÕES"
-                    android:textColor="@color/cor_texto"
+                    android:textColor="#000000"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -145,16 +146,17 @@
                 android:gravity="center"
                 android:orientation="vertical"
                 android:paddingStart="20dp">
+
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_receipt_long_28"
-                    app:tint="@color/cor_background" />
+                    app:tint="#FFFFFF" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CONTAS FUTURAS"
-                    android:textColor="@color/cor_texto"
+                    android:textColor="#000000"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
