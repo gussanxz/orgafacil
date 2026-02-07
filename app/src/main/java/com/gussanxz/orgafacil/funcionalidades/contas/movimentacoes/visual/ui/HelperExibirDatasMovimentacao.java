@@ -1,11 +1,12 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui;
 
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -13,53 +14,33 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * HELPER: HelperExibirDatasMovimentacao
- *
- * RESPONSABILIDADE: Processar a lista de MovimentacaoModel (com Timestamp e Centavos)
- * para exibir na RecyclerView agrupada por dia.
- *
- * ATUALIZAÇÕES:
- * 1. Uso de Timestamp para ordenação direta.
- * 2. Cálculo de saldo diário usando INT (centavos).
- * 3. Comparação de tipo via Enum ID.
- */
 public class HelperExibirDatasMovimentacao {
 
-    // Formatador apenas para gerar a "Chave" do grupo (ex: "07/02/2026")
     private static final SimpleDateFormat sdfKey = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs) {
-
-        // 1) Ordenar por Data (Mais recente primeiro) usando Timestamp
+        // 1. Ordenação
         List<MovimentacaoModel> copia = new ArrayList<>(movs);
         Collections.sort(copia, (o1, o2) -> {
             if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
-            // Ordem decrescente (o2 compareTo o1)
             return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
         });
 
-        // 2) Agrupar por dia (String dd/MM/yyyy) mantendo a ordem de inserção (LinkedHashMap)
+        // 2. Agrupamento em Map
         Map<String, List<MovimentacaoModel>> porDia = new LinkedHashMap<>();
-
         for (MovimentacaoModel m : copia) {
             if (m.getData_movimentacao() == null) continue;
+            String dataKey = sdfKey.format(m.getData_movimentacao().toDate());
 
-            Date date = m.getData_movimentacao().toDate();
-            String dataKey = sdfKey.format(date);
-
-            List<MovimentacaoModel> lista = porDia.get(dataKey);
-            if (lista == null) {
-                lista = new ArrayList<>();
-                porDia.put(dataKey, lista);
+            if (!porDia.containsKey(dataKey)) {
+                porDia.put(dataKey, new ArrayList<>());
             }
-            lista.add(m);
+            porDia.get(dataKey).add(m);
         }
 
-        // 3) Montar lista achatada (Header + Itens)
+        // 3. Criação da lista final (Headers + Itens)
         List<ExibirItemListaMovimentacaoContas> resultado = new ArrayList<>();
 
-        // Datas de referência para "Hoje" e "Ontem"
         Date hoje = zerarHora(new Date());
         Calendar cal = Calendar.getInstance();
         cal.setTime(hoje);
@@ -70,12 +51,8 @@ public class HelperExibirDatasMovimentacao {
             String dataStr = entry.getKey();
             List<MovimentacaoModel> listaDoDia = entry.getValue();
 
-            // --- CÁLCULO DE SALDO DO DIA (Centavos) ---
-            // Usamos long para somar e evitar overflow, depois cast para int
             long saldoDiaCentavos = 0;
-
             for (MovimentacaoModel m : listaDoDia) {
-                // Verificação pelo ID do Enum (Inteiro)
                 if (m.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
                     saldoDiaCentavos -= m.getValor();
                 } else {
@@ -83,30 +60,23 @@ public class HelperExibirDatasMovimentacao {
                 }
             }
 
-            // --- DEFINIÇÃO DO TÍTULO (Hoje/Ontem) ---
             String tituloDia = dataStr;
             try {
                 Date dataGrupo = sdfKey.parse(dataStr);
                 if (dataGrupo != null) {
                     Date dataZerada = zerarHora(dataGrupo);
-                    if (dataZerada.equals(hoje)) {
-                        tituloDia = "Hoje";
-                    } else if (dataZerada.equals(ontem)) {
-                        tituloDia = "Ontem";
-                    }
+                    if (dataZerada.equals(hoje)) tituloDia = "Hoje";
+                    else if (dataZerada.equals(ontem)) tituloDia = "Ontem";
                 }
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {}
 
-            // Adiciona o Header (Passando o saldo em centavos - int)
-            // Nota: O método .header deve esperar (String data, String titulo, int saldo)
+            // Passando int para o header
             resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, (int) saldoDiaCentavos));
 
-            // Adiciona os itens individuais
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(ExibirItemListaMovimentacaoContas.linha(m));
             }
         }
-
         return resultado;
     }
 

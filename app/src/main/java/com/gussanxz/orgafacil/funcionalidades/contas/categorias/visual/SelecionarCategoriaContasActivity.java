@@ -26,16 +26,14 @@ import java.util.List;
 /**
  * SelecionarCategoriaContasActivity
  * O que esta classe faz:
- * 1. Gerenciamento de Catálogo: Lista as categorias disponíveis para vincular a uma movimentação.
- * 2. Evolução de Dados: Migrou de List<String> para List<ContasCategoriaModel> para suportar limites e ícones.
- * 3. Integração Profissional: Usa o novo ContasCategoriaRepository para salvar e validar exclusões.
+ * 1. Gerenciamento de Catálogo: Lista as categorias disponíveis.
+ * 2. Integração Profissional: Usa o Repository e o Model aninhado (Visual/Financeiro).
  */
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private AdapterExibirCategoriasContas adapter;
 
-    // Agora guardamos a lista de modelos, não apenas Strings
     private final List<ContasCategoriaModel> listaCategorias = new ArrayList<>();
     private ContasCategoriaRepository repository;
 
@@ -63,7 +61,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
-        // O Adapter deve ser atualizado para receber List<ContasCategoriaModel>
+        // O Adapter já foi atualizado para ler o grupo Visual
         adapter = new AdapterExibirCategoriasContas(listaCategorias, this);
         recyclerView.setAdapter(adapter);
     }
@@ -72,7 +70,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
      * Busca as categorias no Firestore e inicializa padrões caso o banco esteja vazio.
      */
     private void carregarCategorias() {
-        // Por padrão, listamos categorias de Despesa para seleção
+        // O Repository ordena por "visual.nome" automaticamente
         repository.listarAtivasPorTipo(TipoCategoriaContas.DESPESA.getId())
                 .get()
                 .addOnSuccessListener(snapshot -> {
@@ -82,12 +80,12 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                         listaCategorias.add(cat);
                     }
 
-                    // Pensa fora da caixa: se o usuário é novo, entrega o app pronto com padrões
+                    // Se estiver vazio, cria os padrões
                     if (listaCategorias.isEmpty()) {
                         repository.inicializarPadroes(new ContasCategoriaRepository.Callback() {
                             @Override
                             public void onSucesso() {
-                                carregarCategorias(); // Recarrega após criar as padrões
+                                carregarCategorias(); // Recarrega
                             }
 
                             @Override
@@ -116,9 +114,12 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
             String nome = input.getText().toString().trim();
             if (!TextUtils.isEmpty(nome)) {
 
-                // Monta o objeto Model conforme a nova regra
                 ContasCategoriaModel novaCat = new ContasCategoriaModel();
-                novaCat.setNome(nome);
+
+                // [ATUALIZADO] Define o nome dentro do grupo Visual
+                novaCat.getVisual().setNome(nome);
+
+                // Define os dados da raiz
                 novaCat.setTipo(TipoCategoriaContas.DESPESA.getId());
                 novaCat.setAtiva(true);
 
@@ -153,7 +154,6 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                 int pos = viewHolder.getAdapterPosition();
                 ContasCategoriaModel categoriaParaExcluir = listaCategorias.get(pos);
 
-                // Regra: Só exclui se não houver movimentações vinculadas a este ID
                 repository.verificarEExcluir(categoriaParaExcluir, new ContasCategoriaRepository.Callback() {
                     @Override
                     public void onSucesso() {
@@ -164,7 +164,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
                     @Override
                     public void onErro(String erro) {
-                        // Se houver erro (categoria em uso), desfaz o swipe na tela
+                        // Se houver erro (categoria em uso), desfaz o swipe
                         Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
                         adapter.notifyItemChanged(pos);
                     }

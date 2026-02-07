@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.LayoutInflater;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -40,7 +40,8 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.Receit
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.repository.ResumoFinanceiroRepository;
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
+// [CORREÇÃO]: Import correto (sem r_negocio)
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.AdapterExibeListaMovimentacaoContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.ExibirItemListaMovimentacaoContas;
@@ -54,11 +55,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * ContasActivity (MVVM)
- * - Exibe o saldo consolidado e extrato agrupado por data.
- * - REGRA DE OURO: Dinheiro no código é int (centavos), dividido por 100 apenas na UI [cite: 2026-02-07].
- */
 public class ContasActivity extends AppCompatActivity {
 
     private final String TAG = "ContasActivity";
@@ -91,17 +87,15 @@ public class ContasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_lista_saldo);
 
-        // Inicialização da ViewModel (Cérebro da tela)
+        // Inicialização da ViewModel
         viewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
-        // Configuração da Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("OrgaFácil");
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
-        // Inicialização dos Repositories
         movRepository = new MovimentacaoRepository();
         resumoRepository = new ResumoFinanceiroRepository();
         usuarioRepository = new UsuarioRepository();
@@ -109,7 +103,7 @@ public class ContasActivity extends AppCompatActivity {
         inicializarComponentes();
         configurarRecyclerView();
         configurarFiltros();
-        setupObservers(); // Conecta a UI aos dados vivos da ViewModel
+        setupObservers();
 
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -133,6 +127,7 @@ public class ContasActivity extends AppCompatActivity {
         // Observa mudanças na lista filtrada para atualizar o RecyclerView
         viewModel.listaFiltrada.observe(this, lista -> {
             itensAgrupados.clear();
+            // Helper agora aceita o MovimentacaoModel correto
             itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista));
             adapterAgrupado.notifyDataSetChanged();
             atualizarLegendasFiltro(searchView.getQuery().toString());
@@ -140,7 +135,6 @@ public class ContasActivity extends AppCompatActivity {
 
         // Observa o saldo calculado do período/filtro (em centavos)
         viewModel.saldoPeriodo.observe(this, saldoCentavos -> {
-            // Conversão de centavos (int) para double apenas para exibição [cite: 2026-02-07]
             double saldoExibicao = saldoCentavos / 100.0;
             textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
         });
@@ -149,19 +143,23 @@ public class ContasActivity extends AppCompatActivity {
     // --- MÉTODOS DE DADOS ---
 
     private void carregarDados() {
-        // 1. Identidade: Busca apenas o nome para a saudação
+        // 1. Identidade
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
-        // 2. Dashboard: Escuta o documento de resumo em tempo real.
-        // CORREÇÃO: Usamos Classe Anônima (new Callback) em vez de Lambda para evitar erro de "Multiple abstract methods".
+        // 2. Dashboard
         resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
             @Override
             public void onUpdate(ResumoFinanceiroModel resumo) {
                 if (resumo != null) {
-                    // Só atualiza o saldo principal se não houver filtros de pesquisa/data ativos
                     if (dataInicialFiltro == null && searchView.getQuery().length() == 0) {
-                        // REGRA DE OURO: O saldo é INT (centavos). Convertemos para exibição [cite: 2026-02-07]
-                        double saldoDouble = resumo.getSaldo_atual() / 100.0;
+
+                        // [ATUALIZADO] Acesso ao saldo via Mapa (balanco.getSaldoAtual)
+                        int saldoCentavos = 0;
+                        if (resumo.getBalanco() != null) {
+                            saldoCentavos = resumo.getBalanco().getSaldoAtual();
+                        }
+
+                        double saldoDouble = saldoCentavos / 100.0;
                         textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
                     }
                 }
@@ -169,22 +167,18 @@ public class ContasActivity extends AppCompatActivity {
 
             @Override
             public void onError(String erro) {
-
+                Log.e(TAG, "Erro no resumo: " + erro);
             }
-            // Se sua interface tiver onErro, você pode implementar aqui ou deixar vazio se for default
         });
 
         recuperarMovimentacoesDoBanco();
     }
 
     private void recuperarMovimentacoesDoBanco() {
-        // CORREÇÃO: Implementação da busca real no banco de dados
         movRepository.recuperarMovimentacoes(new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
-                // Passa a lista bruta para a ViewModel, que aplicará os filtros
                 viewModel.carregarLista(lista);
-                // aplicarFiltros() é chamado internamente pela ViewModel ao carregar a lista
             }
 
             @Override
@@ -219,7 +213,6 @@ public class ContasActivity extends AppCompatActivity {
 
         btnConfirmar.setOnClickListener(v -> {
             dialog.dismiss();
-            // Repository gerencia a exclusão e o estorno automático do saldo [cite: 2026-02-07]
             movRepository.excluir(mov, new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {
@@ -239,7 +232,6 @@ public class ContasActivity extends AppCompatActivity {
     // --- FILTROS ---
 
     private void aplicarFiltros() {
-        // Delega a lógica de filtro para a ViewModel, mantendo a Activity limpa
         viewModel.aplicarFiltros(
                 searchView.getQuery().toString(),
                 dataInicialFiltro,
@@ -278,6 +270,7 @@ public class ContasActivity extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int dir) {
                 int pos = vh.getAdapterPosition();
                 MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
+
                 if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
                 else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
             }

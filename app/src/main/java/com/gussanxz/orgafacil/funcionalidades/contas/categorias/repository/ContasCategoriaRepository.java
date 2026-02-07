@@ -27,19 +27,19 @@ public class ContasCategoriaRepository {
      */
     public void salvar(ContasCategoriaModel categoria, Callback callback) {
         // Se for nova e não tiver ID, geramos pelo nome (Slugify)
+        // Nota: categoria.getNome() funciona pq criamos o Helper @Exclude no Model
         if (categoria.getId() == null || categoria.getId().isEmpty()) {
             categoria.setId(CategoriaIdHelper.slugify(categoria.getNome()));
         }
 
         FirestoreSchema.contasCategoriaDoc(categoria.getId())
-                .set(categoria)
+                .set(categoria) // O Firestore serializa os mapas (Visual/Financeiro) automaticamente
                 .addOnSuccessListener(unused -> callback.onSucesso())
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
     /**
      * REGRA: Só exclui se não houver movimentações vinculadas.
-     * Usamos as constantes ancoradas no MovimentacaoModel.
      */
     public void verificarEExcluir(ContasCategoriaModel categoria, Callback callback) {
         FirestoreSchema.contasMovimentacoesCol()
@@ -63,7 +63,8 @@ public class ContasCategoriaRepository {
     }
 
     /**
-     * Inicializa o app com categorias prontas (Usando Batch para performance).
+     * Inicializa o app com categorias prontas.
+     * [ATUALIZADO]: Preenche os dados dentro do grupo VISUAL.
      */
     public void inicializarPadroes(Callback callback) {
         List<String> nomes = Arrays.asList(
@@ -74,10 +75,14 @@ public class ContasCategoriaRepository {
 
         for (String nome : nomes) {
             ContasCategoriaModel cat = new ContasCategoriaModel();
-            cat.setNome(nome);
+
+            // [ATUALIZADO] Preenche o Mapa Visual
+            cat.getVisual().setNome(nome);
+            cat.getVisual().setIcone("ic_default"); // Placeholder
+
+            // Raiz
             cat.setId(CategoriaIdHelper.slugify(nome));
-            cat.setTipo(TipoCategoriaContas.DESPESA.getId()); // Padrões iniciais como Despesa
-            cat.setIcone("ic_default"); // Placeholder para seu sistema de ícones
+            cat.setTipo(TipoCategoriaContas.DESPESA.getId());
             cat.setAtiva(true);
 
             DocumentReference ref = FirestoreSchema.contasCategoriaDoc(cat.getId());
@@ -90,7 +95,8 @@ public class ContasCategoriaRepository {
     }
 
     /**
-     * Query para listagem nas telas de seleção (Spinners/Dialogs).
+     * Query para listagem nas telas de seleção.
+     * Funciona automaticamente pois CAMPO_NOME no Model agora vale "visual.nome"
      */
     public Query listarAtivasPorTipo(int tipoId) {
         return FirestoreSchema.contasCategoriasCol()

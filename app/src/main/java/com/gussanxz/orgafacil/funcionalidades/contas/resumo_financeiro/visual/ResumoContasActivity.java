@@ -27,9 +27,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 public class ResumoContasActivity extends AppCompatActivity {
 
     private static final String TAG = "ResumoContasActivity";
+
+    // Componentes de Layout
     private LinearLayout btnFooterContas, btnFooterMovimentacoes;
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
+
     // Componentes do Menu Radial
     private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa, fabNovaReceita, fabReceitaFutura;
     private boolean isMenuOpen = false;
@@ -56,11 +59,14 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground = findViewById(R.id.overlay_background);
 
         setupSlideView();
+
         // 2. Fechar o menu ao clicar na parte escura (fora dos botões)
         overlayBackground.setOnClickListener(v -> fecharMenu());
+
         setupMenuFooter();
         setupMenuRadial();
     }
+
     private void setupMenuFooter() {
         btnFooterMovimentacoes = findViewById(R.id.btn_footer_movimentacoes);
 
@@ -75,6 +81,7 @@ public class ResumoContasActivity extends AppCompatActivity {
             acessarContasFuturas(v);
         });
     }
+
     private void setupMenuRadial() {
         fabMain = findViewById(R.id.fab_main);
         fabDespesaFutura = findViewById(R.id.fab_despesa_futura);
@@ -107,13 +114,16 @@ public class ResumoContasActivity extends AppCompatActivity {
             adicionarReceitaFutura(v);
         });
     }
+
+    // --- Ações de Navegação ---
+
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("EH_ATALHO", true);
-
         intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
         startActivity(intent);
     }
+
     public void acessarContasFuturas(View v) {
         Intent intent = new Intent(this, ContasActivity.class);
         intent.putExtra("TEXTO_SALDO", "Saldo futuro");
@@ -122,21 +132,31 @@ public class ResumoContasActivity extends AppCompatActivity {
         intent.putExtra("EH_ATALHO", true);
         startActivity(intent);
     }
+
     public void adicionarDespesa(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
         startActivity(intent);
     }
+
     public void adicionarReceitaFutura(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
         startActivity(intent);
     }
+
     public void adicionarDespesaFutura(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
         intent.putExtra("TITULO_TELA", "Agendar Despesa Futura");
         intent.putExtra("EH_ATALHO", true);
         startActivity(intent);
     }
+
+    public void acessarContasActivity(View view) {
+        startActivity(new Intent(this, ContasActivity.class));
+        Log.i(TAG, "acessou ContasActivity");
+    }
+
+    // --- Animações do Menu Radial ---
 
     private void abrirMenu() {
         isMenuOpen = true;
@@ -158,11 +178,11 @@ public class ResumoContasActivity extends AppCompatActivity {
 
         fabMain.animate().setInterpolator(interpolator).rotation(45f).setDuration(300).start();
 
-        // Animação em leque (Ajuste os valores de X e Y se precisar de mais abertura)
-        animarBotao(fabDespesaFutura, -320f, -200f); // Extrema esquerda, mais baixo
-        animarBotao(fabReceitaFutura, -150f, -420f);    // Esquerda central, bem alto
-        animarBotao(fabNovaDespesa, 150f, -420f);   // Direita central, bem alto
-        animarBotao(fabNovaReceita, 320f, -200f); // Extrema direita, mais baixo
+        // Animação em leque
+        animarBotao(fabDespesaFutura, -320f, -200f);
+        animarBotao(fabReceitaFutura, -150f, -420f);
+        animarBotao(fabNovaDespesa, 150f, -420f);
+        animarBotao(fabNovaReceita, 320f, -200f);
     }
 
     private void fecharMenu() {
@@ -219,23 +239,18 @@ public class ResumoContasActivity extends AppCompatActivity {
         Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
         fecharMenu(); // Fecha o menu após selecionar uma opção
     }
-    public void acessarContasActivity(View view) {
-        startActivity(new Intent(this, ContasActivity.class));
-        Log.i(TAG, "acessou ContasActivity");
-    }
-
 
     private void setupSlideView() {
-        // 2. Criar e definir o Adaptador
+        // Configura o Adapter do ViewPager (Fragments)
         DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
         viewPager.setAdapter(adapter);
 
-        // 3. Ligar as Abas ao ViewPager (Define os títulos)
+        // Liga as Abas ao ViewPager
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
-                tab.setText(R.string.tab_titulo_ultimas_mov); // Aba da Esquerda
+                tab.setText(R.string.tab_titulo_ultimas_mov);
             } else {
-                tab.setText(R.string.tab_titulo_contas_a_vencer); // Aba da Direita
+                tab.setText(R.string.tab_titulo_contas_a_vencer);
             }
         }).attach();
     }

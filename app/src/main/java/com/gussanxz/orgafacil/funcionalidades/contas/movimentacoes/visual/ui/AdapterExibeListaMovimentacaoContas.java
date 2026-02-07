@@ -14,7 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.EditarMovimentacaoActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
+// [IMPORTANTE]: O import deve ser EXATAMENTE este:
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -26,11 +27,9 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
 
     private final List<ExibirItemListaMovimentacaoContas> itens;
     private final Context context;
-    // Formatador de Data (Novo!)
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
     private final SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-
     private final OnItemActionListener listener;
 
     public interface OnItemActionListener {
@@ -77,7 +76,6 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         }
     }
 
-    // --------- ViewHolder do Cabeçalho ---------
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView textDiaTitulo, textSaldoDia;
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -91,19 +89,15 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         void bind(ExibirItemListaMovimentacaoContas item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
-                // CORREÇÃO: Converter centavos (long) para double
                 double saldoReal = item.saldoDia / 100.0;
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
-
                 int color = item.saldoDia >= 0 ? Color.parseColor("#008000") : Color.parseColor("#B00020");
                 textSaldoDia.setTextColor(color);
             }
         }
     }
 
-    // --------- ViewHolder do Item ---------
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
-
         TextView textTitulo, textCategoria, textValor, textData, textHora;
         View viewIndicadorCor;
 
@@ -118,12 +112,10 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         }
 
         void bind(MovimentacaoModel mov) {
+            // Graças aos métodos @Exclude no seu Model, isso funciona direto!
             textTitulo.setText(mov.getDescricao());
-
-            // CORREÇÃO: Usar o getter correto do novo Model
             textCategoria.setText(mov.getCategoria_nome());
 
-            // CORREÇÃO: Formatar Data e Hora a partir do Timestamp
             if (mov.getData_movimentacao() != null) {
                 Date date = mov.getData_movimentacao().toDate();
                 textData.setText(dateFormat.format(date));
@@ -133,27 +125,21 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
                 textHora.setText("--:--");
             }
 
-            // CORREÇÃO: Converter INT (centavos) para DOUBLE (reais) [cite: 2026-02-07]
             double valorReais = mov.getValor() / 100.0;
 
-            // CORREÇÃO: Comparar INT com INT usando o Enum
             if (mov.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
-                // DESPESA
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#E53935"));
             } else {
-                // RECEITA
                 textValor.setText("+ " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#00D39E"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
-            // Cliques
             itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
-                // intent.putExtra("keyFirebase", mov.getKey()); // Se o model já tem getKey, ok. Senão remover.
                 context.startActivity(intent);
             });
 

@@ -2,171 +2,180 @@ package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
-import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.StatusSaudeFinanceira;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 
+import java.io.Serializable;
+
 /**
  * ResumoFinanceiroModel (O "Documento Mágico")
  * Centraliza os saldos e indicadores para a Home Screen.
- * * REGRA DE OURO: Todos os valores monetários são INT (armazenando centavos).
- * Exemplo: R$ 10,50 vira 1050.
- * * Local: usuarios > {uid} > contas > resumo_geral
+ * Estrutura no Firestore:
+ * - balanco: { saldoAtual, receitasMes, despesasMes... }
+ * - inteligencia: { previsaoFinalMes, limiteGastos... }
+ * - maiorCategoria: { nome, total, icone... }
+ * - pendencias: { pagar, receber }
  */
-public class ResumoFinanceiroModel {
+public class ResumoFinanceiroModel implements Serializable {
 
-    // --- Constantes para Mapeamento (Âncoras para Repositories) ---
-    public static final String CAMPO_SALDO_ATUAL = "saldo_atual";
-    public static final String CAMPO_RECEITAS_MES = "receitas_mes";
-    public static final String CAMPO_DESPESAS_MES = "despesas_mes";
-    public static final String CAMPO_BALANCO_MES = "balanco_mes";
-    public static final String CAMPO_GASTOS_HOJE = "gastos_hoje";
-    public static final String CAMPO_PREVISAO_FINAL_MES = "previsao_final_mes";
-    public static final String CAMPO_LIMITE_GASTOS_MENSAL = "limite_gastos_mensal";
-    public static final String CAMPO_ECONOMIA_MES = "economia_mes";
-    public static final String CAMPO_STATUS_SAUDE_FINANCEIRA = "status_saude_financeira";
-    public static final String CAMPO_MAIOR_CAT_ID = "maior_cat_id";
-    public static final String CAMPO_MAIOR_CAT_NOME = "maior_cat_nome";
-    public static final String CAMPO_MAIOR_CAT_ICONE = "maior_cat_icone";
-    public static final String CAMPO_MAIOR_CAT_COR = "maior_cat_cor";
-    public static final String CAMPO_MAIOR_CAT_TOTAL = "maior_cat_total";
-    public static final String CAMPO_MAIOR_CAT_TIPO = "maior_cat_tipo";
-    public static final String CAMPO_PENDENCIAS_PAGAR = "pendencias_pagar";
-    public static final String CAMPO_PENDENCIAS_RECEBER = "pendencias_receber";
-    public static final String CAMPO_ULTIMA_ATUALIZACAO = "ultima_atualizacao";
+    // --- CONSTANTES DE CAMINHO (Dot Notation para Updates Parciais) ---
+    // Grupo Balanço
+    public static final String CAMPO_SALDO_ATUAL = "balanco.saldoAtual";
+    public static final String CAMPO_RECEITAS_MES = "balanco.receitasMes";
+    public static final String CAMPO_DESPESAS_MES = "balanco.despesasMes";
+    public static final String CAMPO_BALANCO_MES = "balanco.balancoMes";
+    public static final String CAMPO_GASTOS_HOJE = "balanco.gastosHoje";
 
-    // --- Saldos e Fluxo Atual (INT - Centavos) ---
-    private int saldo_atual = 0;
-    private int receitas_mes = 0;
-    private int despesas_mes = 0;
-    private int balanco_mes = 0;
-    private int gastos_hoje = 0;
+    // Grupo Inteligência
+    public static final String CAMPO_PREVISAO_FINAL_MES = "inteligencia.previsaoFinalMes";
+    public static final String CAMPO_LIMITE_GASTOS_MENSAL = "inteligencia.limiteGastosMensal";
+    public static final String CAMPO_ECONOMIA_MES = "inteligencia.economiaMes";
+    public static final String CAMPO_STATUS_SAUDE_FINANCEIRA = "inteligencia.statusSaudeFinanceira";
 
-    // --- Inteligência e Alertas ---
-    private int previsao_final_mes = 0;    // Previsão baseada em contas agendadas
-    private int limite_gastos_mensal = 0;  // Teto definido pelo usuário
-    private int economia_mes = 0;          // Saldo positivo poupado no mês atual
+    // Grupo Maior Categoria
+    public static final String CAMPO_MAIOR_CAT_ID = "maiorCategoria.id";
+    public static final String CAMPO_MAIOR_CAT_NOME = "maiorCategoria.nome";
+    public static final String CAMPO_MAIOR_CAT_ICONE = "maiorCategoria.icone";
+    public static final String CAMPO_MAIOR_CAT_COR = "maiorCategoria.cor";
+    public static final String CAMPO_MAIOR_CAT_TOTAL = "maiorCategoria.total";
+    public static final String CAMPO_MAIOR_CAT_TIPO = "maiorCategoria.tipo";
 
-    // Status de Saúde (Persistido como INT: 1, 2 ou 3 via StatusSaudeFinanceira Enum)
-    private int status_saude_financeira = 3; // Começa no neutro/saudável
+    // Grupo Pendências
+    public static final String CAMPO_PENDENCIAS_PAGAR = "pendencias.pagar";
+    public static final String CAMPO_PENDENCIAS_RECEBER = "pendencias.receber";
 
-    // --- Dados da Maior Categoria (Denormalização para Performance) ---
-    private String maior_cat_id = "";
-    private String maior_cat_nome = "";
-    private String maior_cat_icone = "";
-    private String maior_cat_cor = "";
-    private int maior_cat_total = 0;
-    // Tipo da maior categoria (Persistido como INT: 1 ou 2 via TipoCategoria Enum)
-    private int maior_cat_tipo = 0;
+    // Raiz
+    public static final String CAMPO_ULTIMA_ATUALIZACAO = "ultimaAtualizacao";
 
-    // --- Controles de Contagem de Pendência (Quantidade de Contas) ---
-    private int pendencias_pagar = 0;
-    private int pendencias_receber = 0;
+
+    // =========================================================================
+    // GRUPOS DE DADOS (Mapas)
+    // =========================================================================
+    private Balanco balanco;
+    private Inteligencia inteligencia;
+    private MaiorCategoria maiorCategoria;
+    private Pendencias pendencias;
 
     @ServerTimestamp
-    private Timestamp ultima_atualizacao;
+    private Timestamp ultimaAtualizacao;
 
-    // Construtor padrão obrigatório para o Firebase
-    public ResumoFinanceiroModel() {}
+    // =========================================================================
+    // CONSTRUTOR
+    // =========================================================================
+    public ResumoFinanceiroModel() {
+        this.balanco = new Balanco();
+        this.inteligencia = new Inteligencia();
+        this.maiorCategoria = new MaiorCategoria();
+        this.pendencias = new Pendencias();
+    }
 
-    // --- Getters e Setters Padrão (Usados pelo Firestore com PropertyName) ---
+    // =========================================================================
+    // GETTERS E SETTERS DA RAIZ
+    // =========================================================================
 
-    @PropertyName(CAMPO_SALDO_ATUAL)
-    public int getSaldo_atual() { return saldo_atual; }
-    @PropertyName(CAMPO_SALDO_ATUAL)
-    public void setSaldo_atual(int saldo_atual) { this.saldo_atual = saldo_atual; }
+    public Balanco getBalanco() { return balanco; }
+    public void setBalanco(Balanco balanco) { this.balanco = balanco; }
 
-    @PropertyName(CAMPO_RECEITAS_MES)
-    public int getReceitas_mes() { return receitas_mes; }
-    @PropertyName(CAMPO_RECEITAS_MES)
-    public void setReceitas_mes(int receitas_mes) { this.receitas_mes = receitas_mes; }
+    public Inteligencia getInteligencia() { return inteligencia; }
+    public void setInteligencia(Inteligencia inteligencia) { this.inteligencia = inteligencia; }
 
-    @PropertyName(CAMPO_DESPESAS_MES)
-    public int getDespesas_mes() { return despesas_mes; }
-    @PropertyName(CAMPO_DESPESAS_MES)
-    public void setDespesas_mes(int despesas_mes) { this.despesas_mes = despesas_mes; }
+    public MaiorCategoria getMaiorCategoria() { return maiorCategoria; }
+    public void setMaiorCategoria(MaiorCategoria maiorCategoria) { this.maiorCategoria = maiorCategoria; }
 
-    @PropertyName(CAMPO_BALANCO_MES)
-    public int getBalanco_mes() { return balanco_mes; }
-    @PropertyName(CAMPO_BALANCO_MES)
-    public void setBalanco_mes(int balanco_mes) { this.balanco_mes = balanco_mes; }
+    public Pendencias getPendencias() { return pendencias; }
+    public void setPendencias(Pendencias pendencias) { this.pendencias = pendencias; }
 
-    @PropertyName(CAMPO_GASTOS_HOJE)
-    public int getGastos_hoje() { return gastos_hoje; }
-    @PropertyName(CAMPO_GASTOS_HOJE)
-    public void setGastos_hoje(int gastos_hoje) { this.gastos_hoje = gastos_hoje; }
+    public Timestamp getUltimaAtualizacao() { return ultimaAtualizacao; }
+    public void setUltimaAtualizacao(Timestamp ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
 
-    @PropertyName(CAMPO_PREVISAO_FINAL_MES)
-    public int getPrevisao_final_mes() { return previsao_final_mes; }
-    @PropertyName(CAMPO_PREVISAO_FINAL_MES)
-    public void setPrevisao_final_mes(int previsao_final_mes) { this.previsao_final_mes = previsao_final_mes; }
 
-    @PropertyName(CAMPO_LIMITE_GASTOS_MENSAL)
-    public int getLimite_gastos_mensal() { return limite_gastos_mensal; }
-    @PropertyName(CAMPO_LIMITE_GASTOS_MENSAL)
-    public void setLimite_gastos_mensal(int limite_gastos_mensal) { this.limite_gastos_mensal = limite_gastos_mensal; }
+    // =========================================================================
+    // CLASSES INTERNAS (Mapas)
+    // =========================================================================
 
-    @PropertyName(CAMPO_ECONOMIA_MES)
-    public int getEconomia_mes() { return economia_mes; }
-    @PropertyName(CAMPO_ECONOMIA_MES)
-    public void setEconomia_mes(int economia_mes) { this.economia_mes = economia_mes; }
+    public static class Balanco implements Serializable {
+        private int saldoAtual = 0;
+        private int receitasMes = 0;
+        private int despesasMes = 0;
+        private int balancoMes = 0;
+        private int gastosHoje = 0;
 
-    @PropertyName(CAMPO_STATUS_SAUDE_FINANCEIRA)
-    public int getStatus_saude_financeira() { return status_saude_financeira; }
-    @PropertyName(CAMPO_STATUS_SAUDE_FINANCEIRA)
-    public void setStatus_saude_financeira(int status_saude_financeira) { this.status_saude_financeira = status_saude_financeira; }
+        public Balanco() {}
 
-    @PropertyName(CAMPO_MAIOR_CAT_ID)
-    public String getMaior_cat_id() { return maior_cat_id; }
-    @PropertyName(CAMPO_MAIOR_CAT_ID)
-    public void setMaior_cat_id(String maior_cat_id) { this.maior_cat_id = maior_cat_id; }
+        public int getSaldoAtual() { return saldoAtual; }
+        public void setSaldoAtual(int saldoAtual) { this.saldoAtual = saldoAtual; }
+        public int getReceitasMes() { return receitasMes; }
+        public void setReceitasMes(int receitasMes) { this.receitasMes = receitasMes; }
+        public int getDespesasMes() { return despesasMes; }
+        public void setDespesasMes(int despesasMes) { this.despesasMes = despesasMes; }
+        public int getBalancoMes() { return balancoMes; }
+        public void setBalancoMes(int balancoMes) { this.balancoMes = balancoMes; }
+        public int getGastosHoje() { return gastosHoje; }
+        public void setGastosHoje(int gastosHoje) { this.gastosHoje = gastosHoje; }
+    }
 
-    @PropertyName(CAMPO_MAIOR_CAT_NOME)
-    public String getMaior_cat_nome() { return maior_cat_nome; }
-    @PropertyName(CAMPO_MAIOR_CAT_NOME)
-    public void setMaior_cat_nome(String maior_cat_nome) { this.maior_cat_nome = maior_cat_nome; }
+    public static class Inteligencia implements Serializable {
+        private int previsaoFinalMes = 0;
+        private int limiteGastosMensal = 0;
+        private int economiaMes = 0;
+        private int statusSaudeFinanceira = 3; // Padrão: 3 (Saudável/Neutro)
 
-    @PropertyName(CAMPO_MAIOR_CAT_ICONE)
-    public String getMaior_cat_icone() { return maior_cat_icone; }
-    @PropertyName(CAMPO_MAIOR_CAT_ICONE)
-    public void setMaior_cat_icone(String maior_cat_icone) { this.maior_cat_icone = maior_cat_icone; }
+        public Inteligencia() {}
 
-    @PropertyName(CAMPO_MAIOR_CAT_COR)
-    public String getMaior_cat_cor() { return maior_cat_cor; }
-    @PropertyName(CAMPO_MAIOR_CAT_COR)
-    public void setMaior_cat_cor(String maior_cat_cor) { this.maior_cat_cor = maior_cat_cor; }
+        public int getPrevisaoFinalMes() { return previsaoFinalMes; }
+        public void setPrevisaoFinalMes(int previsaoFinalMes) { this.previsaoFinalMes = previsaoFinalMes; }
+        public int getLimiteGastosMensal() { return limiteGastosMensal; }
+        public void setLimiteGastosMensal(int limiteGastosMensal) { this.limiteGastosMensal = limiteGastosMensal; }
+        public int getEconomiaMes() { return economiaMes; }
+        public void setEconomiaMes(int economiaMes) { this.economiaMes = economiaMes; }
+        public int getStatusSaudeFinanceira() { return statusSaudeFinanceira; }
+        public void setStatusSaudeFinanceira(int statusSaudeFinanceira) { this.statusSaudeFinanceira = statusSaudeFinanceira; }
+    }
 
-    @PropertyName(CAMPO_MAIOR_CAT_TOTAL)
-    public int getMaior_cat_total() { return maior_cat_total; }
-    @PropertyName(CAMPO_MAIOR_CAT_TOTAL)
-    public void setMaior_cat_total(int maior_cat_total) { this.maior_cat_total = maior_cat_total; }
+    public static class MaiorCategoria implements Serializable {
+        private String id = "";
+        private String nome = "";
+        private String icone = "";
+        private String cor = "";
+        private int total = 0;
+        private int tipo = 0;
 
-    @PropertyName(CAMPO_MAIOR_CAT_TIPO)
-    public int getMaior_cat_tipo() { return maior_cat_tipo; }
-    @PropertyName(CAMPO_MAIOR_CAT_TIPO)
-    public void setMaior_cat_tipo(int maior_cat_tipo) { this.maior_cat_tipo = maior_cat_tipo; }
+        public MaiorCategoria() {}
 
-    @PropertyName(CAMPO_PENDENCIAS_PAGAR)
-    public int getPendencias_pagar() { return pendencias_pagar; }
-    @PropertyName(CAMPO_PENDENCIAS_PAGAR)
-    public void setPendencias_pagar(int pendencias_pagar) { this.pendencias_pagar = pendencias_pagar; }
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+        public String getNome() { return nome; }
+        public void setNome(String nome) { this.nome = nome; }
+        public String getIcone() { return icone; }
+        public void setIcone(String icone) { this.icone = icone; }
+        public String getCor() { return cor; }
+        public void setCor(String cor) { this.cor = cor; }
+        public int getTotal() { return total; }
+        public void setTotal(int total) { this.total = total; }
+        public int getTipo() { return tipo; }
+        public void setTipo(int tipo) { this.tipo = tipo; }
+    }
 
-    @PropertyName(CAMPO_PENDENCIAS_RECEBER)
-    public int getPendencias_receber() { return pendencias_receber; }
-    @PropertyName(CAMPO_PENDENCIAS_RECEBER)
-    public void setPendencias_receber(int pendencias_receber) { this.pendencias_receber = pendencias_receber; }
+    public static class Pendencias implements Serializable {
+        private int pagar = 0;
+        private int receber = 0;
 
-    @PropertyName(CAMPO_ULTIMA_ATUALIZACAO)
-    public Timestamp getUltima_atualizacao() { return ultima_atualizacao; }
-    @PropertyName(CAMPO_ULTIMA_ATUALIZACAO)
-    public void setUltima_atualizacao(Timestamp ultima_atualizacao) { this.ultima_atualizacao = ultima_atualizacao; }
+        public Pendencias() {}
 
-    // --- Métodos de Inteligência (Excluídos via @Exclude) ---
+        public int getPagar() { return pagar; }
+        public void setPagar(int pagar) { this.pagar = pagar; }
+        public int getReceber() { return receber; }
+        public void setReceber(int receber) { this.receber = receber; }
+    }
+
+    // =========================================================================
+    // LÓGICA E HELPERS (Mantidos e Adaptados para a nova estrutura)
+    // =========================================================================
 
     @Exclude
     public StatusSaudeFinanceira getStatusSaudeEnum() {
-        return StatusSaudeFinanceira.desdeId(this.status_saude_financeira);
+        return StatusSaudeFinanceira.desdeId(this.inteligencia.getStatusSaudeFinanceira());
     }
 
     @Exclude
@@ -176,32 +185,40 @@ public class ResumoFinanceiroModel {
 
     @Exclude
     public TipoCategoriaContas getMaiorCatTipoEnum() {
-        return TipoCategoriaContas.desdeId(this.maior_cat_tipo);
+        return TipoCategoriaContas.desdeId(this.maiorCategoria.getTipo());
     }
 
     /**
      * Calcula o status de saúde baseado na regra de 80% e estouro de limite.
+     * Atualiza o valor dentro do grupo 'inteligencia'.
      */
     @Exclude
     public void calcularStatusSaude() {
-        if (despesas_mes > receitas_mes || (limite_gastos_mensal > 0 && despesas_mes > limite_gastos_mensal)) {
-            this.status_saude_financeira = StatusSaudeFinanceira.CRITICO.getId();
+        int despesas = balanco.getDespesasMes();
+        int receitas = balanco.getReceitasMes();
+        int limite = inteligencia.getLimiteGastosMensal();
+
+        // Regra Crítica: Gastou mais que ganhou OU Estourou o limite definido
+        if (despesas > receitas || (limite > 0 && despesas > limite)) {
+            inteligencia.setStatusSaudeFinanceira(StatusSaudeFinanceira.CRITICO.getId());
             return;
         }
 
-        double percReceita = receitas_mes > 0 ? (double) despesas_mes / receitas_mes : 0;
-        double percLimite = limite_gastos_mensal > 0 ? (double) despesas_mes / limite_gastos_mensal : 0;
+        double percReceita = receitas > 0 ? (double) despesas / receitas : 0;
+        double percLimite = limite > 0 ? (double) despesas / limite : 0;
 
+        // Regra Atenção: Gastou mais de 80% da receita ou do limite
         if (percReceita >= 0.8 || percLimite >= 0.8) {
-            this.status_saude_financeira = StatusSaudeFinanceira.ATENCAO.getId();
+            inteligencia.setStatusSaudeFinanceira(StatusSaudeFinanceira.ATENCAO.getId());
         } else {
-            this.status_saude_financeira = StatusSaudeFinanceira.SAUDAVEL.getId();
+            inteligencia.setStatusSaudeFinanceira(StatusSaudeFinanceira.SAUDAVEL.getId());
         }
     }
 
     @Exclude
     public double getPercentualLimiteUsado() {
-        if (limite_gastos_mensal <= 0) return 0.0;
-        return (double) despesas_mes / limite_gastos_mensal * 100.0;
+        int limite = inteligencia.getLimiteGastosMensal();
+        if (limite <= 0) return 0.0;
+        return (double) balanco.getDespesasMes() / limite * 100.0;
     }
 }

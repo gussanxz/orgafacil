@@ -21,7 +21,6 @@ import java.util.List;
  */
 public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterExibirCategoriasContas.ViewHolder> {
 
-    // CORREÇÃO: Alterado de List<String> para List<ContasCategoriaModel>
     private final List<ContasCategoriaModel> categorias;
     private final Context context;
 
@@ -35,7 +34,6 @@ public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterE
 
         ViewHolder(View itemView) {
             super(itemView);
-            // Usando o ID padrão do Android para listas simples por enquanto
             textCategoria = itemView.findViewById(android.R.id.text1);
         }
     }
@@ -43,7 +41,6 @@ public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterE
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Infla um layout de linha simples do Android
         View item = LayoutInflater.from(parent.getContext())
                 .inflate(android.R.layout.simple_list_item_1, parent, false);
         return new ViewHolder(item);
@@ -51,18 +48,24 @@ public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterE
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        // CORREÇÃO: Obtém o objeto completo da lista
         ContasCategoriaModel categoria = categorias.get(position);
 
-        // Exibe o nome da categoria no TextView
-        holder.textCategoria.setText(categoria.getNome());
+        // [ATUALIZADO]: Acessamos o grupo VISUAL para pegar o nome
+        // O helper getNome() funcionaria, mas ser explícito é melhor para manutenção
+        String nomeExibicao = "Sem Nome";
+        if (categoria.getVisual() != null) {
+            nomeExibicao = categoria.getVisual().getNome();
+        }
 
-        // Ao clicar, devolvemos os dados para a Activity anterior (ex: EditarMovimentacaoActivity)
+        holder.textCategoria.setText(nomeExibicao);
+
+        // Configura o clique
+        String finalNomeExibicao = nomeExibicao;
         holder.itemView.setOnClickListener(v -> {
             Intent resultado = new Intent();
 
-            // Passamos o Nome para exibição na UI e o ID para salvar no Banco
-            resultado.putExtra("categoriaSelecionada", categoria.getNome());
+            // Retorna o Nome (do Visual) e o ID (da Raiz)
+            resultado.putExtra("categoriaSelecionada", finalNomeExibicao);
             resultado.putExtra("categoriaId", categoria.getId());
 
             if (context instanceof Activity) {

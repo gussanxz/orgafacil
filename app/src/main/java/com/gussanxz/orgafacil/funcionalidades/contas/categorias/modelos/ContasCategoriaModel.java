@@ -4,82 +4,120 @@ import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 
-/**
- * Modelo para as categorias de gastos/receitas (Ex: Alimentação, Lazer).
- * Define os limites mensais que alimentam a saúde financeira do usuário.
- * REGRA DE OURO: Valores monetários em INT (centavos).
- */
-public class ContasCategoriaModel {
+import java.io.Serializable;
 
-    // --- Constantes para Mapeamento (Âncoras para Repositories) ---
+/**
+ * Modelo para as categorias de gastos/receitas.
+ * Estrutura:
+ * - Raiz: id, tipo, ativa
+ * - visual: { nome, icone, cor }
+ * - financeiro: { limiteMensal, totalGasto }
+ */
+public class ContasCategoriaModel implements Serializable {
+
+    // --- CONSTANTES DE CAMINHO (Dot Notation para Updates) ---
     public static final String CAMPO_ID = "id";
-    public static final String CAMPO_NOME = "nome";
-    public static final String CAMPO_ICONE = "icone";
-    public static final String CAMPO_COR = "cor";
     public static final String CAMPO_TIPO = "tipo";
-    public static final String CAMPO_LIMITE_MENSAL = "limite_mensal";
-    public static final String CAMPO_TOTAL_GASTO_MES = "total_gasto_mes_atual";
     public static final String CAMPO_ATIVA = "ativa";
 
+    // Caminhos Visual
+    public static final String CAMPO_NOME = "visual.nome";
+    public static final String CAMPO_ICONE = "visual.icone";
+    public static final String CAMPO_COR = "visual.cor";
+
+    // Caminhos Financeiro
+    public static final String CAMPO_LIMITE_MENSAL = "financeiro.limiteMensal";
+    public static final String CAMPO_TOTAL_GASTO_MES = "financeiro.totalGastoMesAtual";
+
+    // --- ATRIBUTOS DA RAIZ ---
     private String id;
-    private String nome;
-    private String icone;
-    private String cor;
-
-    // Começa em 0 (indefinido) para forçar a escolha correta na criação
-    private int tipo = 0;
-
-    // Valores em centavos começam zerados
-    private int limite_mensal = 0;
-    private int total_gasto_mes_atual = 0;
-
+    private int tipo = 0; // 0=Indefinido, 1=Receita, 2=Despesa
     private boolean ativa = true;
 
-    public ContasCategoriaModel() {}
+    // --- GRUPOS DE DADOS (Mapas) ---
+    private Visual visual;
+    private Financeiro financeiro;
 
-    // --- Getters e Setters com PropertyName ---
+    // =========================================================================
+    // CONSTRUTOR
+    // =========================================================================
+    public ContasCategoriaModel() {
+        this.visual = new Visual();
+        this.financeiro = new Financeiro();
+    }
 
-    @PropertyName(CAMPO_ID)
+    // =========================================================================
+    // GETTERS E SETTERS DA RAIZ
+    // =========================================================================
+
     public String getId() { return id; }
-    @PropertyName(CAMPO_ID)
     public void setId(String id) { this.id = id; }
 
-    @PropertyName(CAMPO_NOME)
-    public String getNome() { return nome; }
-    @PropertyName(CAMPO_NOME)
-    public void setNome(String nome) { this.nome = nome; }
-
-    @PropertyName(CAMPO_ICONE)
-    public String getIcone() { return icone; }
-    @PropertyName(CAMPO_ICONE)
-    public void setIcone(String icone) { this.icone = icone; }
-
-    @PropertyName(CAMPO_COR)
-    public String getCor() { return cor; }
-    @PropertyName(CAMPO_COR)
-    public void setCor(String cor) { this.cor = cor; }
-
-    @PropertyName(CAMPO_TIPO)
     public int getTipo() { return tipo; }
-    @PropertyName(CAMPO_TIPO)
     public void setTipo(int tipo) { this.tipo = tipo; }
 
-    @PropertyName(CAMPO_LIMITE_MENSAL)
-    public int getLimiteMensal() { return limite_mensal; }
-    @PropertyName(CAMPO_LIMITE_MENSAL)
-    public void setLimiteMensal(int limite_mensal) { this.limite_mensal = limite_mensal; }
-
-    @PropertyName(CAMPO_TOTAL_GASTO_MES)
-    public int getTotalGastoMesAtual() { return total_gasto_mes_atual; }
-    @PropertyName(CAMPO_TOTAL_GASTO_MES)
-    public void setTotalGastoMesAtual(int total_gasto_mes_atual) { this.total_gasto_mes_atual = total_gasto_mes_atual; }
-
-    @PropertyName(CAMPO_ATIVA)
     public boolean isAtiva() { return ativa; }
-    @PropertyName(CAMPO_ATIVA)
     public void setAtiva(boolean ativa) { this.ativa = ativa; }
 
-    // --- Helpers de Enum e Lógica (Excluídos do Firestore) ---
+    public Visual getVisual() { return visual; }
+    public void setVisual(Visual visual) { this.visual = visual; }
+
+    public Financeiro getFinanceiro() { return financeiro; }
+    public void setFinanceiro(Financeiro financeiro) { this.financeiro = financeiro; }
+
+    // =========================================================================
+    // CLASSES INTERNAS (Mapas)
+    // =========================================================================
+
+    public static class Visual implements Serializable {
+        private String nome;
+        private String icone;
+        private String cor;
+
+        public Visual() {}
+
+        public String getNome() { return nome; }
+        public void setNome(String nome) { this.nome = nome; }
+        public String getIcone() { return icone; }
+        public void setIcone(String icone) { this.icone = icone; }
+        public String getCor() { return cor; }
+        public void setCor(String cor) { this.cor = cor; }
+    }
+
+    public static class Financeiro implements Serializable {
+        // Valores em CENTAVOS (INT)
+        private int limiteMensal = 0;
+        private int totalGastoMesAtual = 0;
+
+        public Financeiro() {}
+
+        public int getLimiteMensal() { return limiteMensal; }
+        public void setLimiteMensal(int limiteMensal) { this.limiteMensal = limiteMensal; }
+        public int getTotalGastoMesAtual() { return totalGastoMesAtual; }
+        public void setTotalGastoMesAtual(int totalGastoMesAtual) { this.totalGastoMesAtual = totalGastoMesAtual; }
+    }
+
+    // =========================================================================
+    // HELPERS DE LÓGICA (Mantidos e Adaptados)
+    // =========================================================================
+
+    // Atalho para pegar o nome direto (útil para Adapters)
+    @Exclude
+    public String getNome() {
+        return visual != null ? visual.getNome() : "";
+    }
+
+    // Atalho para pegar o Total Gasto direto
+    @Exclude
+    public int getTotalGasto() {
+        return financeiro != null ? financeiro.getTotalGastoMesAtual() : 0;
+    }
+
+    // Atalho para setar o Total Gasto direto
+    @Exclude
+    public void setTotalGasto(int valor) {
+        if(financeiro != null) financeiro.setTotalGastoMesAtual(valor);
+    }
 
     @Exclude
     public TipoCategoriaContas getTipoEnum() {
@@ -95,12 +133,14 @@ public class ContasCategoriaModel {
 
     @Exclude
     public double getPercentualUso() {
-        if (limite_mensal <= 0) return 0.0;
-        return (double) total_gasto_mes_atual / limite_mensal * 100.0;
+        if (financeiro == null || financeiro.getLimiteMensal() <= 0) return 0.0;
+        return (double) financeiro.getTotalGastoMesAtual() / financeiro.getLimiteMensal() * 100.0;
     }
 
     @Exclude
     public boolean estourouLimite() {
-        return limite_mensal > 0 && total_gasto_mes_atual > limite_mensal;
+        return financeiro != null &&
+                financeiro.getLimiteMensal() > 0 &&
+                financeiro.getTotalGastoMesAtual() > financeiro.getLimiteMensal();
     }
 }

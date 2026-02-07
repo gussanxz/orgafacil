@@ -22,8 +22,7 @@ public class ResumoFinanceiroRepository {
 
     /**
      * Escuta o resumo financeiro geral.
-     * Ideal para telas de Dashboard ou Resumo de Contas, onde o saldo
-     * deve atualizar sozinho quando uma movimentação é inserida/editada.
+     * Ideal para telas de Dashboard.
      */
     public ListenerRegistration escutarResumoGeral(ResumoCallback callback) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
@@ -35,11 +34,11 @@ public class ResumoFinanceiroRepository {
             }
 
             if (snapshot != null && snapshot.exists()) {
-                // Converte o documento Firestore para o nosso Model blindado
+                // O Firestore converte automaticamente os mapas aninhados para as classes internas
                 ResumoFinanceiroModel resumo = snapshot.toObject(ResumoFinanceiroModel.class);
 
                 if (resumo != null) {
-                    // Executa a regra de negócio de saúde financeira antes de enviar para a UI
+                    // Executa a regra de negócio (que agora usa os getters dos sub-objetos)
                     resumo.calcularStatusSaude();
                     callback.onUpdate(resumo);
                 }
@@ -55,15 +54,18 @@ public class ResumoFinanceiroRepository {
      */
     public void inicializarResumoNovoUsuario() {
         ResumoFinanceiroModel novoResumo = new ResumoFinanceiroModel();
-        // Garante que o usuário comece com status saudável
-        novoResumo.setStatus_saude_financeira(3);
+
+        // [ATUALIZADO] Acessa o grupo Inteligência para definir o status
+        if (novoResumo.getInteligencia() != null) {
+            novoResumo.getInteligencia().setStatusSaudeFinanceira(3); // Saudável
+        }
 
         FirestoreSchema.contasResumoDoc().set(novoResumo);
     }
 
     /**
-     * Permite atualizar o limite de gastos mensal (Teto de Gastos).
-     * Usa as constantes ancoradas do Model para evitar strings mágicas.
+     * Permite atualizar o limite de gastos mensal.
+     * Funciona perfeitamente pois a constante no Model agora vale "inteligencia.limiteGastosMensal"
      */
     public void atualizarLimiteMensal(int limiteCentavos) {
         FirestoreSchema.contasResumoDoc().update(
@@ -73,7 +75,6 @@ public class ResumoFinanceiroRepository {
 
     /**
      * Recupera o resumo uma única vez (sem ficar escutando).
-     * Útil para relatórios pontuais.
      */
     public void obterResumoSnapshot(ResumoCallback callback) {
         FirestoreSchema.contasResumoDoc().get()

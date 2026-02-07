@@ -20,13 +20,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
+// [CORREÇÃO]: Importando do pacote r_negocio para coincidir com o Adapter
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.AdapterExibeListaMovimentacaoContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.ExibirItemListaMovimentacaoContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.HelperExibirDatasMovimentacao;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class FragmentMovimentacoes extends Fragment implements AdapterExibeListaMovimentacaoContas.OnItemActionListener {
@@ -57,27 +60,36 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
             public void onSucesso(List<MovimentacaoModel> listaCompleta) {
                 if (listaCompleta == null) return;
 
-                // FILTRO POR TIPO: Apenas RECEITA ou DESPESA
                 List<MovimentacaoModel> listaFiltrada = new ArrayList<>();
+
+                Calendar cal = Calendar.getInstance();
+                cal.set(Calendar.HOUR_OF_DAY, 23);
+                cal.set(Calendar.MINUTE, 59);
+                cal.set(Calendar.SECOND, 59);
+                Date finalDeHoje = cal.getTime();
+
                 for (MovimentacaoModel mov : listaCompleta) {
-                    if (mov.getTipo() == TipoCategoriaContas.RECEITA.getId() ||
-                            mov.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
+                    if (mov.getData_movimentacao() == null) continue;
+
+                    Date dataMov = mov.getData_movimentacao().toDate();
+
+                    boolean ehPassadoOuHoje = !dataMov.after(finalDeHoje);
+
+                    boolean tipoValido = (mov.getTipo() == TipoCategoriaContas.RECEITA.getId() ||
+                            mov.getTipo() == TipoCategoriaContas.DESPESA.getId());
+
+                    if (ehPassadoOuHoje && tipoValido) {
                         listaFiltrada.add(mov);
                     }
                 }
 
-                // Ordenação padrão (mais recente primeiro)
                 Collections.sort(listaFiltrada, (o1, o2) -> {
                     if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
                     return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
                 });
 
-                // Limite de 5 itens
-                int limite = 5;
-                List<MovimentacaoModel> ultimas = listaFiltrada.subList(0, Math.min(listaFiltrada.size(), limite));
-
                 List<ExibirItemListaMovimentacaoContas> listaProcessada =
-                        HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(ultimas);
+                        HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(listaFiltrada);
 
                 adapter = new AdapterExibeListaMovimentacaoContas(getContext(), listaProcessada, FragmentMovimentacoes.this);
                 recyclerView.setAdapter(adapter);
@@ -90,12 +102,17 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
         });
     }
 
-    // --- Métodos de Click (Mantidos iguais) ---
-    @Override public void onDeleteClick(MovimentacaoModel mov) { confirmingExclusao(mov); }
-    @Override public void onLongClick(MovimentacaoModel mov) {}
+    // --- Métodos de Click (Exclusão) ---
+    // Agora o erro deve sumir, pois os tipos são idênticos
+    @Override
+    public void onDeleteClick(MovimentacaoModel mov) {
+        confirmingExclusao(mov);
+    }
+
+    @Override
+    public void onLongClick(MovimentacaoModel mov) {}
 
     private void confirmingExclusao(MovimentacaoModel mov) {
-        // ... (Seu código de dialog existente)
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_confirmar_exclusao, null);
         builder.setView(view);
@@ -107,6 +124,7 @@ public class FragmentMovimentacoes extends Fragment implements AdapterExibeLista
         Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
 
         textMensagem.setText("Excluir '" + mov.getDescricao() + "'?");
+
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
         btnConfirmar.setOnClickListener(v -> {
             dialog.dismiss();

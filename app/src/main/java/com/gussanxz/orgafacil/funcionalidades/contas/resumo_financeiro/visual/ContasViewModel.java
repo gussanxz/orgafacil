@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ContasViewModel extends ViewModel {
 
-    // Encapsulamento: _versaoPrivada para alterar, versaoPublica para a Activity observar
+    // Encapsulamento
     private final MutableLiveData<List<MovimentacaoModel>> _listaFiltrada = new MutableLiveData<>();
     public LiveData<List<MovimentacaoModel>> listaFiltrada = _listaFiltrada;
 
@@ -26,42 +26,63 @@ public class ContasViewModel extends ViewModel {
      * Atualiza a fonte de dados principal vinda do Firebase.
      */
     public void carregarLista(List<MovimentacaoModel> novaLista) {
-        this.listaCompleta = novaLista;
+        if (novaLista != null) {
+            this.listaCompleta = new ArrayList<>(novaLista); // Cria cópia para segurança
+        } else {
+            this.listaCompleta = new ArrayList<>();
+        }
+        // Aplica filtro vazio para exibir tudo inicialmente
         aplicarFiltros("", null, null);
     }
 
     /**
      * Lógica de filtro e cálculo de saldo.
-     * Retirada da Activity para ser testável e independente de UI.
+     * Blindada contra NullPointerExceptions.
      */
     public void aplicarFiltros(String query, Date inicio, Date fim) {
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         long saldoCentavos = 0;
-        String q = (query != null) ? query.toLowerCase() : "";
+
+        // Tratamento da query para evitar erros
+        String q = (query != null) ? query.toLowerCase().trim() : "";
 
         for (MovimentacaoModel m : listaCompleta) {
-            // Filtro de Período
+
+            // 1. Verificação de Segurança (Ignora itens corrompidos)
+            if (m == null) continue;
+
+            // 2. Filtro de Período
             boolean noPeriodo = true;
-            if (inicio != null && fim != null && m.getData_movimentacao() != null) {
-                Date dM = m.getData_movimentacao().toDate();
-                noPeriodo = !dM.before(inicio) && !dM.after(fim);
+            if (inicio != null && fim != null) {
+                if (m.getData_movimentacao() != null) {
+                    Date dM = m.getData_movimentacao().toDate();
+                    // !before = depois ou igual | !after = antes ou igual
+                    noPeriodo = !dM.before(inicio) && !dM.after(fim);
+                } else {
+                    noPeriodo = false; // Sem data não entra no filtro de data
+                }
             }
 
-            // Filtro de Texto (Descrição ou Categoria)
-            if (noPeriodo && (q.isEmpty()
-                    || m.getDescricao().toLowerCase().contains(q)
-                    || m.getCategoria_nome().toLowerCase().contains(q))) {
+            // 3. Filtro de Texto (Descrição ou Categoria)
+            if (noPeriodo) {
+                String descricao = (m.getDescricao() != null) ? m.getDescricao().toLowerCase() : "";
+                String categoria = (m.getCategoria_nome() != null) ? m.getCategoria_nome().toLowerCase() : "";
 
-                filtrados.add(m);
+                if (q.isEmpty() || descricao.contains(q) || categoria.contains(q)) {
 
-                // Cálculo de Saldo (Regra de Ouro: INT/LONG)
-                if (m.getTipo() == TipoCategoriaContas.RECEITA.getId()) {
-                    saldoCentavos += m.getValor();
-                } else {
-                    saldoCentavos -= m.getValor();
+                    filtrados.add(m);
+
+                    // 4. Cálculo de Saldo
+                    if (m.getTipo() == TipoCategoriaContas.RECEITA.getId()) {
+                        saldoCentavos += m.getValor();
+                    } else {
+                        saldoCentavos -= m.getValor();
+                    }
                 }
             }
         }
+
+        // Atualiza a UI
         _listaFiltrada.setValue(filtrados);
         _saldoPeriodo.setValue(saldoCentavos);
     }
