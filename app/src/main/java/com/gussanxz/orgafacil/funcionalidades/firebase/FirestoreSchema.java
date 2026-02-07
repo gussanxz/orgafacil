@@ -32,15 +32,16 @@ public final class FirestoreSchema {
     public static final String PREFERENCIAS = "config_preferencias";
     public static final String SEGURANCA = "config_seguranca";
 
-    // Módulo Contas
+    // ======== MÓDULO CONTAS ========
     public static final String CONTAS = "contas";
-    public static final String CONTAS_CATEGORIAS = "contas_categorias";
-    public static final String CONTAS_MOV = "contas_movimentacoes";
-    public static final String CONTAS_FUTURAS = "contas_futuras";
-    public static final String CONTAS_RESUMOS = "contas_resumos";
-    public static final String CONTAS_ULTIMOS = "contas_ultimos";
+    public static final String RESUMO_GERAL = "resumo_geral";
 
-    // Módulo Vendas
+    // Subcoleções
+    public static final String CONTAS_MOVIMENTACOES = "contas_movimentacoes";
+    public static final String CONTAS_CATEGORIAS = "contas_categorias";
+    public static final String CONTAS_A_PAGAR_RECEBER = "contas_a_pagar_receber";
+
+    // ======== MÓDULO VENDAS ========
     public static final String VENDAS = "vendas";
     public static final String VENDAS_CATEGORIAS = "vendas_categorias";
     public static final String VENDAS_CATALOGO = "vendas_catalogo";
@@ -56,10 +57,6 @@ public final class FirestoreSchema {
         return ConfiguracaoFirestore.getFirestore();
     }
 
-    /**
-     * Retorna o UID atual ou lança exceção se o usuário não estiver logado.
-     * Resolve o erro de compilação nos Repositories.
-     */
     @NonNull
     public static String requireUid() {
         return FirebaseSession.getUserId();
@@ -92,11 +89,20 @@ public final class FirestoreSchema {
         return myUserDoc().collection(CONFIG).document(SEGURANCA);
     }
 
-    // ======== MODULO SISTEMA / CONTAS ========
+    // ======== MÓDULO CONTAS  ========
+
+    /**
+     * Retorna o Documento Mágico 'resumo_geral'.
+     * Aqui residem os saldos totais e indicadores de saúde financeira.
+     */
+    @NonNull
+    public static DocumentReference contasResumoDoc() {
+        return myUserDoc().collection(CONTAS).document(RESUMO_GERAL);
+    }
 
     @NonNull
     public static CollectionReference contasCategoriasCol() {
-        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_CATEGORIAS);
+        return contasResumoDoc().collection(CONTAS_CATEGORIAS);
     }
 
     @NonNull
@@ -106,7 +112,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference contasMovimentacoesCol() {
-        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_MOV);
+        return contasResumoDoc().collection(CONTAS_MOVIMENTACOES);
     }
 
     @NonNull
@@ -116,18 +122,12 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference contasFuturasCol() {
-        return myUserDoc().collection(MODULO).document(CONTAS).collection(CONTAS_FUTURAS);
+        return contasResumoDoc().collection(CONTAS_A_PAGAR_RECEBER);
     }
 
     @NonNull
-    public static DocumentReference contasFuturaDoc(@NonNull String contaFuturaId) {
-        return contasFuturasCol().document(contaFuturaId);
-    }
-
-    @NonNull
-    public static DocumentReference contasResumoUltimosDoc() {
-        return myUserDoc().collection(MODULO).document(CONTAS)
-                .collection(CONTAS_RESUMOS).document(CONTAS_ULTIMOS);
+    public static DocumentReference contasFuturaDoc(@NonNull String contaId) {
+        return contasFuturasCol().document(contaId);
     }
 
     // ======== MODULO SISTEMA / VENDAS ========

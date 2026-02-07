@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados;
+package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository;
 
 import androidx.annotation.NonNull;
 

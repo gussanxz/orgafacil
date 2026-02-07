@@ -14,7 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
 /**

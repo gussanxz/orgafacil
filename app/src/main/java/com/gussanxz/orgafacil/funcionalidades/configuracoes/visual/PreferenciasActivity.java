@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
 // CORREÇÃO 1: Importando do local correto agora
 import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;

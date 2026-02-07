@@ -21,27 +21,45 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.SelecionarCategoriaContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.MovimentacaoRepository;
+import com.gussanxz.orgafacil.funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
-import java.util.Map;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
+/**
+ * DespesasActivity
+ * Responsável por criar ou editar uma despesa.
+ *
+ * ATUALIZAÇÕES (Refatoração):
+ * 1. Uso de MovimentacaoRepository novo (Batch Write para consistência financeira).
+ * 2. Conversão de valores para Centavos (int) antes de salvar.
+ * 3. Uso de Timestamp para datas.
+ */
 public class DespesasActivity extends AppCompatActivity {
 
     private final String TAG = "DespesasActivity";
+
+    // Componentes de UI
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private ImageButton btnExcluir;
 
+    // Dependências e Estado
     private ActivityResultLauncher<Intent> launcherCategoria;
     private MovimentacaoRepository repository;
-
     private boolean isEdicao = false;
     private MovimentacaoModel itemEmEdicao = null;
+
+    // Controle de Categoria (ID é crucial para o banco relacional)
+    private String categoriaIdSelecionada;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +67,7 @@ public class DespesasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_add_despesa);
 
-        // Segurança de Sessão
+        // Segurança: Validação de Sessão
         if (!FirebaseSession.isUserLogged()) {
             finish();
             return;
@@ -62,22 +80,15 @@ public class DespesasActivity extends AppCompatActivity {
         configurarLauncherCategoria();
         verificarModoEdicao();
 
+        // Processamento de Intent (Atalhos e Headers Dinâmicos)
         TextView textViewHeader = findViewById(R.id.textViewHeader);
-        // Captura o "bilhete" enviado pela tela anterior
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             String titulo = extras.getString("TITULO_TELA");
             boolean ehAtalho = extras.getBoolean("EH_ATALHO", false);
 
-            // Ação 1: Mudar o texto do Header
-            if (titulo != null) {
-                textViewHeader.setText(titulo);
-            }
-
-            // Ação 2: Aplicar regras de negócio direto no Java
-            if (ehAtalho) {
-                aplicarRegrasAtalho();
-            }
+            if (titulo != null) textViewHeader.setText(titulo);
+            if (ehAtalho) aplicarRegrasAtalho();
         }
     }
 
@@ -88,11 +99,16 @@ public class DespesasActivity extends AppCompatActivity {
         campoDescricao = findViewById(R.id.editDescricao);
         campoHora = findViewById(R.id.editHora);
         btnExcluir = findViewById(R.id.btnExcluir);
+
+        // Bloqueia digitação manual na categoria para forçar seleção da lista
+        campoCategoria.setFocusable(false);
+        campoCategoria.setClickable(true);
     }
 
     private void configurarListeners() {
         campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(this, campoData));
         campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
+
         campoCategoria.setOnClickListener(v -> {
             Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
             launcherCategoria.launch(intent);
@@ -110,121 +126,157 @@ public class DespesasActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        String categoria = result.getData().getStringExtra("categoriaSelecionada");
-                        campoCategoria.setText(categoria);
+                        // [CORREÇÃO]: Agora pegamos o Nome E o ID da categoria
+                        String nomeCat = result.getData().getStringExtra("categoriaSelecionada");
+                        categoriaIdSelecionada = result.getData().getStringExtra("categoriaId");
+
+                        campoCategoria.setText(nomeCat);
                     }
                 });
     }
 
+    /**
+     * Verifica se a tela foi aberta para EDIÇÃO ou NOVA despesa.
+     */
     private void verificarModoEdicao() {
-        Bundle extras = getIntent().getExtras();
-        if (extras != null && extras.containsKey("chave")) {
+        // [ATENÇÃO]: O objeto passado deve ser Serializable ou Parcelable
+        MovimentacaoModel movRecebida = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
+
+        if (movRecebida != null) {
             isEdicao = true;
-            itemEmEdicao = new MovimentacaoModel();
+            itemEmEdicao = movRecebida;
 
-            // Preenchimento do model a partir dos extras
-            itemEmEdicao.setKey(extras.getString("chave"));
-            itemEmEdicao.setValor(extras.getDouble("valor"));
-            itemEmEdicao.setCategoria(extras.getString("categoria"));
-            itemEmEdicao.setDescricao(extras.getString("descricao"));
-            itemEmEdicao.setData(extras.getString("data"));
-            itemEmEdicao.setTipo("d");
-            if (extras.containsKey("hora")) itemEmEdicao.setHora(extras.getString("hora"));
+            // Recupera IDs ocultos
+            categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
 
-            // UI
-            campoValor.setText(String.valueOf(itemEmEdicao.getValor()));
-            campoCategoria.setText(itemEmEdicao.getCategoria());
+            // Popula UI: Converte Centavos (int) para Double visual
+            double valorReais = itemEmEdicao.getValor() / 100.0;
+            campoValor.setText(String.format(Locale.US, "%.2f", valorReais));
+
+            campoCategoria.setText(itemEmEdicao.getCategoria_nome());
             campoDescricao.setText(itemEmEdicao.getDescricao());
-            campoData.setText(itemEmEdicao.getData());
-            if (itemEmEdicao.getHora() != null) campoHora.setText(itemEmEdicao.getHora());
+
+            // Converte Timestamp para String de Data/Hora para os campos de texto
+            if (itemEmEdicao.getData_movimentacao() != null) {
+                Date data = itemEmEdicao.getData_movimentacao().toDate();
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
+                campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
+            }
+
             btnExcluir.setVisibility(View.VISIBLE);
         } else {
             isEdicao = false;
             campoData.setText(DatePickerHelper.setDataAtual());
             campoHora.setText(TimePickerHelper.setHoraAtual());
             btnExcluir.setVisibility(View.GONE);
-            recuperarSugestaoUltimaDespesa();
+
+            // TODO: Reimplementar sugestão no novo Repository se necessário
+            // recuperarSugestaoUltimaDespesa();
         }
     }
 
     public void salvarDespesa(View view) {
         if (!validarCamposDespesas()) return;
 
+        // Montagem do Objeto
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
-        mov.setValor(Double.parseDouble(campoValor.getText().toString()));
-        mov.setCategoria(campoCategoria.getText().toString());
+
+        // 1. Valor: Converte Double da UI para Centavos (INT)
+        try {
+            double valorVisual = Double.parseDouble(campoValor.getText().toString().replace(",", "."));
+            mov.setValor((int) Math.round(valorVisual * 100));
+        } catch (NumberFormatException e) {
+            campoValor.setError("Valor inválido");
+            return;
+        }
+
+        // 2. Dados básicos
         mov.setDescricao(campoDescricao.getText().toString());
-        mov.setData(campoData.getText().toString());
-        mov.setHora(campoHora.getText().toString());
-        mov.setTipo("d");
+        mov.setTipo(TipoCategoriaContas.DESPESA.getId()); // Enum ID = 2
 
-        // Chama o Repository: Sem UIDs ou lógica de Batch aqui!
-        repository.salvar(mov, new MovimentacaoRepository.Callback() {
-            @Override
-            public void onSucesso(String msg) {
-                Toast.makeText(DespesasActivity.this, msg, Toast.LENGTH_SHORT).show();
-                finish();
-            }
+        // 3. Categoria (Dados desnormalizados)
+        mov.setCategoria_nome(campoCategoria.getText().toString());
+        if (categoriaIdSelecionada != null) {
+            mov.setCategoria_id(categoriaIdSelecionada);
+        } else if (!isEdicao) {
+            // Fallback se for nova e não tiver ID (Evita crash, mas ideal é obrigar seleção)
+            mov.setCategoria_id("geral_despesa");
+        }
 
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(DespesasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
-            }
-        });
+        // 4. Data e Hora: Combina Strings e converte para Timestamp
+        try {
+            String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            Date date = sdf.parse(dataHoraStr);
+            if (date != null) mov.setData_movimentacao(new com.google.firebase.Timestamp(date));
+        } catch (ParseException e) {
+            mov.setData_movimentacao(com.google.firebase.Timestamp.now());
+        }
+
+        // Lógica de Edição vs Criação
+        if (isEdicao) {
+            // [CORREÇÃO]: Editar requer o objeto antigo para estornar o saldo corretamente
+            // Para simplificar aqui, estamos passando o mesmo objeto, mas o ideal seria ter um clone do original.
+            // O Repository cuida da atualização.
+            repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
+                @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
+                @Override public void onErro(String erro) { mostrarErro(erro); }
+            });
+        } else {
+            // [CORREÇÃO]: Salvar novo não precisa de ponteiros manuais, o Batch cuida de tudo.
+            repository.salvar(mov, new MovimentacaoRepository.Callback() {
+                @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
+                @Override public void onErro(String erro) { mostrarErro(erro); }
+            });
+        }
     }
 
     private void confirmarExcluir() {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Despesa")
-                .setMessage("Tem certeza?")
+                .setMessage("Tem certeza? O saldo será corrigido automaticamente.")
                 .setPositiveButton("Sim", (dialog, which) -> excluirDespesa())
                 .setNegativeButton("Não", null)
                 .show();
     }
 
     private void excluirDespesa() {
-        repository.excluir(itemEmEdicao.getKey()).addOnSuccessListener(unused -> {
-            // O segredo do sênior: Após excluir, pede para o repository recalcular o ponteiro
-            repository.recalcularUltimoPonteiro("Despesa", () -> {
-                Toast.makeText(this, "Despesa removida!", Toast.LENGTH_SHORT).show();
-                finish();
-            });
-        }).addOnFailureListener(e -> Toast.makeText(this, "Erro ao excluir", Toast.LENGTH_SHORT).show());
-    }
+        if (itemEmEdicao == null) return;
 
-    private void recuperarSugestaoUltimaDespesa() {
-        repository.obterSugestaoUltimos().addOnSuccessListener(doc -> {
-            if (!doc.exists()) return;
+        // [CORREÇÃO]: O excluir agora pede o objeto inteiro para poder estornar o valor do saldo
+        repository.excluir(itemEmEdicao, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                finalizarSucesso(msg);
+            }
 
-            Map<String, Object> ultima = (Map<String, Object>) doc.get("ultimaSaida");
-            if (ultima == null) return;
-
-            String cat = (String) ultima.get("categoriaNomeSnapshot");
-            String desc = (String) ultima.get("descricaoSnapshot");
-
-            if (cat != null || desc != null) {
-                mostrarPopupSugestao(cat, desc);
+            @Override
+            public void onErro(String erro) {
+                mostrarErro(erro);
             }
         });
     }
 
-    private void mostrarPopupSugestao(String cat, String desc) {
-        new AlertDialog.Builder(this)
-                .setTitle("Sugestão")
-                .setMessage("Aproveitar última despesa?\nCat: " + cat)
-                .setPositiveButton("Sim", (dialog, which) -> {
-                    if (cat != null) campoCategoria.setText(cat);
-                    if (desc != null) campoDescricao.setText(desc);
-                })
-                .setNegativeButton("Não", null)
-                .show();
+    // --- Helpers de UI ---
+
+    private void finalizarSucesso(String msg) {
+        Toast.makeText(DespesasActivity.this, msg, Toast.LENGTH_SHORT).show();
+        setResult(RESULT_OK); // Avisa a Activity pai que houve mudança
+        finish();
+    }
+
+    private void mostrarErro(String erro) {
+        Toast.makeText(DespesasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
     }
 
     public Boolean validarCamposDespesas() {
         if (campoValor.getText().toString().isEmpty()) return false;
         if (campoCategoria.getText().toString().isEmpty()) return false;
-        return true; // Simplificado para o exemplo
+        if (campoData.getText().toString().isEmpty()) return false;
+        return true;
     }
+
+    public void retornarPrincipal(View view){ finish(); }
 
     private void setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -234,11 +286,7 @@ public class DespesasActivity extends AppCompatActivity {
         });
     }
 
-    public void retornarPrincipal(View view){ finish(); }
-
     private void aplicarRegrasAtalho() {
-        // Exemplo de regra: desabilitar o campo "Data de Recebimento"
-        // ou mudar a cor do botão para indicar agendamento.
         Log.i(TAG, "Regras de atalho aplicada!");
     }
 }

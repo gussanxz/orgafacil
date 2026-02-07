@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -21,22 +22,34 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
-import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository; // [ATUALIZADO]
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioService;      // [ATUALIZADO]
+import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel; // [ATUALIZADO]
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
 
+/**
+ * BaseAuthActivity
+ * Classe pai para atividades que lidam com login/cadastro.
+ * Centraliza a lógica de verificar se o usuário existe, está ativo ou precisa aceitar termos.
+ */
 public abstract class BaseAuthActivity extends AppCompatActivity {
 
-    protected UsuarioRepository usuarioRepository = new UsuarioRepository();
-    protected UsuarioService usuarioService = new UsuarioService();
-    protected FirebaseAuth autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
+    protected UsuarioRepository usuarioRepository;
+    protected UsuarioService usuarioService;
+    protected FirebaseAuth autenticacao;
 
+    // As atividades filhas devem fornecer o loading para controle visual
     protected abstract LoadingHelper getLoadingHelper();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Inicialização segura dos serviços
+        usuarioRepository = new UsuarioRepository();
+        usuarioService = new UsuarioService();
+        autenticacao = ConfiguracaoFirestore.getFirebaseAutenticacao();
+
+        // Segurança: Bloqueia prints de tela (dados sensíveis)
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
     }
 
@@ -52,28 +65,30 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
 
             if (isFinishing() || isDestroyed()) return;
 
-            if (!task.isSuccessful() || task.getResult() == null) {
+            if (!task.isSuccessful()) {
                 abortarLogin("Erro de conexão ao verificar perfil.");
                 return;
             }
 
             DocumentSnapshot doc = task.getResult();
 
-            if (doc.exists()) {
-                // CENÁRIO A: USUÁRIO JÁ EXISTE
+            if (doc != null && doc.exists()) {
+                // CENÁRIO A: USUÁRIO JÁ EXISTE NO BANCO
                 try {
                     UsuarioModel usuarioModel = doc.toObject(UsuarioModel.class);
                     if (usuarioModel != null) {
                         verificarStatusEEntrar(usuarioModel);
                     } else {
+                        // Fallback: Documento existe mas não converteu (raro), assume ativo
                         usuarioRepository.atualizarUltimaAtividade();
                         navegarParaHome("Bem-vindo de volta!");
                     }
                 } catch (Exception e) {
+                    // Erro de parsing: Tenta entrar mesmo assim para não bloquear o user
                     navegarParaHome("Bem-vindo!");
                 }
             } else {
-                // CENÁRIO B: USUÁRIO NOVO
+                // CENÁRIO B: USUÁRIO NOVO (Primeiro Login)
                 if (getLoadingHelper() != null) getLoadingHelper().ocultar();
                 exibirDialogoTermos(user);
             }
@@ -81,10 +96,12 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
     }
 
     private void verificarStatusEEntrar(UsuarioModel usuario) {
-        if (usuario.getStatus() == UsuarioModel.StatusConta.DESATIVADO) {
+        // [CORREÇÃO]: Comparação de Status via String (Enum.name()) conforme novo Model
+        if (UsuarioModel.StatusConta.DESATIVADO.name().equals(usuario.getStatus())) {
             if (getLoadingHelper() != null) getLoadingHelper().ocultar();
             exibirConfirmacaoReativacao();
         } else {
+            // Usuário Ativo: Atualiza timestamp e entra
             usuarioRepository.atualizarUltimaAtividade();
             navegarParaHome("Bem-vindo de volta!");
         }
@@ -99,7 +116,15 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
                 .setCancelable(false)
                 .setPositiveButton("Sim, Reativar", (dialog, which) -> {
                     if (getLoadingHelper() != null) getLoadingHelper().exibir();
-                    executarReativacaoNoBanco();
+                    // [CORREÇÃO]: Chama o método do Repository para reativar
+                    usuarioRepository.reativarContaLogica().addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            usuarioRepository.atualizarUltimaAtividade();
+                            navegarParaHome("Conta reativada com sucesso!");
+                        } else {
+                            abortarLogin("Falha ao reativar conta. Tente novamente.");
+                        }
+                    });
                 })
                 .setNegativeButton("Não, Sair", (dialog, which) -> {
                     abortarLogin("Reativação cancelada.");
@@ -107,31 +132,24 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void executarReativacaoNoBanco() {
-        usuarioRepository.reativarContaLogica().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                usuarioRepository.atualizarUltimaAtividade();
-                navegarParaHome("Conta reativada com sucesso!");
-            } else {
-                abortarLogin("Falha ao reativar conta. Tente novamente.");
-            }
-        });
-    }
+    // O método 'executarReativacaoNoBanco' foi removido e incorporado no listener acima
+    // para evitar duplicação de lógica ou chamadas perdidas.
 
     private void exibirDialogoTermos(FirebaseUser user) {
         if (user == null || isFinishing()) return;
 
         View viewDialog = getLayoutInflater().inflate(R.layout.dialog_termos, null);
+
+        // Elementos do Dialog Customizado
         CheckBox checkTermos = viewDialog.findViewById(R.id.checkDialogTermos);
         Button btnAceitar = viewDialog.findViewById(R.id.btnAceitarTermos);
-        // Botão Cancelar removido conforme solicitado
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(viewDialog)
                 .setCancelable(true) // Permite usar o botão "Voltar" do Android
                 .create();
 
-        // Se o usuário apertar "Voltar" no celular, considera como recusa
+        // Se o usuário apertar "Voltar" ou clicar fora, considera como recusa
         dialog.setOnCancelListener(d -> realizarLogoutDeLimpeza());
 
         if (checkTermos != null && btnAceitar != null) {
@@ -140,7 +158,7 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
             );
 
             btnAceitar.setOnClickListener(v -> {
-                dialog.dismiss();
+                dialog.dismiss(); // Dismiss não dispara onCancelListener
                 if (getLoadingHelper() != null) getLoadingHelper().exibir();
                 criarDadosDoNovoUsuario(user);
             });
@@ -151,6 +169,7 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
     }
 
     private void criarDadosDoNovoUsuario(FirebaseUser user) {
+        // [ATENÇÃO]: UsuarioService deve usar o novo UsuarioRepository internamente
         usuarioService.inicializarNovoUsuario(user, task -> {
             if (isFinishing() || isDestroyed()) return;
 
@@ -168,6 +187,7 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
         if (getLoadingHelper() != null) getLoadingHelper().ocultar();
         if (mensagem != null) Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
 
+        // Certifique-se que HomeActivity existe. Se mudou para ContasActivity, altere aqui.
         Intent intent = new Intent(this, HomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
@@ -192,7 +212,7 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
             android.util.DisplayMetrics displayMetrics = new android.util.DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
             int displayWidth = (int) (displayMetrics.widthPixels * 0.90);
-            int displayHeight = (int) (displayMetrics.heightPixels * 0.85);
+            int displayHeight = (int) (displayMetrics.heightPixels * 0.85); // 85% da altura
             dialog.getWindow().setLayout(displayWidth, displayHeight);
         }
     }

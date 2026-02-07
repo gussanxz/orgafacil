@@ -21,8 +21,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.visual.ConfigsActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.comum.visual.ui.ResumoContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.PreferenciasRepository;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;

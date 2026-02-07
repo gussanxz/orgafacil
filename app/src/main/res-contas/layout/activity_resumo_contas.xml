@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".funcionalidades.contas.ResumoContasActivity">
+    tools:context=".funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -132,7 +132,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MOVIMENTAÇÕES"
-                    android:textColor="@color/white"
+                    android:textColor="@color/cor_texto"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -154,7 +154,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CONTAS FUTURAS"
-                    android:textColor="@color/white"
+                    android:textColor="@color/cor_texto"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>

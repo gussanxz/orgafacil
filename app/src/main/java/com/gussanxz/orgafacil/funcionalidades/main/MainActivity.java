@@ -23,8 +23,8 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.CadastroActivity;
 import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioService;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioService; // Serviço de Negócio (se houver)
 import com.gussanxz.orgafacil.funcionalidades.usuario.r_negocio.modelos.UsuarioModel;
 import com.gussanxz.orgafacil.util_helper.GoogleLoginHelper;
 import com.gussanxz.orgafacil.util_helper.LoadingHelper;
@@ -39,20 +39,31 @@ public class MainActivity extends IntroActivity {
     private UsuarioService usuarioService;
     private LoadingHelper loadingHelper;
 
+    // Launcher do Google Login precisa ser declarado antes do onCreate
+    private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
+                }
+            }
+    );
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         TemaHelper.aplicarTemaDoCache(this);
-        // Bloqueia prints por segurança
+        // Segurança: Bloqueia prints de tela na intro (onde pode aparecer e-mail/contas)
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         super.onCreate(savedInstanceState);
 
         usuarioRepository = new UsuarioRepository();
-        usuarioService = new UsuarioService();
+        usuarioService = new UsuarioService(); // Certifique-se que essa classe existe ou adapte a lógica de criação
 
-        // Tenta encontrar o loading no layout da Intro (se você adicionou lá)
+        // Configuração de Loading (Se houver overlay no XML da intro)
         View overlay = findViewById(R.id.loading_overlay);
         if (overlay != null) loadingHelper = new LoadingHelper(overlay);
 
+        // Helper de Login Google com Callback de Sucesso
         googleLoginHelper = new GoogleLoginHelper(this, this::processarLoginGoogle);
 
         configurarSlides();
@@ -72,7 +83,7 @@ public class MainActivity extends IntroActivity {
 
     /**
      * Chamado quando o Google retorna SUCESSO.
-     * Verifica banco de dados e exibe Termos se necessário, tudo nesta tela.
+     * Verifica banco de dados e exibe Termos se necessário.
      */
     private void processarLoginGoogle() {
         FirebaseUser user = ConfiguracaoFirestore.getFirebaseAutenticacao().getCurrentUser();
@@ -84,31 +95,36 @@ public class MainActivity extends IntroActivity {
         usuarioRepository.verificarSeUsuarioExiste(user.getUid()).addOnCompleteListener(task -> {
 
             if (!task.isSuccessful()) {
-                abortarLogin("Erro de conexão.");
+                abortarLogin("Erro de conexão com o banco.");
                 return;
             }
 
             DocumentSnapshot doc = task.getResult();
 
             if (doc != null && doc.exists()) {
-                // ---> USUÁRIO EXISTE <---
+                // ---> USUÁRIO JÁ CADASTRADO <---
                 try {
                     UsuarioModel usuarioModel = doc.toObject(UsuarioModel.class);
-                    // Se desativado, manda pro Login lidar com a reativação
-                    if (usuarioModel != null && usuarioModel.getStatus() == UsuarioModel.StatusConta.DESATIVADO) {
+
+                    // [CORREÇÃO]: Comparação de Status via String (Enum.name())
+                    if (usuarioModel != null &&
+                            UsuarioModel.StatusConta.DESATIVADO.name().equals(usuarioModel.getStatus())) {
+
                         if (loadingHelper != null) loadingHelper.ocultar();
+                        // Conta desativada: manda para LoginActivity lidar com a reativação
                         startActivity(new Intent(this, LoginActivity.class));
-                        // Não damos finish() para caso ele cancele a reativação, voltar pra cá
+
                     } else {
-                        // Ativo: Entra direto
+                        // Conta Ativa: Atualiza timestamp e entra
                         usuarioRepository.atualizarUltimaAtividade();
                         irParaHome();
                     }
                 } catch (Exception e) {
-                    irParaHome(); // Fallback
+                    // Fallback se houver erro de parsing
+                    irParaHome();
                 }
             } else {
-                // ---> USUÁRIO NOVO <---
+                // ---> USUÁRIO NOVO (Primeiro Acesso) <---
                 if (loadingHelper != null) loadingHelper.ocultar();
                 exibirDialogoTermos(user);
             }
@@ -117,16 +133,18 @@ public class MainActivity extends IntroActivity {
 
     private void exibirDialogoTermos(FirebaseUser user) {
         View viewDialog = getLayoutInflater().inflate(R.layout.dialog_termos, null);
+
+        // Elementos do Dialog Customizado
         CheckBox checkTermos = viewDialog.findViewById(R.id.checkDialogTermos);
         Button btnAceitar = viewDialog.findViewById(R.id.btnAceitarTermos);
-        // Botão Cancelar removido do código
+        // Botão Cancelar removido propositalmente (Flow único)
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(viewDialog)
-                .setCancelable(true) // Permite usar o botão "Voltar" do celular
+                .setCancelable(true) // Permite cancelar clicando fora ou voltar
                 .create();
 
-        // AÇÃO DE RECUSA: Se o usuário fechar o dialog (botão voltar), deslogamos.
+        // AÇÃO DE RECUSA: Se cancelar/fechar o dialog, desloga do Google
         dialog.setOnCancelListener(d -> {
             ConfiguracaoFirestore.getFirebaseAutenticacao().signOut();
             GoogleSignIn.getClient(this, new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()).signOut();
@@ -134,10 +152,12 @@ public class MainActivity extends IntroActivity {
         });
 
         if (checkTermos != null && btnAceitar != null) {
+            // Só habilita o botão se aceitar os termos
             checkTermos.setOnCheckedChangeListener((bv, isChecked) -> btnAceitar.setEnabled(isChecked));
 
             btnAceitar.setOnClickListener(v -> {
-                dialog.dismiss(); // Isso NÃO dispara o OnCancelListener, então não desloga
+                // Ao clicar em aceitar, não dispara o OnCancelListener
+                dialog.dismiss();
                 if (loadingHelper != null) loadingHelper.exibir();
                 criarConta(user);
             });
@@ -145,18 +165,18 @@ public class MainActivity extends IntroActivity {
 
         dialog.show();
 
-        // Configura Visual Transparente
+        // Ajuste Visual (Fundo Transparente e Tamanho)
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             android.util.DisplayMetrics displayMetrics = new android.util.DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            int displayWidth = (int) (displayMetrics.widthPixels * 0.90);
-            int displayHeight = (int) (displayMetrics.heightPixels * 0.85);
-            dialog.getWindow().setLayout(displayWidth, displayHeight);
+            int displayWidth = (int) (displayMetrics.widthPixels * 0.90); // 90% da largura
+            dialog.getWindow().setLayout(displayWidth, WindowManager.LayoutParams.WRAP_CONTENT);
         }
     }
 
     private void criarConta(FirebaseUser user) {
+        // [ATENÇÃO]: Certifique-se de que UsuarioService.inicializarNovoUsuario usa o novo UsuarioRepository
         usuarioService.inicializarNovoUsuario(user, task -> {
             if (loadingHelper != null) loadingHelper.ocultar();
 
@@ -169,7 +189,7 @@ public class MainActivity extends IntroActivity {
     }
 
     private void irParaHome() {
-        Intent intent = new Intent(this, HomeActivity.class);
+        Intent intent = new Intent(this, HomeActivity.class); // Certifique-se que HomeActivity existe
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
@@ -181,7 +201,7 @@ public class MainActivity extends IntroActivity {
         Toast.makeText(this, erro, Toast.LENGTH_SHORT).show();
     }
 
-    // --- Métodos chamados pelo XML (ac_main_intro_comece_agora) ---
+    // --- Métodos de Clique chamados pelo XML (OnClicks) ---
 
     public void btEntrar(View view) {
         startActivity(new Intent(this, LoginActivity.class));
@@ -192,15 +212,7 @@ public class MainActivity extends IntroActivity {
     }
 
     public void btGoogle(View view) {
+        // Inicia o fluxo de login Google
         resultLauncherGoogle.launch(googleLoginHelper.getSignInIntent());
     }
-
-    private final ActivityResultLauncher<Intent> resultLauncherGoogle = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    googleLoginHelper.lidarComResultadoGoogle(result.getData());
-                }
-            }
-    );
 }

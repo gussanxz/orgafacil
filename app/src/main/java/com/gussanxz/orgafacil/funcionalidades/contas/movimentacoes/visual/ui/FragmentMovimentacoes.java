@@ -1,139 +1,143 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.r_negocio.modelos.MovimentacaoModel;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class FragmentMovimentacoes extends Fragment implements AdapterExibeListaMovimentacaoContas.OnItemActionListener {
 
     private RecyclerView recyclerView;
     private AdapterExibeListaMovimentacaoContas adapter;
-
-    // Lista final processada (com headers e itens)
-    private List<ExibirItemListaMovimentacaoContas> listaProcessada = new ArrayList<>();
+    private MovimentacaoRepository repository;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_lista_generica, container, false);
 
+        // 1. Inicializa Componentes
+        repository = new MovimentacaoRepository();
         recyclerView = view.findViewById(R.id.recyclerInterno);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        // 1. Carregar TODOS os dados brutos (Mockados)
-        List<MovimentacaoModel> dadosBrutos = criarDadosFalsosParaTeste();
-
-        // ---------------------------------------------------------
-        // LÓGICA DE FILTRO: 5 MAIS RECENTES
-        // ---------------------------------------------------------
-
-        // A. Ordenar primeiro (do mais recente para o antigo)
-        // Isso garante que quando cortarmos a lista, pegaremos os 5 mais novos, não 5 aleatórios.
-        Collections.sort(dadosBrutos, (o1, o2) -> {
-            // Compara data 2 com data 1 para ordem decrescente
-            return converterData(o2).compareTo(converterData(o1));
-        });
-
-        // B. Cortar a lista (Pegar os 5 primeiros ou o tamanho total se for menor que 5)
-        int limite = 5;
-        List<MovimentacaoModel> dadosLimitados = new ArrayList<>();
-        if (!dadosBrutos.isEmpty()) {
-            dadosLimitados = dadosBrutos.subList(0, Math.min(dadosBrutos.size(), limite));
-        }
-
-        // ---------------------------------------------------------
-
-        // 2. Processar APENAS os dados limitados
-        // O Helper vai criar os Cabeçalhos (Headers) baseados nessa lista curta
-        listaProcessada = HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(dadosLimitados);
-
-        // 3. Configurar Adapter
-        adapter = new AdapterExibeListaMovimentacaoContas(getContext(), listaProcessada, this);
-        recyclerView.setAdapter(adapter);
 
         return view;
     }
 
-    // --- Implementação dos Cliques do Adapter ---
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Carrega os dados sempre que a tela aparece (garante atualização após adicionar/editar)
+        carregarDadosReais();
+    }
+
+    private void carregarDadosReais() {
+        // Busca TODAS as movimentações do banco
+        // Nota: Idealmente, no futuro, criaríamos um método no Repository "listarUltimas(int limit)"
+        // para não baixar o banco todo. Por enquanto, filtramos aqui.
+        repository.recuperarMovimentacoes(new MovimentacaoRepository.DadosCallback() {
+            @Override
+            public void onSucesso(List<MovimentacaoModel> listaCompleta) {
+                if (listaCompleta == null || listaCompleta.isEmpty()) {
+                    // Se quiser, mostre uma View de "Nenhuma movimentação" aqui
+                    return;
+                }
+
+                // A. Ordenar por Data (Mais recente primeiro) usando o Timestamp do Model
+                // O Helper já faz isso, mas garantimos aqui para o corte dos 5 primeiros
+                Collections.sort(listaCompleta, (o1, o2) -> {
+                    if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
+                    return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
+                });
+
+                // B. Pegar apenas as 5 mais recentes (Lógica de Resumo)
+                int limite = 5;
+                List<MovimentacaoModel> ultimasMovimentacoes = listaCompleta.subList(0, Math.min(listaCompleta.size(), limite));
+
+                // C. Processar para exibir (Agrupar datas, calcular saldos do dia)
+                List<ExibirItemListaMovimentacaoContas> listaProcessada =
+                        HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(ultimasMovimentacoes);
+
+                // D. Atualizar Adapter
+                adapter = new AdapterExibeListaMovimentacaoContas(getContext(), listaProcessada, FragmentMovimentacoes.this);
+                recyclerView.setAdapter(adapter);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(getContext(), "Erro ao carregar: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // --- Ações do Adapter ---
 
     @Override
-    public void onDeleteClick(MovimentacaoModel movimentacaoModel) {
-        // Lógica para deletar
-        Toast.makeText(getContext(), "Deletar: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
+    public void onDeleteClick(MovimentacaoModel mov) {
+        confirmarExclusao(mov);
     }
 
     @Override
-    public void onLongClick(MovimentacaoModel movimentacaoModel) {
-        // Lógica do clique longo
-        Toast.makeText(getContext(), "Segurou em: " + movimentacaoModel.getDescricao(), Toast.LENGTH_SHORT).show();
+    public void onLongClick(MovimentacaoModel mov) {
+        // Opcional: Abrir detalhes ou menu de edição rápida
+        Toast.makeText(getContext(), "Detalhes: " + mov.getDescricao(), Toast.LENGTH_SHORT).show();
     }
 
-    // --- Métodos Auxiliares ---
+    // --- Diálogo de Confirmação ---
 
-    /**
-     * Converte as strings de data/hora do Model para um objeto Date Java.
-     * Necessário para a ordenação funcionar corretamente.
-     */
-    private Date converterData(MovimentacaoModel m) {
-        try {
-            // Ajuste o padrão aqui se o seu banco salvar diferente (ex: "dd/MM/yyyy HH:mm")
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+    private void confirmarExclusao(MovimentacaoModel mov) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_confirmar_exclusao, null);
+        builder.setView(view);
+        AlertDialog dialog = builder.create();
 
-            // Concatena data e hora para precisão
-            String dataHoraString = m.getData() + " " + m.getHora();
-            return sdf.parse(dataHoraString);
-        } catch (ParseException e) {
-            // Em caso de erro, retorna data zero (1970) para ir pro final da lista
-            return new Date(0);
-        }
-    }
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-    // --- Geração de Dados Falsos (MOCK) ---
-    private List<MovimentacaoModel> criarDadosFalsosParaTeste() {
-        List<MovimentacaoModel> lista = new ArrayList<>();
+        TextView textMensagem = view.findViewById(R.id.textMensagemDialog);
+        Button btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
+        Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
 
-        // Simular Hoje (21/01/2026)
-        lista.add(mockMov("Compra Mercado", "Alimentação", "21/01/2026", "14:30", 150.50, "d"));
-        lista.add(mockMov("Venda Teclado", "Vendas", "21/01/2026", "10:00", 200.00, "r"));
+        textMensagem.setText("Excluir '" + mov.getDescricao() + "'?");
 
-        // Simular Ontem (20/01/2026)
-        lista.add(mockMov("Uber", "Transporte", "20/01/2026", "18:00", 25.90, "d"));
-        lista.add(mockMov("Lanche", "Alimentação", "20/01/2026", "12:30", 35.00, "d"));
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
-        // Simular Passado
-        lista.add(mockMov("Salário", "Renda", "05/01/2026", "08:00", 3500.00, "r"));
-        lista.add(mockMov("Aluguel", "Moradia", "05/01/2026", "09:00", 1200.00, "d"));
+        btnConfirmar.setOnClickListener(v -> {
+            dialog.dismiss();
+            // Chama o Repository para excluir e estornar o saldo
+            repository.excluir(mov, new MovimentacaoRepository.Callback() {
+                @Override
+                public void onSucesso(String msg) {
+                    Toast.makeText(getContext(), "Excluído com sucesso!", Toast.LENGTH_SHORT).show();
+                    carregarDadosReais(); // Recarrega a lista
+                }
 
-        return lista;
-    }
+                @Override
+                public void onErro(String erro) {
+                    Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
 
-    private MovimentacaoModel mockMov(String titulo, String cat, String data, String hora, double valor, String tipo) {
-        MovimentacaoModel m = new MovimentacaoModel();
-        m.setDescricao(titulo);
-        m.setCategoria(cat);
-        m.setData(data);
-        m.setHora(hora);
-        m.setValor(valor);
-        m.setTipo(tipo); // "r" = receita, "d" = despesa
-        return m;
+        dialog.show();
     }
 }

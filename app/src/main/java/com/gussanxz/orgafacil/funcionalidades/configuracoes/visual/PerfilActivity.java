@@ -19,7 +19,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.usuario.dados.UsuarioRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 
 public class PerfilActivity extends AppCompatActivity {
 

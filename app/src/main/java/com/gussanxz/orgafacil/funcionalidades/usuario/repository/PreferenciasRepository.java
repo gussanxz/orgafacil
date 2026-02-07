@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.usuario.dados;
+package com.gussanxz.orgafacil.funcionalidades.usuario.repository;
 
 import android.content.Context;
 import androidx.annotation.NonNull;
