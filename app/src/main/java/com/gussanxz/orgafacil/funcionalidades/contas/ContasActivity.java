@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro;
+package com.gussanxz.orgafacil.funcionalidades.contas;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -34,6 +34,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.ContasViewModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
@@ -58,7 +59,7 @@ import java.util.Locale;
 /**
  * ContasActivity Refatorada
  * Centraliza a exibição de movimentações e contas futuras através do ViewModel.
- * [ATUALIZADO]: Ajustado para consumir o ViewModel segregado (Histórico vs Futuro).
+ * [CORREÇÃO]: Agora exibe o saldo estimado corretamente na tela de Contas Futuras.
  */
 public class ContasActivity extends AppCompatActivity {
 
@@ -113,7 +114,6 @@ public class ContasActivity extends AppCompatActivity {
         configurarRecyclerView();
         configurarFiltros();
 
-        // Configura os observadores ANTES de carregar os dados
         setupObservers();
 
         launcher = registerForActivityResult(
@@ -133,27 +133,35 @@ public class ContasActivity extends AppCompatActivity {
     // --- CONEXÃO COM A VIEWMODEL (OBSERVERS) ---
 
     private void setupObservers() {
-        // [CORREÇÃO]: Observador genérico para atualizar a UI
+        // Observer para atualizar a LISTA
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
             itensAgrupados.clear();
-            // O Helper usa 'ehAtalho' (modo futuro) para decidir se ordena Crescente ou Decrescente
             itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho));
             adapterAgrupado.notifyDataSetChanged();
             atualizarLegendasFiltro(searchView.getQuery().toString());
         };
 
-        // Decide qual LiveData observar com base no modo da Activity
-        if (ehAtalho) {
-            viewModel.listaFutura.observe(this, observerUI);
-        } else {
-            viewModel.listaHistorico.observe(this, observerUI);
-        }
-
-        viewModel.saldoPeriodo.observe(this, saldoCentavos -> {
+        // Observer para atualizar o SALDO
+        Observer<Long> observerSaldo = saldoCentavos -> {
             // [PRECISÃO] Converte centavos (long) para exibição apenas na UI
             double saldoExibicao = saldoCentavos / 100.0;
             textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
-        });
+
+            // Opcional: Mudar cor do saldo
+            if (saldoCentavos >= 0) textoSaldo.setTextColor(Color.WHITE);
+            else textoSaldo.setTextColor(Color.parseColor("#FFCDD2"));
+        };
+
+        // Decide qual LiveData observar com base no modo da Activity
+        if (ehAtalho) {
+            // MODO FUTURO: Observa lista futura e saldo futuro
+            viewModel.listaFutura.observe(this, observerUI);
+            viewModel.saldoFuturo.observe(this, observerSaldo);
+        } else {
+            // MODO HISTÓRICO: Observa lista histórico e saldo histórico
+            viewModel.listaHistorico.observe(this, observerUI);
+            viewModel.saldoPeriodo.observe(this, observerSaldo);
+        }
     }
 
     // --- MÉTODOS DE DADOS ---
@@ -161,40 +169,31 @@ public class ContasActivity extends AppCompatActivity {
     private void carregarDados() {
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
-        // Escuta o resumo geral apenas para o saldo total quando não houver filtros
-        resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
-            @Override
-            public void onUpdate(ResumoFinanceiroModel resumo) {
-                // Só atualiza o saldo global se o usuário não estiver filtrando nada
-                if (resumo != null && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
-                    int saldoCentavos = 0;
-                    if (resumo.getBalanco() != null) {
-                        saldoCentavos = resumo.getBalanco().getSaldoAtual();
+        // Se estiver no MODO HISTÓRICO e sem filtros, tenta pegar o saldo global do Resumo Geral
+        // para exibir enquanto a lista carrega ou se estiver vazia.
+        if (!ehAtalho && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
+            resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
+                @Override
+                public void onUpdate(ResumoFinanceiroModel resumo) {
+                    if (resumo != null && resumo.getBalanco() != null) {
+                        int saldoCentavos = resumo.getBalanco().getSaldoAtual();
+                        double saldoDouble = saldoCentavos / 100.0;
+                        textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
                     }
-                    double saldoDouble = saldoCentavos / 100.0;
-                    textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
                 }
-            }
-            @Override public void onError(String erro) { Log.e(TAG, "Erro no resumo: " + erro); }
-        });
+                @Override public void onError(String erro) { Log.e(TAG, "Erro no resumo: " + erro); }
+            });
+        }
 
         recuperarMovimentacoesDoBanco();
     }
 
-    /**
-     * Delega a busca para o ViewModel.
-     * [CORREÇÃO]: Passa o modo 'ehAtalho' explicitamente para o fetchDados.
-     */
     private void recuperarMovimentacoesDoBanco() {
+        // [CORREÇÃO]: Passa o modo 'ehAtalho' explicitamente para o fetchDados.
         viewModel.fetchDados(movRepository, ehAtalho, new MovimentacaoRepository.DadosCallback() {
-            @Override
-            public void onSucesso(List<MovimentacaoModel> lista) {
-                // ViewModel processa a lista e notifica o Observer em setupObservers
-            }
-
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(ContasActivity.this, "Erro ao atualizar dados: " + erro, Toast.LENGTH_SHORT).show();
+            @Override public void onSucesso(List<MovimentacaoModel> lista) { /* UI via Observer */ }
+            @Override public void onErro(String erro) {
+                Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -228,7 +227,7 @@ public class ContasActivity extends AppCompatActivity {
                 @Override
                 public void onSucesso(String msg) {
                     Toast.makeText(ContasActivity.this, "Lançamento excluído!", Toast.LENGTH_SHORT).show();
-                    carregarDados(); // Recarrega para atualizar saldo global e lista
+                    carregarDados();
                 }
                 @Override public void onErro(String erro) {
                     Toast.makeText(ContasActivity.this, erro, Toast.LENGTH_SHORT).show();
@@ -277,18 +276,16 @@ public class ContasActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapterAgrupado);
 
-        // Adiciona funcionalidade de Swipe (Arrastar para os lados)
         new ItemTouchHelper(new SwipeCallback(this) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int dir) {
                 int pos = vh.getAdapterPosition();
-                // Verifica se a posição é um cabeçalho (não tem model) ou item
                 if (itensAgrupados.get(pos).type == ExibirItemListaMovimentacaoContas.TYPE_MOVIMENTO) {
                     MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
                     if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
                     else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
                 } else {
-                    adapterAgrupado.notifyItemChanged(pos); // Ignora swipe em headers
+                    adapterAgrupado.notifyItemChanged(pos);
                 }
             }
         }).attachToRecyclerView(recyclerView);
@@ -340,14 +337,11 @@ public class ContasActivity extends AppCompatActivity {
                         @Override
                         public void onSucesso(String msg) {
                             Toast.makeText(ContasActivity.this, "Lançamento confirmado!", Toast.LENGTH_SHORT).show();
-
-                            // [CORREÇÃO]: Atualiza AMBOS os fluxos no ViewModel, pois o item muda de estado
-                            viewModel.fetchDados(movRepository, true, null);  // Atualiza Futuros
-                            viewModel.fetchDados(movRepository, false, null); // Atualiza Histórico
+                            // Atualiza ambos para consistência
+                            viewModel.fetchDados(movRepository, true, null);
+                            viewModel.fetchDados(movRepository, false, null);
                         }
-
-                        @Override
-                        public void onErro(String erro) {
+                        @Override public void onErro(String erro) {
                             Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -356,11 +350,7 @@ public class ContasActivity extends AppCompatActivity {
                 .show();
     }
 
-    /**
-     * Atualiza o rótulo do saldo com base no contexto (Modo ou Filtro).
-     */
     private void atualizarLegendasFiltro(String query) {
-        // [CORREÇÃO]: Usa a flag local 'ehAtalho' em vez de perguntar ao ViewModel
         if (ehAtalho) textSaldoAtual.setText("Saldo futuro estimado");
         else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
         else if (!query.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");

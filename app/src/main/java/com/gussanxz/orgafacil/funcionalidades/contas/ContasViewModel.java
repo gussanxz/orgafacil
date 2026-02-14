@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro;
+package com.gussanxz.orgafacil.funcionalidades.contas;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -14,7 +14,7 @@ import java.util.List;
 
 public class ContasViewModel extends ViewModel {
 
-    // --- ENCAPSULAMENTO (Segregado para evitar colisão entre abas) ---
+    // --- ENCAPSULAMENTO ---
 
     // LiveData exclusivo para a aba HISTÓRICO
     private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
@@ -24,43 +24,38 @@ public class ContasViewModel extends ViewModel {
     private final MutableLiveData<List<MovimentacaoModel>> _listaFutura = new MutableLiveData<>();
     public LiveData<List<MovimentacaoModel>> listaFutura = _listaFutura;
 
-    // Saldo (Mantém compartilhado pois é um dado global calculado sobre o histórico pago)
+    // Saldo REAL (Histórico - Apenas o que foi pago)
     private final MutableLiveData<Long> _saldoPeriodo = new MutableLiveData<>();
     public LiveData<Long> saldoPeriodo = _saldoPeriodo;
 
+    // [NOVO] Saldo ESTIMADO (Futuro - Soma das previsões)
+    private final MutableLiveData<Long> _saldoFuturo = new MutableLiveData<>();
+    public LiveData<Long> saldoFuturo = _saldoFuturo;
+
     // --- CACHE DE DADOS ---
-    // Mantemos duas listas separadas na memória para que uma não apague a outra
     private List<MovimentacaoModel> cacheHistorico = new ArrayList<>();
     private List<MovimentacaoModel> cacheFuturo = new ArrayList<>();
 
-    // Estado dos filtros atuais (para reaplicar quando os dados chegarem do banco)
+    // Estado dos filtros atuais
     private String lastQuery = "";
     private Date lastInicio = null;
     private Date lastFim = null;
 
     // --- MÉTODOS DE DADOS ---
 
-    /**
-     * [CLEAN CODE]: Busca dados e direciona para o cache correto (Histórico ou Futuro).
-     * @param ehModoFuturo Define qual repositório chamar e onde salvar os dados.
-     */
     public void fetchDados(MovimentacaoRepository repo, boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
-
-        // [FIX CRÍTICO]: Use Date em vez de long (currentTimeMillis).
-        // O Firestore exige objeto Date para comparar com Timestamp.
         Date agora = new Date();
 
         MovimentacaoRepository.DadosCallback internalCallback = new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
-                // 1. Salva na lista correta para não misturar as abas
                 if (ehModoFuturo) {
                     cacheFuturo = new ArrayList<>(lista);
                 } else {
                     cacheHistorico = new ArrayList<>(lista);
                 }
 
-                // 2. Reaplica os filtros atuais (texto/data) para atualizar a UI imediatamente
+                // Reaplica os filtros para atualizar a UI e CALCULAR OS SALDOS
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
 
                 if (callbackExterno != null) callbackExterno.onSucesso(lista);
@@ -72,7 +67,6 @@ public class ContasViewModel extends ViewModel {
             }
         };
 
-        // Decisão de qual método do repositório chamar
         if (ehModoFuturo) {
             repo.recuperarContasFuturas(agora, internalCallback);
         } else {
@@ -80,13 +74,7 @@ public class ContasViewModel extends ViewModel {
         }
     }
 
-    /**
-     * Lógica de filtro e cálculo de saldo.
-     * [PRECISÃO]: Mantém o cálculo em long (centavos) para evitar erros de double [cite: 2026-02-07].
-     * Agora aplica os filtros em AMBAS as listas simultaneamente.
-     */
     public void aplicarFiltros(String query, Date inicio, Date fim) {
-        // Salva o estado dos filtros
         this.lastQuery = query;
         this.lastInicio = inicio;
         this.lastFim = fim;
@@ -99,32 +87,22 @@ public class ContasViewModel extends ViewModel {
         List<MovimentacaoModel> resFuturo = filtrarListaGenerica(cacheFuturo, query, inicio, fim, true);
         _listaFutura.setValue(resFuturo);
 
-        // --- Calcula Saldo ---
-        // O saldo é calculado baseado nos itens visíveis do HISTÓRICO que foram PAGOS.
-        calcularSaldo(resHistorico);
+        // --- Calcula Saldos ---
+        calcularSaldoHistorico(resHistorico);
+        calcularSaldoFuturo(resFuturo); // [NOVO] Calcula o total da lista futura
     }
 
-    /**
-     * Método auxiliar para não duplicar a lógica de filtro.
-     */
     private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem, String query, Date inicio, Date fim, boolean isModoFuturo) {
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         String q = (query != null) ? query.toLowerCase().trim() : "";
 
         for (MovimentacaoModel m : origem) {
-            // 1. Verificação de Segurança
             if (m == null) continue;
 
-            // [LÓGICA DE EXIBIÇÃO POR STATUS]
-
-            // Regra A: Modo FUTURO
-            // Se estamos vendo o futuro, escondemos o que JÁ FOI PAGO (evita duplicidade com histórico).
+            // Filtro de Status
             if (isModoFuturo && m.isPago()) continue;
 
-            // Regra B: Modo HISTÓRICO
-            // Mostramos tudo (Pagos e Pendentes atrasados/hoje) para permitir o Check.
-
-            // 2. Filtro de Período
+            // Filtro de Data
             boolean noPeriodo = true;
             if (inicio != null && fim != null) {
                 if (m.getData_movimentacao() != null) {
@@ -135,7 +113,7 @@ public class ContasViewModel extends ViewModel {
                 }
             }
 
-            // 3. Filtro de Texto
+            // Filtro de Texto
             if (noPeriodo) {
                 String descricao = (m.getDescricao() != null) ? m.getDescricao().toLowerCase() : "";
                 String categoria = (m.getCategoria_nome() != null) ? m.getCategoria_nome().toLowerCase() : "";
@@ -149,13 +127,11 @@ public class ContasViewModel extends ViewModel {
     }
 
     /**
-     * Calcula o saldo baseado apenas nos itens PAGOS da lista fornecida.
+     * Calcula o saldo do HISTÓRICO (Apenas PAGOS).
      */
-    private void calcularSaldo(List<MovimentacaoModel> listaParaSaldo) {
-        long saldoCentavos = 0; // [cite: 2026-02-07]
-
+    private void calcularSaldoHistorico(List<MovimentacaoModel> listaParaSaldo) {
+        long saldoCentavos = 0;
         for (MovimentacaoModel m : listaParaSaldo) {
-            // [REGRA FINANCEIRA]: Apenas o que está pago impacta o saldo real.
             if (m.isPago()) {
                 if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) {
                     saldoCentavos += m.getValor();
@@ -165,5 +141,21 @@ public class ContasViewModel extends ViewModel {
             }
         }
         _saldoPeriodo.setValue(saldoCentavos);
+    }
+
+    /**
+     * [NOVO] Calcula o saldo do FUTURO (Soma tudo o que está listado, pois é previsão).
+     */
+    private void calcularSaldoFuturo(List<MovimentacaoModel> listaParaSaldo) {
+        long saldoCentavos = 0;
+        for (MovimentacaoModel m : listaParaSaldo) {
+            // Na lista futura, somamos tudo para dar a previsão de fluxo de caixa
+            if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) {
+                saldoCentavos += m.getValor();
+            } else {
+                saldoCentavos -= m.getValor();
+            }
+        }
+        _saldoFuturo.setValue(saldoCentavos);
     }
 }

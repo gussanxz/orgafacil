@@ -23,7 +23,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.ContasViewModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.ContasViewModel;
 
 import java.util.List;
 

@@ -84,7 +84,7 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.resumo_financeiro.ContasActivity"
+            android:name=".funcionalidades.contas.ContasActivity"
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity

@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context=".funcionalidades.contas.resumo_financeiro.ContasActivity">
+    tools:context=".funcionalidades.contas.ContasActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
