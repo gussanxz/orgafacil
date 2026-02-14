@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -35,6 +36,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
     public interface OnItemActionListener {
         void onDeleteClick(MovimentacaoModel movimentacaoModel);
         void onLongClick(MovimentacaoModel movimentacaoModel);
+        void onCheckClick(MovimentacaoModel movimentacaoModel);
     }
 
     public AdapterExibeListaMovimentacaoContas(Context context, List<ExibirItemListaMovimentacaoContas> itens, OnItemActionListener listener) {
@@ -89,11 +91,21 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
         void bind(ExibirItemListaMovimentacaoContas item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
-                // [PRECISÃO]: Converte centavos para double na exibição [cite: 2026-02-07]
+                // [PRECISÃO]: Converte centavos para double na exibição
                 double saldoReal = item.saldoDia / 100.0;
+
+                // Formata o texto com o símbolo da moeda (R$)
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
-                int color = item.saldoDia >= 0 ? Color.parseColor("#008000") : Color.parseColor("#B00020");
-                textSaldoDia.setTextColor(color);
+
+                // --- POLIMENTO ESTÉTICO ---
+                // Define a cor dinamicamente: Verde para positivo/zero, Vermelho para negativo
+                if (item.saldoDia > 0) {
+                    textSaldoDia.setTextColor(Color.parseColor("#008000")); // Verde escuro para melhor leitura
+                } else if (item.saldoDia < 0) {
+                    textSaldoDia.setTextColor(Color.parseColor("#B00020")); // Vermelho padrão Material Design
+                } else {
+                    textSaldoDia.setTextColor(Color.parseColor("#9E9E9E")); // Cinza se o saldo for exatamente zero
+                }
             }
         }
     }
@@ -101,7 +113,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
         TextView textTitulo, textCategoria, textValor, textData, textHora;
         View viewIndicadorCor;
-        ImageView imgStatus; // [ADICIONADO]: Para mostrar se está pago ou pendente
+        ImageButton btnConfirmar; // Mapeado do novo componente no XML
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -111,7 +123,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             textData = itemView.findViewById(R.id.textAdapterData);
             textHora = itemView.findViewById(R.id.textAdapterHora);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
-            //imgStatus = itemView.findViewById(R.id.imgStatusPagamento); // Vincule no seu XML
+            btnConfirmar = itemView.findViewById(R.id.btnConfirmarPagamento);
         }
 
         void bind(MovimentacaoModel mov) {
@@ -127,7 +139,7 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
             // [PRECISÃO]: Inteiro centavos para double exibição [cite: 2026-02-07]
             double valorReais = mov.getValor() / 100.0;
 
-            // [CLEAN CODE]: Uso de Enum em vez de IDs mágicos
+            // [CLEAN CODE]: Uso de Enum em vez de IDs mágicos para definição de cores
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
@@ -138,24 +150,31 @@ public class AdapterExibeListaMovimentacaoContas extends RecyclerView.Adapter<Re
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
-            // [LOGICA STATUS]: Diferencia visualmente itens PAGOS de PENDENTES
+            // [LOGICA STATUS]: Diferencia visualmente itens PAGOS de PENDENTES (FUTUROS)
+            // Itens com pago=false mostram o botão de check para confirmação.
             if (!mov.isPago()) {
-                itemView.setAlpha(0.6f); // Deixa o item levemente transparente se for futuro/pendente
-                if (imgStatus != null) {
-                    imgStatus.setVisibility(View.VISIBLE);
-                    //imgStatus.setImageResource(R.drawable.ic_clock_pending); // Ícone de relógio
+                itemView.setAlpha(0.7f); // Sutil transparência para indicar pendência
+                if (btnConfirmar != null) {
+                    btnConfirmar.setVisibility(View.VISIBLE);
+                    btnConfirmar.setOnClickListener(v -> {
+                        if (listener != null) listener.onCheckClick(mov);
+                    });
                 }
             } else {
-                itemView.setAlpha(1.0f);
-                if (imgStatus != null) imgStatus.setVisibility(View.GONE);
+                itemView.setAlpha(1.0f); // Totalmente opaco para movimentações confirmadas
+                if (btnConfirmar != null) {
+                    btnConfirmar.setVisibility(View.GONE);
+                }
             }
 
+            // Abre tela de edição ao clicar no item
             itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
                 context.startActivity(intent);
             });
 
+            // Clique longo para disparar o listener de ações adicionais
             itemView.setOnLongClickListener(v -> {
                 if (listener != null) listener.onLongClick(mov);
                 return true;

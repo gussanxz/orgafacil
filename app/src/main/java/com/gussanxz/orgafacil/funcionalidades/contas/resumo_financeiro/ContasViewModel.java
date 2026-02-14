@@ -14,43 +14,55 @@ import java.util.List;
 
 public class ContasViewModel extends ViewModel {
 
-    // --- ENCAPSULAMENTO ---
-    private final MutableLiveData<List<MovimentacaoModel>> _listaFiltrada = new MutableLiveData<>();
-    public LiveData<List<MovimentacaoModel>> listaFiltrada = _listaFiltrada;
+    // --- ENCAPSULAMENTO (Segregado para evitar colisão entre abas) ---
 
+    // LiveData exclusivo para a aba HISTÓRICO
+    private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
+    public LiveData<List<MovimentacaoModel>> listaHistorico = _listaHistorico;
+
+    // LiveData exclusivo para a aba FUTURO
+    private final MutableLiveData<List<MovimentacaoModel>> _listaFutura = new MutableLiveData<>();
+    public LiveData<List<MovimentacaoModel>> listaFutura = _listaFutura;
+
+    // Saldo (Mantém compartilhado pois é um dado global calculado sobre o histórico pago)
     private final MutableLiveData<Long> _saldoPeriodo = new MutableLiveData<>();
     public LiveData<Long> saldoPeriodo = _saldoPeriodo;
 
-    // [NOVO] Controle de Estado para Clean Code
-    private boolean ehModoContasFuturas = false;
-    private List<MovimentacaoModel> listaCompleta = new ArrayList<>();
+    // --- CACHE DE DADOS ---
+    // Mantemos duas listas separadas na memória para que uma não apague a outra
+    private List<MovimentacaoModel> cacheHistorico = new ArrayList<>();
+    private List<MovimentacaoModel> cacheFuturo = new ArrayList<>();
 
-    // --- MÉTODOS DE ESTADO ---
-
-    /**
-     * Define se o ViewModel deve buscar Histórico ou Contas Futuras.
-     */
-    public void setModoContasFuturas(boolean modoFuturas) {
-        this.ehModoContasFuturas = modoFuturas;
-    }
-
-    public boolean isModoContasFuturas() {
-        return ehModoContasFuturas;
-    }
+    // Estado dos filtros atuais (para reaplicar quando os dados chegarem do banco)
+    private String lastQuery = "";
+    private Date lastInicio = null;
+    private Date lastFim = null;
 
     // --- MÉTODOS DE DADOS ---
 
     /**
-     * [CLEAN CODE]: Centraliza a busca de dados. A Activity não precisa saber "como" filtrar o banco,
-     * apenas pede ao ViewModel para carregar o que for pertinente ao modo atual.
+     * [CLEAN CODE]: Busca dados e direciona para o cache correto (Histórico ou Futuro).
+     * @param ehModoFuturo Define qual repositório chamar e onde salvar os dados.
      */
-    public void fetchDados(MovimentacaoRepository repo, MovimentacaoRepository.DadosCallback callbackExterno) {
-        long agora = System.currentTimeMillis();
+    public void fetchDados(MovimentacaoRepository repo, boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
+
+        // [FIX CRÍTICO]: Use Date em vez de long (currentTimeMillis).
+        // O Firestore exige objeto Date para comparar com Timestamp.
+        Date agora = new Date();
 
         MovimentacaoRepository.DadosCallback internalCallback = new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
-                carregarLista(lista);
+                // 1. Salva na lista correta para não misturar as abas
+                if (ehModoFuturo) {
+                    cacheFuturo = new ArrayList<>(lista);
+                } else {
+                    cacheHistorico = new ArrayList<>(lista);
+                }
+
+                // 2. Reaplica os filtros atuais (texto/data) para atualizar a UI imediatamente
+                aplicarFiltros(lastQuery, lastInicio, lastFim);
+
                 if (callbackExterno != null) callbackExterno.onSucesso(lista);
             }
 
@@ -60,8 +72,8 @@ public class ContasViewModel extends ViewModel {
             }
         };
 
-        // Decisão de qual método do repositório chamar baseada no estado interno
-        if (ehModoContasFuturas) {
+        // Decisão de qual método do repositório chamar
+        if (ehModoFuturo) {
             repo.recuperarContasFuturas(agora, internalCallback);
         } else {
             repo.recuperarHistorico(agora, internalCallback);
@@ -69,67 +81,89 @@ public class ContasViewModel extends ViewModel {
     }
 
     /**
-     * Atualiza a fonte de dados principal vinda do Firebase.
+     * Lógica de filtro e cálculo de saldo.
+     * [PRECISÃO]: Mantém o cálculo em long (centavos) para evitar erros de double [cite: 2026-02-07].
+     * Agora aplica os filtros em AMBAS as listas simultaneamente.
      */
-    public void carregarLista(List<MovimentacaoModel> novaLista) {
-        if (novaLista != null) {
-            this.listaCompleta = new ArrayList<>(novaLista); // Cria cópia para segurança
-        } else {
-            this.listaCompleta = new ArrayList<>();
-        }
-        // Aplica filtro vazio para exibir tudo inicialmente
-        aplicarFiltros("", null, null);
+    public void aplicarFiltros(String query, Date inicio, Date fim) {
+        // Salva o estado dos filtros
+        this.lastQuery = query;
+        this.lastInicio = inicio;
+        this.lastFim = fim;
+
+        // --- Processa Lista de Histórico ---
+        List<MovimentacaoModel> resHistorico = filtrarListaGenerica(cacheHistorico, query, inicio, fim, false);
+        _listaHistorico.setValue(resHistorico);
+
+        // --- Processa Lista Futura ---
+        List<MovimentacaoModel> resFuturo = filtrarListaGenerica(cacheFuturo, query, inicio, fim, true);
+        _listaFutura.setValue(resFuturo);
+
+        // --- Calcula Saldo ---
+        // O saldo é calculado baseado nos itens visíveis do HISTÓRICO que foram PAGOS.
+        calcularSaldo(resHistorico);
     }
 
     /**
-     * Lógica de filtro e cálculo de saldo.
-     * [PRECISÃO]: Mantém o cálculo em long (centavos) para evitar erros de double [cite: 2026-02-07].
+     * Método auxiliar para não duplicar a lógica de filtro.
      */
-    public void aplicarFiltros(String query, Date inicio, Date fim) {
+    private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem, String query, Date inicio, Date fim, boolean isModoFuturo) {
         List<MovimentacaoModel> filtrados = new ArrayList<>();
-        long saldoCentavos = 0; // [cite: 2026-02-07]
-
-        // Tratamento da query para evitar erros
         String q = (query != null) ? query.toLowerCase().trim() : "";
 
-        for (MovimentacaoModel m : listaCompleta) {
-
-            // 1. Verificação de Segurança (Ignora itens corrompidos)
+        for (MovimentacaoModel m : origem) {
+            // 1. Verificação de Segurança
             if (m == null) continue;
+
+            // [LÓGICA DE EXIBIÇÃO POR STATUS]
+
+            // Regra A: Modo FUTURO
+            // Se estamos vendo o futuro, escondemos o que JÁ FOI PAGO (evita duplicidade com histórico).
+            if (isModoFuturo && m.isPago()) continue;
+
+            // Regra B: Modo HISTÓRICO
+            // Mostramos tudo (Pagos e Pendentes atrasados/hoje) para permitir o Check.
 
             // 2. Filtro de Período
             boolean noPeriodo = true;
             if (inicio != null && fim != null) {
                 if (m.getData_movimentacao() != null) {
                     Date dM = m.getData_movimentacao().toDate();
-                    // !before = depois ou igual | !after = antes ou igual
                     noPeriodo = !dM.before(inicio) && !dM.after(fim);
                 } else {
-                    noPeriodo = false; // Sem data não entra no filtro de data
+                    noPeriodo = false;
                 }
             }
 
-            // 3. Filtro de Texto (Descrição ou Categoria)
+            // 3. Filtro de Texto
             if (noPeriodo) {
                 String descricao = (m.getDescricao() != null) ? m.getDescricao().toLowerCase() : "";
                 String categoria = (m.getCategoria_nome() != null) ? m.getCategoria_nome().toLowerCase() : "";
 
                 if (q.isEmpty() || descricao.contains(q) || categoria.contains(q)) {
-
                     filtrados.add(m);
-
-                    // 4. Cálculo de Saldo (Sempre em Inteiro/Long) [cite: 2026-02-07]
-                    if (m.getTipo() == TipoCategoriaContas.RECEITA.getId()) {
-                        saldoCentavos += m.getValor();
-                    } else {
-                        saldoCentavos -= m.getValor();
-                    }
                 }
             }
         }
+        return filtrados;
+    }
 
-        // Atualiza a UI via LiveData
-        _listaFiltrada.setValue(filtrados);
+    /**
+     * Calcula o saldo baseado apenas nos itens PAGOS da lista fornecida.
+     */
+    private void calcularSaldo(List<MovimentacaoModel> listaParaSaldo) {
+        long saldoCentavos = 0; // [cite: 2026-02-07]
+
+        for (MovimentacaoModel m : listaParaSaldo) {
+            // [REGRA FINANCEIRA]: Apenas o que está pago impacta o saldo real.
+            if (m.isPago()) {
+                if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) {
+                    saldoCentavos += m.getValor();
+                } else {
+                    saldoCentavos -= m.getValor();
+                }
+            }
+        }
         _saldoPeriodo.setValue(saldoCentavos);
     }
 }

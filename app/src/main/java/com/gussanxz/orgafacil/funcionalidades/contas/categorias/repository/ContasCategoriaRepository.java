@@ -5,7 +5,6 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos.ContasCategoriaModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.util_helper.CategoriaIdHelper;
 
@@ -14,7 +13,7 @@ import java.util.List;
 
 /**
  * Repository responsável pela gestão de categorias de contas.
- * Fontes: Firebase Firestore Documentation & Clean Architecture Principles.
+ * [CORRIGIDO]: Adaptado para a estrutura aninhada (Visual/Financeiro) do Model.
  */
 public class ContasCategoriaRepository {
 
@@ -26,14 +25,19 @@ public class ContasCategoriaRepository {
     }
 
     /**
-     * Salva ou atualiza uma categoria usando SetOptions.merge() para preservar campos existentes.
-     * [MELHORIA]: Validação de nome antes de gerar o ID via Slugify.
+     * Salva ou atualiza uma categoria.
+     * Gera o ID baseado no 'visual.nome' se for um novo cadastro.
      */
     public void salvar(ContasCategoriaModel categoria, Callback callback) {
-        // Se for nova e não tiver ID, geramos pelo nome dentro do mapa visual
+        // Se for nova e não tiver ID, geramos pelo nome localizado no sub-objeto Visual
         if (categoria.getId() == null || categoria.getId().isEmpty()) {
-            if (categoria.getVisual() != null && categoria.getVisual().getNome() != null) {
-                categoria.setId(CategoriaIdHelper.slugify(categoria.getVisual().getNome()));
+            // Acessa o nome dentro do objeto Visual
+            String nomeCategoria = (categoria.getVisual() != null) ? categoria.getVisual().getNome() : null;
+
+            if (nomeCategoria != null && !nomeCategoria.isEmpty()) {
+                // Cria um ID amigável (Slug) baseado no nome
+                String idGerado = CategoriaIdHelper.slugify(nomeCategoria);
+                categoria.setId(idGerado);
             } else {
                 callback.onErro("Erro: Nome da categoria é obrigatório para gerar o ID.");
                 return;
@@ -47,11 +51,12 @@ public class ContasCategoriaRepository {
     }
 
     /**
-     * REGRA DE NEGÓCIO: Só exclui se não houver movimentações vinculadas no Firestore.
+     * REGRA DE NEGÓCIO: Só exclui se não houver movimentações vinculadas.
+     * Busca pelo campo "categoria_id" na raiz do MovimentacaoModel (que foi achatado).
      */
     public void verificarEExcluir(ContasCategoriaModel categoria, Callback callback) {
         FirestoreSchema.contasMovimentacoesCol()
-                .whereEqualTo(MovimentacaoModel.CAMPO_CAT_ID, categoria.getId())
+                .whereEqualTo("categoria_id", categoria.getId())
                 .limit(1)
                 .get()
                 .addOnSuccessListener(snap -> {
@@ -74,8 +79,8 @@ public class ContasCategoriaRepository {
     }
 
     /**
-     * Inicializa o app com categorias padrão (Alimentação, Lazer, etc).
-     * [ATUALIZADO]: Preenche os dados dentro do grupo VISUAL para respeitar o novo Modelo.
+     * Inicializa o app com categorias padrão.
+     * [CORREÇÃO]: Preenche os dados dentro do sub-objeto VISUAL.
      */
     public void inicializarPadroes(Callback callback) {
         WriteBatch batch = db.batch();
@@ -98,23 +103,30 @@ public class ContasCategoriaRepository {
     }
 
     private void adicionarAoBatch(WriteBatch batch, String nome, TipoCategoriaContas tipo) {
+        // O construtor do Model já inicializa 'new Visual()' e 'new Financeiro()'
         ContasCategoriaModel cat = new ContasCategoriaModel();
+
+        // [CORRIGIDO]: Configuração correta acessando o sub-objeto Visual
         cat.getVisual().setNome(nome);
+        cat.getVisual().setCor("#757575"); // Cor padrão cinza
+        cat.getVisual().setIcone("ic_padrao"); // Ícone padrão
+
         cat.setId(CategoriaIdHelper.slugify(nome));
         cat.setTipo(tipo.getId());
         cat.setAtiva(true);
+
         batch.set(FirestoreSchema.contasCategoriaDoc(cat.getId()), cat);
     }
 
     /**
-     * Query para listagem nas telas de seleção.
-     * [MELHORIA]: Agora recebe o Enum TipoCategoriaContas para maior segurança de tipos.
-     * CAMPO_NOME no Model já aponta para "visual.nome" (Dot Notation).
+     * Query para listagem.
+     * CAMPO_NOME (visual.nome) e CAMPO_TIPO (tipo) são constantes do Model.
      */
     public Query listarAtivasPorTipo(TipoCategoriaContas tipo) {
         return FirestoreSchema.contasCategoriasCol()
                 .whereEqualTo(ContasCategoriaModel.CAMPO_TIPO, tipo.getId())
                 .whereEqualTo(ContasCategoriaModel.CAMPO_ATIVA, true)
+                // Ordena por "visual.nome" (definido na constante CAMPO_NOME do Model)
                 .orderBy(ContasCategoriaModel.CAMPO_NOME, Query.Direction.ASCENDING);
     }
 }

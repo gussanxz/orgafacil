@@ -11,7 +11,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.R
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 
 /**
- * ContaFuturaRepository (Versão Unificada)
+ * ContaFuturaRepository (Versão Unificada e Corrigida)
  * Gerencia agendamentos dentro da coleção única de movimentações.
  * Atualiza os contadores de pendências (A Pagar/Receber) no Resumo.
  */
@@ -31,8 +31,8 @@ public class ContaFuturaRepository {
     public void agendar(MovimentacaoModel conta, Callback callback) {
         WriteBatch batch = db.batch();
 
-        // 1. Força o status de pagamento como falso para agendamentos
-        conta.getDetalhes().setPago(false);
+        // 1. [CORREÇÃO]: Acesso direto à raiz (sem getDetalhes)
+        conta.setPago(false);
 
         // 2. Define referência na coleção ÚNICA de movimentações
         DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
@@ -42,12 +42,14 @@ public class ContaFuturaRepository {
         // 3. Atualiza o contador de pendências no Resumo Financeiro
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
-        // Identifica se incrementa "A Receber" ou "A Pagar"
-        boolean isReceita = (conta.getTipo() == TipoCategoriaContas.RECEITA.getId());
+        // Identifica se incrementa "A Receber" ou "A Pagar" usando o Enum Helper
+        boolean isReceita = (conta.getTipoEnum() == TipoCategoriaContas.RECEITA);
+
         String campoPendencia = isReceita
-                ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
+                ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER // Certifique-se que esta constante existe no ResumoModel
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
 
+        // Incrementa o contador de "Contas a Pagar/Receber"
         batch.update(resumoRef, campoPendencia, FieldValue.increment(1));
 
         // 4. Commit Atômico
@@ -67,7 +69,8 @@ public class ContaFuturaRepository {
 
         // Decrementa no Resumo baseado no tipo
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-        boolean isReceita = (conta.getTipo() == TipoCategoriaContas.RECEITA.getId());
+        boolean isReceita = (conta.getTipoEnum() == TipoCategoriaContas.RECEITA);
+
         String campoPendencia = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
@@ -81,12 +84,12 @@ public class ContaFuturaRepository {
 
     /**
      * [ATUALIZADO]: Busca agendamentos filtrando por Tipo e Status de Pagamento.
-     * Usa a coleção única de movimentações.
+     * Usa a coleção única de movimentações e os campos planos.
      */
     public Query listarAgendamentos(TipoCategoriaContas tipo) {
         return FirestoreSchema.contasMovimentacoesCol()
-                // Filtra pelo Nome do Enum (String) conforme novo Modelo
-                .whereEqualTo(MovimentacaoModel.CAMPO_TIPO, tipo.name())
+                // [CORREÇÃO]: Usa o nome do campo direto (sem "detalhes.")
+                .whereEqualTo("tipo", tipo.name())
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING);
     }
@@ -100,18 +103,22 @@ public class ContaFuturaRepository {
         DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(conta.getId());
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
-        // 1. Marca como paga no banco (usando Dot Notation)
+        // 1. Marca como paga no banco (Campo na raiz "pago")
         batch.update(movRef, MovimentacaoModel.CAMPO_PAGO, true);
 
-        // 2. Decrementa o contador de pendências
-        boolean isReceita = (conta.getTipo() == TipoCategoriaContas.RECEITA.getId());
+        // 2. Decrementa o contador de pendências (pois deixou de ser pendente)
+        boolean isReceita = (conta.getTipoEnum() == TipoCategoriaContas.RECEITA);
+
         String campoPendencia = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
+
         batch.update(resumoRef, campoPendencia, FieldValue.increment(-1));
 
-        // 3. Atualiza o saldo real (Aqui você aplica a lógica financeira de somar/subtrair)
+        // 3. Atualiza o saldo real (Soma ao caixa pois foi efetivado)
         int valor = conta.getValor();
+
+        // Se for Receita SOMA, se for Despesa SUBTRAI do saldo atual
         batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
                 FieldValue.increment(isReceita ? valor : -valor));
 

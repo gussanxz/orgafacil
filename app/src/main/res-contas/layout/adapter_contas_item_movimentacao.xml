@@ -53,27 +53,41 @@
                 app:tint="#009688" />
         </androidx.cardview.widget.CardView>
 
+        <ImageButton
+            android:id="@+id/btnConfirmarPagamento"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_check_circle_24"
+            app:tint="#4CAF50"
+            android:visibility="gone"
+            tools:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
             android:id="@+id/textAdapterValor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="R$ 100,00"
             android:textColor="#00D39E"
-            android:textStyle="bold"
             android:textSize="15sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/btnConfirmarPagamento"
+            android:layout_marginEnd="4dp"
             app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/layoutDataHora"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:gravity="end"
-
-            app:layout_constraintTop_toTopOf="@+id/textAdapterCategoria"
+            android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="@+id/textAdapterCategoria"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintEnd_toStartOf="@+id/btnConfirmarPagamento"
+            android:layout_marginEnd="4dp"
+            app:layout_constraintTop_toTopOf="@+id/textAdapterCategoria">
 
             <TextView
                 android:id="@+id/textAdapterData"
@@ -81,15 +95,15 @@
                 android:layout_height="wrap_content"
                 android:text="21 jan"
                 android:textColor="#9E9E9E"
-                android:textSize="11sp"/>
+                android:textSize="11sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="3dp"
                 android:text=" • "
                 android:textColor="#BDBDBD"
-                android:textSize="11sp"
-                android:layout_marginHorizontal="3dp"/>
+                android:textSize="11sp" />
 
             <TextView
                 android:id="@+id/textAdapterHora"
@@ -97,7 +111,7 @@
                 android:layout_height="wrap_content"
                 android:text="12:00"
                 android:textColor="#9E9E9E"
-                android:textSize="11sp"/>
+                android:textSize="11sp" />
         </LinearLayout>
 
         <TextView
@@ -106,30 +120,30 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Título da Conta"
             android:textColor="?attr/colorOnSurface"
             android:textSize="15sp"
             android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"
-            app:layout_constraintVertical_chainStyle="packed"
             app:layout_constraintBottom_toTopOf="@+id/textAdapterCategoria"
             app:layout_constraintEnd_toStartOf="@+id/textAdapterValor"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed" />
 
         <TextView
             android:id="@+id/textAdapterCategoria"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_marginEnd="8dp"
             android:layout_marginTop="2dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Categoria"
             android:textColor="#757575"
             android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/textAdapterValor"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"

@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,9 +28,9 @@ import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.ContasVie
 import java.util.List;
 
 /**
- * ListaMovimentacoesFragment (UNIFICADO)
- * Este fragmento substitui o FragmentMovimentacoes e FragmentContasAVencer.
- * Ele decide o que exibir com base no argumento 'MODO_FUTURO'.
+ * ListaMovimentacoesFragment (UNIFICADO E CORRIGIDO)
+ * Este fragmento resolve o conflito do ViewPager observando fontes de dados distintas
+ * (Histórico vs Futuro) baseadas no modo de operação.
  */
 public class ListaMovimentacoesFragment extends Fragment implements AdapterExibeListaMovimentacaoContas.OnItemActionListener {
 
@@ -57,7 +58,7 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterExibe
             ehModoFuturo = getArguments().getBoolean(ARG_MODO_FUTURO);
         }
         repository = new MovimentacaoRepository();
-        // Usamos requireActivity() para que todos os fragmentos compartilhem o MESMO ViewModel da Activity principal
+        // Compartilha o ViewModel com a Activity para ter acesso aos filtros globais
         viewModel = new ViewModelProvider(requireActivity()).get(ContasViewModel.class);
     }
 
@@ -77,27 +78,46 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterExibe
         carregarDados();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // [FIX]: Garante que, ao voltar para esta aba (slide), os dados sejam recarregados
+        // corretamente para este contexto específico.
+        carregarDados();
+    }
+
     /**
-     * Observa o ViewModel. Quando os dados mudarem no banco, o ViewModel filtra
-     * e o fragmento apenas "reage" atualizando a lista.
+     * [CORREÇÃO PRINCIPAL]: Decide qual LiveData observar.
+     * Isso isola a UI: A aba de Histórico só reage a mudanças na lista de Histórico,
+     * e a aba de Futuro só reage a mudanças na lista Futura.
      */
     private void setupObservers() {
-        viewModel.listaFiltrada.observe(getViewLifecycleOwner(), lista -> {
-            // [CORREÇÃO]: Passando 'ehModoFuturo' para o Helper decidir a ordem
+        // Define o comportamento comum de atualização da UI
+        Observer<List<MovimentacaoModel>> observerUI = lista -> {
+            // Helper organiza por dia (Crescente ou Decrescente dependendo do modo)
             List<ExibirItemListaMovimentacaoContas> listaProcessada =
                     HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehModoFuturo);
 
             adapter = new AdapterExibeListaMovimentacaoContas(getContext(), listaProcessada, this);
             recyclerView.setAdapter(adapter);
-        });
+        };
+
+        // Remove observadores antigos para evitar vazamento de memória ou duplicação
+        viewModel.listaHistorico.removeObservers(getViewLifecycleOwner());
+        viewModel.listaFutura.removeObservers(getViewLifecycleOwner());
+
+        // Conecta ao LiveData correto
+        if (ehModoFuturo) {
+            viewModel.listaFutura.observe(getViewLifecycleOwner(), observerUI);
+        } else {
+            viewModel.listaHistorico.observe(getViewLifecycleOwner(), observerUI);
+        }
     }
 
     private void carregarDados() {
-        // Configura o "modo" no ViewModel antes de disparar a busca
-        viewModel.setModoContasFuturas(ehModoFuturo);
-
-        viewModel.fetchDados(repository, new MovimentacaoRepository.DadosCallback() {
-            @Override public void onSucesso(List<MovimentacaoModel> lista) { /* Observado pelo LiveData */ }
+        // [CORREÇÃO]: Envia 'ehModoFuturo' para o ViewModel saber qual cache atualizar
+        viewModel.fetchDados(repository, ehModoFuturo, new MovimentacaoRepository.DadosCallback() {
+            @Override public void onSucesso(List<MovimentacaoModel> lista) { /* A UI é atualizada pelo Observer */ }
             @Override public void onErro(String erro) {
                 if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
             }
@@ -115,6 +135,42 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterExibe
         // Implementar edição se desejar
     }
 
+    /**
+     * [NOVO]: Implementação da lógica de confirmação (Check).
+     * Quando o usuário clica no check, o item deixa de ser "pendente/futuro"
+     * e passa a ser uma movimentação confirmada (pago = true).
+     */
+    @Override
+    public void onCheckClick(MovimentacaoModel mov) {
+        String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Confirmar " + acao)
+                .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
+                .setPositiveButton("Confirmar", (dialog, which) -> {
+                    repository.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+                        @Override
+                        public void onSucesso(String msg) {
+                            if (isAdded()) {
+                                Toast.makeText(getContext(), "Concluído!", Toast.LENGTH_SHORT).show();
+
+                                // [ATUALIZAÇÃO DUPLA]: O item saiu de uma lista e foi para outra.
+                                // Precisamos atualizar ambos os contextos no ViewModel.
+                                viewModel.fetchDados(repository, true, null);  // Atualiza Futuros (Remove o item)
+                                viewModel.fetchDados(repository, false, null); // Atualiza Histórico (Adiciona o item)
+                            }
+                        }
+
+                        @Override
+                        public void onErro(String erro) {
+                            if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
     private void exibirDialogExclusao(MovimentacaoModel mov) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_confirmar_exclusao, null);
@@ -129,7 +185,8 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterExibe
 
         // [CLEAN CODE] Texto inteligente baseado no contexto
         if (ehModoFuturo) {
-            String acao = (mov.getTipo() == TipoCategoriaContas.DESPESA.getId()) ? "Pagar" : "Receber";
+            // [CORREÇÃO APLICADA]: Uso de Enum em vez de ID inteiro/legado
+            String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "Pagar" : "Receber";
             textMensagem.setText(acao + " '" + mov.getDescricao() + "'?");
             btnConfirmar.setText(acao);
         } else {
@@ -142,7 +199,7 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterExibe
             dialog.dismiss();
             repository.excluir(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) {
-                    // Após excluir, pedimos ao ViewModel para recarregar
+                    // Recarrega apenas a lista atual
                     carregarDados();
                 }
                 @Override public void onErro(String erro) { }

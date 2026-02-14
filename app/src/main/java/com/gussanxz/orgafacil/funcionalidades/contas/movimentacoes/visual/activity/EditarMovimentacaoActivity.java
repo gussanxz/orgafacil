@@ -57,8 +57,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // Define o layout com base no tipo original (Receita ou Despesa)
-        if (movOriginal.getTipo() == TipoCategoriaContas.DESPESA.getId()) {
+        // [CORREÇÃO]: Comparação usando Enum em vez de ID inteiro legado.
+        // Garante compatibilidade com o novo MovimentacaoModel que salva "DESPESA"/"RECEITA" (String).
+        if (movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA) {
             setContentView(R.layout.ac_main_contas_add_despesa);
         } else {
             setContentView(R.layout.ac_main_contas_add_receita);
@@ -94,6 +95,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private void preencherCampos() {
         // [PRECISÃO]: Converte centavos para Double apenas para exibição
         double valorExibicao = MoedaHelper.centavosParaDouble(movOriginal.getValor());
+        // Formata para exibição padrão (ex: 1250.50)
         editValor.setText(String.format(Locale.US, "%.2f", valorExibicao));
 
         editDescricao.setText(movOriginal.getDescricao());
@@ -154,6 +156,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             movNova.setData_criacao(movOriginal.getData_criacao());
 
             // 1. Processamento Financeiro (Converte de volta para Centavos)
+            // Remove pontuação de milhar ou vírgula para parsing seguro
             String valorStr = editValor.getText().toString().replace(",", ".");
             double valorDigitado = Double.parseDouble(valorStr);
             movNova.setValor(MoedaHelper.doubleParaCentavos(valorDigitado));
@@ -176,8 +179,8 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             if (date != null) {
                 movNova.setData_movimentacao(new Timestamp(date));
 
-                // [ATUALIZAÇÃO]: Se o usuário mudar a data para o futuro na edição,
-                // o status 'pago' deve mudar automaticamente.
+                // [ATUALIZAÇÃO CRÍTICA]: Se o usuário mudar a data para o futuro na edição,
+                // o status 'pago' deve mudar automaticamente para refletir que é um agendamento.
                 boolean ehFuturo = date.after(new Date());
                 movNova.setPago(!ehFuturo);
             }
@@ -198,7 +201,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             });
 
         } catch (Exception e) {
-            Toast.makeText(this, "Verifique os dados informados", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Verifique os dados informados (Valor/Data)", Toast.LENGTH_SHORT).show();
         }
     }
 

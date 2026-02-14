@@ -13,11 +13,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Helper responsável por transformar a lista bruta do Firestore em uma lista
+ * organizada com Headers de data e cálculo de saldo diário.
+ */
 public class HelperExibirDatasMovimentacao {
 
     private static final SimpleDateFormat sdfKey = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     public static List<ExibirItemListaMovimentacaoContas> agruparPorDiaOrdenar(List<MovimentacaoModel> movs, boolean ehModoFuturo) {
+
         // 1. Ordenação Inteligente baseada na aba selecionada
         List<MovimentacaoModel> copia = new ArrayList<>(movs);
         Collections.sort(copia, (o1, o2) -> {
@@ -32,7 +37,7 @@ public class HelperExibirDatasMovimentacao {
             }
         });
 
-        // 2. Agrupamento em Map
+        // 2. Agrupamento em Map para separar os itens por data string (Ex: "14/02/2026")
         Map<String, List<MovimentacaoModel>> porDia = new LinkedHashMap<>();
         for (MovimentacaoModel m : copia) {
             if (m.getData_movimentacao() == null) continue;
@@ -44,9 +49,10 @@ public class HelperExibirDatasMovimentacao {
             porDia.get(dataKey).add(m);
         }
 
-        // 3. Criação da lista final (Headers + Itens)
+        // 3. Criação da lista final mesclando Headers e Itens
         List<ExibirItemListaMovimentacaoContas> resultado = new ArrayList<>();
 
+        // Preparação para exibir "Hoje" e "Ontem" no título do dia
         Date hoje = zerarHora(new Date());
         Calendar cal = Calendar.getInstance();
         cal.setTime(hoje);
@@ -57,10 +63,12 @@ public class HelperExibirDatasMovimentacao {
             String dataStr = entry.getKey();
             List<MovimentacaoModel> listaDoDia = entry.getValue();
 
+            // --- LÓGICA DE SALDO NO HEADER ---
             long saldoDiaCentavos = 0;
             for (MovimentacaoModel m : listaDoDia) {
-                // [REGRA FINANCEIRA]: Apenas movimentações PAGAS alteram o saldo do cabeçalho
-                // Contas agendadas (pago = false) são exibidas, mas não somadas ao saldo real.
+                // [REGRA FINANCEIRA]: Apenas movimentações PAGAS alteram o saldo do cabeçalho.
+                // Contas agendadas (pago = false) são exibidas na lista para controle,
+                // mas não somadas ao saldo real do dia até serem confirmadas.
                 if (m.isPago()) {
                     if (m.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                         saldoDiaCentavos -= m.getValor();
@@ -70,6 +78,7 @@ public class HelperExibirDatasMovimentacao {
                 }
             }
 
+            // Tratamento visual para títulos amigáveis
             String tituloDia = dataStr;
             try {
                 Date dataGrupo = sdfKey.parse(dataStr);
@@ -80,9 +89,10 @@ public class HelperExibirDatasMovimentacao {
                 }
             } catch (Exception ignored) {}
 
-            // Passando saldo real (centavos) para o header [cite: 2026-02-07]
+            // Adiciona o Header com o saldo real calculado em centavos [cite: 2026-02-07]
             resultado.add(ExibirItemListaMovimentacaoContas.header(dataStr, tituloDia, (int) saldoDiaCentavos));
 
+            // Adiciona cada item pertencente àquela data logo abaixo do Header
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(ExibirItemListaMovimentacaoContas.linha(m));
             }
@@ -90,6 +100,9 @@ public class HelperExibirDatasMovimentacao {
         return resultado;
     }
 
+    /**
+     * Zera horas, minutos e segundos para comparação precisa de datas.
+     */
     private static Date zerarHora(Date d) {
         Calendar c = Calendar.getInstance();
         c.setTime(d);

@@ -24,6 +24,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -31,6 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
@@ -56,11 +58,12 @@ import java.util.Locale;
 /**
  * ContasActivity Refatorada
  * Centraliza a exibição de movimentações e contas futuras através do ViewModel.
+ * [ATUALIZADO]: Ajustado para consumir o ViewModel segregado (Histórico vs Futuro).
  */
 public class ContasActivity extends AppCompatActivity {
 
     private final String TAG = "ContasActivity";
-    private boolean ehAtalho = false;
+    private boolean ehAtalho = false; // Define se é modo Futuro (true) ou Histórico (false)
     private Bundle extrasAtalho = null;
 
     // UI Components
@@ -102,22 +105,21 @@ public class ContasActivity extends AppCompatActivity {
         resumoRepository = new ResumoFinanceiroRepository();
         usuarioRepository = new UsuarioRepository();
 
+        // Lógica de Identificação de Modo (Histórico vs Futuras)
+        extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
+        ehAtalho = (extrasAtalho != null) && extrasAtalho.getBoolean("EH_ATALHO", false);
+
         inicializarComponentes();
         configurarRecyclerView();
         configurarFiltros();
+
+        // Configura os observadores ANTES de carregar os dados
         setupObservers();
 
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> { if (result.getResultCode() == RESULT_OK) carregarDados(); }
         );
-
-        // Lógica de Identificação de Modo (Histórico vs Futuras)
-        extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
-        ehAtalho = (extrasAtalho != null) && extrasAtalho.getBoolean("EH_ATALHO", false);
-
-        // Define o modo no ViewModel antes de carregar
-        viewModel.setModoContasFuturas(ehAtalho);
 
         if (ehAtalho) aplicarRegrasAtalho(extrasAtalho);
     }
@@ -131,17 +133,24 @@ public class ContasActivity extends AppCompatActivity {
     // --- CONEXÃO COM A VIEWMODEL (OBSERVERS) ---
 
     private void setupObservers() {
-        viewModel.listaFiltrada.observe(this, lista -> {
+        // [CORREÇÃO]: Observador genérico para atualizar a UI
+        Observer<List<MovimentacaoModel>> observerUI = lista -> {
             itensAgrupados.clear();
-            // [CORREÇÃO]: Passando o modo atual para o Helper organizar a ordem das datas
-            // Se for modo futuro: Ascendente. Se for histórico: Descendente.
-            itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, viewModel.isModoContasFuturas()));
+            // O Helper usa 'ehAtalho' (modo futuro) para decidir se ordena Crescente ou Decrescente
+            itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho));
             adapterAgrupado.notifyDataSetChanged();
             atualizarLegendasFiltro(searchView.getQuery().toString());
-        });
+        };
+
+        // Decide qual LiveData observar com base no modo da Activity
+        if (ehAtalho) {
+            viewModel.listaFutura.observe(this, observerUI);
+        } else {
+            viewModel.listaHistorico.observe(this, observerUI);
+        }
 
         viewModel.saldoPeriodo.observe(this, saldoCentavos -> {
-            // [PRECISÃO] Converte centavos (long) para exibição apenas na UI [cite: 2026-02-07]
+            // [PRECISÃO] Converte centavos (long) para exibição apenas na UI
             double saldoExibicao = saldoCentavos / 100.0;
             textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
         });
@@ -174,10 +183,10 @@ public class ContasActivity extends AppCompatActivity {
 
     /**
      * Delega a busca para o ViewModel.
-     * O ViewModel decide se busca histórico ou agendamentos com base no modo setado no onCreate.
+     * [CORREÇÃO]: Passa o modo 'ehAtalho' explicitamente para o fetchDados.
      */
     private void recuperarMovimentacoesDoBanco() {
-        viewModel.fetchDados(movRepository, new MovimentacaoRepository.DadosCallback() {
+        viewModel.fetchDados(movRepository, ehAtalho, new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
                 // ViewModel processa a lista e notifica o Observer em setupObservers
@@ -261,6 +270,7 @@ public class ContasActivity extends AppCompatActivity {
                 new AdapterExibeListaMovimentacaoContas.OnItemActionListener() {
                     @Override public void onDeleteClick(MovimentacaoModel m) { confirmarExclusao(m, -1); }
                     @Override public void onLongClick(MovimentacaoModel m) { abrirTelaEdicao(m); }
+                    @Override public void onCheckClick(MovimentacaoModel m) { confirmarPagamentoOuRecebimento(m); }
                 }
         );
 
@@ -318,11 +328,40 @@ public class ContasActivity extends AppCompatActivity {
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    private void confirmarPagamentoOuRecebimento(MovimentacaoModel mov) {
+        String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Confirmar " + acao)
+                .setMessage("Você confirma que '" + mov.getDescricao() + "' foi concluído?")
+                .setPositiveButton("Sim, confirmar", (dialog, which) -> {
+
+                    movRepository.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+                        @Override
+                        public void onSucesso(String msg) {
+                            Toast.makeText(ContasActivity.this, "Lançamento confirmado!", Toast.LENGTH_SHORT).show();
+
+                            // [CORREÇÃO]: Atualiza AMBOS os fluxos no ViewModel, pois o item muda de estado
+                            viewModel.fetchDados(movRepository, true, null);  // Atualiza Futuros
+                            viewModel.fetchDados(movRepository, false, null); // Atualiza Histórico
+                        }
+
+                        @Override
+                        public void onErro(String erro) {
+                            Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Agora não", null)
+                .show();
+    }
+
     /**
      * Atualiza o rótulo do saldo com base no contexto (Modo ou Filtro).
      */
     private void atualizarLegendasFiltro(String query) {
-        if (viewModel.isModoContasFuturas()) textSaldoAtual.setText("Saldo futuro estimado");
+        // [CORREÇÃO]: Usa a flag local 'ehAtalho' em vez de perguntar ao ViewModel
+        if (ehAtalho) textSaldoAtual.setText("Saldo futuro estimado");
         else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
         else if (!query.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");
         else textSaldoAtual.setText("Saldo total atual");
