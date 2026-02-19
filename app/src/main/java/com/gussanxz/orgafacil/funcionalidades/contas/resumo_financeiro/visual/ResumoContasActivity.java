@@ -203,7 +203,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("EH_ATALHO", true);
-        intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
+        intent.putExtra("TITULO_TELA", "Agendar Receita");
         startActivity(intent);
     }
 
