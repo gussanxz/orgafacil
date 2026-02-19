@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activ
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -168,7 +169,14 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private void verificarModoEdicao() {
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
-            MovimentacaoModel movRecebida = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
+            MovimentacaoModel movRecebida;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                movRecebida = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
+            } else {
+                movRecebida = getIntent().getParcelableExtra("movimentacaoSelecionada");
+            }
+
             if (movRecebida != null) {
                 isEdicao = true;
                 itemEmEdicao = movRecebida;

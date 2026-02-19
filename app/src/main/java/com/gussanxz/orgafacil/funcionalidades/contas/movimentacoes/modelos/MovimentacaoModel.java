@@ -1,12 +1,13 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
-
-import java.io.Serializable;
 
 /**
  * MovimentacaoModel (Versão Corrigida e Unificada)
@@ -15,7 +16,7 @@ import java.io.Serializable;
  * (ex: 'pago', 'valor', 'data_movimentacao'), os métodos marcados com @PropertyName
  * farão a ligação correta.
  */
-public class MovimentacaoModel implements Serializable {
+public class MovimentacaoModel implements Parcelable {
 
     // --- Constantes de Caminho para Queries ---
     // Usadas no Repository para ordenação e filtro
@@ -25,7 +26,7 @@ public class MovimentacaoModel implements Serializable {
     // --- ATRIBUTOS DA RAIZ (Mapeamento Direto com Firestore) ---
     private String id;
     private String descricao;
-    private int valor = 0; // Centavos para precisão [cite: 2026-02-07]
+    private int valor = 0; // Centavos para precisão
     private String categoria_id;
     private String categoria_nome;
 
@@ -47,6 +48,72 @@ public class MovimentacaoModel implements Serializable {
     // =========================================================================
     public MovimentacaoModel() {
         // Construtor vazio obrigatório para o Firebase
+    }
+
+    // =========================================================================
+    // PARCELABLE
+    // =========================================================================
+
+    protected MovimentacaoModel(Parcel in) {
+        id = in.readString();
+        descricao = in.readString();
+        valor = in.readInt();
+        categoria_id = in.readString();
+        categoria_nome = in.readString();
+        pago = in.readByte() != 0;
+        tipo = in.readString();
+
+        data_criacao = readTimestamp(in);
+        data_movimentacao = readTimestamp(in);
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
+        dest.writeString(descricao);
+        dest.writeInt(valor);
+        dest.writeString(categoria_id);
+        dest.writeString(categoria_nome);
+        dest.writeByte((byte) (pago ? 1 : 0));
+        dest.writeString(tipo);
+
+        writeTimestamp(dest, data_criacao);
+        writeTimestamp(dest, data_movimentacao);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<MovimentacaoModel> CREATOR = new Creator<MovimentacaoModel>() {
+        @Override
+        public MovimentacaoModel createFromParcel(Parcel in) {
+            return new MovimentacaoModel(in);
+        }
+
+        @Override
+        public MovimentacaoModel[] newArray(int size) {
+            return new MovimentacaoModel[size];
+        }
+    };
+
+    private static void writeTimestamp(Parcel dest, Timestamp ts) {
+        if (ts == null) {
+            dest.writeByte((byte) 0);
+            return;
+        }
+        dest.writeByte((byte) 1);
+        dest.writeLong(ts.getSeconds());
+        dest.writeInt(ts.getNanoseconds());
+    }
+
+    private static Timestamp readTimestamp(Parcel in) {
+        boolean has = in.readByte() != 0;
+        if (!has) return null;
+        long seconds = in.readLong();
+        int nanos = in.readInt();
+        return new Timestamp(seconds, nanos);
     }
 
     // =========================================================================

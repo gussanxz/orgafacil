@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activ
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -49,7 +50,12 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Recupera o objeto enviado para edição
-        movOriginal = (MovimentacaoModel) getIntent().getSerializableExtra("movimentacaoSelecionada");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            movOriginal = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
+        } else {
+            movOriginal = getIntent().getParcelableExtra("movimentacaoSelecionada");
+        }
+
         repository = new MovimentacaoRepository();
 
         if (movOriginal == null) {
