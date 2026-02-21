@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -147,9 +148,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     // Handlers para os botões do XML (tanto de receita quanto despesa)
     public void salvarDespesa(View v) { confirmarEdicao(); }
-    public void salvarProvento(View v) { confirmarEdicao(); }
+    public void salvarProventos(View v) { confirmarEdicao(); }
 
-    /**
+    /**00000
      * Confirma a edição e envia para o Repository
      */
     private void confirmarEdicao() {
@@ -207,7 +208,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             });
 
         } catch (Exception e) {
-            Toast.makeText(this, "Verifique os dados informados (Valor/Data)", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Verifique os dados informados (Valor/Data)", Toast.LENGTH_SHORT).show();
+            Log.e("ReceitasActivity", "Erro ao salvarProventos", e);
+            Toast.makeText(this, "Erro: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
         }
     }
 

@@ -4,6 +4,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.modelos.ContasCategoriaModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
@@ -11,6 +12,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.Movim
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -41,7 +43,12 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
+                    List<MovimentacaoModel> lista = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        MovimentacaoModel mov = doc.toObject(MovimentacaoModel.class);
+                        mov.setId(doc.getId()); // ✅ ESSENCIAL
+                        lista.add(mov);
+                    }
                     callback.onSucesso(lista);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
@@ -58,7 +65,12 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
+                    List<MovimentacaoModel> lista = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        MovimentacaoModel mov = doc.toObject(MovimentacaoModel.class);
+                        mov.setId(doc.getId()); // ✅ ESSENCIAL
+                        lista.add(mov);
+                    }
                     callback.onSucesso(lista);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
@@ -73,7 +85,12 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<MovimentacaoModel> lista = queryDocumentSnapshots.toObjects(MovimentacaoModel.class);
+                    List<MovimentacaoModel> lista = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        MovimentacaoModel mov = doc.toObject(MovimentacaoModel.class);
+                        mov.setId(doc.getId()); // ✅ ESSENCIAL
+                        lista.add(mov);
+                    }
                     callback.onSucesso(lista);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));

@@ -22,6 +22,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
@@ -55,9 +57,11 @@ public class ReceitasActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> launcherCategoria;
     private MovimentacaoRepository repository;
     private boolean isEdicao = false;
+    private boolean ehContaFutura = false;
     private MovimentacaoModel itemEmEdicao = null;
 
     private String categoriaIdSelecionada;
+    private MaterialSwitch switchStatusPago;
 
     // [PRECISÃO]: O valor é controlado em centavos (int) para evitar erros matemáticos [cite: 2026-02-07]
     private int valorCentavosAtual = 0;
@@ -67,6 +71,7 @@ public class ReceitasActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_contas_add_receita);
+        ehContaFutura = getIntent().getBooleanExtra("EH_CONTA_FUTURA", false);
 
         if (!FirebaseSession.isUserLogged()) {
             finish();
@@ -101,6 +106,7 @@ public class ReceitasActivity extends AppCompatActivity {
         campoDescricao = findViewById(R.id.editDescricao);
         campoHora = findViewById(R.id.editHora);
         btnExcluir = findViewById(R.id.btnExcluir);
+        switchStatusPago = findViewById(R.id.switchStatusPago);
 
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
@@ -122,6 +128,41 @@ public class ReceitasActivity extends AppCompatActivity {
                 if (isEdicao && itemEmEdicao != null) confirmarExcluir();
             });
         }
+
+        if (switchStatusPago != null) {
+            switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                switchStatusPago.setText(isChecked ? "Status: OK" : "Status: Pendente");
+            });
+        }
+
+// Recalcula status quando data/hora mudam (inclusive ao abrir edição)
+        TextWatcher watcher = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                boolean futuro = isDataHoraFuturaDaTela();
+
+                // Se entrou em futuro, força pendente/trava.
+                // Se saiu de futuro:
+                // - novo continua OK travado
+                // - edição reabilita toggle mantendo o que está selecionado (ou valor do item se quiser)
+                if (futuro) {
+                    aplicarStatusUI(isEdicao, (itemEmEdicao != null ? itemEmEdicao.isPago() : null), true);
+                } else {
+                    if (!isEdicao) {
+                        aplicarStatusUI(false, null, false);
+                    } else {
+                        // em edição e não-futuro: habilita e mantém estado atual do switch
+                        switchStatusPago.setEnabled(true);
+                        atualizarTextoStatus();
+                    }
+                }
+            }
+        };
+
+        campoData.addTextChangedListener(watcher);
+        campoHora.addTextChangedListener(watcher);
+
     }
 
     private void configurarLauncherCategoria() {
@@ -201,6 +242,26 @@ public class ReceitasActivity extends AppCompatActivity {
             campoHora.setText(TimePickerHelper.setHoraAtual());
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
         }
+        // 1) Se veio do botão "Conta Futura" do Resumo: SEMPRE pendente e travado
+        if (ehContaFutura) {
+            switchStatusPago.setChecked(false);
+            switchStatusPago.setEnabled(false);
+            switchStatusPago.setText("Status: Pendente");
+            return;
+        }
+
+// 2) Se NÃO é edição (novo lançamento normal): sempre OK e travado
+        if (!isEdicao) {
+            switchStatusPago.setChecked(true);
+            switchStatusPago.setEnabled(false);
+            switchStatusPago.setText("Status: OK");
+            return;
+        }
+
+// 3) Se é edição: usuário pode alternar conforme valor salvo
+        switchStatusPago.setEnabled(true);
+        switchStatusPago.setChecked(itemEmEdicao != null && itemEmEdicao.isPago());
+        switchStatusPago.setText(switchStatusPago.isChecked() ? "Status: OK" : "Status: Pendente");
     }
 
     /**
@@ -241,7 +302,15 @@ public class ReceitasActivity extends AppCompatActivity {
             }
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
-            mov.setPago(true);
+        }
+
+        // ✅ STATUS (regra do sinal EH_CONTA_FUTURA + edição)
+        if (ehContaFutura) {
+            mov.setPago(false); // Pendente sempre
+        } else if (!isEdicao) {
+            mov.setPago(true);  // Nova movimentação normal = OK
+        } else {
+            mov.setPago(switchStatusPago != null && switchStatusPago.isChecked()); // Edição decide
         }
 
         // 4. Persistência
@@ -310,5 +379,44 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private void aplicarRegrasAtalho() {
         Log.i(TAG, "Regras de atalho aplicada!");
+    }
+    private boolean isDataHoraFuturaDaTela() {
+        try {
+            String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            Date date = sdf.parse(dataHoraStr);
+            return date != null && date.after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void aplicarStatusUI(boolean isEdicaoLocal, Boolean pagoDoItem, boolean dataFutura) {
+        // Regra fixa: conta futura = PENDENTE (não pago) e não editável
+        if (dataFutura) {
+            switchStatusPago.setChecked(false);           // Pendente
+            switchStatusPago.setEnabled(false);           // trava
+            switchStatusPago.setText("Status: Pendente");
+            return;
+        }
+
+        // Se for NOVO: sempre OK e travado
+        if (!isEdicaoLocal) {
+            switchStatusPago.setChecked(true);            // OK
+            switchStatusPago.setEnabled(false);           // trava
+            switchStatusPago.setText("Status: OK");
+            return;
+        }
+
+        // Se for EDIÇÃO e não é futuro: usuário pode alterar
+        boolean ok = (pagoDoItem != null) ? pagoDoItem : true;
+        switchStatusPago.setChecked(ok);
+        switchStatusPago.setEnabled(true);
+        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+    }
+
+    private void atualizarTextoStatus() {
+        boolean ok = switchStatusPago.isChecked();
+        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
     }
 }
