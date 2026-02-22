@@ -249,6 +249,21 @@
         app:pressedTranslationZ="12dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_receita_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#26A69A"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_event_available_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_nova_despesa"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -272,20 +287,6 @@
         app:layout_anchor="@id/bottomAppBar"
         app:layout_anchorGravity="center"
         app:srcCompat="@drawable/ic_attach_money_24"
-        app:tint="@color/white"
-        app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_receita_futura"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="invisible"
-        app:backgroundTint="#26A69A"
-        app:fabSize="mini"
-        app:layout_anchor="@id/bottomAppBar"
-        app:layout_anchorGravity="center"
-        app:srcCompat="@drawable/ic_event_available_24"
         app:tint="@color/white"
         app:elevation="12dp"
         app:pressedTranslationZ="12dp"/>

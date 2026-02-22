@@ -223,7 +223,7 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     public void adicionarReceitaFutura(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
-        intent.putExtra("TITULO_TELA", "Agendar Receita Futura");
+        intent.putExtra("TITULO_TELA", "Agendar Receita");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
         startActivity(intent);
@@ -231,7 +231,7 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     public void adicionarDespesaFutura(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
-        intent.putExtra("TITULO_TELA", "Agendar Despesa Futura");
+        intent.putExtra("TITULO_TELA", "Agendar Despesa");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
         startActivity(intent);
