@@ -304,4 +304,74 @@
         app:pressedTranslationZ="12dp"
         android:translationY="-40dp"/>
 
+    <!-- LABELS DO MENU RADIAL (invisíveis até abrir o menu) -->
+
+    <TextView
+        android:id="@+id/label_fab_despesa_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_despesa_futura"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_receita_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_receita_futura"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_nova_despesa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_nova_despesa"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_nova_receita"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_nova_receita"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -43,7 +43,10 @@ public class ResumoContasActivity extends AppCompatActivity {
     private TextView textSaldoGeral; // Mapeado para R.id.textSaldo
     private TextView textReceitasMes; // Mapeado para R.id.textReceitasDashboard
     private TextView textDespesasMes; // Mapeado para R.id.textDespesasDashboard
-
+    private TextView labelDespesaFutura;
+    private TextView labelReceitaFutura;
+    private TextView labelNovaDespesa;
+    private TextView labelNovaReceita;
     // Layout Components
     private LinearLayout btnFooterContas, btnFooterMovimentacoes;
     private TabLayout tabLayout;
@@ -196,6 +199,11 @@ public class ResumoContasActivity extends AppCompatActivity {
             acaoRapida("Abrindo Receita Futura");
             adicionarReceitaFutura(v);
         });
+
+        labelDespesaFutura = findViewById(R.id.label_fab_despesa_futura);
+        labelReceitaFutura = findViewById(R.id.label_fab_receita_futura);
+        labelNovaDespesa = findViewById(R.id.label_fab_nova_despesa);
+        labelNovaReceita = findViewById(R.id.label_fab_nova_receita);
     }
 
     // --- Navegação ---
@@ -249,23 +257,39 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground.setVisibility(View.VISIBLE);
         overlayBackground.animate().alpha(1f).setDuration(300).start();
         radialSpotlight.setVisibility(View.VISIBLE);
-        radialSpotlight.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(200f).setInterpolator(interpolator).setDuration(400).start();
+        radialSpotlight.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(200f).
+                setInterpolator(interpolator).setDuration(400).start();
         fabMain.animate().setInterpolator(interpolator).rotation(45f).setDuration(300).start();
+
+        // FABs
         animarBotao(fabDespesaFutura, -320f, -200f);
         animarBotao(fabReceitaFutura, -150f, -420f);
         animarBotao(fabNovaDespesa, 150f, -420f);
         animarBotao(fabNovaReceita, 320f, -200f);
-    }
+
+        // Labels acima do FAB (mesmas coords)
+        animarLabelAcimaDoFab(labelDespesaFutura, -320f, -200f);
+        animarLabelAcimaDoFab(labelReceitaFutura,  -150f,  -420f);
+        animarLabelAcimaDoFab(labelNovaDespesa,    150f,-420f);
+        animarLabelAcimaDoFab(labelNovaReceita,    320f, -200f);    }
 
     private void fecharMenu() {
         isMenuOpen = false;
         overlayBackground.animate().alpha(0f).setDuration(300).withEndAction(() -> overlayBackground.setVisibility(View.GONE)).start();
         radialSpotlight.animate().alpha(0f).scaleX(0f).scaleY(0f).setDuration(300).withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE)).start();
         fabMain.animate().setInterpolator(interpolator).rotation(0f).setDuration(300).start();
+
+        // recolhe FABs
         recolherBotao(fabDespesaFutura);
         recolherBotao(fabNovaDespesa);
         recolherBotao(fabNovaReceita);
         recolherBotao(fabReceitaFutura);
+
+        // recolhe Labels
+        recolherBotao(labelDespesaFutura);
+        recolherBotao(labelReceitaFutura);
+        recolherBotao(labelNovaDespesa);
+        recolherBotao(labelNovaReceita);
     }
 
     private void animarBotao(View view, float x, float y) {
@@ -276,6 +300,22 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     private void recolherBotao(View view) {
         view.animate().translationX(0f).translationY(0f).alpha(0f).setInterpolator(interpolator).setDuration(300).withEndAction(() -> view.setVisibility(View.INVISIBLE)).start();
+    }
+    private void animarLabelAcimaDoFab(TextView label, float fabX, float fabY) {
+        label.setVisibility(View.VISIBLE);
+        label.setAlpha(0f);
+
+        label.animate()
+                .translationX(fabX)               // <-- 1:1 com o FAB
+                .translationY(fabY - dp(44))      // <-- acima do FAB
+                .alpha(1f)
+                .setInterpolator(interpolator)
+                .setDuration(250)
+                .start();
+    }
+
+    private float dp(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 
     private void acaoRapida(String mensagem) {
