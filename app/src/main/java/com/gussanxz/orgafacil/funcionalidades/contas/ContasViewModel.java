@@ -49,12 +49,14 @@ public class ContasViewModel extends ViewModel {
         MovimentacaoRepository.DadosCallback internalCallback = new MovimentacaoRepository.DadosCallback() {
             @Override
             public void onSucesso(List<MovimentacaoModel> lista) {
-                if (ehModoFuturo) {
-                    cacheFuturo = new ArrayList<>(lista);
-                } else {
-                    cacheHistorico = new ArrayList<>(lista);
-                }
+                cacheHistorico = new ArrayList<>();
+                cacheFuturo = new ArrayList<>();
 
+                for (MovimentacaoModel m : lista) {
+                    if (m == null) continue;
+                    if (m.isPago()) cacheHistorico.add(m);
+                    else cacheFuturo.add(m);
+                }
                 // Reaplica os filtros para atualizar a UI e CALCULAR OS SALDOS
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
 
@@ -67,11 +69,7 @@ public class ContasViewModel extends ViewModel {
             }
         };
 
-        if (ehModoFuturo) {
-            repo.recuperarContasFuturas(agora, internalCallback);
-        } else {
-            repo.recuperarHistorico(agora, internalCallback);
-        }
+        repo.recuperarMovimentacoes(internalCallback);
     }
 
     public void aplicarFiltros(String query, Date inicio, Date fim) {
@@ -101,6 +99,7 @@ public class ContasViewModel extends ViewModel {
 
             // Filtro de Status
             if (isModoFuturo && m.isPago()) continue;
+            if (!isModoFuturo && !m.isPago()) continue;   // histórico só pagos
 
             // Filtro de Data
             boolean noPeriodo = true;
