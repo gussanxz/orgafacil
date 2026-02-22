@@ -73,6 +73,7 @@ public class ContasActivity extends AppCompatActivity {
     private SearchView searchView;
     private EditText editDataInicial, editDataFinal;
     private ImageView imgLimparFiltroData;
+    private Button btnNovaDespesa, btnNovaReceita;
 
     // Estado e Visualização
     private final List<ExibirItemListaMovimentacaoContas> itensAgrupados = new ArrayList<>();
@@ -260,6 +261,8 @@ public class ContasActivity extends AppCompatActivity {
         editDataFinal = findViewById(R.id.editDataFinal);
         imgLimparFiltroData = findViewById(R.id.imgLimparFiltroData);
         searchView = findViewById(R.id.searchViewEventos);
+        btnNovaDespesa = findViewById(R.id.btnNovaDespesa);
+        btnNovaReceita = findViewById(R.id.btnNovaReceita);
     }
 
     private void configurarRecyclerView() {
@@ -374,14 +377,33 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     public void adicionarReceita(View v) {
-        startActivity(new Intent(this, ReceitasActivity.class));
+        Intent intent = new Intent(this, ReceitasActivity.class);
+
+        if (ehAtalho) {
+            intent.putExtra("EH_CONTA_FUTURA", true);
+            intent.putExtra("TITULO_TELA", "Agendar Receita");
+            intent.putExtra("EH_ATALHO", true); // mantém padrão atual do app
+        }
+
+        launcher.launch(intent);
     }
 
     public void adicionarDespesa(View v) {
-        startActivity(new Intent(this, DespesasActivity.class));
+        Intent intent = new Intent(this, DespesasActivity.class);
+
+        if (ehAtalho) {
+            intent.putExtra("EH_CONTA_FUTURA", true);
+            intent.putExtra("TITULO_TELA", "Agendar Despesa");
+            intent.putExtra("EH_ATALHO", true);
+        }
+
+        launcher.launch(intent);
     }
 
     private void aplicarRegrasAtalho(Bundle extras) {
         Log.i(TAG, "Exibindo tela em modo de Contas Futuras via atalho.");
+
+        if (btnNovaDespesa != null) btnNovaDespesa.setText("Agendar Despesa");
+        if (btnNovaReceita != null) btnNovaReceita.setText("Agendar Receita");
     }
 }
