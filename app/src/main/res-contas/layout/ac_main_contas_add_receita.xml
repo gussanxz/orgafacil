@@ -185,14 +185,16 @@
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/switchStatusPago"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:paddingLeft="32dp"
+            android:paddingRight="16dp"
+            android:showText="true"
             android:text="Status: OK"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao"
-            android:layout_marginEnd="16dp"
-            android:showText="true"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabInferiorSalvarCategoria"
