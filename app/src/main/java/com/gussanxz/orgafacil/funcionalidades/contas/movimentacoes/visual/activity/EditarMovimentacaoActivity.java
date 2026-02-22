@@ -45,6 +45,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> launcherCategoria;
 
     private String novoCategoriaId;
+    private androidx.appcompat.widget.SwitchCompat switchStatusPago;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +95,12 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
         editCategoria.setFocusable(false);
         editCategoria.setClickable(true);
+
+        switchStatusPago = findViewById(R.id.switchStatusPago);
+
+        if (switchStatusPago != null) {
+            switchStatusPago.setEnabled(true); // edição: permitir alterar
+        }
     }
 
     /**
@@ -115,6 +122,11 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 editHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date));
             }
         }
+        if (switchStatusPago != null) {
+            boolean ok = movOriginal != null && movOriginal.isPago();
+            switchStatusPago.setChecked(ok);
+            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        }
     }
 
     private void configurarListeners() {
@@ -125,6 +137,10 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
+        }
+        if (switchStatusPago != null) {
+            switchStatusPago.setOnCheckedChangeListener((btn, checked) ->
+                    switchStatusPago.setText(checked ? "Status: OK" : "Status: Pendente"));
         }
     }
 
@@ -188,8 +204,11 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
                 // [ATUALIZAÇÃO CRÍTICA]: Se o usuário mudar a data para o futuro na edição,
                 // o status 'pago' deve mudar automaticamente para refletir que é um agendamento.
-                boolean ehFuturo = date.after(new Date());
-                movNova.setPago(!ehFuturo);
+                boolean ok = (switchStatusPago != null)
+                        ? switchStatusPago.isChecked()
+                        : (movOriginal != null && movOriginal.isPago());
+
+                movNova.setPago(ok);
             }
 
             // 4. Envio via Repository (Batch Update)
