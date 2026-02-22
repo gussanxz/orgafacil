@@ -121,35 +121,6 @@ public class DespesasActivity extends AppCompatActivity {
         if (switchStatusPago != null) {
             switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> atualizarTextoStatus());
         }
-
-// Recalcula status quando data/hora mudam (inclusive ao abrir edição)
-        TextWatcher watcher = new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
-                boolean futuro = isDataHoraFuturaDaTela();
-
-                // Se entrou em futuro, força pendente/trava.
-                // Se saiu de futuro:
-                // - novo continua OK travado
-                // - edição reabilita toggle mantendo o que está selecionado (ou valor do item se quiser)
-                if (futuro) {
-                    aplicarStatusUI(isEdicao, (itemEmEdicao != null ? itemEmEdicao.isPago() : null), true);
-                } else {
-                    if (!isEdicao) {
-                        aplicarStatusUI(false, null, false);
-                    } else {
-                        // em edição e não-futuro: habilita e mantém estado atual do switch
-                        switchStatusPago.setEnabled(true);
-                        atualizarTextoStatus();
-                    }
-                }
-            }
-        };
-
-        campoData.addTextChangedListener(watcher);
-        campoHora.addTextChangedListener(watcher);
-
     }
 
     private void abrirSelecaoCategoria() {
@@ -289,11 +260,6 @@ public class DespesasActivity extends AppCompatActivity {
 
             if (date != null) {
                 mov.setData_movimentacao(new Timestamp(date));
-
-                // LÓGICA: Se a data for futura, marca como 'não pago' (Conta Futura)
-                // Se for hoje ou passado, marca como 'pago' (Movimentação Real)
-                boolean ehFuturo = date.after(new Date());
-                mov.setPago(!ehFuturo);
             }
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
@@ -374,16 +340,6 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void aplicarRegrasAtalho() {
         Log.i(TAG, "Regras de atalho aplicada!");
-    }
-    private boolean isDataHoraFuturaDaTela() {
-        try {
-            String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            Date date = sdf.parse(dataHoraStr);
-            return date != null && date.after(new Date());
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private void aplicarStatusUI(boolean isEdicaoLocal, Boolean pagoDoItem, boolean dataFutura) {
