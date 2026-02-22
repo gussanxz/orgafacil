@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryDespesa"
-    tools:context=".activity.main.contas.DespesasActivity">
+    tools:context=".funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -179,9 +179,22 @@
                 android:id="@+id/editDescricao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Descricao do produto ou servico"
+                android:hint="Descricao do produtoModel ou servicoModel"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchStatusPago"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:paddingLeft="32dp"
+            android:paddingRight="16dp"
+            android:showText="true"
+            android:text="Status: OK"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabInferiorSalvarCategoria"
@@ -196,6 +209,21 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@drawable/ic_confirmar_branco_24" />
+
+        <ImageButton
+            android:id="@+id/btnExcluir"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_btn_excluir_circular"
+            android:src="@drawable/ic_lixeira_excluir_24"
+            android:contentDescription="Excluir"
+            android:elevation="6dp"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

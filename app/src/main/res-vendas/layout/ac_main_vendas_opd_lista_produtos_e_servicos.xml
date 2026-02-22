@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
-    tools:context=".activity.main.vendas.operacoesdiarias.cadastros.produtos.produtoseservicos.ListaProdutosEServicosActivity">
+    tools:context=".activity.features.vendas.operacoesdiarias.cadastros.produtos.produtos_e_servicos.ListaProdutosEServicosActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
@@ -73,7 +73,7 @@
                 android:id="@+id/editBuscaProduto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Buscar produto ou serviço"
+                android:hint="Buscar produtoModel ou serviço"
                 android:inputType="text"
                 android:maxLines="1"
                 android:paddingStart="40dp" />

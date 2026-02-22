@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_top_rounded">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Termos e Privacidade"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:layout_marginBottom="16dp"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:background="#F5F5F5"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/txtConteudoTermos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/texto_termos_exemplo"
+            android:textSize="16sp"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#212121"/>
+    </ScrollView>
+
+    <CheckBox
+        android:id="@+id/checkDialogTermos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:buttonTint="#000000"
+        app:buttonTint="#000000"
+        android:text="Li e concordo com os termos acima"
+        android:textColor="#000000"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/btnAceitarTermos"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Continuar"
+        android:textStyle="bold"
+        android:enabled="false"
+        app:backgroundTint="@color/selector_botao_aceite"
+        android:textColor="@android:color/white"
+        style="@style/Widget.MaterialComponents.Button"/>
+
+</LinearLayout>

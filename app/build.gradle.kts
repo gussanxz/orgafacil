@@ -55,6 +55,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -104,5 +105,12 @@ dependencies {
 
     implementation ("com.google.android.gms:play-services-auth:21.0.0")
     implementation("androidx.biometric:biometric:1.1.0")
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    implementation("com.github.bumptech.glide:glide:5.0.5")
+
+    implementation ("com.facebook.shimmer:shimmer:0.5.0")
+
 
 }

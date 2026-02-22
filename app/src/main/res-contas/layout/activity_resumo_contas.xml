@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
+    tools:context=".funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingBottom="70dp">
+
+        <LinearLayout
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/app_name"
+                android:textSize="18sp"
+                android:gravity="center_vertical|start"
+                android:padding="12dp"
+                android:textColor="@color/white"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/headerResumoVendas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="16dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Receitas"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/textReceitasDashboard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R$ 0,00"
+                    android:textColor="#4CAF50"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:gravity="center"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Saldo Atual"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageView
+                        android:id="@+id/imgOlhoSaldo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="5dp"
+                        android:src="@drawable/ic_visibility_24"
+                        app:tint="@color/black"/>
+                    <TextView
+                        android:id="@+id/textSaldo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="R$ 0,00"
+                        android:textColor="@android:color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Despesas"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/textDespesasDashboard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R$ 0,00"
+                    android:textColor="#E53935"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/scrollMeio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/header_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayoutDashboard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:tabMode="fixed"
+                app:tabGravity="fill"/>
+
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerDashboard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        app:fabAlignmentMode="center"
+        app:fabCradleMargin="10dp"
+        app:fabCradleRoundedCornerRadius="15dp"
+        app:backgroundTint="@color/cor_background"
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp"
+        android:backgroundTint="@color/colorPrimary">
+
+        <LinearLayout
+            android:id="@+id/linear_footer_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:id="@+id/btn_footer_contas"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingEnd="20dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_receipt_long_28"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CONTAS FUTURAS"
+                    android:textColor="#000000"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btn_footer_movimentacoes"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:onClick="acessarContasActivity">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_tune_24"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MOVIMENTAÇÕES"
+                    android:textColor="#000000"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <View
+        android:id="@+id/overlay_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:alpha="0"
+        app:pressedTranslationZ="10dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:id="@+id/radial_spotlight"
+        android:layout_width="350dp"
+        android:layout_height="350dp"
+        android:background="@drawable/bg_radial_spotlight"
+        android:visibility="invisible"
+        android:alpha="0"
+        android:scaleX="0"
+        android:scaleY="0"
+        app:layout_anchor="@id/fab_main"
+        app:layout_anchorGravity="center"
+        app:elevation="11dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_despesa_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#FF7043"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_event_busy_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_receita_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#26A69A"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_event_available_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_nova_despesa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#E53935"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_money_off_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_nova_receita"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:backgroundTint="#43A047"
+        app:fabSize="mini"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_attach_money_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#FF4081"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_add_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp"
+        android:translationY="-40dp"/>
+
+    <!-- LABELS DO MENU RADIAL (invisíveis até abrir o menu) -->
+
+    <TextView
+        android:id="@+id/label_fab_despesa_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_despesa_futura"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_receita_futura"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_receita_futura"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_nova_despesa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_nova_despesa"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+    <TextView
+        android:id="@+id/label_fab_nova_receita"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_nova_receita"
+        android:background="@drawable/bg_label_menu"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:alpha="0"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:elevation="13dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

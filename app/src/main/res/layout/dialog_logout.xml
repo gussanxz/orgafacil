@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="@drawable/bg_dialog_top_rounded">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:background="#D3D3D3"
+        android:layout_marginBottom="20dp" />
+
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ic_logout_24"
+        android:layout_marginBottom="16dp"
+        app:tint="@android:color/black" /> <TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="Deseja realmente sair?"
+    android:textSize="20sp"
+    android:textStyle="bold"
+    android:textColor="@android:color/black"
+    android:gravity="center"
+    android:layout_marginBottom="12dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sua sessão será encerrada com segurança."
+        android:textSize="14sp"
+        android:textColor="#444444"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btnConfirmarSair"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Sim, Sair agora"
+        android:backgroundTint="@android:color/black"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:cornerRadius="12dp" />
+
+    <Button
+        android:id="@+id/btnCancelarSair"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="MANTER CONECTADO"
+        android:textColor="#222222"
+        android:textStyle="bold" />
+
+</LinearLayout>

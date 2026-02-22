@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="texto_termos_exemplo">
+        <b>1. Aceitação dos Termos</b>\n
+        Ao criar uma conta no OrgaFacil, você concorda com estes termos de uso e com nossa política de privacidade. Este aplicativo é uma ferramenta de organização financeira e gestão de vendas.\n\n
+
+        <b>2. Privacidade e Dados</b>\n
+        Seus dados pessoais (nome e e-mail) e dados de negócio (produtos e vendas) são armazenados de forma segura utilizando a infraestrutura do Google Firebase. O OrgaFacil não compartilha suas informações estratégicas com terceiros.\n\n
+
+        <b>3. Responsabilidade do Usuário</b>\n
+        Você é o único responsável pela veracidade dos dados inseridos e pela segurança da sua senha. Recomendamos o uso de senhas fortes e a não partilha das suas credenciais de acesso.\n\n
+
+        <b>4. Disponibilidade do Serviço</b>\n
+        O OrgaFacil busca manter o serviço disponível 24h por dia, porém, por depender de serviços de terceiros (como servidores de nuvem), não nos responsabilizamos por instabilidades técnicas momentâneas.\n\n
+
+        <b>5. Alterações</b>\n
+        Reservamo-nos o direito de atualizar estes termos para refletir melhorias no app. O uso continuado após alterações constitui aceitação dos novos termos.\n\n
+
+        <i>Última atualização: Janeiro de 2026.</i>
+    </string>
+</resources>
