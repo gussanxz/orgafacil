@@ -226,6 +226,7 @@ public class DespesasActivity extends AppCompatActivity {
         switchStatusPago.setChecked(itemEmEdicao != null && itemEmEdicao.isPago());
         switchStatusPago.setText(switchStatusPago.isChecked() ? "Status: OK" : "Status: Pendente");
 
+        aplicarStatusInicial();
     }
 
     /**
@@ -371,4 +372,21 @@ public class DespesasActivity extends AppCompatActivity {
         switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
     }
 
+    private void aplicarStatusInicial() {
+        if (switchStatusPago == null) return;
+
+        if (!isEdicao) {
+            boolean ok = !ehContaFutura;
+            switchStatusPago.setChecked(ok);
+            switchStatusPago.setEnabled(true); // se você quiser travar criação, troque para false
+            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+            return;
+        }
+
+        // edição
+        boolean ok = (itemEmEdicao != null) && itemEmEdicao.isPago();
+        switchStatusPago.setChecked(ok);
+        switchStatusPago.setEnabled(true);
+        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+    }
 }
