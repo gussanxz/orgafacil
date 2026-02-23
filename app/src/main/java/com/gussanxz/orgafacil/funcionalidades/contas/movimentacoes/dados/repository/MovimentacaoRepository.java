@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -18,16 +19,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-/**
- * MovimentacaoRepository (Unificado e Blindado)
- * Agora, "Histórico" e "Contas Futuras" moram no mesmo lugar.
- * O que diferencia um do outro é apenas o status "pago" (true ou false).
- */
 public class MovimentacaoRepository {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    // Interfaces para avisar a tela (UI) quando o banco terminar o trabalho
     public interface Callback {
         void onSucesso(String msg);
         void onErro(String erro);
@@ -38,42 +33,29 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
-    // Interface específica para paginação, que devolve o marcador da próxima página
     public interface DadosPaginadosCallback {
         void onSucesso(List<MovimentacaoModel> lista, DocumentSnapshot ultimoDocumento);
         void onErro(String erro);
     }
 
-    // =========================================================================
-    // 1. QUERIES (BUSCA DE DADOS NO FIREBASE)
-    // =========================================================================
-
-    /**
-     * Busca o Histórico: Tudo que foi pago ou lançado até a data de hoje.
-     * Ordena do mais recente para o mais antigo (DESCENDING).
-     */
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
-                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, dataReferencia)
+                // [ATUALIZADO]: Busca apenas o que foi pago
+                .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
-                // Limite de segurança para não estourar a cota de leitura do Firebase
                 .limit(100)
                 .get()
                 .addOnSuccessListener(querySnapshots -> callback.onSucesso(processarSnapshots(querySnapshots)))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    /**
-     * Recupera o Histórico em blocos (Paginação/Scroll Infinito).
-     * O ViewModel passará o 'ultimoDocumento' para continuar a lista de onde parou.
-     */
     public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDocumentoVisivel, DadosPaginadosCallback callback) {
         Query query = FirestoreSchema.contasMovimentacoesCol()
-                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, dataReferencia)
+                // [ATUALIZADO]: Busca apenas o que foi pago
+                .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .limit(100);
 
-        // Se já existe um documento de referência, começa a buscar DEPOIS dele
         if (ultimoDocumentoVisivel != null) {
             query = query.startAfter(ultimoDocumentoVisivel);
         }
@@ -81,25 +63,17 @@ public class MovimentacaoRepository {
         query.get()
                 .addOnSuccessListener(querySnapshots -> {
                     List<MovimentacaoModel> lista = processarSnapshots(querySnapshots);
-
                     DocumentSnapshot novoUltimoDoc = null;
                     if (!querySnapshots.isEmpty()) {
-                        // Salva o último documento desta busca para ser o "marcador" da próxima
                         novoUltimoDoc = querySnapshots.getDocuments().get(querySnapshots.size() - 1);
                     }
-
                     callback.onSucesso(lista, novoUltimoDoc);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    /**
-     * Busca as Pendências: Tudo que tem status 'pago == false'.
-     * Ordena do vencimento mais antigo para o mais distante (ASCENDING).
-     */
     public void recuperarContasFuturas(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
-                // Garante que só mostre na aba de futuros o que está pendente
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .get()
@@ -107,16 +81,12 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    /**
-     * [NOVO]: Recupera Contas Futuras em blocos (Paginação).
-     */
     public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDocumentoVisivel, DadosPaginadosCallback callback) {
         Query query = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
 
-        // Se tem um marcador de página, continua a partir dele
         if (ultimoDocumentoVisivel != null) {
             query = query.startAfter(ultimoDocumentoVisivel);
         }
@@ -124,41 +94,31 @@ public class MovimentacaoRepository {
         query.get()
                 .addOnSuccessListener(querySnapshots -> {
                     List<MovimentacaoModel> lista = processarSnapshots(querySnapshots);
-
                     DocumentSnapshot novoUltimoDoc = null;
                     if (!querySnapshots.isEmpty()) {
                         novoUltimoDoc = querySnapshots.getDocuments().get(querySnapshots.size() - 1);
                     }
-
                     callback.onSucesso(lista, novoUltimoDoc);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    // Utilitário para transformar o "JSON" do Firebase no nosso MovimentacaoModel
     private List<MovimentacaoModel> processarSnapshots(Iterable<QueryDocumentSnapshot> snapshots) {
         List<MovimentacaoModel> lista = new ArrayList<>();
         for (QueryDocumentSnapshot doc : snapshots) {
             MovimentacaoModel mov = doc.toObject(MovimentacaoModel.class);
-            mov.setId(doc.getId()); // Essencial: Salva o ID do documento dentro do objeto
+            mov.setId(doc.getId());
             lista.add(mov);
         }
         return lista;
     }
 
-    // =========================================================================
-    // 2. ESCRITA (CRIAR, EXCLUIR, EDITAR E CONFIRMAR)
-    // =========================================================================
-
     public void salvar(MovimentacaoModel mov, Callback callback) {
         WriteBatch batch = db.batch();
-
         DocumentReference movRef = FirestoreSchema.contasMovimentacoesCol().document();
         mov.setId(movRef.getId());
         batch.set(movRef, mov);
-
         aplicarImpacto(batch, mov, 1);
-
         batch.commit()
                 .addOnSuccessListener(aVoid -> callback.onSucesso("Lançado com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
@@ -168,9 +128,7 @@ public class MovimentacaoRepository {
         WriteBatch batch = db.batch();
         DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
         batch.delete(movRef);
-
         aplicarImpacto(batch, mov, -1);
-
         batch.commit()
                 .addOnSuccessListener(aVoid -> callback.onSucesso("Excluído com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
@@ -179,12 +137,9 @@ public class MovimentacaoRepository {
     public void editar(MovimentacaoModel movAntigo, MovimentacaoModel movNovo, Callback callback) {
         WriteBatch batch = db.batch();
         DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(movNovo.getId());
-
         batch.set(movRef, movNovo);
-
         aplicarImpacto(batch, movAntigo, -1);
         aplicarImpacto(batch, movNovo, 1);
-
         batch.commit()
                 .addOnSuccessListener(aVoid -> callback.onSucesso("Editado com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
@@ -201,19 +156,24 @@ public class MovimentacaoRepository {
 
         impactoPendente(batch, mov, -1);
 
+        // --- [APRIMORAMENTO]: GUARDA O RASTRO DO VENCIMENTO ORIGINAL ---
+        Timestamp dataVencimentoAntiga = mov.getData_movimentacao();
+        batch.update(movRef, "data_vencimento_original", dataVencimentoAntiga);
+        // ----------------------------------------------------------------
+
         mov.setPago(true);
+        Timestamp dataPagamentoReal = Timestamp.now();
+        mov.setData_movimentacao(dataPagamentoReal);
+
         batch.update(movRef, MovimentacaoModel.CAMPO_PAGO, true);
+        batch.update(movRef, MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, dataPagamentoReal);
 
         impactoRealizado(batch, mov, 1);
 
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Confirmado com sucesso!"))
+                .addOnSuccessListener(aVoid -> callback.onSucesso("Confirmado e registrado na data de hoje!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
-
-    // =========================================================================
-    // 3. O CORAÇÃO FINANCEIRO (CÁLCULOS NO BATCH)
-    // =========================================================================
 
     private void aplicarImpacto(WriteBatch batch, MovimentacaoModel mov, int fator) {
         if (mov.isPago()) {
@@ -225,7 +185,6 @@ public class MovimentacaoRepository {
 
     private void impactoRealizado(WriteBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-
         int valorCentavos = Math.abs(mov.getValor());
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
 
@@ -233,7 +192,6 @@ public class MovimentacaoRepository {
                 FieldValue.increment(isReceita ? valorCentavos * fator : -valorCentavos * fator));
 
         if (mov.getData_movimentacao() != null && isMesmoMesEAno(mov.getData_movimentacao().toDate(), new Date())) {
-
             int deltaBalanco = (isReceita ? valorCentavos : -valorCentavos) * fator;
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, FieldValue.increment(deltaBalanco));
 
@@ -253,17 +211,11 @@ public class MovimentacaoRepository {
     private void impactoPendente(WriteBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
-
         String campoPendencia = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
-
         batch.update(resumoRef, campoPendencia, FieldValue.increment(fator));
     }
-
-    // =========================================================================
-    // 4. VIRADA DE MÊS NO APP E UTILS
-    // =========================================================================
 
     public void zerarEstatisticasMensais(Callback callback) {
         FirestoreSchema.contasCategoriasCol().get()
@@ -294,5 +246,45 @@ public class MovimentacaoRepository {
         cal2.setTime(d2);
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                 cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH);
+    }
+
+    // --- [ATUALIZADO] SALVAR RECORRENTE COM ID DE GRUPO ---
+    public void salvarRecorrente(MovimentacaoModel movBase, int qtdMeses, Callback callback) {
+        WriteBatch batch = db.batch();
+        Calendar calendar = Calendar.getInstance();
+
+        // Gera o Vínculo de Grupo (Pilar 1)
+        String grupoId = java.util.UUID.randomUUID().toString();
+
+        for (int i = 0; i < qtdMeses; i++) {
+            MovimentacaoModel parcela = new MovimentacaoModel();
+
+            parcela.setDescricao(movBase.getDescricao() + (qtdMeses > 1 ? " (" + (i + 1) + "/" + qtdMeses + ")" : ""));
+            parcela.setValor(movBase.getValor());
+            parcela.setCategoria_id(movBase.getCategoria_id());
+            parcela.setCategoria_nome(movBase.getCategoria_nome());
+            parcela.setTipoEnum(movBase.getTipoEnum());
+
+            // Associa os dados do grupo
+            parcela.setRecorrencia_id(grupoId);
+            parcela.setParcela_atual(i + 1);
+            parcela.setTotal_parcelas(qtdMeses);
+
+            parcela.setPago(i == 0 && movBase.isPago());
+
+            calendar.setTime(movBase.getData_movimentacao().toDate());
+            calendar.add(Calendar.MONTH, i);
+            parcela.setData_movimentacao(new Timestamp(calendar.getTime()));
+
+            DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
+            parcela.setId(ref.getId());
+            batch.set(ref, parcela);
+
+            aplicarImpacto(batch, parcela, 1);
+        }
+
+        batch.commit()
+                .addOnSuccessListener(aVoid -> callback.onSucesso("Recorrência agendada!"))
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 }

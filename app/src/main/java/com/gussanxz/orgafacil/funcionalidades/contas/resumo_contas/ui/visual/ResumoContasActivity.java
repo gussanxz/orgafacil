@@ -332,7 +332,7 @@ public class ResumoContasActivity extends AppCompatActivity {
             if (position == 0) {
                 tab.setText(R.string.tab_titulo_ultimas_mov);
             } else {
-                tab.setText(R.string.tab_titulo_contas_a_vencer);
+                tab.setText(R.string.tab_titulo_contas_pendentes);
             }
         }).attach();
     }

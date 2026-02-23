@@ -206,11 +206,17 @@ public class ContasActivity extends AppCompatActivity {
 
         // Observer para atualizar o SALDO
         Observer<Long> observerSaldo = saldoCentavos -> {
-            double saldoExibicao = saldoCentavos / 100.0;
-            textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
+            double valor = Math.abs(saldoCentavos / 100.0);
+            textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", valor));
 
-            if (saldoCentavos >= 0) textoSaldo.setTextColor(Color.WHITE);
-            else textoSaldo.setTextColor(Color.parseColor("#FFCDD2"));
+            if (ehAtalho) {
+                // Se for a aba de pendentes, a cor indica atenção
+                textoSaldo.setTextColor(Color.parseColor("#FFCCBC")); // Laranja claro
+                textSaldoAtual.setText("Total a pagar/receber");
+            } else {
+                textoSaldo.setTextColor(Color.WHITE);
+                textSaldoAtual.setText("Saldo total atual");
+            }
         };
 
         if (ehAtalho) {
@@ -326,7 +332,7 @@ public class ContasActivity extends AppCompatActivity {
 
         if (ehAtalho) { // TELA DE FUTUROS
             imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
-            textEmptyStateContas.setText("Nenhum planejamento para os próximos dias. 🎉");
+            textEmptyStateContas.setText("Tudo em dia. Nenhuma conta pendente 🎉");
             btnEmptyStateCTA.setText("COMEÇAR MEU PLANEJAMENTO");
             btnEmptyStateCTA.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#26A69A")));
         } else { // TELA DE HISTÓRICO
@@ -481,7 +487,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void atualizarLegendasFiltro(String query) {
-        if (ehAtalho) textSaldoAtual.setText("Saldo futuro estimado");
+        if (ehAtalho) textSaldoAtual.setText("Total pendente");
         else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
         else if (!query.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");
         else textSaldoAtual.setText("Saldo total atual");

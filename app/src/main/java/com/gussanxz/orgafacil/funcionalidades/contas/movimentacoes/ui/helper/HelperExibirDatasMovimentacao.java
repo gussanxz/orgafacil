@@ -7,7 +7,6 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.Ad
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,8 +14,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Helper responsável por transformar a lista bruta do Firestore em uma lista
- * organizada com Headers de data e cálculo de saldo diário.
+ * Helper responsável por agrupar a lista bruta em Headers de data e Fichas.
+ * [CORRIGIDO]: A ordenação agora é feita 100% pelo Firebase (Repositório).
  */
 public class HelperExibirDatasMovimentacao {
 
@@ -24,24 +23,19 @@ public class HelperExibirDatasMovimentacao {
 
     public static List<AdapterItemListaMovimentacao> agruparPorDiaOrdenar(List<MovimentacaoModel> movs, boolean ehModoFuturo) {
 
-        // 1. Ordenação Inteligente
-        List<MovimentacaoModel> copia = new ArrayList<>(movs);
-        Collections.sort(copia, (o1, o2) -> {
-            if (o1.getData_movimentacao() == null || o2.getData_movimentacao() == null) return 0;
+        Date hoje = zerarHora(new Date());
 
-            if (ehModoFuturo) {
-                // Contas Futuras: O que vence MAIS CEDO primeiro (Ordem Crescente)
-                return o1.getData_movimentacao().compareTo(o2.getData_movimentacao());
-            } else {
-                // Histórico: O mais RECENTE primeiro (Ordem Decrescente)
-                return o2.getData_movimentacao().compareTo(o1.getData_movimentacao());
-            }
-        });
+        movs.sort((m1, m2) ->
+                m2.getData_movimentacao().compareTo(m1.getData_movimentacao())
+        );
 
-        // 2. Agrupamento por Dia
+        // 1. Agrupamento por Dia
+        // Como o Firebase já mandou a lista ordenada (DESCENDING pro Histórico, ASCENDING pro Futuro),
+        // o LinkedHashMap vai apenas "empilhar" os dias respeitando essa exata ordem de chegada.
         Map<String, List<MovimentacaoModel>> porDia = new LinkedHashMap<>();
-        for (MovimentacaoModel m : copia) {
+        for (MovimentacaoModel m : movs) {
             if (m.getData_movimentacao() == null) continue;
+
             String dataKey = sdfKey.format(m.getData_movimentacao().toDate());
 
             if (!porDia.containsKey(dataKey)) {
@@ -50,10 +44,9 @@ public class HelperExibirDatasMovimentacao {
             porDia.get(dataKey).add(m);
         }
 
-        // 3. Montagem da Lista Final (Misturando Headers e Linhas normais)
+        // 2. Montagem da Lista Final (Headers e Fichas)
         List<AdapterItemListaMovimentacao> resultado = new ArrayList<>();
 
-        Date hoje = zerarHora(new Date());
         Calendar cal = Calendar.getInstance();
         cal.setTime(hoje);
         cal.add(Calendar.DAY_OF_YEAR, -1);
@@ -63,10 +56,9 @@ public class HelperExibirDatasMovimentacao {
             String dataStr = entry.getKey();
             List<MovimentacaoModel> listaDoDia = entry.getValue();
 
-            // Lógica de Saldo no Header (Sempre usando INT para precisão em centavos)
+            // Lógica de Saldo em Centavos (Int) para precisão financeira [cite: 2026-02-07]
             long saldoDiaCentavos = 0;
             for (MovimentacaoModel m : listaDoDia) {
-                // No modo futuro, somamos a estimativa. No histórico, somamos o que foi pago.
                 if (ehModoFuturo || m.isPago()) {
                     if (m.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                         saldoDiaCentavos -= m.getValor();
@@ -87,10 +79,8 @@ public class HelperExibirDatasMovimentacao {
                 }
             } catch (Exception ignored) {}
 
-            // Adiciona a "Ficha" do Cabeçalho
             resultado.add(AdapterItemListaMovimentacao.header(dataStr, tituloDia, (int) saldoDiaCentavos));
 
-            // Adiciona as "Fichas" das Movimentações logo abaixo
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(AdapterItemListaMovimentacao.linha(m));
             }

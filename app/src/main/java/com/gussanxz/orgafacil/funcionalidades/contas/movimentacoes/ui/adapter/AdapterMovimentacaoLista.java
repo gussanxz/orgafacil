@@ -90,20 +90,15 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
-                // [PRECISÃO]: Converte centavos para double na exibição
                 double saldoReal = item.saldoDia / 100.0;
-
-                // Formata o texto com o símbolo da moeda (R$)
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
 
-                // --- POLIMENTO ESTÉTICO ---
-                // Define a cor dinamicamente: Verde para positivo/zero, Vermelho para negativo
                 if (item.saldoDia > 0) {
-                    textSaldoDia.setTextColor(Color.parseColor("#008000")); // Verde escuro para melhor leitura
+                    textSaldoDia.setTextColor(Color.parseColor("#008000"));
                 } else if (item.saldoDia < 0) {
-                    textSaldoDia.setTextColor(Color.parseColor("#B00020")); // Vermelho padrão Material Design
+                    textSaldoDia.setTextColor(Color.parseColor("#B00020"));
                 } else {
-                    textSaldoDia.setTextColor(Color.parseColor("#9E9E9E")); // Cinza se o saldo for exatamente zero
+                    textSaldoDia.setTextColor(Color.parseColor("#9E9E9E"));
                 }
             }
         }
@@ -112,7 +107,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
         TextView textTitulo, textCategoria, textValor, textData, textHora;
         View viewIndicadorCor;
-        ImageButton btnConfirmar; // Mapeado do novo componente no XML
+        ImageButton btnConfirmar;
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -128,17 +123,49 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void bind(MovimentacaoModel mov) {
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getCategoria_nome());
+            textData.setTextColor(Color.parseColor("#888888"));
 
             if (mov.getData_movimentacao() != null) {
                 Date date = mov.getData_movimentacao().toDate();
                 textData.setText(dateFormat.format(date));
                 textHora.setText(hourFormat.format(date));
+
+                if (!mov.isPago()) {
+                    itemView.setAlpha(0.7f);
+
+                    if (btnConfirmar != null) {
+                        btnConfirmar.setVisibility(View.VISIBLE);
+                        btnConfirmar.setOnClickListener(v -> {
+                            if (listener != null) listener.onCheckClick(mov);
+                        });
+                    }
+
+                    if (mov.estaVencida()) {
+                        textData.setTextColor(Color.parseColor("#E53935"));
+                    } else if (mov.venceEmBreve()) {
+                        textData.setTextColor(Color.parseColor("#FF9800"));
+                    }
+                } else {
+                    itemView.setAlpha(1.0f);
+                    if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
+
+                    // --- [NOVO] EXIBIÇÃO DA AUDITORIA (VENCIMENTO ORIGINAL) ---
+                    if (mov.getData_vencimento_original() != null) {
+                        String strPago = dateFormat.format(date);
+                        String strVenc = dateFormat.format(mov.getData_vencimento_original().toDate());
+
+                        // Só exibe se as datas forem diferentes (para não ficar redundante)
+                        if (!strPago.equals(strVenc)) {
+                            // Pega apenas os 5 primeiros caracteres (ex: 28/02) para não quebrar o layout [cite: 2025-11-10]
+                            textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
+                        }
+                    }
+                }
             }
 
-            // [PRECISÃO]: Inteiro centavos para double exibição [cite: 2026-02-07]
+            // Precisão em Int respeitada! [cite: 2026-02-07]
             double valorReais = mov.getValor() / 100.0;
 
-            // [CLEAN CODE]: Uso de Enum em vez de IDs mágicos para definição de cores
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
@@ -149,31 +176,12 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
-            // [LOGICA STATUS]: Diferencia visualmente itens PAGOS de PENDENTES (FUTUROS)
-            // Itens com pago=false mostram o botão de check para confirmação.
-            if (!mov.isPago()) {
-                itemView.setAlpha(0.7f); // Sutil transparência para indicar pendência
-                if (btnConfirmar != null) {
-                    btnConfirmar.setVisibility(View.VISIBLE);
-                    btnConfirmar.setOnClickListener(v -> {
-                        if (listener != null) listener.onCheckClick(mov);
-                    });
-                }
-            } else {
-                itemView.setAlpha(1.0f); // Totalmente opaco para movimentações confirmadas
-                if (btnConfirmar != null) {
-                    btnConfirmar.setVisibility(View.GONE);
-                }
-            }
-
-            // Abre tela de edição ao clicar no item
             itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
                 context.startActivity(intent);
             });
 
-            // Clique longo para disparar o listener de ações adicionais
             itemView.setOnLongClickListener(v -> {
                 if (listener != null) listener.onLongClick(mov);
                 return true;
