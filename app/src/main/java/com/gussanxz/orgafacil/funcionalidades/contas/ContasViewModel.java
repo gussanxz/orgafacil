@@ -4,9 +4,10 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,9 +29,13 @@ public class ContasViewModel extends ViewModel {
     private final MutableLiveData<Long> _saldoPeriodo = new MutableLiveData<>();
     public LiveData<Long> saldoPeriodo = _saldoPeriodo;
 
-    // [NOVO] Saldo ESTIMADO (Futuro - Soma das previsões)
+    // Saldo ESTIMADO (Futuro - Soma das previsões)
     private final MutableLiveData<Long> _saldoFuturo = new MutableLiveData<>();
     public LiveData<Long> saldoFuturo = _saldoFuturo;
+
+    // Avisa a tela se está buscando mais itens (scroll infinito) para mostrar o ProgressBar
+    private final MutableLiveData<Boolean> _carregandoPaginacao = new MutableLiveData<>(false);
+    public LiveData<Boolean> carregandoPaginacao = _carregandoPaginacao;
 
     // --- CACHE DE DADOS ---
     private List<MovimentacaoModel> cacheHistorico = new ArrayList<>();
@@ -41,35 +46,152 @@ public class ContasViewModel extends ViewModel {
     private Date lastInicio = null;
     private Date lastFim = null;
 
+    // --- VARIÁVEIS DE CONTROLE DE PAGINAÇÃO (SCROLL INFINITO) ---
+    // [NOVO]: Controle de Histórico
+    private DocumentSnapshot ultimoDocumentoVisivelHistorico = null;
+    private boolean isUltimaPaginaHistorico = false;
+
+    // [NOVO]: Controle de Futuro
+    private DocumentSnapshot ultimoDocumentoVisivelFuturo = null;
+    private boolean isUltimaPaginaFuturo = false;
+
+    // Variável global
+    private boolean isCarregandoPagina = false;
+
     // --- MÉTODOS DE DADOS ---
 
+    /**
+     * Busca os dados iniciais.
+     * Agora ele direciona para a query correta do Repositório dependendo se é Futuro ou Histórico.
+     */
     public void fetchDados(MovimentacaoRepository repo, boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
         Date agora = new Date();
 
-        MovimentacaoRepository.DadosCallback internalCallback = new MovimentacaoRepository.DadosCallback() {
-            @Override
-            public void onSucesso(List<MovimentacaoModel> lista) {
-                cacheHistorico = new ArrayList<>();
-                cacheFuturo = new ArrayList<>();
+        if (ehModoFuturo) {
+            // ==========================================
+            // MODO FUTURO: Inicia a paginação do zero
+            // ==========================================
+            ultimoDocumentoVisivelFuturo = null;
+            isUltimaPaginaFuturo = false;
+            isCarregandoPagina = true;
 
-                for (MovimentacaoModel m : lista) {
-                    if (m == null) continue;
-                    if (m.isPago()) cacheHistorico.add(m);
-                    else cacheFuturo.add(m);
+            repo.recuperarContasFuturasPaginado(agora, null, new MovimentacaoRepository.DadosPaginadosCallback() {
+                @Override
+                public void onSucesso(List<MovimentacaoModel> lista, DocumentSnapshot ultimoDoc) {
+                    cacheFuturo = new ArrayList<>(lista);
+                    ultimoDocumentoVisivelFuturo = ultimoDoc;
+
+                    // Verifica se já chegou no fim
+                    if (lista.size() < 100) isUltimaPaginaFuturo = true;
+
+                    isCarregandoPagina = false;
+                    aplicarFiltros(lastQuery, lastInicio, lastFim);
+                    if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
-                // Reaplica os filtros para atualizar a UI e CALCULAR OS SALDOS
-                aplicarFiltros(lastQuery, lastInicio, lastFim);
 
-                if (callbackExterno != null) callbackExterno.onSucesso(lista);
+                @Override
+                public void onErro(String erro) {
+                    isCarregandoPagina = false;
+                    if (callbackExterno != null) callbackExterno.onErro(erro);
+                }
+            });
+
+        } else {
+            // ==========================================
+            // MODO HISTÓRICO: Inicia a paginação do zero
+            // ==========================================
+            ultimoDocumentoVisivelHistorico = null;
+            isUltimaPaginaHistorico = false;
+            isCarregandoPagina = true;
+
+            repo.recuperarHistoricoPaginado(agora, null, new MovimentacaoRepository.DadosPaginadosCallback() {
+                @Override
+                public void onSucesso(List<MovimentacaoModel> lista, DocumentSnapshot ultimoDoc) {
+                    cacheHistorico = new ArrayList<>(lista);
+                    ultimoDocumentoVisivelHistorico = ultimoDoc;
+
+                    if (lista.size() < 100) isUltimaPaginaHistorico = true;
+
+                    isCarregandoPagina = false;
+                    aplicarFiltros(lastQuery, lastInicio, lastFim);
+                    if (callbackExterno != null) callbackExterno.onSucesso(lista);
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    isCarregandoPagina = false;
+                    if (callbackExterno != null) callbackExterno.onErro(erro);
+                }
+            });
+        }
+    }
+
+    /**
+     * CARREGAR MAIS HISTÓRICO
+     */
+    public void carregarMaisHistorico(MovimentacaoRepository repo) {
+        if (isCarregandoPagina || isUltimaPaginaHistorico) return;
+
+        isCarregandoPagina = true;
+        _carregandoPaginacao.setValue(true); // AVISA A TELA
+        Date agora = new Date();
+
+        repo.recuperarHistoricoPaginado(agora, ultimoDocumentoVisivelHistorico, new MovimentacaoRepository.DadosPaginadosCallback() {
+            @Override
+            public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
+                if (novaLista.isEmpty()) {
+                    isUltimaPaginaHistorico = true;
+                } else {
+                    cacheHistorico.addAll(novaLista);
+                    ultimoDocumentoVisivelHistorico = novoUltimoDoc;
+                    if (novaLista.size() < 100) isUltimaPaginaHistorico = true;
+                }
+
+                isCarregandoPagina = false;
+                _carregandoPaginacao.setValue(false);
+                aplicarFiltros(lastQuery, lastInicio, lastFim);
             }
 
             @Override
             public void onErro(String erro) {
-                if (callbackExterno != null) callbackExterno.onErro(erro);
+                isCarregandoPagina = false;
+                _carregandoPaginacao.setValue(false);
             }
-        };
+        });
+    }
 
-        repo.recuperarMovimentacoes(internalCallback);
+    /**
+     * [NOVO] CARREGAR MAIS CONTAS FUTURAS
+     */
+    public void carregarMaisFuturo(MovimentacaoRepository repo) {
+        if (isCarregandoPagina || isUltimaPaginaFuturo) return;
+
+        isCarregandoPagina = true;
+        _carregandoPaginacao.setValue(true);
+        Date agora = new Date();
+
+        repo.recuperarContasFuturasPaginado(agora, ultimoDocumentoVisivelFuturo, new MovimentacaoRepository.DadosPaginadosCallback() {
+            @Override
+            public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
+                if (novaLista.isEmpty()) {
+                    isUltimaPaginaFuturo = true;
+                } else {
+                    cacheFuturo.addAll(novaLista);
+                    ultimoDocumentoVisivelFuturo = novoUltimoDoc;
+                    if (novaLista.size() < 100) isUltimaPaginaFuturo = true;
+                }
+
+                isCarregandoPagina = false;
+                _carregandoPaginacao.setValue(false);
+                aplicarFiltros(lastQuery, lastInicio, lastFim);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                isCarregandoPagina = false;
+                _carregandoPaginacao.setValue(false);
+            }
+        });
     }
 
     public void aplicarFiltros(String query, Date inicio, Date fim) {
@@ -87,7 +209,7 @@ public class ContasViewModel extends ViewModel {
 
         // --- Calcula Saldos ---
         calcularSaldoHistorico(resHistorico);
-        calcularSaldoFuturo(resFuturo); // [NOVO] Calcula o total da lista futura
+        calcularSaldoFuturo(resFuturo);
     }
 
     private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem, String query, Date inicio, Date fim, boolean isModoFuturo) {
@@ -99,7 +221,7 @@ public class ContasViewModel extends ViewModel {
 
             // Filtro de Status
             if (isModoFuturo && m.isPago()) continue;
-            if (!isModoFuturo && !m.isPago()) continue;   // histórico só pagos
+            if (!isModoFuturo && !m.isPago()) continue;
 
             // Filtro de Data
             boolean noPeriodo = true;
@@ -125,9 +247,6 @@ public class ContasViewModel extends ViewModel {
         return filtrados;
     }
 
-    /**
-     * Calcula o saldo do HISTÓRICO (Apenas PAGOS).
-     */
     private void calcularSaldoHistorico(List<MovimentacaoModel> listaParaSaldo) {
         long saldoCentavos = 0;
         for (MovimentacaoModel m : listaParaSaldo) {
@@ -142,13 +261,9 @@ public class ContasViewModel extends ViewModel {
         _saldoPeriodo.setValue(saldoCentavos);
     }
 
-    /**
-     * [NOVO] Calcula o saldo do FUTURO (Soma tudo o que está listado, pois é previsão).
-     */
     private void calcularSaldoFuturo(List<MovimentacaoModel> listaParaSaldo) {
         long saldoCentavos = 0;
         for (MovimentacaoModel m : listaParaSaldo) {
-            // Na lista futura, somamos tudo para dar a previsão de fluxo de caixa
             if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) {
                 saldoCentavos += m.getValor();
             } else {

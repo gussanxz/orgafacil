@@ -1,7 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.contas;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -11,7 +14,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.LayoutInflater;
@@ -32,22 +37,21 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.ContasViewModel;
-import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.modelos.ResumoFinanceiroModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.repository.MovimentacaoRepository;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.activity.ReceitasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.resumo_financeiro.repository.ResumoFinanceiroRepository;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.repository.ResumoFinanceiroRepository;
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.modelos.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.AdapterExibeListaMovimentacaoContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.ExibirItemListaMovimentacaoContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.visual.ui.HelperExibirDatasMovimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.HelperExibirDatasMovimentacao;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,7 +63,7 @@ import java.util.Locale;
 /**
  * ContasActivity Refatorada
  * Centraliza a exibição de movimentações e contas futuras através do ViewModel.
- * [CORREÇÃO]: Agora exibe o saldo estimado corretamente na tela de Contas Futuras.
+ * Agora com sistema de Virada de Mês e Scroll Infinito para os dois lados.
  */
 public class ContasActivity extends AppCompatActivity {
 
@@ -74,10 +78,11 @@ public class ContasActivity extends AppCompatActivity {
     private EditText editDataInicial, editDataFinal;
     private ImageView imgLimparFiltroData;
     private Button btnNovaDespesa, btnNovaReceita;
+    private ProgressBar progressBarPaginacao;
 
     // Estado e Visualização
-    private final List<ExibirItemListaMovimentacaoContas> itensAgrupados = new ArrayList<>();
-    private AdapterExibeListaMovimentacaoContas adapterAgrupado;
+    private final List<AdapterItemListaMovimentacao> itensAgrupados = new ArrayList<>();
+    private AdapterMovimentacaoLista adapterAgrupado;
     private Date dataInicialFiltro, dataFinalFiltro;
 
     // Motores de Dados (Repositories e ViewModel)
@@ -88,11 +93,17 @@ public class ContasActivity extends AppCompatActivity {
 
     private ActivityResultLauncher<Intent> launcher;
 
+    // UI Components do Estado Vazio
+    private View layoutEmptyStateContas;
+    private TextView textEmptyStateContas;
+    private Button btnEmptyStateCTA;
+    ImageView imgEmptyStateContas;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.ac_main_contas_lista_saldo);
+        setContentView(R.layout.tela_movimentacoes);
 
         // Inicialização da ViewModel
         viewModel = new ViewModelProvider(this).get(ContasViewModel.class);
@@ -123,6 +134,9 @@ public class ContasActivity extends AppCompatActivity {
         );
 
         if (ehAtalho) aplicarRegrasAtalho(extrasAtalho);
+
+        // Verifica se o mês virou logo que a tela é criada
+        verificarViradaDeMes();
     }
 
     @Override
@@ -131,35 +145,78 @@ public class ContasActivity extends AppCompatActivity {
         carregarDados();
     }
 
+    // --- VIRADA DE MÊS ---
+
+    private void verificarViradaDeMes() {
+        SharedPreferences prefs = getSharedPreferences("OrgaFacilPrefs", Context.MODE_PRIVATE);
+        int mesSalvo = prefs.getInt("mes_ultimo_acesso", -1);
+        int mesAtual = Calendar.getInstance().get(Calendar.MONTH);
+
+        if (mesSalvo != -1 && mesSalvo != mesAtual) {
+            Log.i(TAG, "Virada de Mês detectada! Zerando estatísticas de " + mesSalvo + " para " + mesAtual);
+
+            movRepository.zerarEstatisticasMensais(new MovimentacaoRepository.Callback() {
+                @Override
+                public void onSucesso(String msg) {
+                    Log.i(TAG, msg);
+                    prefs.edit().putInt("mes_ultimo_acesso", mesAtual).apply();
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    Log.e(TAG, "Falha ao zerar mês: " + erro);
+                }
+            });
+        } else if (mesSalvo == -1) {
+            prefs.edit().putInt("mes_ultimo_acesso", mesAtual).apply();
+        }
+    }
+
     // --- CONEXÃO COM A VIEWMODEL (OBSERVERS) ---
 
     private void setupObservers() {
+        // Fica de olho se a paginação está carregando para mostrar a bolinha
+        viewModel.carregandoPaginacao.observe(this, isCarregando -> {
+            if (isCarregando) {
+                progressBarPaginacao.setVisibility(View.VISIBLE);
+            } else {
+                progressBarPaginacao.setVisibility(View.GONE);
+            }
+        });
+
         // Observer para atualizar a LISTA
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
+
+            // [LÓGICA DE CONTROLE]: Se a lista está vazia, mostra o CTA. Se não, mostra o RecyclerView.
+            if (lista == null || lista.isEmpty()) {
+                recyclerView.setVisibility(View.GONE);
+                layoutEmptyStateContas.setVisibility(View.VISIBLE);
+            } else {
+                recyclerView.setVisibility(View.VISIBLE);
+                layoutEmptyStateContas.setVisibility(View.GONE);
+            }
+
             itensAgrupados.clear();
-            itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho));
+            if (lista != null) {
+                itensAgrupados.addAll(HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho));
+            }
             adapterAgrupado.notifyDataSetChanged();
             atualizarLegendasFiltro(searchView.getQuery().toString());
         };
 
         // Observer para atualizar o SALDO
         Observer<Long> observerSaldo = saldoCentavos -> {
-            // [PRECISÃO] Converte centavos (long) para exibição apenas na UI
             double saldoExibicao = saldoCentavos / 100.0;
             textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao));
 
-            // Opcional: Mudar cor do saldo
             if (saldoCentavos >= 0) textoSaldo.setTextColor(Color.WHITE);
             else textoSaldo.setTextColor(Color.parseColor("#FFCDD2"));
         };
 
-        // Decide qual LiveData observar com base no modo da Activity
         if (ehAtalho) {
-            // MODO FUTURO: Observa lista futura e saldo futuro
             viewModel.listaFutura.observe(this, observerUI);
             viewModel.saldoFuturo.observe(this, observerSaldo);
         } else {
-            // MODO HISTÓRICO: Observa lista histórico e saldo histórico
             viewModel.listaHistorico.observe(this, observerUI);
             viewModel.saldoPeriodo.observe(this, observerSaldo);
         }
@@ -170,8 +227,6 @@ public class ContasActivity extends AppCompatActivity {
     private void carregarDados() {
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
-        // Se estiver no MODO HISTÓRICO e sem filtros, tenta pegar o saldo global do Resumo Geral
-        // para exibir enquanto a lista carrega ou se estiver vazia.
         if (!ehAtalho && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
             resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
                 @Override
@@ -190,7 +245,6 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void recuperarMovimentacoesDoBanco() {
-        // [CORREÇÃO]: Passa o modo 'ehAtalho' explicitamente para o fetchDados.
         viewModel.fetchDados(movRepository, ehAtalho, new MovimentacaoRepository.DadosCallback() {
             @Override public void onSucesso(List<MovimentacaoModel> lista) { /* UI via Observer */ }
             @Override public void onErro(String erro) {
@@ -263,27 +317,78 @@ public class ContasActivity extends AppCompatActivity {
         searchView = findViewById(R.id.searchViewEventos);
         btnNovaDespesa = findViewById(R.id.btnNovaDespesa);
         btnNovaReceita = findViewById(R.id.btnNovaReceita);
+        progressBarPaginacao = findViewById(R.id.progressBarPaginacao);
+
+        layoutEmptyStateContas = findViewById(R.id.layoutEmptyStateContas);
+        textEmptyStateContas = findViewById(R.id.textEmptyStateContas);
+        btnEmptyStateCTA = findViewById(R.id.btnEmptyStateCTA);
+        imgEmptyStateContas = findViewById(R.id.imgEmptyStateContas);
+
+        if (ehAtalho) { // TELA DE FUTUROS
+            imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
+            textEmptyStateContas.setText("Nenhum planejamento para os próximos dias. 🎉");
+            btnEmptyStateCTA.setText("COMEÇAR MEU PLANEJAMENTO");
+            btnEmptyStateCTA.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#26A69A")));
+        } else { // TELA DE HISTÓRICO
+            imgEmptyStateContas.setImageResource(R.drawable.ic_receipt_long_28);
+            textEmptyStateContas.setText("Você ainda não registrou movimentações.");
+            btnEmptyStateCTA.setText("ADICIONAR MINHA PRIMEIRA MOVIMENTAÇÃO");
+            btnEmptyStateCTA.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF7043")));
+        }
+
+        btnEmptyStateCTA.setOnClickListener(v -> {
+            abrirMenuEscolha();
+            v.performHapticFeedback(
+                    android.view.HapticFeedbackConstants.LONG_PRESS,
+                    android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING // Força a vibração
+            );
+        });
     }
 
     private void configurarRecyclerView() {
-        adapterAgrupado = new AdapterExibeListaMovimentacaoContas(
+        adapterAgrupado = new AdapterMovimentacaoLista(
                 this,
                 itensAgrupados,
-                new AdapterExibeListaMovimentacaoContas.OnItemActionListener() {
+                new AdapterMovimentacaoLista.OnItemActionListener() {
                     @Override public void onDeleteClick(MovimentacaoModel m) { confirmarExclusao(m, -1); }
                     @Override public void onLongClick(MovimentacaoModel m) { abrirTelaEdicao(m); }
                     @Override public void onCheckClick(MovimentacaoModel m) { confirmarPagamentoOuRecebimento(m); }
                 }
         );
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapterAgrupado);
+
+        // [NOVO] ESPIÃO DE PAGINAÇÃO: Escuta quando o usuário rola a lista para baixo
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                // dy > 0 significa rolar para baixo
+                if (dy > 0) {
+                    int visibleItemCount = layoutManager.getChildCount();
+                    int totalItemCount = layoutManager.getItemCount();
+                    int pastVisibleItems = layoutManager.findFirstVisibleItemPosition();
+
+                    if ((visibleItemCount + pastVisibleItems) >= totalItemCount) {
+                        // [CORREÇÃO]: Agora direciona para o método correto dependendo da aba
+                        if (ehAtalho) {
+                            viewModel.carregarMaisFuturo(movRepository);
+                        } else {
+                            viewModel.carregarMaisHistorico(movRepository);
+                        }
+                    }
+                }
+            }
+        });
 
         new ItemTouchHelper(new SwipeCallback(this) {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int dir) {
                 int pos = vh.getAdapterPosition();
-                if (itensAgrupados.get(pos).type == ExibirItemListaMovimentacaoContas.TYPE_MOVIMENTO) {
+                if (itensAgrupados.get(pos).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
                     MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
                     if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
                     else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
@@ -353,6 +458,28 @@ public class ContasActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void abrirMenuEscolha() {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+
+        View view = getLayoutInflater().inflate(R.layout.layout_bottom_escolha_despesa_receita, null);
+        dialog.setContentView(view);
+
+        // Clique na Receita
+        view.findViewById(R.id.btnEscolhaReceita).setOnClickListener(v -> {
+            dialog.dismiss();
+            adicionarReceita(null); // Chama sua função já existente
+        });
+
+        // Clique na Despesa
+        view.findViewById(R.id.btnEscolhaDespesa).setOnClickListener(v -> {
+            dialog.dismiss();
+            adicionarDespesa(null); // Chama sua função já existente
+        });
+
+        dialog.show();
+    }
+
     private void atualizarLegendasFiltro(String query) {
         if (ehAtalho) textSaldoAtual.setText("Saldo futuro estimado");
         else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
@@ -382,7 +509,7 @@ public class ContasActivity extends AppCompatActivity {
         if (ehAtalho) {
             intent.putExtra("EH_CONTA_FUTURA", true);
             intent.putExtra("TITULO_TELA", "Agendar Receita");
-            intent.putExtra("EH_ATALHO", true); // mantém padrão atual do app
+            intent.putExtra("EH_ATALHO", true);
         }
 
         launcher.launch(intent);

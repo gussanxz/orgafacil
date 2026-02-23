@@ -88,22 +88,22 @@
             android:exported="false"
             android:theme="@style/principalTheme" />
         <activity
-            android:name=".funcionalidades.contas.categorias.visual.SelecionarCategoriaContasActivity"
+            android:name=".funcionalidades.contas.categorias.ui.SelecionarCategoriaContasActivity"
             android:exported="false" />
 
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.activity.DespesasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity"
             android:exported="false"
             android:theme="@style/despesaTheme" />
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.activity.ReceitasActivity"
+            android:name=".funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity"
             android:exported="false"
             android:theme="@style/proventosTheme" />
         <activity
-            android:name=".funcionalidades.contas.movimentacoes.visual.activity.EditarMovimentacaoActivity"
+            android:name=".funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity"
             android:exported="false" />
         <activity
-            android:name=".funcionalidades.contas.resumo_financeiro.visual.ResumoContasActivity"
+            android:name=".funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity"
             android:exported="false" />
 
 

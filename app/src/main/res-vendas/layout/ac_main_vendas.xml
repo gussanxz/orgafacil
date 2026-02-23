@@ -295,6 +295,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:backgroundTint="#FF4081"
+        android:translationY="-40dp"
         app:layout_anchor="@id/bottomAppBar"
         app:layout_anchorGravity="center"
         app:srcCompat="@drawable/ic_shopping_cart_checkout_24"
