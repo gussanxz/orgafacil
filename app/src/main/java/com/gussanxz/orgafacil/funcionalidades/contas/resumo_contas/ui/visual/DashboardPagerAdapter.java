@@ -20,10 +20,10 @@ public class DashboardPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        // Posição 0: Aba "Últimas Movimentações" (Histórico -> ehModoFuturo = false)
-        // Posição 1: Aba "Contas a Vencer" (Futuras -> ehModoFuturo = true)
+        // Posição 0: Aba "Contas a Vencer" (Futuras -> ehModoFuturo = true)
+        // Posição 1: Aba "Últimas Movimentações" (Histórico -> ehModoFuturo = false)
 
-        boolean ehModoFuturo = (position == 1);
+        boolean ehModoFuturo = (position == 0);
         return ListaMovimentacoesFragment.newInstance(ehModoFuturo);
     }
 

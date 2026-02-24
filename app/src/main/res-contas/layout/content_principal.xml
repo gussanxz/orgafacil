@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
     <!-- HEADER AZUL -->
@@ -65,18 +65,26 @@
             android:layout_height="50dp"
             android:layout_marginStart="8dp"
             android:hint="Data Inicial"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="8dp"
-            android:textSize="16sp"/>
+            android:focusable="false"
+            android:gravity="center"
+            android:background="@drawable/bg_chip_filtro"
+            android:textSize="15sp"
+            android:textColor="#222222"
+            android:textColorHint="#888888" />
+
         <EditText
             android:id="@+id/editDataFinal"
             android:layout_width="100dp"
             android:layout_height="50dp"
             android:layout_marginStart="8dp"
             android:hint="Data Final"
-            android:gravity="center_vertical"
+            android:focusable="false"
+            android:gravity="center"
+            android:background="@drawable/bg_chip_filtro"
             android:paddingHorizontal="8dp"
-            android:textSize="16sp"/>
+            android:textSize="15sp"
+            android:textColor="#222222"
+            android:textColorHint="#888888" />
 
         <ImageView
             android:id="@+id/imgLimparFiltroData"
@@ -84,7 +92,9 @@
             android:layout_height="50dp"
             android:layout_marginStart="8dp"
             android:padding="8dp"
-            android:src="@drawable/ic_x_24"/>
+            android:src="@drawable/ic_x_24"
+            android:background="@drawable/bg_chip_clear"
+            app:tint="@android:color/white"/>
 
     </LinearLayout>
 

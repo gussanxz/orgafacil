@@ -33,7 +33,7 @@ public class ContasViewModel extends ViewModel {
     private final MutableLiveData<Long> _saldoFuturo = new MutableLiveData<>();
     public LiveData<Long> saldoFuturo = _saldoFuturo;
 
-    // Avisa a tela se está buscando mais itens (scroll infinito) para mostrar o ProgressBar
+    // Avisa a tela se está buscando mais itens (scroll infinito ou carga inicial) para mostrar o ProgressBar
     private final MutableLiveData<Boolean> _carregandoPaginacao = new MutableLiveData<>(false);
     public LiveData<Boolean> carregandoPaginacao = _carregandoPaginacao;
 
@@ -47,11 +47,11 @@ public class ContasViewModel extends ViewModel {
     private Date lastFim = null;
 
     // --- VARIÁVEIS DE CONTROLE DE PAGINAÇÃO (SCROLL INFINITO) ---
-    // [NOVO]: Controle de Histórico
+    // Controle de Histórico
     private DocumentSnapshot ultimoDocumentoVisivelHistorico = null;
     private boolean isUltimaPaginaHistorico = false;
 
-    // [NOVO]: Controle de Futuro
+    // Controle de Futuro
     private DocumentSnapshot ultimoDocumentoVisivelFuturo = null;
     private boolean isUltimaPaginaFuturo = false;
 
@@ -66,6 +66,9 @@ public class ContasViewModel extends ViewModel {
      */
     public void fetchDados(MovimentacaoRepository repo, boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
         Date agora = new Date();
+
+        // [CORREÇÃO] Avisa a Activity que começou a carregar
+        _carregandoPaginacao.setValue(true);
 
         if (ehModoFuturo) {
             // ==========================================
@@ -85,6 +88,7 @@ public class ContasViewModel extends ViewModel {
                     if (lista.size() < 100) isUltimaPaginaFuturo = true;
 
                     isCarregandoPagina = false;
+                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
@@ -92,6 +96,7 @@ public class ContasViewModel extends ViewModel {
                 @Override
                 public void onErro(String erro) {
                     isCarregandoPagina = false;
+                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
                     if (callbackExterno != null) callbackExterno.onErro(erro);
                 }
             });
@@ -113,6 +118,7 @@ public class ContasViewModel extends ViewModel {
                     if (lista.size() < 100) isUltimaPaginaHistorico = true;
 
                     isCarregandoPagina = false;
+                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
@@ -120,6 +126,7 @@ public class ContasViewModel extends ViewModel {
                 @Override
                 public void onErro(String erro) {
                     isCarregandoPagina = false;
+                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
                     if (callbackExterno != null) callbackExterno.onErro(erro);
                 }
             });
@@ -161,7 +168,7 @@ public class ContasViewModel extends ViewModel {
     }
 
     /**
-     * [NOVO] CARREGAR MAIS CONTAS FUTURAS
+     * CARREGAR MAIS CONTAS FUTURAS
      */
     public void carregarMaisFuturo(MovimentacaoRepository repo) {
         if (isCarregandoPagina || isUltimaPaginaFuturo) return;

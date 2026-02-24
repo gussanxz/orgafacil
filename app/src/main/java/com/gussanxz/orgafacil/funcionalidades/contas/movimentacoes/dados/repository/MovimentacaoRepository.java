@@ -38,9 +38,11 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
+    // ==========================================
+    // HISTÓRICO: DECRESCENTE (Mais recente -> Mais antigo)
+    // ==========================================
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
-                // [ATUALIZADO]: Busca apenas o que foi pago
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .limit(100)
@@ -51,7 +53,6 @@ public class MovimentacaoRepository {
 
     public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDocumentoVisivel, DadosPaginadosCallback callback) {
         Query query = FirestoreSchema.contasMovimentacoesCol()
-                // [ATUALIZADO]: Busca apenas o que foi pago
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.DESCENDING)
                 .limit(100);
@@ -72,6 +73,9 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
+    // ==========================================
+    // PENDÊNCIAS: CRESCENTE (Urgente/Atrasada -> Futuro)
+    // ==========================================
     public void recuperarContasFuturas(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
@@ -156,10 +160,8 @@ public class MovimentacaoRepository {
 
         impactoPendente(batch, mov, -1);
 
-        // --- [APRIMORAMENTO]: GUARDA O RASTRO DO VENCIMENTO ORIGINAL ---
         Timestamp dataVencimentoAntiga = mov.getData_movimentacao();
         batch.update(movRef, "data_vencimento_original", dataVencimentoAntiga);
-        // ----------------------------------------------------------------
 
         mov.setPago(true);
         Timestamp dataPagamentoReal = Timestamp.now();
@@ -248,12 +250,9 @@ public class MovimentacaoRepository {
                 cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH);
     }
 
-    // --- [ATUALIZADO] SALVAR RECORRENTE COM ID DE GRUPO ---
     public void salvarRecorrente(MovimentacaoModel movBase, int qtdMeses, Callback callback) {
         WriteBatch batch = db.batch();
         Calendar calendar = Calendar.getInstance();
-
-        // Gera o Vínculo de Grupo (Pilar 1)
         String grupoId = java.util.UUID.randomUUID().toString();
 
         for (int i = 0; i < qtdMeses; i++) {
@@ -265,7 +264,6 @@ public class MovimentacaoRepository {
             parcela.setCategoria_nome(movBase.getCategoria_nome());
             parcela.setTipoEnum(movBase.getTipoEnum());
 
-            // Associa os dados do grupo
             parcela.setRecorrencia_id(grupoId);
             parcela.setParcela_atual(i + 1);
             parcela.setTotal_parcelas(qtdMeses);

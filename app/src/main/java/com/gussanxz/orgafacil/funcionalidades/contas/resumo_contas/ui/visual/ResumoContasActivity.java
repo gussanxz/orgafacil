@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,6 +24,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
+import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
@@ -40,13 +42,13 @@ public class ResumoContasActivity extends AppCompatActivity {
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
     // UI Dashboard (IDs mapeados do XML)
-    private TextView textSaldoGeral; // Mapeado para R.id.textSaldo
-    private TextView textReceitasMes; // Mapeado para R.id.textReceitasDashboard
-    private TextView textDespesasMes; // Mapeado para R.id.textDespesasDashboard
+    private TextView textSaldoGeral;
+    private ImageView imgOlhoSaldo;
     private TextView labelDespesaFutura;
     private TextView labelReceitaFutura;
     private TextView labelNovaDespesa;
     private TextView labelNovaReceita;
+
     // Layout Components
     private LinearLayout btnFooterContas, btnFooterMovimentacoes;
     private TabLayout tabLayout;
@@ -71,17 +73,13 @@ public class ResumoContasActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 1. Inicializa componentes visuais
         inicializarComponentes();
 
-        // 2. Inicializa e conecta o ViewModel
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         setupDashboardObserver();
 
-        // [NOVO] 2.1 Verifica a virada de mês usando o contexto desta Activity
         viewModel.verificarViradaDeMes(this);
 
-        // 3. Configurações de layout (Tabs, Menu, Footer)
         setupSlideView();
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
@@ -89,13 +87,9 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground.setOnClickListener(v -> fecharMenu());
     }
 
-    /**
-     * Vincula os IDs do XML às variáveis Java.
-     */
     private void inicializarViewsDashboard() {
         textSaldoGeral = findViewById(R.id.textSaldo);
-        textReceitasMes = findViewById(R.id.textReceitasDashboard);
-        textDespesasMes = findViewById(R.id.textDespesasDashboard);
+        imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
     }
 
     private void inicializarComponentes() {
@@ -107,33 +101,39 @@ public class ResumoContasActivity extends AppCompatActivity {
         bottomAppBar = findViewById(R.id.bottomAppBar);
     }
 
-    /**
-     * Escuta as mudanças do Firebase em tempo real e atualiza os textos.
-     */
     private void setupDashboardObserver() {
         viewModel.resumoDados.observe(this, resumo -> {
-            if (resumo == null) return;
+            if (resumo == null || textSaldoGeral == null) return;
 
-            // Converter centavos para Double
-            double saldo = resumo.getBalanco().getSaldoAtual() / 100.0;
-            double receitas = resumo.getBalanco().getReceitasMes() / 100.0;
-            double despesas = resumo.getBalanco().getDespesasMes() / 100.0;
+            // Mantemos o uso de Int para precisão
+            int saldoCentavos = resumo.getBalanco().getSaldoAtual();
+            double saldoDouble = saldoCentavos / 100.0;
+            String valorFormatado = currencyFormat.format(saldoDouble);
 
-            // Atualiza Texto Saldo
-            if (textSaldoGeral != null) {
-                textSaldoGeral.setText(currencyFormat.format(saldo));
-                // Cor dinâmica: Verde se positivo, Vermelho se negativo
-                if (saldo >= 0) textSaldoGeral.setTextColor(Color.WHITE);
-                else textSaldoGeral.setTextColor(Color.parseColor("#FFCDD2")); // Vermelho claro p/ fundo escuro
+            // Regra de cores
+            if (saldoCentavos > 0) {
+                textSaldoGeral.setTextColor(Color.parseColor("#4CAF50")); // Verde
+            } else if (saldoCentavos < 0) {
+                textSaldoGeral.setTextColor(Color.parseColor("#E53935")); // Vermelho
+            } else {
+                textSaldoGeral.setTextColor(Color.WHITE); // Branco
             }
 
-            // Atualiza Receitas e Despesas
-            if (textReceitasMes != null) textReceitasMes.setText(currencyFormat.format(receitas));
-            if (textDespesasMes != null) textDespesasMes.setText(currencyFormat.format(despesas));
+            // Verifica se o olho está atualmente fechado (usando a Tag do Helper)
+            boolean estaOculto = imgOlhoSaldo.getTag() != null && !(boolean) imgOlhoSaldo.getTag();
+
+            if (estaOculto) {
+                textSaldoGeral.setText("R$ **** ");
+            } else {
+                textSaldoGeral.setText(valorFormatado);
+            }
+
+            // Configura o clique no olho utilizando o Helper e passando o valor mais recente
+            imgOlhoSaldo.setOnClickListener(v -> {
+                VisibilidadeHelper.alternarVisibilidadeSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado);
+            });
         });
     }
-
-    // --- Métodos de Configuração Visual (Mantidos) ---
 
     private void configurarBottomAppBarCustomizada() {
         bottomAppBar.setContentInsetsAbsolute(0, 0);
@@ -208,8 +208,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         labelNovaReceita = findViewById(R.id.label_fab_nova_receita);
     }
 
-    // --- Navegação ---
-
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("EH_ATALHO", true);
@@ -252,8 +250,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         Log.i(TAG, "acessou ContasActivity");
     }
 
-    // --- Animações ---
-
     private void abrirMenu() {
         isMenuOpen = true;
         overlayBackground.setVisibility(View.VISIBLE);
@@ -263,17 +259,16 @@ public class ResumoContasActivity extends AppCompatActivity {
                 setInterpolator(interpolator).setDuration(400).start();
         fabMain.animate().setInterpolator(interpolator).rotation(45f).setDuration(300).start();
 
-        // FABs
         animarBotao(fabDespesaFutura, -320f, -200f);
         animarBotao(fabReceitaFutura, -150f, -420f);
         animarBotao(fabNovaDespesa, 150f, -420f);
         animarBotao(fabNovaReceita, 320f, -200f);
 
-        // Labels acima do FAB (mesmas coords)
         animarLabelAcimaDoFab(labelDespesaFutura, -320f, -200f);
         animarLabelAcimaDoFab(labelReceitaFutura,  -150f,  -420f);
         animarLabelAcimaDoFab(labelNovaDespesa,    150f,-420f);
-        animarLabelAcimaDoFab(labelNovaReceita,    320f, -200f);    }
+        animarLabelAcimaDoFab(labelNovaReceita,    320f, -200f);
+    }
 
     private void fecharMenu() {
         isMenuOpen = false;
@@ -281,13 +276,11 @@ public class ResumoContasActivity extends AppCompatActivity {
         radialSpotlight.animate().alpha(0f).scaleX(0f).scaleY(0f).setDuration(300).withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE)).start();
         fabMain.animate().setInterpolator(interpolator).rotation(0f).setDuration(300).start();
 
-        // recolhe FABs
         recolherBotao(fabDespesaFutura);
         recolherBotao(fabNovaDespesa);
         recolherBotao(fabNovaReceita);
         recolherBotao(fabReceitaFutura);
 
-        // recolhe Labels
         recolherBotao(labelDespesaFutura);
         recolherBotao(labelReceitaFutura);
         recolherBotao(labelNovaDespesa);
@@ -303,13 +296,14 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void recolherBotao(View view) {
         view.animate().translationX(0f).translationY(0f).alpha(0f).setInterpolator(interpolator).setDuration(300).withEndAction(() -> view.setVisibility(View.INVISIBLE)).start();
     }
+
     private void animarLabelAcimaDoFab(TextView label, float fabX, float fabY) {
         label.setVisibility(View.VISIBLE);
         label.setAlpha(0f);
 
         label.animate()
-                .translationX(fabX)               // <-- 1:1 com o FAB
-                .translationY(fabY - dp(44))      // <-- acima do FAB
+                .translationX(fabX)
+                .translationY(fabY - dp(44))
                 .alpha(1f)
                 .setInterpolator(interpolator)
                 .setDuration(250)
@@ -330,9 +324,9 @@ public class ResumoContasActivity extends AppCompatActivity {
         viewPager.setAdapter(adapter);
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
-                tab.setText(R.string.tab_titulo_ultimas_mov);
-            } else {
                 tab.setText(R.string.tab_titulo_contas_pendentes);
+            } else {
+                tab.setText(R.string.tab_titulo_ultimas_mov);
             }
         }).attach();
     }

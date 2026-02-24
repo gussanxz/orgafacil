@@ -69,6 +69,7 @@ public class ContasActivity extends AppCompatActivity {
 
     private final String TAG = "ContasActivity";
     private boolean ehAtalho = false; // Define se é modo Futuro (true) ou Histórico (false)
+    private boolean isPrimeiroCarregamento = true; // [NOVO] Evita piscar a tela
     private Bundle extrasAtalho = null;
 
     // UI Components
@@ -175,17 +176,27 @@ public class ContasActivity extends AppCompatActivity {
     // --- CONEXÃO COM A VIEWMODEL (OBSERVERS) ---
 
     private void setupObservers() {
-        // Fica de olho se a paginação está carregando para mostrar a bolinha
+        // [CORREÇÃO] Fica de olho se a paginação está carregando para mostrar a bolinha e esconder as views no inicio
         viewModel.carregandoPaginacao.observe(this, isCarregando -> {
             if (isCarregando) {
                 progressBarPaginacao.setVisibility(View.VISIBLE);
+
+                // Se for o primeiro carregamento da tela, esconde a lista e o estado vazio
+                if (isPrimeiroCarregamento) {
+                    recyclerView.setVisibility(View.GONE);
+                    layoutEmptyStateContas.setVisibility(View.GONE);
+                }
             } else {
                 progressBarPaginacao.setVisibility(View.GONE);
+                isPrimeiroCarregamento = false;
             }
         });
 
         // Observer para atualizar a LISTA
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
+
+            // Se ainda estiver na primeira vez e o loading não acabou, ignora
+            if (isPrimeiroCarregamento && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
             // [LÓGICA DE CONTROLE]: Se a lista está vazia, mostra o CTA. Se não, mostra o RecyclerView.
             if (lista == null || lista.isEmpty()) {
@@ -366,7 +377,7 @@ public class ContasActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapterAgrupado);
 
-        // [NOVO] ESPIÃO DE PAGINAÇÃO: Escuta quando o usuário rola a lista para baixo
+        // ESPIÃO DE PAGINAÇÃO: Escuta quando o usuário rola a lista para baixo
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -379,7 +390,6 @@ public class ContasActivity extends AppCompatActivity {
                     int pastVisibleItems = layoutManager.findFirstVisibleItemPosition();
 
                     if ((visibleItemCount + pastVisibleItems) >= totalItemCount) {
-                        // [CORREÇÃO]: Agora direciona para o método correto dependendo da aba
                         if (ehAtalho) {
                             viewModel.carregarMaisFuturo(movRepository);
                         } else {

@@ -131,7 +131,6 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 textHora.setText(hourFormat.format(date));
 
                 if (!mov.isPago()) {
-                    itemView.setAlpha(0.7f);
 
                     if (btnConfirmar != null) {
                         btnConfirmar.setVisibility(View.VISIBLE);
@@ -146,7 +145,6 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                         textData.setTextColor(Color.parseColor("#FF9800"));
                     }
                 } else {
-                    itemView.setAlpha(1.0f);
                     if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
 
                     // --- [NOVO] EXIBIÇÃO DA AUDITORIA (VENCIMENTO ORIGINAL) ---

@@ -37,13 +37,14 @@ import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 /**
  * DespesasActivity
  * Agora utiliza o MovimentacaoModel unificado com suporte a Mapas (Dot Notation).
- * Define automaticamente o status 'pago' com base na data escolhida.
+ * Define automaticamente o status 'pago' com base na data escolhida ou intenção inicial.
  */
 public class DespesasActivity extends AppCompatActivity {
 
@@ -68,6 +69,8 @@ public class DespesasActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.tela_add_despesa);
+
+        // Captura a intenção vinda do menu (Agendar vs Nova)
         ehContaFutura = getIntent().getBooleanExtra("EH_CONTA_FUTURA", false);
 
         if (!FirebaseSession.isUserLogged()) {
@@ -172,9 +175,9 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     private void verificarModoEdicao() {
+        // 1. Lógica de Recuperação de Dados (Edição)
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
             MovimentacaoModel movRecebida;
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 movRecebida = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
             } else {
@@ -187,8 +190,7 @@ public class DespesasActivity extends AppCompatActivity {
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                double valorReais = MoedaHelper.centavosParaDouble(valorCentavosAtual);
-                campoValor.setText(MoedaHelper.formatarParaBRL(valorReais));
+                campoValor.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(valorCentavosAtual)));
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 
@@ -201,37 +203,42 @@ public class DespesasActivity extends AppCompatActivity {
             }
         } else {
             isEdicao = false;
-            campoData.setText(DatePickerHelper.setDataAtual());
-            campoHora.setText(TimePickerHelper.setHoraAtual());
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
         }
-        // 1) Se veio do botão "Conta Futura" do Resumo: SEMPRE pendente e travado
-        if (ehContaFutura) {
-            switchStatusPago.setChecked(false);
-            switchStatusPago.setEnabled(false);
-            switchStatusPago.setText("Status: Pendente");
-            return;
-        }
 
-// 2) Se NÃO é edição (novo lançamento normal): sempre OK e travado
+        // 2. Configuração de "Smart Defaults" (Padrões Inteligentes) baseados na intenção inicial
         if (!isEdicao) {
-            switchStatusPago.setChecked(true);
-            switchStatusPago.setEnabled(false);
-            switchStatusPago.setText("Status: OK");
-            return;
+            if (ehContaFutura) {
+                // MODO AGENDAR: Sugere amanhã e Status Pendente
+                Calendar c = Calendar.getInstance();
+                c.add(Calendar.DAY_OF_YEAR, 1);
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(c.getTime()));
+                campoHora.setText("08:00");
+
+                switchStatusPago.setChecked(false);
+                switchStatusPago.setText("Status: Pendente");
+            } else {
+                // MODO NOVA MOVIMENTAÇÃO: Hoje e Status OK
+                campoData.setText(DatePickerHelper.setDataAtual());
+                campoHora.setText(TimePickerHelper.setHoraAtual());
+
+                switchStatusPago.setChecked(true);
+                switchStatusPago.setText("Status: OK");
+            }
+        } else {
+            // MODO EDIÇÃO: Respeita o que já estava salvo no banco
+            boolean pago = itemEmEdicao != null && itemEmEdicao.isPago();
+            switchStatusPago.setChecked(pago);
+            switchStatusPago.setText(pago ? "Status: OK" : "Status: Pendente");
         }
 
-// 3) Se é edição: usuário pode alternar conforme valor salvo
+        // SEMPRE deixa o switch habilitado para o usuário ter a decisão final independente de como entrou
         switchStatusPago.setEnabled(true);
-        switchStatusPago.setChecked(itemEmEdicao != null && itemEmEdicao.isPago());
-        switchStatusPago.setText(switchStatusPago.isChecked() ? "Status: OK" : "Status: Pendente");
-
-        aplicarStatusInicial();
     }
 
     /**
      * SALVAR DESPESA
-     * [ATUALIZADO]: Usa setTipoEnum para salvar como String no banco e define status pago.
+     * O status 'pago' é definido pela escolha final do usuário no switch.
      */
     public void salvarDespesa(View view) {
         if (!validarCamposDespesas()) return;
@@ -242,7 +249,7 @@ public class DespesasActivity extends AppCompatActivity {
         mov.setValor(valorCentavosAtual);
         mov.setDescricao(campoDescricao.getText().toString());
 
-        // [ATUALIZADO]: Usa o Enum para salvar "DESPESA" como String no Firestore
+        // Usa o Enum para salvar "DESPESA" como String no Firestore
         mov.setTipoEnum(TipoCategoriaContas.DESPESA);
 
         // 2. Categoria
@@ -253,7 +260,7 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setCategoria_id("geral_despesa");
         }
 
-        // 3. Data e Status de Pagamento Inteligente
+        // 3. Data e Hora
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -266,14 +273,8 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setData_movimentacao(Timestamp.now());
         }
 
-        // ✅ STATUS (regra do sinal EH_CONTA_FUTURA + edição)
-        if (ehContaFutura) {
-            mov.setPago(false); // Pendente sempre
-        } else if (!isEdicao) {
-            mov.setPago(true);  // Nova movimentação normal = OK
-        } else {
-            mov.setPago(switchStatusPago != null && switchStatusPago.isChecked()); // Edição decide
-        }
+        // ✅ STATUS FINAL: A vontade do usuário no switch prevalece
+        mov.setPago(switchStatusPago != null && switchStatusPago.isChecked());
 
         // 4. Persistência
         if (isEdicao) {
@@ -378,7 +379,7 @@ public class DespesasActivity extends AppCompatActivity {
         if (!isEdicao) {
             boolean ok = !ehContaFutura;
             switchStatusPago.setChecked(ok);
-            switchStatusPago.setEnabled(true); // se você quiser travar criação, troque para false
+            switchStatusPago.setEnabled(true);
             switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
             return;
         }

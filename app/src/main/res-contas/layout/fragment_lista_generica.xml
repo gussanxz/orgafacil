@@ -12,6 +12,14 @@
         android:paddingBottom="80dp"
         android:clipToPadding="false"/>
 
+    <ProgressBar
+        android:id="@+id/progressBarFragment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:indeterminateTint="@color/white" />
+
     <LinearLayout
         android:id="@+id/layoutEmptyState"
         android:layout_width="match_parent"

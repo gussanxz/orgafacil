@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,8 +36,6 @@ import java.util.List;
  * ListaMovimentacoesFragment (VITRINE DO DASHBOARD)
  * Este fragmento resolve o conflito do ViewPager observando fontes de dados distintas
  * (Histórico vs Futuro) baseadas no modo de operação.
- * [NOVO]: Ele limita a exibição a no máximo 10 itens por aba, para não sobrecarregar
- * a tela inicial, agindo como um resumo rápido.
  */
 public class ListaMovimentacoesFragment extends Fragment implements AdapterMovimentacaoLista.OnItemActionListener {
 
@@ -47,8 +46,13 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     private MovimentacaoRepository repository;
     private ContasViewModel viewModel;
     private boolean ehModoFuturo;
+
     private View layoutEmptyState;
     private TextView textEmptyState;
+    private ProgressBar progressBarFragment;
+
+    // Controle para evitar o piscar do Empty State na primeira carga
+    private boolean isPrimeiroCarregamento = true;
 
     // Construtor estático para facilitar a criação correta das instâncias
     public static ListaMovimentacoesFragment newInstance(boolean exibirFuturas) {
@@ -78,9 +82,10 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
         recyclerView = view.findViewById(R.id.recyclerInterno);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // [NOVO] Vinculando a tela vazia
+        // Vinculando a tela vazia e ProgressBar
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         textEmptyState = view.findViewById(R.id.textEmptyState);
+        progressBarFragment = view.findViewById(R.id.progressBarFragment);
 
         // Ajusta a frase para fazer sentido com a aba atual
         if (ehModoFuturo) {
@@ -103,7 +108,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     public void onResume() {
         super.onResume();
         // Garante que, ao voltar para esta aba (slide), os dados sejam recarregados
-        // corretamente para este contexto específico.
         carregarDados();
     }
 
@@ -111,9 +115,30 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
      * Decide qual LiveData observar e corta a lista para exibir apenas o resumo.
      */
     private void setupObservers() {
+
+        // Observer para o ProgressBar e controle do "Piscar"
+        viewModel.carregandoPaginacao.observe(getViewLifecycleOwner(), isCarregando -> {
+            if (isCarregando) {
+                // [CORREÇÃO AQUI]: Só exibe a bolinha se for a primeira vez que a aba carrega.
+                // Se o usuário só mudou de aba, a atualização dos dados acontece de forma silenciosa e transparente.
+                if (isPrimeiroCarregamento) {
+                    progressBarFragment.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                    layoutEmptyState.setVisibility(View.GONE);
+                }
+            } else {
+                progressBarFragment.setVisibility(View.GONE);
+                isPrimeiroCarregamento = false;
+            }
+        });
+
+
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
 
-            // [NOVO] Controle do Estado Vazio
+            // Se ainda estiver na primeira vez e o loading não acabou, ignora e não desenha a tela vazia
+            if (isPrimeiroCarregamento && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
+
+            // Controle do Estado Vazio
             if (lista == null || lista.isEmpty()) {
                 recyclerView.setVisibility(View.GONE);
                 layoutEmptyState.setVisibility(View.VISIBLE);
@@ -132,7 +157,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             }
 
             // Helper organiza por dia (Crescente ou Decrescente dependendo do modo)
-            // Agora passando a lista já cortada
             List<AdapterItemListaMovimentacao> listaProcessada =
                     HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(listaResumo, ehModoFuturo);
 
@@ -176,8 +200,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
 
     /**
      * Implementação da lógica de confirmação (Check).
-     * Quando o usuário clica no check, o item deixa de ser "pendente/futuro"
-     * e passa a ser uma movimentação confirmada (pago = true).
      */
     @Override
     public void onCheckClick(MovimentacaoModel mov) {
@@ -194,9 +216,8 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
                                 Toast.makeText(getContext(), "Concluído!", Toast.LENGTH_SHORT).show();
 
                                 // [ATUALIZAÇÃO DUPLA]: O item saiu de uma lista e foi para outra.
-                                // Precisamos atualizar ambos os contextos no ViewModel.
-                                viewModel.fetchDados(repository, true, null);  // Atualiza Futuros (Remove o item)
-                                viewModel.fetchDados(repository, false, null); // Atualiza Histórico (Adiciona o item)
+                                viewModel.fetchDados(repository, true, null);
+                                viewModel.fetchDados(repository, false, null);
                             }
                         }
 
@@ -222,7 +243,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
         Button btnConfirmar = view.findViewById(R.id.btnConfirmarDialog);
         Button btnCancelar = view.findViewById(R.id.btnCancelarDialog);
 
-        // Texto inteligente baseado no contexto
         if (ehModoFuturo) {
             String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "Pagar" : "Receber";
             textMensagem.setText(acao + " '" + mov.getDescricao() + "'?");
@@ -237,7 +257,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             dialog.dismiss();
             repository.excluir(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) {
-                    // Recarrega apenas a lista atual
                     carregarDados();
                 }
                 @Override public void onErro(String erro) { }
