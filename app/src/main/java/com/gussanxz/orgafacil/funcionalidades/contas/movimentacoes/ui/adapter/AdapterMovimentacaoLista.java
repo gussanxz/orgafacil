@@ -90,7 +90,6 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
-                // Divisão direta por 100.0 compatível com long
                 double saldoReal = item.saldoDia / 100.0;
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
 
@@ -106,7 +105,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
     }
 
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
-        TextView textTitulo, textCategoria, textValor, textData, textHora;
+        TextView textTitulo, textCategoria, textValor, textData, textHora, textSeparador;
         View viewIndicadorCor;
         ImageButton btnConfirmar;
 
@@ -117,15 +116,20 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
             textValor = itemView.findViewById(R.id.textAdapterValor);
             textData = itemView.findViewById(R.id.textAdapterData);
             textHora = itemView.findViewById(R.id.textAdapterHora);
+            textSeparador = itemView.findViewById(R.id.textAdapterSeparador);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
             btnConfirmar = itemView.findViewById(R.id.btnConfirmarPagamento);
         }
 
         void bind(MovimentacaoModel mov) {
             textTitulo.setText(mov.getDescricao());
-            textCategoria.setText(mov.getCategoria_nome());
 
-            // Reseta para a cor padrão a cada bind para evitar bugs de reciclagem
+            if (mov.getTotal_parcelas() > 1) {
+                textCategoria.setText("🔁 " + mov.getCategoria_nome());
+            } else {
+                textCategoria.setText(mov.getCategoria_nome());
+            }
+
             textData.setTextColor(Color.parseColor("#888888"));
             textHora.setTextColor(Color.parseColor("#888888"));
 
@@ -135,6 +139,9 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 textHora.setText(hourFormat.format(date));
 
                 if (!mov.isPago()) {
+                    // PENDENTE: Esconde a hora (e o pontinho separador)
+                    textHora.setVisibility(View.GONE);
+                    textSeparador.setVisibility(View.GONE);
 
                     if (btnConfirmar != null) {
                         btnConfirmar.setVisibility(View.VISIBLE);
@@ -143,23 +150,22 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                         });
                     }
 
-                    // --- [NOVO] LÓGICA DE CORES DE URGÊNCIA (AMARELO E AZUL) ---
                     int diasRestantes = mov.diasParaVencimento();
-                    int corAlerta = Color.parseColor("#888888"); // Cinza Padrão (Tranquilo)
+                    int corAlerta = Color.parseColor("#888888");
 
                     if (mov.estaVencida() || diasRestantes <= 0) {
-                        // Vencido ou vence HOJE: Amarelo Ouro (Atenção Máxima)
                         corAlerta = Color.parseColor("#FFB300");
                     } else if (diasRestantes <= 3) {
-                        // Vence em 1 a 3 dias: Azul Claro (Aviso no radar)
                         corAlerta = Color.parseColor("#42A5F5");
                     }
 
-                    // Aplica a cor tanto na Data quanto na Hora para melhor visualização
                     textData.setTextColor(corAlerta);
-                    textHora.setTextColor(corAlerta);
 
                 } else {
+                    // PAGO: Mostra a hora em que a transação aconteceu
+                    textHora.setVisibility(View.VISIBLE);
+                    textSeparador.setVisibility(View.VISIBLE);
+
                     if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
 
                     if (mov.getData_vencimento_original() != null) {
@@ -173,7 +179,6 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 }
             }
 
-            // Divisão direta por 100.0 compatível com long
             double valorReais = mov.getValor() / 100.0;
 
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {

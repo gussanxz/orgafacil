@@ -98,6 +98,7 @@
                 android:textSize="11sp" />
 
             <TextView
+                android:id="@+id/textAdapterSeparador"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="3dp"
@@ -138,16 +139,15 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginTop="2dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="12dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Categoria"
             android:textColor="#757575"
             android:textSize="13sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/textAdapterValor"
+            app:layout_constraintEnd_toStartOf="@+id/layoutDataHora"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"
             app:layout_constraintTop_toBottomOf="@+id/textAdapterTitulo" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

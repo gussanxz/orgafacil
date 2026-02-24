@@ -38,9 +38,6 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
-    // ==========================================
-    // HISTÓRICO: DECRESCENTE (Mais recente -> Mais antigo)
-    // ==========================================
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
@@ -73,9 +70,6 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    // ==========================================
-    // PENDÊNCIAS: CRESCENTE (Urgente/Atrasada -> Futuro)
-    // ==========================================
     public void recuperarContasFuturas(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
@@ -283,6 +277,86 @@ public class MovimentacaoRepository {
 
         batch.commit()
                 .addOnSuccessListener(aVoid -> callback.onSucesso("Recorrência agendada!"))
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
+
+    // =========================================================================
+    // EDIÇÃO E EXCLUSÃO EM MASSA (O "EFEITO GOOGLE AGENDA")
+    // =========================================================================
+
+    public void editarMultiplos(MovimentacaoModel movOriginal, MovimentacaoModel movNova, boolean todasSeguintes, Callback callback) {
+        if (!todasSeguintes) {
+            editar(movOriginal, movNova, callback);
+            return;
+        }
+
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereEqualTo("recorrencia_id", movOriginal.getRecorrencia_id())
+                .whereGreaterThanOrEqualTo("parcela_atual", movOriginal.getParcela_atual())
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    WriteBatch batch = db.batch();
+
+                    // Limpa a string base da descrição caso o usuário não tenha removido a tag "(x/y)" na edição
+                    String novaDescBase = movNova.getDescricao().replaceAll("\\s*\\(\\d+/\\d+\\)$", "");
+
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        MovimentacaoModel mBanco = doc.toObject(MovimentacaoModel.class);
+                        mBanco.setId(doc.getId());
+
+                        // Reverte o impacto antigo do banco
+                        aplicarImpacto(batch, mBanco, -1);
+
+                        // Aplica os novos valores que são universais para a recorrência
+                        mBanco.setValor(movNova.getValor());
+                        mBanco.setCategoria_id(movNova.getCategoria_id());
+                        mBanco.setCategoria_nome(movNova.getCategoria_nome());
+
+                        // Reconstrói a descrição garantindo que a tag (x/y) correta será mantida
+                        mBanco.setDescricao(novaDescBase + " (" + mBanco.getParcela_atual() + "/" + mBanco.getTotal_parcelas() + ")");
+
+                        // REGRA DE OURO UX: Data e Status SÓ se alteram na parcela atual em que o usuário está editando.
+                        if (mBanco.getId().equals(movOriginal.getId())) {
+                            mBanco.setData_movimentacao(movNova.getData_movimentacao());
+                            mBanco.setPago(movNova.isPago());
+                        }
+
+                        // Salva no batch
+                        batch.set(doc.getReference(), mBanco);
+
+                        // Aplica o novo impacto
+                        aplicarImpacto(batch, mBanco, 1);
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> callback.onSucesso("Série atualizada com sucesso!"))
+                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
+
+    public void excluirMultiplos(MovimentacaoModel movBase, boolean todasSeguintes, Callback callback) {
+        if (!todasSeguintes) {
+            excluir(movBase, callback);
+            return;
+        }
+
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereEqualTo("recorrencia_id", movBase.getRecorrencia_id())
+                .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    WriteBatch batch = db.batch();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                        m.setId(doc.getId());
+                        batch.delete(doc.getReference());
+                        aplicarImpacto(batch, m, -1);
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> callback.onSucesso("Série excluída com sucesso!"))
+                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 }

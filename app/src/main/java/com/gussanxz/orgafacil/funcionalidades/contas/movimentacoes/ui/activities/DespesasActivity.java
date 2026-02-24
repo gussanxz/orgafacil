@@ -12,6 +12,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,8 +26,10 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.ui.SelecionarCategoriaContasActivity;
@@ -48,6 +53,16 @@ public class DespesasActivity extends AppCompatActivity {
     private TextInputEditText campoData, campoDescricao, campoHora;
     private EditText campoValor, campoCategoria;
     private ImageButton btnExcluir;
+
+    // --- Componentes de Recorrência ---
+    private LinearLayout layoutRecorrencia;
+    private MaterialCheckBox checkboxRepetir;
+    private TextInputLayout textInputMeses;
+    private TextInputEditText editQtdMeses;
+
+    // [NOVO] RadioGroup de Recorrência
+    private RadioGroup radioGroupTipoRecorrencia;
+    private RadioButton radioParcelado;
 
     private ActivityResultLauncher<Intent> launcherCategoria;
     private MovimentacaoRepository repository;
@@ -101,6 +116,15 @@ public class DespesasActivity extends AppCompatActivity {
         btnExcluir = findViewById(R.id.btnExcluir);
         switchStatusPago = findViewById(R.id.switchStatusPago);
 
+        layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
+        checkboxRepetir = findViewById(R.id.checkboxRepetir);
+        textInputMeses = findViewById(R.id.textInputMeses);
+        editQtdMeses = findViewById(R.id.editQtdMeses);
+
+        // [NOVO] Inicialização dos componentes
+        radioGroupTipoRecorrencia = findViewById(R.id.radioGroupTipoRecorrencia);
+        radioParcelado = findViewById(R.id.radioParcelado);
+
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
 
@@ -117,6 +141,12 @@ public class DespesasActivity extends AppCompatActivity {
         campoData.setOnClickListener(v -> abrirSelecionadorDeData());
         campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
 
+        checkboxRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            textInputMeses.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            // [NOVO] Mostra os botões de rádio junto com a caixinha
+            radioGroupTipoRecorrencia.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
+
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> {
                 if (isEdicao && itemEmEdicao != null) confirmarExcluir();
@@ -127,7 +157,6 @@ public class DespesasActivity extends AppCompatActivity {
         }
     }
 
-    // --- NOVA REGRA DE NEGÓCIO DE DATAS ---
     private void abrirSelecionadorDeData() {
         Calendar c = Calendar.getInstance();
         try {
@@ -152,17 +181,14 @@ public class DespesasActivity extends AppCompatActivity {
         selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0); selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
 
         if (selecionada.after(hoje)) {
-            // REGRA: Proibido lançar como "Pago" no futuro.
             switchStatusPago.setChecked(false);
             switchStatusPago.setEnabled(false);
             switchStatusPago.setText("Status: Pendente (Futuro)");
         } else {
-            // Passado ou Hoje: Livre para marcar como Pago ou Pendente
             switchStatusPago.setEnabled(true);
             atualizarTextoStatus();
         }
     }
-    // ----------------------------------------
 
     private void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
@@ -228,6 +254,8 @@ public class DespesasActivity extends AppCompatActivity {
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 
+                layoutRecorrencia.setVisibility(View.GONE);
+
                 if (itemEmEdicao.getData_movimentacao() != null) {
                     Date data = itemEmEdicao.getData_movimentacao().toDate();
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
@@ -240,6 +268,7 @@ public class DespesasActivity extends AppCompatActivity {
             }
         } else {
             isEdicao = false;
+            layoutRecorrencia.setVisibility(View.VISIBLE);
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
 
             if (ehContaFutura) {
@@ -266,7 +295,6 @@ public class DespesasActivity extends AppCompatActivity {
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        mov.setValor(valorCentavosAtual);
         mov.setDescricao(campoDescricao.getText().toString());
         mov.setTipoEnum(TipoCategoriaContas.DESPESA);
 
@@ -291,11 +319,36 @@ public class DespesasActivity extends AppCompatActivity {
         mov.setPago(switchStatusPago.isChecked());
 
         if (isEdicao) {
+            mov.setValor(valorCentavosAtual);
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
                 @Override public void onErro(String erro) { mostrarErro(erro); }
             });
         } else {
+            if (checkboxRepetir.isChecked()) {
+                String strMeses = editQtdMeses.getText().toString();
+                int qtdMeses = strMeses.isEmpty() ? 0 : Integer.parseInt(strMeses);
+
+                if (qtdMeses > 1) {
+                    // [NOVO] Lógica de Parcelar vs Repetir
+                    if (radioParcelado.isChecked()) {
+                        // Divide o valor pelas parcelas
+                        long valorParcela = valorCentavosAtual / qtdMeses;
+                        mov.setValor(valorParcela);
+                    } else {
+                        // Repete o valor total todos os meses
+                        mov.setValor(valorCentavosAtual);
+                    }
+
+                    repository.salvarRecorrente(mov, qtdMeses, new MovimentacaoRepository.Callback() {
+                        @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
+                        @Override public void onErro(String erro) { mostrarErro(erro); }
+                    });
+                    return;
+                }
+            }
+
+            mov.setValor(valorCentavosAtual);
             repository.salvar(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
                 @Override public void onErro(String erro) { mostrarErro(erro); }
@@ -340,6 +393,10 @@ public class DespesasActivity extends AppCompatActivity {
             return false;
         }
         if (campoData.getText().toString().isEmpty()) return false;
+        if (checkboxRepetir.isChecked() && editQtdMeses.getText().toString().isEmpty()) {
+            editQtdMeses.setError("Informe a quantidade");
+            return false;
+        }
         return true;
     }
 
