@@ -187,14 +187,14 @@ public class MovimentacaoRepository {
 
     private void impactoRealizado(WriteBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-        int valorCentavos = Math.abs(mov.getValor());
+        long valorCentavos = Math.abs(mov.getValor());
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
 
         batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
                 FieldValue.increment(isReceita ? valorCentavos * fator : -valorCentavos * fator));
 
         if (mov.getData_movimentacao() != null && isMesmoMesEAno(mov.getData_movimentacao().toDate(), new Date())) {
-            int deltaBalanco = (isReceita ? valorCentavos : -valorCentavos) * fator;
+            long deltaBalanco = (isReceita ? valorCentavos : -valorCentavos) * fator;
             batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, FieldValue.increment(deltaBalanco));
 
             if (isReceita) {

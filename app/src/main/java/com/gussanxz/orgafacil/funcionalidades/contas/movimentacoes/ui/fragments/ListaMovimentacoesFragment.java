@@ -177,8 +177,8 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     }
 
     private void carregarDados() {
-        // Envia 'ehModoFuturo' para o ViewModel saber qual cache atualizar
-        viewModel.fetchDados(repository, ehModoFuturo, new MovimentacaoRepository.DadosCallback() {
+        // Agora solicitamos direto à ViewModel, sem passar a dependência
+        viewModel.fetchDados(ehModoFuturo, new MovimentacaoRepository.DadosCallback() {
             @Override public void onSucesso(List<MovimentacaoModel> lista) { /* A UI é atualizada pelo Observer */ }
             @Override public void onErro(String erro) {
                 if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
@@ -209,15 +209,15 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
                 .setTitle("Confirmar " + acao)
                 .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
                 .setPositiveButton("Confirmar", (dialog, which) -> {
-                    repository.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+                    viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
                         @Override
                         public void onSucesso(String msg) {
                             if (isAdded()) {
                                 Toast.makeText(getContext(), "Concluído!", Toast.LENGTH_SHORT).show();
 
                                 // [ATUALIZAÇÃO DUPLA]: O item saiu de uma lista e foi para outra.
-                                viewModel.fetchDados(repository, true, null);
-                                viewModel.fetchDados(repository, false, null);
+                                viewModel.fetchDados(true, null);
+                                viewModel.fetchDados(false, null);
                             }
                         }
 
@@ -255,7 +255,7 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
         btnConfirmar.setOnClickListener(v -> {
             dialog.dismiss();
-            repository.excluir(mov, new MovimentacaoRepository.Callback() {
+            viewModel.excluir(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) {
                     carregarDados();
                 }

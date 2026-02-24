@@ -61,7 +61,7 @@ public class DespesasActivity extends AppCompatActivity {
     private MovimentacaoModel itemEmEdicao = null;
 
     private String categoriaIdSelecionada;
-    private int valorCentavosAtual = 0;
+    private long valorCentavosAtual = 0;
     private MaterialSwitch switchStatusPago;
 
     @Override
@@ -155,9 +155,9 @@ public class DespesasActivity extends AppCompatActivity {
                     String cleanString = s.toString().replaceAll("[^\\d]", "");
                     if (!cleanString.isEmpty()) {
                         try {
-                            valorCentavosAtual = Integer.parseInt(cleanString);
-                            double valorDouble = MoedaHelper.centavosParaDouble(valorCentavosAtual);
-                            String formatted = MoedaHelper.formatarParaBRL(valorDouble);
+                            valorCentavosAtual = Long.parseLong(cleanString);
+                            // CORREÇÃO: Divisão direta por 100.0 para compatibilidade com o tipo long
+                            String formatted = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
                             current = formatted;
                             campoValor.setText(formatted);
                             campoValor.setSelection(formatted.length());
@@ -188,7 +188,8 @@ public class DespesasActivity extends AppCompatActivity {
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                campoValor.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(valorCentavosAtual)));
+                // CORREÇÃO: Divisão direta por 100.0
+                campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 

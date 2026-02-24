@@ -63,8 +63,8 @@ public class ReceitasActivity extends AppCompatActivity {
     private String categoriaIdSelecionada;
     private MaterialSwitch switchStatusPago;
 
-    // [PRECISÃO]: O valor é controlado em centavos (int) [cite: 2026-02-07]
-    private int valorCentavosAtual = 0;
+    // [PRECISÃO]: O valor é controlado em centavos (long)
+    private long valorCentavosAtual = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,8 +157,9 @@ public class ReceitasActivity extends AppCompatActivity {
                     String cleanString = s.toString().replaceAll("[^\\d]", "");
                     if (!cleanString.isEmpty()) {
                         try {
-                            valorCentavosAtual = Integer.parseInt(cleanString);
-                            campoValor.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(valorCentavosAtual)));
+                            valorCentavosAtual = Long.parseLong(cleanString);
+                            // CORREÇÃO: Divisão direta por 100.0 resolve a tipagem
+                            campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                             current = campoValor.getText().toString();
                             campoValor.setSelection(current.length());
                         } catch (NumberFormatException e) {
@@ -187,7 +188,8 @@ public class ReceitasActivity extends AppCompatActivity {
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                campoValor.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(valorCentavosAtual)));
+                // CORREÇÃO: Divisão direta por 100.0 resolve a tipagem
+                campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
 

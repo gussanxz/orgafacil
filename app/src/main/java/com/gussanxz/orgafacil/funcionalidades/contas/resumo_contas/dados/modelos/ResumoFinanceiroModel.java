@@ -8,32 +8,20 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 
 import java.io.Serializable;
 
-/**
- * ResumoFinanceiroModel (O "Documento Mágico")
- * Centraliza os saldos e indicadores para a Home Screen.
- * Estrutura no Firestore:
- * - balanco: { saldoAtual, receitasMes, despesasMes... }
- * - inteligencia: { previsaoFinalMes, limiteGastos... }
- * - maiorCategoria: { nome, total, icone... }
- * - pendencias: { pagar, receber }
- */
 public class ResumoFinanceiroModel implements Serializable {
 
-    // --- CONSTANTES DE CAMINHO (Dot Notation para Updates Parciais) ---
-    // Grupo Balanço
+    // --- CONSTANTES ---
     public static final String CAMPO_SALDO_ATUAL = "balanco.saldoAtual";
     public static final String CAMPO_RECEITAS_MES = "balanco.receitasMes";
     public static final String CAMPO_DESPESAS_MES = "balanco.despesasMes";
     public static final String CAMPO_BALANCO_MES = "balanco.balancoMes";
     public static final String CAMPO_GASTOS_HOJE = "balanco.gastosHoje";
 
-    // Grupo Inteligência
     public static final String CAMPO_PREVISAO_FINAL_MES = "inteligencia.previsaoFinalMes";
     public static final String CAMPO_LIMITE_GASTOS_MENSAL = "inteligencia.limiteGastosMensal";
     public static final String CAMPO_ECONOMIA_MES = "inteligencia.economiaMes";
     public static final String CAMPO_STATUS_SAUDE_FINANCEIRA = "inteligencia.statusSaudeFinanceira";
 
-    // Grupo Maior Categoria
     public static final String CAMPO_MAIOR_CAT_ID = "maiorCategoria.id";
     public static final String CAMPO_MAIOR_CAT_NOME = "maiorCategoria.nome";
     public static final String CAMPO_MAIOR_CAT_ICONE = "maiorCategoria.icone";
@@ -41,17 +29,11 @@ public class ResumoFinanceiroModel implements Serializable {
     public static final String CAMPO_MAIOR_CAT_TOTAL = "maiorCategoria.total";
     public static final String CAMPO_MAIOR_CAT_TIPO = "maiorCategoria.tipo";
 
-    // Grupo Pendências
     public static final String CAMPO_PENDENCIAS_PAGAR = "pendencias.pagar";
     public static final String CAMPO_PENDENCIAS_RECEBER = "pendencias.receber";
 
-    // Raiz
     public static final String CAMPO_ULTIMA_ATUALIZACAO = "ultimaAtualizacao";
 
-
-    // =========================================================================
-    // GRUPOS DE DADOS (Mapas)
-    // =========================================================================
     private Balanco balanco;
     private Inteligencia inteligencia;
     private MaiorCategoria maiorCategoria;
@@ -60,19 +42,12 @@ public class ResumoFinanceiroModel implements Serializable {
     @ServerTimestamp
     private Timestamp ultimaAtualizacao;
 
-    // =========================================================================
-    // CONSTRUTOR
-    // =========================================================================
     public ResumoFinanceiroModel() {
         this.balanco = new Balanco();
         this.inteligencia = new Inteligencia();
         this.maiorCategoria = new MaiorCategoria();
         this.pendencias = new Pendencias();
     }
-
-    // =========================================================================
-    // GETTERS E SETTERS DA RAIZ
-    // =========================================================================
 
     public Balanco getBalanco() { return balanco; }
     public void setBalanco(Balanco balanco) { this.balanco = balanco; }
@@ -89,46 +64,41 @@ public class ResumoFinanceiroModel implements Serializable {
     public Timestamp getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(Timestamp ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
 
-
-    // =========================================================================
-    // CLASSES INTERNAS (Mapas)
-    // =========================================================================
-
     public static class Balanco implements Serializable {
-        private int saldoAtual = 0;
-        private int receitasMes = 0;
-        private int despesasMes = 0;
-        private int balancoMes = 0;
-        private int gastosHoje = 0;
+        private long saldoAtual = 0;
+        private long receitasMes = 0;
+        private long despesasMes = 0;
+        private long balancoMes = 0;
+        private long gastosHoje = 0;
 
         public Balanco() {}
 
-        public int getSaldoAtual() { return saldoAtual; }
-        public void setSaldoAtual(int saldoAtual) { this.saldoAtual = saldoAtual; }
-        public int getReceitasMes() { return receitasMes; }
-        public void setReceitasMes(int receitasMes) { this.receitasMes = receitasMes; }
-        public int getDespesasMes() { return despesasMes; }
-        public void setDespesasMes(int despesasMes) { this.despesasMes = despesasMes; }
-        public int getBalancoMes() { return balancoMes; }
-        public void setBalancoMes(int balancoMes) { this.balancoMes = balancoMes; }
-        public int getGastosHoje() { return gastosHoje; }
-        public void setGastosHoje(int gastosHoje) { this.gastosHoje = gastosHoje; }
+        public long getSaldoAtual() { return saldoAtual; }
+        public void setSaldoAtual(long saldoAtual) { this.saldoAtual = saldoAtual; }
+        public long getReceitasMes() { return receitasMes; }
+        public void setReceitasMes(long receitasMes) { this.receitasMes = receitasMes; }
+        public long getDespesasMes() { return despesasMes; }
+        public void setDespesasMes(long despesasMes) { this.despesasMes = despesasMes; }
+        public long getBalancoMes() { return balancoMes; }
+        public void setBalancoMes(long balancoMes) { this.balancoMes = balancoMes; }
+        public long getGastosHoje() { return gastosHoje; }
+        public void setGastosHoje(long gastosHoje) { this.gastosHoje = gastosHoje; }
     }
 
     public static class Inteligencia implements Serializable {
-        private int previsaoFinalMes = 0;
-        private int limiteGastosMensal = 0;
-        private int economiaMes = 0;
-        private int statusSaudeFinanceira = 3; // Padrão: 3 (Saudável/Neutro)
+        private long previsaoFinalMes = 0;
+        private long limiteGastosMensal = 0;
+        private long economiaMes = 0;
+        private int statusSaudeFinanceira = 3;
 
         public Inteligencia() {}
 
-        public int getPrevisaoFinalMes() { return previsaoFinalMes; }
-        public void setPrevisaoFinalMes(int previsaoFinalMes) { this.previsaoFinalMes = previsaoFinalMes; }
-        public int getLimiteGastosMensal() { return limiteGastosMensal; }
-        public void setLimiteGastosMensal(int limiteGastosMensal) { this.limiteGastosMensal = limiteGastosMensal; }
-        public int getEconomiaMes() { return economiaMes; }
-        public void setEconomiaMes(int economiaMes) { this.economiaMes = economiaMes; }
+        public long getPrevisaoFinalMes() { return previsaoFinalMes; }
+        public void setPrevisaoFinalMes(long previsaoFinalMes) { this.previsaoFinalMes = previsaoFinalMes; }
+        public long getLimiteGastosMensal() { return limiteGastosMensal; }
+        public void setLimiteGastosMensal(long limiteGastosMensal) { this.limiteGastosMensal = limiteGastosMensal; }
+        public long getEconomiaMes() { return economiaMes; }
+        public void setEconomiaMes(long economiaMes) { this.economiaMes = economiaMes; }
         public int getStatusSaudeFinanceira() { return statusSaudeFinanceira; }
         public void setStatusSaudeFinanceira(int statusSaudeFinanceira) { this.statusSaudeFinanceira = statusSaudeFinanceira; }
     }
@@ -138,7 +108,7 @@ public class ResumoFinanceiroModel implements Serializable {
         private String nome = "";
         private String icone = "";
         private String cor = "";
-        private int total = 0;
+        private long total = 0;
         private int tipo = 0;
 
         public MaiorCategoria() {}
@@ -151,27 +121,23 @@ public class ResumoFinanceiroModel implements Serializable {
         public void setIcone(String icone) { this.icone = icone; }
         public String getCor() { return cor; }
         public void setCor(String cor) { this.cor = cor; }
-        public int getTotal() { return total; }
-        public void setTotal(int total) { this.total = total; }
+        public long getTotal() { return total; }
+        public void setTotal(long total) { this.total = total; }
         public int getTipo() { return tipo; }
         public void setTipo(int tipo) { this.tipo = tipo; }
     }
 
     public static class Pendencias implements Serializable {
-        private int pagar = 0;
-        private int receber = 0;
+        private long pagar = 0;
+        private long receber = 0;
 
         public Pendencias() {}
 
-        public int getPagar() { return pagar; }
-        public void setPagar(int pagar) { this.pagar = pagar; }
-        public int getReceber() { return receber; }
-        public void setReceber(int receber) { this.receber = receber; }
+        public long getPagar() { return pagar; }
+        public void setPagar(long pagar) { this.pagar = pagar; }
+        public long getReceber() { return receber; }
+        public void setReceber(long receber) { this.receber = receber; }
     }
-
-    // =========================================================================
-    // LÓGICA E HELPERS (Mantidos e Adaptados para a nova estrutura)
-    // =========================================================================
 
     @Exclude
     public StatusSaudeFinanceira getStatusSaudeEnum() {
@@ -188,17 +154,12 @@ public class ResumoFinanceiroModel implements Serializable {
         return TipoCategoriaContas.desdeId(this.maiorCategoria.getTipo());
     }
 
-    /**
-     * Calcula o status de saúde baseado na regra de 80% e estouro de limite.
-     * Atualiza o valor dentro do grupo 'inteligencia'.
-     */
     @Exclude
     public void calcularStatusSaude() {
-        int despesas = balanco.getDespesasMes();
-        int receitas = balanco.getReceitasMes();
-        int limite = inteligencia.getLimiteGastosMensal();
+        long despesas = balanco.getDespesasMes();
+        long receitas = balanco.getReceitasMes();
+        long limite = inteligencia.getLimiteGastosMensal();
 
-        // Regra Crítica: Gastou mais que ganhou OU Estourou o limite definido
         if (despesas > receitas || (limite > 0 && despesas > limite)) {
             inteligencia.setStatusSaudeFinanceira(StatusSaudeFinanceira.CRITICO.getId());
             return;
@@ -207,7 +168,6 @@ public class ResumoFinanceiroModel implements Serializable {
         double percReceita = receitas > 0 ? (double) despesas / receitas : 0;
         double percLimite = limite > 0 ? (double) despesas / limite : 0;
 
-        // Regra Atenção: Gastou mais de 80% da receita ou do limite
         if (percReceita >= 0.8 || percLimite >= 0.8) {
             inteligencia.setStatusSaudeFinanceira(StatusSaudeFinanceira.ATENCAO.getId());
         } else {
@@ -217,7 +177,7 @@ public class ResumoFinanceiroModel implements Serializable {
 
     @Exclude
     public double getPercentualLimiteUsado() {
-        int limite = inteligencia.getLimiteGastosMensal();
+        long limite = inteligencia.getLimiteGastosMensal();
         if (limite <= 0) return 0.0;
         return (double) balanco.getDespesasMes() / limite * 100.0;
     }

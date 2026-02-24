@@ -106,7 +106,7 @@ public class ResumoContasActivity extends AppCompatActivity {
             if (resumo == null || textSaldoGeral == null) return;
 
             // Mantemos o uso de Int para precisão
-            int saldoCentavos = resumo.getBalanco().getSaldoAtual();
+            long saldoCentavos = resumo.getBalanco().getSaldoAtual();
             double saldoDouble = saldoCentavos / 100.0;
             String valorFormatado = currencyFormat.format(saldoDouble);
 

@@ -90,6 +90,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
             if (textSaldoDia != null) {
+                // Divisão direta por 100.0 compatível com long
                 double saldoReal = item.saldoDia / 100.0;
                 textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
 
@@ -123,7 +124,10 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void bind(MovimentacaoModel mov) {
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getCategoria_nome());
+
+            // Reseta para a cor padrão a cada bind para evitar bugs de reciclagem
             textData.setTextColor(Color.parseColor("#888888"));
+            textHora.setTextColor(Color.parseColor("#888888"));
 
             if (mov.getData_movimentacao() != null) {
                 Date date = mov.getData_movimentacao().toDate();
@@ -139,29 +143,37 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                         });
                     }
 
-                    if (mov.estaVencida()) {
-                        textData.setTextColor(Color.parseColor("#E53935"));
-                    } else if (mov.venceEmBreve()) {
-                        textData.setTextColor(Color.parseColor("#FF9800"));
+                    // --- [NOVO] LÓGICA DE CORES DE URGÊNCIA (AMARELO E AZUL) ---
+                    int diasRestantes = mov.diasParaVencimento();
+                    int corAlerta = Color.parseColor("#888888"); // Cinza Padrão (Tranquilo)
+
+                    if (mov.estaVencida() || diasRestantes <= 0) {
+                        // Vencido ou vence HOJE: Amarelo Ouro (Atenção Máxima)
+                        corAlerta = Color.parseColor("#FFB300");
+                    } else if (diasRestantes <= 3) {
+                        // Vence em 1 a 3 dias: Azul Claro (Aviso no radar)
+                        corAlerta = Color.parseColor("#42A5F5");
                     }
+
+                    // Aplica a cor tanto na Data quanto na Hora para melhor visualização
+                    textData.setTextColor(corAlerta);
+                    textHora.setTextColor(corAlerta);
+
                 } else {
                     if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
 
-                    // --- [NOVO] EXIBIÇÃO DA AUDITORIA (VENCIMENTO ORIGINAL) ---
                     if (mov.getData_vencimento_original() != null) {
                         String strPago = dateFormat.format(date);
                         String strVenc = dateFormat.format(mov.getData_vencimento_original().toDate());
 
-                        // Só exibe se as datas forem diferentes (para não ficar redundante)
                         if (!strPago.equals(strVenc)) {
-                            // Pega apenas os 5 primeiros caracteres (ex: 28/02) para não quebrar o layout [cite: 2025-11-10]
                             textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
                         }
                     }
                 }
             }
 
-            // Precisão em Int respeitada! [cite: 2026-02-07]
+            // Divisão direta por 100.0 compatível com long
             double valorReais = mov.getValor() / 100.0;
 
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {

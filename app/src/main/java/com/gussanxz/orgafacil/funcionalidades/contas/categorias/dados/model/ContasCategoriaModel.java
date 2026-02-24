@@ -32,13 +32,12 @@ public class ContasCategoriaModel implements Serializable {
     private Financeiro financeiro;
 
     public ContasCategoriaModel() {
-        // Inicialização obrigatória para evitar NullPointer ao usar setters imediatamente
         this.visual = new Visual();
         this.financeiro = new Financeiro();
     }
 
     // =========================================================================
-    // GETTERS E SETTERS (Padrão Firestore)
+    // GETTERS E SETTERS
     // =========================================================================
 
     public String getId() { return id; }
@@ -47,7 +46,7 @@ public class ContasCategoriaModel implements Serializable {
     public int getTipo() { return tipo; }
     public void setTipo(int tipo) { this.tipo = tipo; }
 
-    @PropertyName("ativa") // Garante que o Firebase use "ativa" e não "isAtiva"
+    @PropertyName("ativa")
     public boolean isAtiva() { return ativa; }
 
     @PropertyName("ativa")
@@ -60,7 +59,7 @@ public class ContasCategoriaModel implements Serializable {
     public void setFinanceiro(Financeiro financeiro) { this.financeiro = financeiro; }
 
     // =========================================================================
-    // CLASSES INTERNAS (Mapeadas como Sub-Objetos)
+    // CLASSES INTERNAS
     // =========================================================================
 
     public static class Visual implements Serializable {
@@ -79,19 +78,19 @@ public class ContasCategoriaModel implements Serializable {
     }
 
     public static class Financeiro implements Serializable {
-        private int limiteMensal = 0; // CENTAVOS
-        private int totalGastoMesAtual = 0; // CENTAVOS
+        private long limiteMensal = 0; // CENTAVOS (Atualizado para long)
+        private long totalGastoMesAtual = 0; // CENTAVOS (Atualizado para long)
 
         public Financeiro() {}
 
-        public int getLimiteMensal() { return limiteMensal; }
-        public void setLimiteMensal(int limiteMensal) { this.limiteMensal = limiteMensal; }
-        public int getTotalGastoMesAtual() { return totalGastoMesAtual; }
-        public void setTotalGastoMesAtual(int totalGastoMesAtual) { this.totalGastoMesAtual = totalGastoMesAtual; }
+        public long getLimiteMensal() { return limiteMensal; }
+        public void setLimiteMensal(long limiteMensal) { this.limiteMensal = limiteMensal; }
+        public long getTotalGastoMesAtual() { return totalGastoMesAtual; }
+        public void setTotalGastoMesAtual(long totalGastoMesAtual) { this.totalGastoMesAtual = totalGastoMesAtual; }
     }
 
     // =========================================================================
-    // HELPERS DE LÓGICA (Excluídos do Firestore para evitar dados redundantes)
+    // HELPERS DE LÓGICA
     // =========================================================================
 
     @Exclude
@@ -100,7 +99,7 @@ public class ContasCategoriaModel implements Serializable {
     }
 
     @Exclude
-    public int getTotalGasto() {
+    public long getTotalGasto() {
         return financeiro != null ? financeiro.getTotalGastoMesAtual() : 0;
     }
 
@@ -112,7 +111,6 @@ public class ContasCategoriaModel implements Serializable {
     @Exclude
     public double getPercentualUso() {
         if (financeiro == null || financeiro.getLimiteMensal() <= 0) return 0.0;
-        // Cálculo entre inteiros: Multiplicamos por 100.0 (double) para não perder precisão
         return (double) financeiro.getTotalGastoMesAtual() / financeiro.getLimiteMensal() * 100.0;
     }
 

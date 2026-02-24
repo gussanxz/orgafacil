@@ -108,7 +108,8 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
      */
     private void preencherCampos() {
         // [PRECISÃO]: Converte centavos para Double apenas para exibição
-        double valorExibicao = MoedaHelper.centavosParaDouble(movOriginal.getValor());
+        // CORREÇÃO: Divisão direta por 100.0 para suportar o tipo long sem problemas de cast
+        double valorExibicao = movOriginal.getValor() / 100.0;
         // Formata para exibição padrão (ex: 1250.50)
         editValor.setText(String.format(Locale.US, "%.2f", valorExibicao));
 
@@ -182,7 +183,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             // Remove pontuação de milhar ou vírgula para parsing seguro
             String valorStr = editValor.getText().toString().replace(",", ".");
             double valorDigitado = Double.parseDouble(valorStr);
-            movNova.setValor(MoedaHelper.doubleParaCentavos(valorDigitado));
+            movNova.setValor((long)MoedaHelper.doubleParaCentavos(valorDigitado));
 
             // 2. Dados de Texto e Categoria
             movNova.setDescricao(editDescricao.getText().toString());

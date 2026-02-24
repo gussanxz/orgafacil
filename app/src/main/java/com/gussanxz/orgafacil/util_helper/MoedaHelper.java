@@ -11,16 +11,16 @@ public class MoedaHelper {
     }
 
     /**
-     * Converte Centavos (int) para Decimal (double) -> Para exibir na tela.
+     * Converte Centavos (long) para Decimal (double) -> Para exibir na tela.
      */
-    public static double centavosParaDouble(int centavos) {
+    public static double centavosParaDouble(long centavos) {
         return (double) centavos / 100.0;
     }
 
     /**
-     * Converte Decimal (double) para Centavos (int) -> Para salvar no Firestore.
+     * Converte Decimal (double) para Centavos (long) -> Para salvar no Firestore.
      */
-    public static int doubleParaCentavos(double valor) {
-        return (int) Math.round(valor * 100);
+    public static long doubleParaCentavos(double valor) {
+        return Math.round(valor * 100);
     }
 }

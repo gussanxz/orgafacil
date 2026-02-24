@@ -2,10 +2,6 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter;
 
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 
-/**
- * Representa uma linha (ficha) no RecyclerView.
- * Pode ser um Título de Data (HEADER) ou um Registro Financeiro (MOVIMENTO).
- */
 public class AdapterItemListaMovimentacao {
 
     public static final int TYPE_HEADER = 0;
@@ -13,18 +9,13 @@ public class AdapterItemListaMovimentacao {
 
     public int type;
 
-    // --- Campos do Cabeçalho (Data e Saldo do Dia) ---
     public String data;
     public String tituloDia;
-    public int saldoDia; // Saldo em centavos
+    public long saldoDia; // Modificado para long
 
-    // --- Campos do Registro Financeiro ---
     public MovimentacaoModel movimentacaoModel;
 
-    /**
-     * Monta uma linha do tipo CABEÇALHO.
-     */
-    public static AdapterItemListaMovimentacao header(String data, String tituloDia, int saldoDia) {
+    public static AdapterItemListaMovimentacao header(String data, String tituloDia, long saldoDia) {
         AdapterItemListaMovimentacao item = new AdapterItemListaMovimentacao();
         item.type = TYPE_HEADER;
         item.data = data;
@@ -33,9 +24,6 @@ public class AdapterItemListaMovimentacao {
         return item;
     }
 
-    /**
-     * Monta uma linha do tipo MOVIMENTAÇÃO.
-     */
     public static AdapterItemListaMovimentacao linha(MovimentacaoModel m) {
         AdapterItemListaMovimentacao item = new AdapterItemListaMovimentacao();
         item.type = TYPE_MOVIMENTO;

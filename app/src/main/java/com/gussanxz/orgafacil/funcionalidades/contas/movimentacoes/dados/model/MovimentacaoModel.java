@@ -9,12 +9,9 @@ import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 
+import java.util.Calendar;
 import java.util.Date;
 
-/**
- * MovimentacaoModel (Versão Corrigida e Unificada)
- * Garante o mapeamento correto dos campos do Firestore para a aplicação.
- */
 public class MovimentacaoModel implements Parcelable {
 
     public static final String CAMPO_DATA_MOVIMENTACAO = "data_movimentacao";
@@ -22,7 +19,7 @@ public class MovimentacaoModel implements Parcelable {
 
     private String id;
     private String descricao;
-    private int valor = 0;
+    private long valor = 0; // Atualizado para long
     private String categoria_id;
     private String categoria_nome;
     private boolean pago = true;
@@ -35,19 +32,17 @@ public class MovimentacaoModel implements Parcelable {
 
     private String tipo;
 
-    // --- [NOVO] CAMPOS DE RECORRÊNCIA ---
     private String recorrencia_id;
     private int parcela_atual;
     private int total_parcelas;
 
     public MovimentacaoModel() {
-        // Construtor vazio obrigatório
     }
 
     protected MovimentacaoModel(Parcel in) {
         id = in.readString();
         descricao = in.readString();
-        valor = in.readInt();
+        valor = in.readLong(); // Atualizado para readLong
         categoria_id = in.readString();
         categoria_nome = in.readString();
         pago = in.readByte() != 0;
@@ -56,7 +51,6 @@ public class MovimentacaoModel implements Parcelable {
         data_criacao = readTimestamp(in);
         data_movimentacao = readTimestamp(in);
 
-        // Lendo os novos campos no Parcel
         recorrencia_id = in.readString();
         parcela_atual = in.readInt();
         total_parcelas = in.readInt();
@@ -66,7 +60,7 @@ public class MovimentacaoModel implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(id);
         dest.writeString(descricao);
-        dest.writeInt(valor);
+        dest.writeLong(valor); // Atualizado para writeLong
         dest.writeString(categoria_id);
         dest.writeString(categoria_nome);
         dest.writeByte((byte) (pago ? 1 : 0));
@@ -75,7 +69,6 @@ public class MovimentacaoModel implements Parcelable {
         writeTimestamp(dest, data_criacao);
         writeTimestamp(dest, data_movimentacao);
 
-        // Escrevendo os novos campos no Parcel
         dest.writeString(recorrencia_id);
         dest.writeInt(parcela_atual);
         dest.writeInt(total_parcelas);
@@ -109,8 +102,6 @@ public class MovimentacaoModel implements Parcelable {
         return new Timestamp(seconds, nanos);
     }
 
-    // --- GETTERS E SETTERS ---
-
     @Exclude
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -118,8 +109,8 @@ public class MovimentacaoModel implements Parcelable {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public int getValor() { return valor; }
-    public void setValor(int valor) { this.valor = valor; }
+    public long getValor() { return valor; } // Atualizado para long
+    public void setValor(long valor) { this.valor = valor; } // Atualizado para long
 
     public String getCategoria_id() { return categoria_id; }
     public void setCategoria_id(String categoria_id) { this.categoria_id = categoria_id; }
@@ -148,7 +139,6 @@ public class MovimentacaoModel implements Parcelable {
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
 
-    // --- [NOVO] GETTERS E SETTERS RECORRÊNCIA ---
     public String getRecorrencia_id() { return recorrencia_id; }
     public void setRecorrencia_id(String recorrencia_id) { this.recorrencia_id = recorrencia_id; }
 
@@ -163,8 +153,6 @@ public class MovimentacaoModel implements Parcelable {
 
     @PropertyName("data_vencimento_original")
     public void setData_vencimento_original(Timestamp data_vencimento_original) { this.data_vencimento_original = data_vencimento_original; }
-
-    // --- HELPERS E ENUMS ---
 
     @Exclude
     public TipoCategoriaContas getTipoEnum() {
@@ -197,15 +185,38 @@ public class MovimentacaoModel implements Parcelable {
     @Exclude
     public boolean estaVencida() {
         if (pago || data_movimentacao == null) return false;
-        return data_movimentacao.toDate().before(new Date());
+        // Pega apenas a data, ignorando a hora para o cálculo de "vencido"
+        Calendar hoje = Calendar.getInstance();
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+
+        Calendar vencimento = Calendar.getInstance();
+        vencimento.setTime(data_movimentacao.toDate());
+        vencimento.set(Calendar.HOUR_OF_DAY, 0); vencimento.set(Calendar.MINUTE, 0); vencimento.set(Calendar.SECOND, 0); vencimento.set(Calendar.MILLISECOND, 0);
+
+        return vencimento.before(hoje);
     }
 
-    // --- [NOVO] HELPER DE URGÊNCIA ---
     @Exclude
     public boolean venceEmBreve() {
         if (pago || data_movimentacao == null) return false;
         long diff = data_movimentacao.toDate().getTime() - new Date().getTime();
         long quarentaEOitoHoras = 48 * 60 * 60 * 1000L;
         return diff >= 0 && diff <= quarentaEOitoHoras;
+    }
+
+    @Exclude
+    public int diasParaVencimento() {
+        if (pago || data_movimentacao == null) return Integer.MAX_VALUE; // Se tá pago ou sem data, não tem urgência
+
+        Calendar hoje = Calendar.getInstance();
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+
+        Calendar vencimento = Calendar.getInstance();
+        vencimento.setTime(data_movimentacao.toDate());
+        vencimento.set(Calendar.HOUR_OF_DAY, 0); vencimento.set(Calendar.MINUTE, 0); vencimento.set(Calendar.SECOND, 0); vencimento.set(Calendar.MILLISECOND, 0);
+
+        // CORREÇÃO: Math.round garante precisão mesmo com fusos horários/horários de verão diferentes
+        long diferencaMilissegundos = vencimento.getTimeInMillis() - hoje.getTimeInMillis();
+        return (int) Math.round((double) diferencaMilissegundos / (1000 * 60 * 60 * 24));
     }
 }

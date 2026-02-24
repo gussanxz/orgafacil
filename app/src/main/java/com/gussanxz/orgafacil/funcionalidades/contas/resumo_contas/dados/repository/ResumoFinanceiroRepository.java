@@ -67,7 +67,7 @@ public class ResumoFinanceiroRepository {
      * Permite atualizar o limite de gastos mensal.
      * Funciona perfeitamente pois a constante no Model agora vale "inteligencia.limiteGastosMensal"
      */
-    public void atualizarLimiteMensal(int limiteCentavos) {
+    public void atualizarLimiteMensal(long limiteCentavos) {
         FirestoreSchema.contasResumoDoc().update(
                 ResumoFinanceiroModel.CAMPO_LIMITE_GASTOS_MENSAL, limiteCentavos
         );

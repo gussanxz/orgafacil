@@ -89,7 +89,6 @@ public class ContasActivity extends AppCompatActivity {
 
     // Motores de Dados (Repositories e ViewModel)
     private ContasViewModel viewModel;
-    private MovimentacaoRepository movRepository;
     private ResumoFinanceiroRepository resumoRepository;
     private UsuarioRepository usuarioRepository;
 
@@ -111,7 +110,6 @@ public class ContasActivity extends AppCompatActivity {
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
-        movRepository = new MovimentacaoRepository();
         resumoRepository = new ResumoFinanceiroRepository();
         usuarioRepository = new UsuarioRepository();
 
@@ -152,7 +150,7 @@ public class ContasActivity extends AppCompatActivity {
         if (mesSalvo != -1 && mesSalvo != mesAtual) {
             Log.i(TAG, "Virada de Mês detectada! Zerando estatísticas de " + mesSalvo + " para " + mesAtual);
 
-            movRepository.zerarEstatisticasMensais(new MovimentacaoRepository.Callback() {
+            viewModel.zerarEstatisticasMensais(new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {
                     Log.i(TAG, msg);
@@ -183,11 +181,11 @@ public class ContasActivity extends AppCompatActivity {
                     textoSaldo.setTextColor(Color.WHITE);
                     textSaldoAtual.setText("Carregando saldo...");
                 }
-                } else {
-                    progressBarPaginacao.setVisibility(View.GONE);
-                    isPrimeiroCarregamento = false;
-                }
-            });
+            } else {
+                progressBarPaginacao.setVisibility(View.GONE);
+                isPrimeiroCarregamento = false;
+            }
+        });
 
         // Observer para atualizar a LISTA
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
@@ -263,7 +261,8 @@ public class ContasActivity extends AppCompatActivity {
                             return;
                         }
 
-                        int saldoCentavos = resumo.getBalanco().getSaldoAtual();
+                        // CORREÇÃO: int alterado para long
+                        long saldoCentavos = resumo.getBalanco().getSaldoAtual();
                         double saldoDouble = saldoCentavos / 100.0;
                         textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
                     }
@@ -276,7 +275,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void recuperarMovimentacoesDoBanco() {
-        viewModel.fetchDados(movRepository, ehAtalho, new MovimentacaoRepository.DadosCallback() {
+        viewModel.fetchDados(ehAtalho, new MovimentacaoRepository.DadosCallback() {
             @Override public void onSucesso(List<MovimentacaoModel> lista) { /* UI via Observer */ }
             @Override public void onErro(String erro) {
                 Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
@@ -307,9 +306,10 @@ public class ContasActivity extends AppCompatActivity {
             if (positionParaRestaurar != -1) adapterAgrupado.notifyItemChanged(positionParaRestaurar);
         });
 
+        // CORREÇÃO: Utilizando o viewModel para excluir
         btnConfirmar.setOnClickListener(v -> {
             dialog.dismiss();
-            movRepository.excluir(mov, new MovimentacaoRepository.Callback() {
+            viewModel.excluir(mov, new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {
                     Toast.makeText(ContasActivity.this, "Lançamento excluído!", Toast.LENGTH_SHORT).show();
@@ -405,9 +405,9 @@ public class ContasActivity extends AppCompatActivity {
 
                     if ((visibleItemCount + pastVisibleItems) >= totalItemCount) {
                         if (ehAtalho) {
-                            viewModel.carregarMaisFuturo(movRepository);
+                            viewModel.carregarMaisFuturo();
                         } else {
-                            viewModel.carregarMaisHistorico(movRepository);
+                            viewModel.carregarMaisHistorico();
                         }
                     }
                 }
@@ -466,18 +466,19 @@ public class ContasActivity extends AppCompatActivity {
     private void confirmarPagamentoOuRecebimento(MovimentacaoModel mov) {
         String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
 
+        // CORREÇÃO: Utilizando o viewModel para confirmar a movimentação e atualizar os dados
         new AlertDialog.Builder(this)
                 .setTitle("Confirmar " + acao)
                 .setMessage("Você confirma que '" + mov.getDescricao() + "' foi concluído?")
                 .setPositiveButton("Sim, confirmar", (dialog, which) -> {
 
-                    movRepository.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+                    viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
                         @Override
                         public void onSucesso(String msg) {
                             Toast.makeText(ContasActivity.this, "Lançamento confirmado!", Toast.LENGTH_SHORT).show();
                             // Atualiza ambos para consistência
-                            viewModel.fetchDados(movRepository, true, null);
-                            viewModel.fetchDados(movRepository, false, null);
+                            viewModel.fetchDados(true, null);
+                            viewModel.fetchDados(false, null);
                         }
                         @Override public void onErro(String erro) {
                             Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();

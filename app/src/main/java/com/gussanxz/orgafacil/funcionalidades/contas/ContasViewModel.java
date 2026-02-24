@@ -15,65 +15,65 @@ import java.util.List;
 
 public class ContasViewModel extends ViewModel {
 
-    // --- ENCAPSULAMENTO ---
+    // --- DEPENDÊNCIAS INTERNAS ---
+    // O ViewModel agora é totalmente dono do repositório, mantendo o MVVM limpo.
+    private final MovimentacaoRepository repo;
 
-    // LiveData exclusivo para a aba HISTÓRICO
     private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
     public LiveData<List<MovimentacaoModel>> listaHistorico = _listaHistorico;
 
-    // LiveData exclusivo para a aba FUTURO
     private final MutableLiveData<List<MovimentacaoModel>> _listaFutura = new MutableLiveData<>();
     public LiveData<List<MovimentacaoModel>> listaFutura = _listaFutura;
 
-    // Saldo REAL (Histórico - Apenas o que foi pago)
     private final MutableLiveData<Long> _saldoPeriodo = new MutableLiveData<>();
     public LiveData<Long> saldoPeriodo = _saldoPeriodo;
 
-    // Saldo ESTIMADO (Futuro - Soma das previsões)
     private final MutableLiveData<Long> _saldoFuturo = new MutableLiveData<>();
     public LiveData<Long> saldoFuturo = _saldoFuturo;
 
-    // Avisa a tela se está buscando mais itens (scroll infinito ou carga inicial) para mostrar o ProgressBar
     private final MutableLiveData<Boolean> _carregandoPaginacao = new MutableLiveData<>(false);
     public LiveData<Boolean> carregandoPaginacao = _carregandoPaginacao;
 
-    // --- CACHE DE DADOS ---
     private List<MovimentacaoModel> cacheHistorico = new ArrayList<>();
     private List<MovimentacaoModel> cacheFuturo = new ArrayList<>();
 
-    // Estado dos filtros atuais
     private String lastQuery = "";
     private Date lastInicio = null;
     private Date lastFim = null;
 
-    // --- VARIÁVEIS DE CONTROLE DE PAGINAÇÃO (SCROLL INFINITO) ---
-    // Controle de Histórico
     private DocumentSnapshot ultimoDocumentoVisivelHistorico = null;
     private boolean isUltimaPaginaHistorico = false;
 
-    // Controle de Futuro
     private DocumentSnapshot ultimoDocumentoVisivelFuturo = null;
     private boolean isUltimaPaginaFuturo = false;
 
-    // Variável global
     private boolean isCarregandoPagina = false;
 
-    // --- MÉTODOS DE DADOS ---
+    public ContasViewModel() {
+        // Inicializado internamente!
+        this.repo = new MovimentacaoRepository();
+    }
 
-    /**
-     * Busca os dados iniciais.
-     * Agora ele direciona para a query correta do Repositório dependendo se é Futuro ou Histórico.
-     */
-    public void fetchDados(MovimentacaoRepository repo, boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
+    // --- WRAPPERS DE AÇÃO PARA A VIEW ---
+    public void excluir(MovimentacaoModel mov, MovimentacaoRepository.Callback callback) {
+        repo.excluir(mov, callback);
+    }
+
+    public void confirmarMovimentacao(MovimentacaoModel mov, MovimentacaoRepository.Callback callback) {
+        repo.confirmarMovimentacao(mov, callback);
+    }
+
+    public void zerarEstatisticasMensais(MovimentacaoRepository.Callback callback) {
+        repo.zerarEstatisticasMensais(callback);
+    }
+
+    // --- MÉTODOS DE BUSCA ---
+
+    public void fetchDados(boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
         Date agora = new Date();
-
-        // [CORREÇÃO] Avisa a Activity que começou a carregar
         _carregandoPaginacao.setValue(true);
 
         if (ehModoFuturo) {
-            // ==========================================
-            // MODO FUTURO: Inicia a paginação do zero
-            // ==========================================
             ultimoDocumentoVisivelFuturo = null;
             isUltimaPaginaFuturo = false;
             isCarregandoPagina = true;
@@ -83,28 +83,20 @@ public class ContasViewModel extends ViewModel {
                 public void onSucesso(List<MovimentacaoModel> lista, DocumentSnapshot ultimoDoc) {
                     cacheFuturo = new ArrayList<>(lista);
                     ultimoDocumentoVisivelFuturo = ultimoDoc;
-
-                    // Verifica se já chegou no fim
                     if (lista.size() < 100) isUltimaPaginaFuturo = true;
-
                     isCarregandoPagina = false;
-                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
+                    _carregandoPaginacao.setValue(false);
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
-
-                @Override
-                public void onErro(String erro) {
+                @Override public void onErro(String erro) {
                     isCarregandoPagina = false;
-                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
+                    _carregandoPaginacao.setValue(false);
                     if (callbackExterno != null) callbackExterno.onErro(erro);
                 }
             });
 
         } else {
-            // ==========================================
-            // MODO HISTÓRICO: Inicia a paginação do zero
-            // ==========================================
             ultimoDocumentoVisivelHistorico = null;
             isUltimaPaginaHistorico = false;
             isCarregandoPagina = true;
@@ -114,33 +106,25 @@ public class ContasViewModel extends ViewModel {
                 public void onSucesso(List<MovimentacaoModel> lista, DocumentSnapshot ultimoDoc) {
                     cacheHistorico = new ArrayList<>(lista);
                     ultimoDocumentoVisivelHistorico = ultimoDoc;
-
                     if (lista.size() < 100) isUltimaPaginaHistorico = true;
-
                     isCarregandoPagina = false;
-                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
+                    _carregandoPaginacao.setValue(false);
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
-
-                @Override
-                public void onErro(String erro) {
+                @Override public void onErro(String erro) {
                     isCarregandoPagina = false;
-                    _carregandoPaginacao.setValue(false); // [CORREÇÃO] Avisa que terminou
+                    _carregandoPaginacao.setValue(false);
                     if (callbackExterno != null) callbackExterno.onErro(erro);
                 }
             });
         }
     }
 
-    /**
-     * CARREGAR MAIS HISTÓRICO
-     */
-    public void carregarMaisHistorico(MovimentacaoRepository repo) {
+    public void carregarMaisHistorico() {
         if (isCarregandoPagina || isUltimaPaginaHistorico) return;
-
         isCarregandoPagina = true;
-        _carregandoPaginacao.setValue(true); // AVISA A TELA
+        _carregandoPaginacao.setValue(true);
         Date agora = new Date();
 
         repo.recuperarHistoricoPaginado(agora, ultimoDocumentoVisivelHistorico, new MovimentacaoRepository.DadosPaginadosCallback() {
@@ -153,26 +137,19 @@ public class ContasViewModel extends ViewModel {
                     ultimoDocumentoVisivelHistorico = novoUltimoDoc;
                     if (novaLista.size() < 100) isUltimaPaginaHistorico = true;
                 }
-
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
             }
-
-            @Override
-            public void onErro(String erro) {
+            @Override public void onErro(String erro) {
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
             }
         });
     }
 
-    /**
-     * CARREGAR MAIS CONTAS FUTURAS
-     */
-    public void carregarMaisFuturo(MovimentacaoRepository repo) {
+    public void carregarMaisFuturo() {
         if (isCarregandoPagina || isUltimaPaginaFuturo) return;
-
         isCarregandoPagina = true;
         _carregandoPaginacao.setValue(true);
         Date agora = new Date();
@@ -187,14 +164,11 @@ public class ContasViewModel extends ViewModel {
                     ultimoDocumentoVisivelFuturo = novoUltimoDoc;
                     if (novaLista.size() < 100) isUltimaPaginaFuturo = true;
                 }
-
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
             }
-
-            @Override
-            public void onErro(String erro) {
+            @Override public void onErro(String erro) {
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
             }
@@ -206,15 +180,12 @@ public class ContasViewModel extends ViewModel {
         this.lastInicio = inicio;
         this.lastFim = fim;
 
-        // --- Processa Lista de Histórico ---
         List<MovimentacaoModel> resHistorico = filtrarListaGenerica(cacheHistorico, query, inicio, fim, false);
         _listaHistorico.setValue(resHistorico);
 
-        // --- Processa Lista Futura ---
         List<MovimentacaoModel> resFuturo = filtrarListaGenerica(cacheFuturo, query, inicio, fim, true);
         _listaFutura.setValue(resFuturo);
 
-        // --- Calcula Saldos ---
         calcularSaldoHistorico(resHistorico);
         calcularSaldoFuturo(resFuturo);
     }
@@ -226,11 +197,9 @@ public class ContasViewModel extends ViewModel {
         for (MovimentacaoModel m : origem) {
             if (m == null) continue;
 
-            // Filtro de Status
             if (isModoFuturo && m.isPago()) continue;
             if (!isModoFuturo && !m.isPago()) continue;
 
-            // Filtro de Data
             boolean noPeriodo = true;
             if (inicio != null && fim != null) {
                 if (m.getData_movimentacao() != null) {
@@ -241,7 +210,6 @@ public class ContasViewModel extends ViewModel {
                 }
             }
 
-            // Filtro de Texto
             if (noPeriodo) {
                 String descricao = (m.getDescricao() != null) ? m.getDescricao().toLowerCase() : "";
                 String categoria = (m.getCategoria_nome() != null) ? m.getCategoria_nome().toLowerCase() : "";
