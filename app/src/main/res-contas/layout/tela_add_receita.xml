@@ -112,6 +112,7 @@
                 android:hint="Selecione uma data"
                 android:text="01/01/2025"
                 android:clickable="true"
+                android:focusable="false"
                 android:inputType="none"
                 android:paddingStart="44dp"/>
         </com.google.android.material.textfield.TextInputLayout>
@@ -179,7 +180,7 @@
                 android:id="@+id/editDescricao"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Descricao do produtoModel ou servicoModel"
+                android:hint="Descrição da receita"
                 android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -201,13 +202,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
+            android:layout_marginEnd="24dp"
             android:clickable="true"
             android:onClick="salvarProventos"
             app:backgroundTint="@color/colorAccentProventos"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@drawable/ic_confirmar_branco_24" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

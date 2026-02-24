@@ -1,6 +1,8 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,19 +23,14 @@ import com.gussanxz.orgafacil.funcionalidades.contas.categorias.ui.SelecionarCat
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
-import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * EditarMovimentacaoActivity
- * Gerencia a edição de lançamentos existentes.
- * [ATUALIZADO]: Sincronizado com o modelo unificado e mapas do Firestore.
- */
 public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private EditText editData, editHora, editDescricao, editValor, editCategoria;
@@ -51,7 +48,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Recupera o objeto enviado para edição
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             movOriginal = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
         } else {
@@ -65,8 +61,6 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // [CORREÇÃO]: Comparação usando Enum em vez de ID inteiro legado.
-        // Garante compatibilidade com o novo MovimentacaoModel que salva "DESPESA"/"RECEITA" (String).
         if (movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA) {
             setContentView(R.layout.tela_add_despesa);
         } else {
@@ -89,28 +83,33 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
         btnExcluir = findViewById(R.id.btnExcluir);
+        switchStatusPago = findViewById(R.id.switchStatusPago);
 
-        if (textViewHeader != null) textViewHeader.setText("Editar Lançamento");
+        boolean isDespesa = movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA;
+
+        if (textViewHeader != null) {
+            textViewHeader.setText(isDespesa ? "Editar Despesa" : "Editar Receita");
+        }
+
+        if (editDescricao != null) {
+            editDescricao.setHint(isDespesa ? "Descrição da despesa" : "Descrição da receita");
+        }
+
         if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
 
         editCategoria.setFocusable(false);
         editCategoria.setClickable(true);
 
-        switchStatusPago = findViewById(R.id.switchStatusPago);
-
-        if (switchStatusPago != null) {
-            switchStatusPago.setEnabled(true); // edição: permitir alterar
+        editData.setFocusable(false);
+        editData.setClickable(true);
+        if (editHora != null) {
+            editHora.setFocusable(false);
+            editHora.setClickable(true);
         }
     }
 
-    /**
-     * Preenche a UI com os dados do modelo via métodos @Exclude (compatibilidade)
-     */
     private void preencherCampos() {
-        // [PRECISÃO]: Converte centavos para Double apenas para exibição
-        // CORREÇÃO: Divisão direta por 100.0 para suportar o tipo long sem problemas de cast
         double valorExibicao = movOriginal.getValor() / 100.0;
-        // Formata para exibição padrão (ex: 1250.50)
         editValor.setText(String.format(Locale.US, "%.2f", valorExibicao));
 
         editDescricao.setText(movOriginal.getDescricao());
@@ -122,16 +121,16 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             if (editHora != null) {
                 editHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date));
             }
-        }
-        if (switchStatusPago != null) {
-            boolean ok = movOriginal != null && movOriginal.isPago();
-            switchStatusPago.setChecked(ok);
-            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+
+            if (switchStatusPago != null) {
+                switchStatusPago.setChecked(movOriginal.isPago());
+                aplicarRegraStatusPorData(date);
+            }
         }
     }
 
     private void configurarListeners() {
-        editData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(this, editData));
+        editData.setOnClickListener(v -> abrirSelecionadorDeData());
         if (editHora != null) {
             editHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, editHora));
         }
@@ -140,10 +139,55 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
         }
         if (switchStatusPago != null) {
-            switchStatusPago.setOnCheckedChangeListener((btn, checked) ->
-                    switchStatusPago.setText(checked ? "Status: OK" : "Status: Pendente"));
+            switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
         }
     }
+
+    // --- NOVA REGRA DE NEGÓCIO DE DATAS ---
+    private void abrirSelecionadorDeData() {
+        Calendar c = Calendar.getInstance();
+        try {
+            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(editData.getText().toString());
+            if(dataAtual != null) c.setTime(dataAtual);
+        } catch (Exception ignored) {}
+
+        new DatePickerDialog(this, (v, y, m, d) -> {
+            c.set(y, m, d);
+            Date dataEscolhida = c.getTime();
+            editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
+            aplicarRegraStatusPorData(dataEscolhida);
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void aplicarRegraStatusPorData(Date data) {
+        if (switchStatusPago == null) return;
+
+        Calendar hoje = Calendar.getInstance();
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+
+        Calendar selecionada = Calendar.getInstance();
+        selecionada.setTime(data);
+        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0); selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
+
+        if (selecionada.after(hoje)) {
+            switchStatusPago.setChecked(false);
+            switchStatusPago.setEnabled(false);
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            switchStatusPago.setEnabled(true);
+            atualizarTextoStatus();
+        }
+    }
+
+    private void atualizarTextoStatus() {
+        boolean ok = switchStatusPago.isChecked();
+        if (!switchStatusPago.isEnabled() && !ok) {
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        }
+    }
+    // ----------------------------------------
 
     private void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
@@ -163,34 +207,24 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 });
     }
 
-    // Handlers para os botões do XML (tanto de receita quanto despesa)
     public void salvarDespesa(View v) { confirmarEdicao(); }
     public void salvarProventos(View v) { confirmarEdicao(); }
 
-    /**00000
-     * Confirma a edição e envia para o Repository
-     */
     private void confirmarEdicao() {
         try {
-            // Criamos uma nova instância baseada na original para preservar IDs e metadados
             MovimentacaoModel movNova = new MovimentacaoModel();
-
             movNova.setId(movOriginal.getId());
-            movNova.setTipoEnum(movOriginal.getTipoEnum()); // Preserva o Tipo original como Enum
+            movNova.setTipoEnum(movOriginal.getTipoEnum());
             movNova.setData_criacao(movOriginal.getData_criacao());
 
-            // 1. Processamento Financeiro (Converte de volta para Centavos)
-            // Remove pontuação de milhar ou vírgula para parsing seguro
             String valorStr = editValor.getText().toString().replace(",", ".");
             double valorDigitado = Double.parseDouble(valorStr);
             movNova.setValor((long)MoedaHelper.doubleParaCentavos(valorDigitado));
 
-            // 2. Dados de Texto e Categoria
             movNova.setDescricao(editDescricao.getText().toString());
             movNova.setCategoria_nome(editCategoria.getText().toString());
             movNova.setCategoria_id(novoCategoriaId);
 
-            // 3. Data e Lógica de Status (Pago/Pendente)
             String dataHoraStr = editData.getText().toString();
             if (editHora != null && !editHora.getText().toString().isEmpty()) {
                 dataHoraStr += " " + editHora.getText().toString();
@@ -202,17 +236,12 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             Date date = sdf.parse(dataHoraStr);
             if (date != null) {
                 movNova.setData_movimentacao(new Timestamp(date));
-
-                // [ATUALIZAÇÃO CRÍTICA]: Se o usuário mudar a data para o futuro na edição,
-                // o status 'pago' deve mudar automaticamente para refletir que é um agendamento.
                 boolean ok = (switchStatusPago != null)
                         ? switchStatusPago.isChecked()
                         : (movOriginal != null && movOriginal.isPago());
-
                 movNova.setPago(ok);
             }
 
-            // 4. Envio via Repository (Batch Update)
             repository.editar(movOriginal, movNova, new MovimentacaoRepository.Callback() {
                 @Override
                 public void onSucesso(String msg) {
@@ -228,14 +257,13 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             });
 
         } catch (Exception e) {
-//            Toast.makeText(this, "Verifique os dados informados (Valor/Data)", Toast.LENGTH_SHORT).show();
-            Log.e("ReceitasActivity", "Erro ao salvarProventos", e);
+            Log.e("ReceitasActivity", "Erro ao salvar", e);
             Toast.makeText(this, "Erro: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void confirmarExclusao() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Excluir Lançamento")
                 .setMessage("Deseja realmente excluir? O saldo será corrigido automaticamente.")
                 .setNegativeButton("Cancelar", null)
@@ -253,5 +281,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                         }
                     });
                 }).show();
+    }
+
+    public void retornarPrincipal(View view) {
+        finish();
     }
 }

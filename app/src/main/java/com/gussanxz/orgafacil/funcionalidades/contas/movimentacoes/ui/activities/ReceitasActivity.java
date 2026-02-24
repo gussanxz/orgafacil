@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activitie
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +32,6 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
@@ -41,11 +41,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * ReceitasActivity
- * Agora utiliza o MovimentacaoModel unificado.
- * Define o status 'pago' automaticamente e trava na criação, liberando na edição.
- */
 public class ReceitasActivity extends AppCompatActivity {
 
     private final String TAG = "ReceitasActivity";
@@ -62,8 +57,6 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private String categoriaIdSelecionada;
     private MaterialSwitch switchStatusPago;
-
-    // [PRECISÃO]: O valor é controlado em centavos (long)
     private long valorCentavosAtual = 0;
 
     @Override
@@ -110,10 +103,17 @@ public class ReceitasActivity extends AppCompatActivity {
 
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
+
+        campoData.setFocusable(false);
+        campoData.setClickable(true);
+        if (campoHora != null) {
+            campoHora.setFocusable(false);
+            campoHora.setClickable(true);
+        }
     }
 
     private void configurarListeners() {
-        campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(this, campoData));
+        campoData.setOnClickListener(v -> abrirSelecionadorDeData());
         campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
 
         campoCategoria.setOnClickListener(v -> {
@@ -132,6 +132,41 @@ public class ReceitasActivity extends AppCompatActivity {
             switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> atualizarTextoStatus());
         }
     }
+
+    // --- NOVA REGRA DE NEGÓCIO DE DATAS ---
+    private void abrirSelecionadorDeData() {
+        Calendar c = Calendar.getInstance();
+        try {
+            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
+            if(dataAtual != null) c.setTime(dataAtual);
+        } catch (Exception ignored) {}
+
+        new DatePickerDialog(this, (v, y, m, d) -> {
+            c.set(y, m, d);
+            Date dataEscolhida = c.getTime();
+            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
+            aplicarRegraStatusPorData(dataEscolhida);
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void aplicarRegraStatusPorData(Date data) {
+        Calendar hoje = Calendar.getInstance();
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+
+        Calendar selecionada = Calendar.getInstance();
+        selecionada.setTime(data);
+        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0); selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
+
+        if (selecionada.after(hoje)) {
+            switchStatusPago.setChecked(false);
+            switchStatusPago.setEnabled(false);
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            switchStatusPago.setEnabled(true);
+            atualizarTextoStatus();
+        }
+    }
+    // ----------------------------------------
 
     private void configurarLauncherCategoria() {
         launcherCategoria = registerForActivityResult(
@@ -158,7 +193,6 @@ public class ReceitasActivity extends AppCompatActivity {
                     if (!cleanString.isEmpty()) {
                         try {
                             valorCentavosAtual = Long.parseLong(cleanString);
-                            // CORREÇÃO: Divisão direta por 100.0 resolve a tipagem
                             campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                             current = campoValor.getText().toString();
                             campoValor.setSelection(current.length());
@@ -188,7 +222,6 @@ public class ReceitasActivity extends AppCompatActivity {
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                // CORREÇÃO: Divisão direta por 100.0 resolve a tipagem
                 campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
@@ -197,45 +230,35 @@ public class ReceitasActivity extends AppCompatActivity {
                     Date data = itemEmEdicao.getData_movimentacao().toDate();
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
+
+                    switchStatusPago.setChecked(itemEmEdicao.isPago());
+                    aplicarRegraStatusPorData(data);
                 }
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
-
-                // ✅ EDIÇÃO: Habilita o Switch para permitir mudar o status
-                switchStatusPago.setEnabled(true);
-                switchStatusPago.setChecked(itemEmEdicao.isPago());
             }
         } else {
             isEdicao = false;
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
 
-            // 2. Lógica de Smart Defaults para NOVO lançamento
             if (ehContaFutura) {
-                // MODO AGENDAR: Sugere amanhã e Status Pendente
                 Calendar c = Calendar.getInstance();
                 c.add(Calendar.DAY_OF_YEAR, 1);
-                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(c.getTime()));
-                campoHora.setText("08:00");
+                Date dataFutura = c.getTime();
 
-                switchStatusPago.setChecked(false);
-                // ✅ CRIAÇÃO: Trava o Switch para Agendar = Sempre Pendente
-                switchStatusPago.setEnabled(false);
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataFutura));
+                campoHora.setText("08:00");
+                aplicarRegraStatusPorData(dataFutura);
             } else {
-                // MODO NOVA RECEITA: Hoje e Status OK
-                campoData.setText(DatePickerHelper.setDataAtual());
+                Date dataHoje = new Date();
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataHoje));
                 campoHora.setText(TimePickerHelper.setHoraAtual());
 
                 switchStatusPago.setChecked(true);
-                // ✅ CRIAÇÃO: Trava o Switch para Nova Receita = Sempre OK
-                switchStatusPago.setEnabled(false);
+                aplicarRegraStatusPorData(dataHoje);
             }
         }
-
-        atualizarTextoStatus();
     }
 
-    /**
-     * SALVAR PROVENTOS
-     */
     public void salvarProventos(View view) {
         if (!validarCamposProventos()) return;
 
@@ -263,7 +286,6 @@ public class ReceitasActivity extends AppCompatActivity {
             mov.setData_movimentacao(Timestamp.now());
         }
 
-        // ✅ STATUS FINAL: Switch decide
         mov.setPago(switchStatusPago.isChecked());
 
         if (isEdicao) {
@@ -335,6 +357,10 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private void atualizarTextoStatus() {
         boolean ok = switchStatusPago.isChecked();
-        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        if (!switchStatusPago.isEnabled() && !ok) {
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        }
     }
 }

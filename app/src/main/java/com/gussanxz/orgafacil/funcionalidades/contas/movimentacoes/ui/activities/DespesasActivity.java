@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activitie
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +32,6 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
-import com.gussanxz.orgafacil.util_helper.DatePickerHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
@@ -41,11 +41,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * DespesasActivity
- * Agora utiliza o MovimentacaoModel unificado com suporte a Mapas (Dot Notation).
- * Define automaticamente o status 'pago' com base na intenção inicial e trava na criação.
- */
 public class DespesasActivity extends AppCompatActivity {
 
     private final String TAG = "DespesasActivity";
@@ -70,7 +65,6 @@ public class DespesasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.tela_add_despesa);
 
-        // Captura a intenção vinda do menu (Agendar vs Nova)
         ehContaFutura = getIntent().getBooleanExtra("EH_CONTA_FUTURA", false);
 
         if (!FirebaseSession.isUserLogged()) {
@@ -109,13 +103,20 @@ public class DespesasActivity extends AppCompatActivity {
 
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
-        campoCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
 
-        campoData.setOnClickListener(v -> DatePickerHelper.showDatePickerDialog(this, campoData));
-        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
+        campoData.setFocusable(false);
+        campoData.setClickable(true);
+        if (campoHora != null) {
+            campoHora.setFocusable(false);
+            campoHora.setClickable(true);
+        }
     }
 
     private void configurarListeners() {
+        campoCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
+        campoData.setOnClickListener(v -> abrirSelecionadorDeData());
+        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
+
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> {
                 if (isEdicao && itemEmEdicao != null) confirmarExcluir();
@@ -125,6 +126,43 @@ public class DespesasActivity extends AppCompatActivity {
             switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> atualizarTextoStatus());
         }
     }
+
+    // --- NOVA REGRA DE NEGÓCIO DE DATAS ---
+    private void abrirSelecionadorDeData() {
+        Calendar c = Calendar.getInstance();
+        try {
+            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
+            if(dataAtual != null) c.setTime(dataAtual);
+        } catch (Exception ignored) {}
+
+        new DatePickerDialog(this, (v, y, m, d) -> {
+            c.set(y, m, d);
+            Date dataEscolhida = c.getTime();
+            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
+            aplicarRegraStatusPorData(dataEscolhida);
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void aplicarRegraStatusPorData(Date data) {
+        Calendar hoje = Calendar.getInstance();
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+
+        Calendar selecionada = Calendar.getInstance();
+        selecionada.setTime(data);
+        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0); selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
+
+        if (selecionada.after(hoje)) {
+            // REGRA: Proibido lançar como "Pago" no futuro.
+            switchStatusPago.setChecked(false);
+            switchStatusPago.setEnabled(false);
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            // Passado ou Hoje: Livre para marcar como Pago ou Pendente
+            switchStatusPago.setEnabled(true);
+            atualizarTextoStatus();
+        }
+    }
+    // ----------------------------------------
 
     private void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
@@ -156,7 +194,6 @@ public class DespesasActivity extends AppCompatActivity {
                     if (!cleanString.isEmpty()) {
                         try {
                             valorCentavosAtual = Long.parseLong(cleanString);
-                            // CORREÇÃO: Divisão direta por 100.0 para compatibilidade com o tipo long
                             String formatted = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
                             current = formatted;
                             campoValor.setText(formatted);
@@ -175,7 +212,6 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     private void verificarModoEdicao() {
-        // 1. Lógica de Recuperação de Dados (Edição)
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
@@ -188,7 +224,6 @@ public class DespesasActivity extends AppCompatActivity {
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
-                // CORREÇÃO: Divisão direta por 100.0
                 campoValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
                 campoCategoria.setText(itemEmEdicao.getCategoria_nome());
                 campoDescricao.setText(itemEmEdicao.getDescricao());
@@ -197,56 +232,44 @@ public class DespesasActivity extends AppCompatActivity {
                     Date data = itemEmEdicao.getData_movimentacao().toDate();
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
+
+                    switchStatusPago.setChecked(itemEmEdicao.isPago());
+                    aplicarRegraStatusPorData(data);
                 }
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
-
-                // ✅ EDIÇÃO: Habilita o Switch para permitir mudar o status (ex: pagar conta pendente)
-                switchStatusPago.setEnabled(true);
-                switchStatusPago.setChecked(itemEmEdicao.isPago());
             }
         } else {
             isEdicao = false;
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
 
-            // 2. Configuração de "Smart Defaults" para NOVO lançamento
             if (ehContaFutura) {
-                // MODO AGENDAR: Sugere amanhã e Status Pendente
                 Calendar c = Calendar.getInstance();
                 c.add(Calendar.DAY_OF_YEAR, 1);
-                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(c.getTime()));
-                campoHora.setText("08:00");
+                Date dataFutura = c.getTime();
 
-                switchStatusPago.setChecked(false);
-                // ✅ CRIAÇÃO: Trava o Switch para Agendar = Sempre Pendente
-                switchStatusPago.setEnabled(false);
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataFutura));
+                campoHora.setText("08:00");
+                aplicarRegraStatusPorData(dataFutura);
             } else {
-                // MODO NOVA MOVIMENTAÇÃO: Hoje e Status OK
-                campoData.setText(DatePickerHelper.setDataAtual());
+                Date dataHoje = new Date();
+                campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataHoje));
                 campoHora.setText(TimePickerHelper.setHoraAtual());
 
                 switchStatusPago.setChecked(true);
-                // ✅ CRIAÇÃO: Trava o Switch para Nova Movimentação = Sempre OK
-                switchStatusPago.setEnabled(false);
+                aplicarRegraStatusPorData(dataHoje);
             }
         }
-
-        atualizarTextoStatus();
     }
 
-    /**
-     * SALVAR DESPESA
-     */
     public void salvarDespesa(View view) {
         if (!validarCamposDespesas()) return;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        // 1. Dados Financeiros (Sempre Centavos)
         mov.setValor(valorCentavosAtual);
         mov.setDescricao(campoDescricao.getText().toString());
         mov.setTipoEnum(TipoCategoriaContas.DESPESA);
 
-        // 2. Categoria
         mov.setCategoria_nome(campoCategoria.getText().toString());
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
@@ -254,7 +277,6 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setCategoria_id("geral_despesa");
         }
 
-        // 3. Data e Hora
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -266,10 +288,8 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setData_movimentacao(Timestamp.now());
         }
 
-        // 4. Status Final: Pega o valor atual do Switch
         mov.setPago(switchStatusPago.isChecked());
 
-        // 5. Persistência
         if (isEdicao) {
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
@@ -339,6 +359,10 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void atualizarTextoStatus() {
         boolean ok = switchStatusPago.isChecked();
-        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        if (!switchStatusPago.isEnabled() && !ok) {
+            switchStatusPago.setText("Status: Pendente (Futuro)");
+        } else {
+            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
+        }
     }
 }
