@@ -71,6 +71,7 @@ public class ContasActivity extends AppCompatActivity {
     private boolean ehAtalho = false; // Define se é modo Futuro (true) ou Histórico (false)
     private boolean isPrimeiroCarregamento = true; // [NOVO] Evita piscar a tela
     private Bundle extrasAtalho = null;
+    private Long ultimoSaldoCarregado = null;
 
     // UI Components
     private TextView textoSaudacao, textoSaldo, textSaldoAtual;
@@ -103,15 +104,10 @@ public class ContasActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.tela_movimentacoes);
 
         // Inicialização da ViewModel
         viewModel = new ViewModelProvider(this).get(ContasViewModel.class);
-
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle("OrgaFácil");
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
@@ -183,14 +179,15 @@ public class ContasActivity extends AppCompatActivity {
 
                 // Se for o primeiro carregamento da tela, esconde a lista e o estado vazio
                 if (isPrimeiroCarregamento) {
-                    recyclerView.setVisibility(View.GONE);
-                    layoutEmptyStateContas.setVisibility(View.GONE);
+                    textoSaldo.setText("--");
+                    textoSaldo.setTextColor(Color.WHITE);
+                    textSaldoAtual.setText("Carregando saldo...");
                 }
-            } else {
-                progressBarPaginacao.setVisibility(View.GONE);
-                isPrimeiroCarregamento = false;
-            }
-        });
+                } else {
+                    progressBarPaginacao.setVisibility(View.GONE);
+                    isPrimeiroCarregamento = false;
+                }
+            });
 
         // Observer para atualizar a LISTA
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
@@ -217,17 +214,25 @@ public class ContasActivity extends AppCompatActivity {
 
         // Observer para atualizar o SALDO
         Observer<Long> observerSaldo = saldoCentavos -> {
-            double valor = Math.abs(saldoCentavos / 100.0);
-            textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", valor));
 
-            if (ehAtalho) {
-                // Se for a aba de pendentes, a cor indica atenção
-                textoSaldo.setTextColor(Color.parseColor("#FFCCBC")); // Laranja claro
-                textSaldoAtual.setText("Total a pagar/receber");
+            if (saldoCentavos == null) return;
+            ultimoSaldoCarregado = saldoCentavos;
+
+            double saldoDouble = saldoCentavos / 100.0;
+
+            textoSaldo.setText(
+                    String.format(Locale.getDefault(), "R$ %.2f", saldoDouble)
+            );
+
+            if (saldoCentavos > 0) {
+                textoSaldo.setTextColor(Color.parseColor("#4CAF50")); // Verde
+            } else if (saldoCentavos < 0) {
+                textoSaldo.setTextColor(Color.parseColor("#F44336")); // Vermelho
             } else {
-                textoSaldo.setTextColor(Color.WHITE);
-                textSaldoAtual.setText("Saldo total atual");
+                textoSaldo.setTextColor(Color.WHITE); // Neutro
             }
+
+            atualizarTextoResumo();
         };
 
         if (ehAtalho) {
@@ -249,6 +254,15 @@ public class ContasActivity extends AppCompatActivity {
                 @Override
                 public void onUpdate(ResumoFinanceiroModel resumo) {
                     if (resumo != null && resumo.getBalanco() != null) {
+
+                        if (isPrimeiroCarregamento || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) {
+                            return;
+                        }
+
+                        if (ultimoSaldoCarregado != null) {
+                            return;
+                        }
+
                         int saldoCentavos = resumo.getBalanco().getSaldoAtual();
                         double saldoDouble = saldoCentavos / 100.0;
                         textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoDouble));
@@ -548,5 +562,26 @@ public class ContasActivity extends AppCompatActivity {
 
         if (btnNovaDespesa != null) btnNovaDespesa.setText("Agendar Despesa");
         if (btnNovaReceita != null) btnNovaReceita.setText("Agendar Receita");
+    }
+
+    private void atualizarTextoResumo() {
+
+        if (ehAtalho) {
+
+            long saldoCentavos = (viewModel.saldoFuturo.getValue() != null)
+                    ? viewModel.saldoFuturo.getValue()
+                    : 0;
+
+            if (saldoCentavos < 0) {
+                textSaldoAtual.setText("Total a pagar");
+            } else if (saldoCentavos > 0) {
+                textSaldoAtual.setText("Total a receber");
+            } else {
+                textSaldoAtual.setText("Nenhum valor pendente");
+            }
+
+        } else {
+            textSaldoAtual.setText("Saldo atual");
+        }
     }
 }

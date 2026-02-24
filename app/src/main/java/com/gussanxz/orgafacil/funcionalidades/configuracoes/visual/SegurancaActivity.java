@@ -17,6 +17,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
+import com.gussanxz.orgafacil.util_helper.SecurityConstants;
 
 /**
  * SegurancaActivity
@@ -45,7 +46,7 @@ public class SegurancaActivity extends AppCompatActivity {
 
         usuarioRepository = new UsuarioRepository();
         usuarioAtual = FirebaseAuth.getInstance().getCurrentUser();
-        prefs = getSharedPreferences("OrgaFacilPrefs", MODE_PRIVATE);
+        prefs = getSharedPreferences(SecurityConstants.PREF_NAME, MODE_PRIVATE);
 
         bindViews();
         carregarPreferencias();
@@ -60,28 +61,45 @@ public class SegurancaActivity extends AppCompatActivity {
     }
 
     private void carregarPreferencias() {
-        boolean pinObrigatorio = prefs.getBoolean("pin_obrigatorio", false);
+
+        boolean pinObrigatorio = prefs.getBoolean(
+                SecurityConstants.KEY_PIN_OBRIGATORIO,
+                SecurityConstants.DEFAULT_PIN_OBRIGATORIO
+        );
+
+        // Evita disparo automático do listener
+        switchAtivarPin.setOnCheckedChangeListener(null);
         switchAtivarPin.setChecked(pinObrigatorio);
     }
 
     private void configurarListeners() {
-        // Toggle de bloqueio por PIN (Armazenamento Local)
-        switchAtivarPin.setOnCheckedChangeListener((buttonView, isChecked) ->
-                prefs.edit().putBoolean("pin_obrigatorio", isChecked).apply()
-        );
 
-        // Alterar Senha (Placeholder)
+        switchAtivarPin.setOnCheckedChangeListener((buttonView, isChecked) -> {
+
+            prefs.edit()
+                    .putBoolean(SecurityConstants.KEY_PIN_OBRIGATORIO, isChecked)
+                    .apply();
+
+            // (Opcional) Feedback UX elegante
+            Toast.makeText(
+                    this,
+                    isChecked ? "Bloqueio por biometria ativado"
+                            : "Bloqueio por biometria desativado",
+                    Toast.LENGTH_SHORT
+            ).show();
+        });
+
         itemAlterarSenha.setOnClickListener(v ->
-                Toast.makeText(this, "Para alterar a senha, use a opção 'Recuperar Senha' por enquanto.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this,
+                        "Para alterar a senha, use a opção 'Recuperar Senha' por enquanto.",
+                        Toast.LENGTH_LONG).show()
         );
 
-        // Disparo de E-mail de Recuperação
         itemRecuperarSenha.setOnClickListener(v -> dispararEmailRecuperacao());
 
-        // Navegação: Desativação de Conta (Soft Delete)
-        // [CORREÇÃO] Aponta para a nova Activity renomeada
         itemEncerrarConta.setOnClickListener(v ->
-                startActivity(new Intent(this, ConfirmacaoDesativacaoContaActivity.class))
+                startActivity(new Intent(this,
+                        ConfirmacaoDesativacaoContaActivity.class))
         );
     }
 

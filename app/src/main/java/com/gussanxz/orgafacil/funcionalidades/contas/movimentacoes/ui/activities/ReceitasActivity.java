@@ -44,7 +44,7 @@ import java.util.Locale;
 /**
  * ReceitasActivity
  * Agora utiliza o MovimentacaoModel unificado.
- * Identifica automaticamente se é uma Receita Atual ou um Agendamento Futuro com Smart Defaults.
+ * Define o status 'pago' automaticamente e trava na criação, liberando na edição.
  */
 public class ReceitasActivity extends AppCompatActivity {
 
@@ -63,7 +63,7 @@ public class ReceitasActivity extends AppCompatActivity {
     private String categoriaIdSelecionada;
     private MaterialSwitch switchStatusPago;
 
-    // [PRECISÃO]: O valor é controlado em centavos (int) para evitar erros matemáticos [cite: 2026-02-07]
+    // [PRECISÃO]: O valor é controlado em centavos (int) [cite: 2026-02-07]
     private int valorCentavosAtual = 0;
 
     @Override
@@ -72,7 +72,6 @@ public class ReceitasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.tela_add_receita);
 
-        // Captura a intenção vinda do menu (Agendar vs Nova)
         ehContaFutura = getIntent().getBooleanExtra("EH_CONTA_FUTURA", false);
 
         if (!FirebaseSession.isUserLogged()) {
@@ -86,7 +85,6 @@ public class ReceitasActivity extends AppCompatActivity {
         inicializarComponentes();
         configurarListeners();
         configurarLauncherCategoria();
-
         setupCurrencyMask();
         verificarModoEdicao();
 
@@ -120,7 +118,6 @@ public class ReceitasActivity extends AppCompatActivity {
 
         campoCategoria.setOnClickListener(v -> {
             Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
-            // Passa o tipo para filtrar apenas categorias de RECEITA
             intent.putExtra("TIPO_CATEGORIA", TipoCategoriaContas.RECEITA.getId());
             launcherCategoria.launch(intent);
         });
@@ -132,9 +129,7 @@ public class ReceitasActivity extends AppCompatActivity {
         }
 
         if (switchStatusPago != null) {
-            switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                switchStatusPago.setText(isChecked ? "Status: OK" : "Status: Pendente");
-            });
+            switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> atualizarTextoStatus());
         }
     }
 
@@ -163,11 +158,9 @@ public class ReceitasActivity extends AppCompatActivity {
                     if (!cleanString.isEmpty()) {
                         try {
                             valorCentavosAtual = Integer.parseInt(cleanString);
-                            double valorDouble = MoedaHelper.centavosParaDouble(valorCentavosAtual);
-                            String formatted = MoedaHelper.formatarParaBRL(valorDouble);
-                            current = formatted;
-                            campoValor.setText(formatted);
-                            campoValor.setSelection(formatted.length());
+                            campoValor.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(valorCentavosAtual)));
+                            current = campoValor.getText().toString();
+                            campoValor.setSelection(current.length());
                         } catch (NumberFormatException e) {
                             Log.e(TAG, "Erro ao formatar valor");
                         }
@@ -182,18 +175,15 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     private void verificarModoEdicao() {
-        // 1. Recuperação de Dados em caso de Edição
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
-            MovimentacaoModel movRecebida;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                movRecebida = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
+                itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
             } else {
-                movRecebida = getIntent().getParcelableExtra("movimentacaoSelecionada");
+                itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada");
             }
 
-            if (movRecebida != null) {
+            if (itemEmEdicao != null) {
                 isEdicao = true;
-                itemEmEdicao = movRecebida;
                 categoriaIdSelecionada = itemEmEdicao.getCategoria_id();
                 valorCentavosAtual = itemEmEdicao.getValor();
 
@@ -207,14 +197,16 @@ public class ReceitasActivity extends AppCompatActivity {
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
                 }
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
+
+                // ✅ EDIÇÃO: Habilita o Switch para permitir mudar o status
+                switchStatusPago.setEnabled(true);
+                switchStatusPago.setChecked(itemEmEdicao.isPago());
             }
         } else {
             isEdicao = false;
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
-        }
 
-        // 2. Lógica de Smart Defaults baseados na intenção inicial
-        if (!isEdicao) {
+            // 2. Lógica de Smart Defaults para NOVO lançamento
             if (ehContaFutura) {
                 // MODO AGENDAR: Sugere amanhã e Status Pendente
                 Calendar c = Calendar.getInstance();
@@ -223,45 +215,34 @@ public class ReceitasActivity extends AppCompatActivity {
                 campoHora.setText("08:00");
 
                 switchStatusPago.setChecked(false);
-                switchStatusPago.setText("Status: Pendente");
+                // ✅ CRIAÇÃO: Trava o Switch para Agendar = Sempre Pendente
+                switchStatusPago.setEnabled(false);
             } else {
-                // MODO NOVA RECEITA: Sugere hoje e Status OK
+                // MODO NOVA RECEITA: Hoje e Status OK
                 campoData.setText(DatePickerHelper.setDataAtual());
                 campoHora.setText(TimePickerHelper.setHoraAtual());
 
                 switchStatusPago.setChecked(true);
-                switchStatusPago.setText("Status: OK");
+                // ✅ CRIAÇÃO: Trava o Switch para Nova Receita = Sempre OK
+                switchStatusPago.setEnabled(false);
             }
-        } else {
-            // MODO EDIÇÃO: Respeita o estado salvo no banco
-            boolean pago = itemEmEdicao != null && itemEmEdicao.isPago();
-            switchStatusPago.setChecked(pago);
-            switchStatusPago.setText(pago ? "Status: OK" : "Status: Pendente");
         }
 
-        // SEMPRE habilitado para permitir troca manual
-        switchStatusPago.setEnabled(true);
-
-        aplicarStatusInicial();
+        atualizarTextoStatus();
     }
 
     /**
      * SALVAR PROVENTOS
-     * O status 'pago' final é definido pela escolha final do usuário no switch.
      */
     public void salvarProventos(View view) {
         if (!validarCamposProventos()) return;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
-        // 1. Valores (Sempre em Centavos)
         mov.setValor(valorCentavosAtual);
         mov.setDescricao(campoDescricao.getText().toString());
-
-        // Salva como String "RECEITA" no banco
         mov.setTipoEnum(TipoCategoriaContas.RECEITA);
 
-        // 2. Categoria
         mov.setCategoria_nome(campoCategoria.getText().toString());
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
@@ -269,7 +250,6 @@ public class ReceitasActivity extends AppCompatActivity {
             mov.setCategoria_id("geral_receita");
         }
 
-        // 3. Data e Hora
         try {
             String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
@@ -284,7 +264,6 @@ public class ReceitasActivity extends AppCompatActivity {
         // ✅ STATUS FINAL: Switch decide
         mov.setPago(switchStatusPago.isChecked());
 
-        // 4. Persistência
         if (isEdicao) {
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
@@ -352,46 +331,8 @@ public class ReceitasActivity extends AppCompatActivity {
         Log.i(TAG, "Regras de atalho aplicada!");
     }
 
-    private void aplicarStatusUI(boolean isEdicaoLocal, Boolean pagoDoItem, boolean dataFutura) {
-        if (dataFutura) {
-            switchStatusPago.setChecked(false);
-            switchStatusPago.setEnabled(true);
-            switchStatusPago.setText("Status: Pendente");
-            return;
-        }
-
-        if (!isEdicaoLocal) {
-            switchStatusPago.setChecked(true);
-            switchStatusPago.setEnabled(true);
-            switchStatusPago.setText("Status: OK");
-            return;
-        }
-
-        boolean ok = (pagoDoItem != null) ? pagoDoItem : true;
-        switchStatusPago.setChecked(ok);
-        switchStatusPago.setEnabled(true);
-        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
-    }
-
     private void atualizarTextoStatus() {
         boolean ok = switchStatusPago.isChecked();
-        switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
-    }
-
-    private void aplicarStatusInicial() {
-        if (switchStatusPago == null) return;
-
-        if (!isEdicao) {
-            boolean ok = !ehContaFutura;
-            switchStatusPago.setChecked(ok);
-            switchStatusPago.setEnabled(true);
-            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
-            return;
-        }
-
-        boolean ok = (itemEmEdicao != null) && itemEmEdicao.isPago();
-        switchStatusPago.setChecked(ok);
-        switchStatusPago.setEnabled(true);
         switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
     }
 }
