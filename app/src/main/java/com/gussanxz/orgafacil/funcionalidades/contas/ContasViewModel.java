@@ -48,6 +48,7 @@ public class ContasViewModel extends ViewModel {
     private boolean isUltimaPaginaFuturo = false;
 
     private boolean isCarregandoPagina = false;
+    private TipoCategoriaContas lastFiltroTipo = null;
 
     public ContasViewModel() {
         // Inicializado internamente!
@@ -191,6 +192,7 @@ public class ContasViewModel extends ViewModel {
     }
 
     private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem, String query, Date inicio, Date fim, boolean isModoFuturo) {
+
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         String q = (query != null) ? query.toLowerCase().trim() : "";
 
@@ -199,6 +201,7 @@ public class ContasViewModel extends ViewModel {
 
             if (isModoFuturo && m.isPago()) continue;
             if (!isModoFuturo && !m.isPago()) continue;
+            if (lastFiltroTipo != null && m.getTipoEnum() != lastFiltroTipo) continue;
 
             boolean noPeriodo = true;
             if (inicio != null && fim != null) {
@@ -246,5 +249,14 @@ public class ContasViewModel extends ViewModel {
             }
         }
         _saldoFuturo.setValue(saldoCentavos);
+    }
+
+    public void confirmarMovimentacaoEmMassa(MovimentacaoModel mov, MovimentacaoRepository.Callback callback) {
+        repo.confirmarMovimentacaoEmMassa(mov, callback);
+    }
+
+    public void setFiltroTipo(TipoCategoriaContas tipo) {
+        this.lastFiltroTipo = tipo;
+        aplicarFiltros(lastQuery, lastInicio, lastFim);
     }
 }

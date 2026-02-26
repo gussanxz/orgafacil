@@ -74,6 +74,9 @@ public class ReceitasActivity extends AppCompatActivity {
     private MaterialSwitch switchStatusPago;
     private long valorCentavosAtual = 0;
 
+    //flag pra nao permitir multiplos click no botao
+    private boolean salvandoEmProgresso = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -289,7 +292,10 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     public void salvarProventos(View view) {
+
+        if (salvandoEmProgresso) return;
         if (!validarCamposProventos()) return;
+        salvandoEmProgresso = true;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
@@ -369,12 +375,14 @@ public class ReceitasActivity extends AppCompatActivity {
     }
 
     private void finalizarSucesso(String msg) {
+        salvandoEmProgresso = false;
         Toast.makeText(ReceitasActivity.this, msg, Toast.LENGTH_SHORT).show();
         setResult(RESULT_OK);
         finish();
     }
 
     private void mostrarErro(String erro) {
+        salvandoEmProgresso = false;
         Toast.makeText(ReceitasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
     }
 

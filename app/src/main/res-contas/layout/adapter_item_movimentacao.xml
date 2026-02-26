@@ -2,7 +2,6 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
@@ -23,6 +22,7 @@
         android:paddingVertical="10dp"
         android:paddingEnd="12dp">
 
+        <!-- Barra colorida lateral -->
         <View
             android:id="@+id/viewIndicadorCor"
             android:layout_width="4dp"
@@ -30,8 +30,9 @@
             android:background="#4CAF50"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"/>
 
+        <!-- Ícone da categoria -->
         <androidx.cardview.widget.CardView
             android:id="@+id/cardIconeConta"
             android:layout_width="40dp"
@@ -50,22 +51,25 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_label_24"
-                app:tint="#009688" />
+                app:tint="#009688"/>
         </androidx.cardview.widget.CardView>
 
+        <!-- Botão confirmar (círculo vazio) — ancorado na direita, centralizado verticalmente -->
         <ImageButton
             android:id="@+id/btnConfirmarPagamento"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_radio_unchecked"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_check_circle_24"
-            app:tint="#4CAF50"
+            android:contentDescription="Confirmar pagamento"
+            android:scaleType="fitCenter"
+            android:padding="4dp"
             android:visibility="gone"
-            tools:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
+        <!-- Valor -->
         <TextView
             android:id="@+id/textAdapterValor"
             android:layout_width="wrap_content"
@@ -74,20 +78,22 @@
             android:textColor="#00D39E"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/btnConfirmarPagamento"
-            android:layout_marginEnd="4dp"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toStartOf="@id/btnConfirmarPagamento"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/layoutDataHora"/>
 
+        <!-- Data e hora -->
         <LinearLayout
             android:id="@+id/layoutDataHora"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="end"
             android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="@+id/textAdapterCategoria"
-            app:layout_constraintEnd_toStartOf="@+id/btnConfirmarPagamento"
-            android:layout_marginEnd="4dp"
-            app:layout_constraintTop_toTopOf="@+id/textAdapterCategoria">
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toStartOf="@id/btnConfirmarPagamento"
+            app:layout_constraintBottom_toBottomOf="@id/textAdapterCategoria"
+            app:layout_constraintTop_toTopOf="@id/textAdapterCategoria">
 
             <TextView
                 android:id="@+id/textAdapterData"
@@ -95,7 +101,7 @@
                 android:layout_height="wrap_content"
                 android:text="21 jan"
                 android:textColor="#9E9E9E"
-                android:textSize="11sp" />
+                android:textSize="11sp"/>
 
             <TextView
                 android:id="@+id/textAdapterSeparador"
@@ -104,7 +110,7 @@
                 android:layout_marginHorizontal="3dp"
                 android:text=" • "
                 android:textColor="#BDBDBD"
-                android:textSize="11sp" />
+                android:textSize="11sp"/>
 
             <TextView
                 android:id="@+id/textAdapterHora"
@@ -112,9 +118,10 @@
                 android:layout_height="wrap_content"
                 android:text="12:00"
                 android:textColor="#9E9E9E"
-                android:textSize="11sp" />
+                android:textSize="11sp"/>
         </LinearLayout>
 
+        <!-- Título -->
         <TextView
             android:id="@+id/textAdapterTitulo"
             android:layout_width="0dp"
@@ -127,27 +134,29 @@
             android:textColor="?attr/colorOnSurface"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toTopOf="@+id/textAdapterCategoria"
-            app:layout_constraintEnd_toStartOf="@+id/textAdapterValor"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"
+            app:layout_constraintEnd_toStartOf="@id/textAdapterValor"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintBottom_toTopOf="@id/textAdapterCategoria"
+            app:layout_constraintVertical_chainStyle="packed"/>
 
+        <!-- Categoria -->
         <TextView
             android:id="@+id/textAdapterCategoria"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginTop="2dp"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="Categoria"
             android:textColor="#757575"
             android:textSize="13sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/layoutDataHora"
             app:layout_constraintStart_toEndOf="@id/cardIconeConta"
-            app:layout_constraintTop_toBottomOf="@+id/textAdapterTitulo" />
+            app:layout_constraintEnd_toStartOf="@id/layoutDataHora"
+            app:layout_constraintTop_toBottomOf="@id/textAdapterTitulo"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

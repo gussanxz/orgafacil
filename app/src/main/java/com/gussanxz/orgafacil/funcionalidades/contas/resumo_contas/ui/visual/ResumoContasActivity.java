@@ -21,6 +21,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.ContasViewModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
@@ -61,6 +63,8 @@ public class ResumoContasActivity extends AppCompatActivity {
     private final OvershootInterpolator interpolator = new OvershootInterpolator();
     private View overlayBackground;
     private View radialSpotlight;
+    private ContasViewModel contasViewModel;
+    private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +88,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
 
+        configurarChipsFiltro();
+
         overlayBackground.setOnClickListener(v -> fecharMenu());
     }
 
@@ -99,39 +105,30 @@ public class ResumoContasActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPagerDashboard);
         overlayBackground = findViewById(R.id.overlay_background);
         bottomAppBar = findViewById(R.id.bottomAppBar);
+        chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
     }
 
     private void setupDashboardObserver() {
         viewModel.resumoDados.observe(this, resumo -> {
             if (resumo == null || textSaldoGeral == null) return;
 
-            // Mantemos o uso de Int para precisão
             long saldoCentavos = resumo.getBalanco().getSaldoAtual();
             double saldoDouble = saldoCentavos / 100.0;
             String valorFormatado = currencyFormat.format(saldoDouble);
 
-            // Regra de cores
-            if (saldoCentavos > 0) {
-                textSaldoGeral.setTextColor(Color.parseColor("#4CAF50")); // Verde
-            } else if (saldoCentavos < 0) {
-                textSaldoGeral.setTextColor(Color.parseColor("#E53935")); // Vermelho
-            } else {
-                textSaldoGeral.setTextColor(Color.WHITE); // Branco
-            }
+            // Determina cor do saldo
+            int corSaldo;
+            if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
+            else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
+            else                         corSaldo = Color.WHITE;
 
-            // Verifica se o olho está atualmente fechado (usando a Tag do Helper)
-            boolean estaOculto = imgOlhoSaldo.getTag() != null && !(boolean) imgOlhoSaldo.getTag();
+            // Atualiza o valor respeitando o estado atual de visibilidade
+            View containerSaldo = findViewById(R.id.containerSaldo); // LinearLayout do olho + texto
+            VisibilidadeHelper.configurarVisibilidadeSaldo(
+                    containerSaldo, textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
 
-            if (estaOculto) {
-                textSaldoGeral.setText("R$ **** ");
-            } else {
-                textSaldoGeral.setText(valorFormatado);
-            }
-
-            // Configura o clique no olho utilizando o Helper e passando o valor mais recente
-            imgOlhoSaldo.setOnClickListener(v -> {
-                VisibilidadeHelper.alternarVisibilidadeSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado);
-            });
+            // Força a exibição do valor atualizado se já estiver visível
+            VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
         });
     }
 
@@ -329,5 +326,20 @@ public class ResumoContasActivity extends AppCompatActivity {
                 tab.setText(R.string.tab_titulo_ultimas_mov);
             }
         }).attach();
+    }
+
+    private void configurarChipsFiltro() {
+        // Pega o mesmo ViewModel que os fragments usam
+        contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
+
+        chipGroupFiltroTipo.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipTodos)) {
+                contasViewModel.setFiltroTipo(null);
+            } else if (checkedIds.contains(R.id.chipSoReceitas)) {
+                contasViewModel.setFiltroTipo(TipoCategoriaContas.RECEITA);
+            } else if (checkedIds.contains(R.id.chipSoDespesas)) {
+                contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
+            }
+        });
     }
 }

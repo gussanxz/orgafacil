@@ -74,6 +74,9 @@ public class DespesasActivity extends AppCompatActivity {
     private long valorCentavosAtual = 0;
     private MaterialSwitch switchStatusPago;
 
+    //flag pra nao permitir multiplos click no botao
+    private boolean salvandoEmProgresso = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -192,6 +195,7 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
+        intent.putExtra("TIPO_CATEGORIA", TipoCategoriaContas.DESPESA.getId());
         launcherCategoria.launch(intent);
     }
 
@@ -291,7 +295,10 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     public void salvarDespesa(View view) {
+
+        if (salvandoEmProgresso) return;
         if (!validarCamposDespesas()) return;
+        salvandoEmProgresso = true;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
 
@@ -374,12 +381,14 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     private void finalizarSucesso(String msg) {
+        salvandoEmProgresso = false;
         Toast.makeText(DespesasActivity.this, msg, Toast.LENGTH_SHORT).show();
         setResult(RESULT_OK);
         finish();
     }
 
     private void mostrarErro(String erro) {
+        salvandoEmProgresso = false;
         Toast.makeText(DespesasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
     }
 

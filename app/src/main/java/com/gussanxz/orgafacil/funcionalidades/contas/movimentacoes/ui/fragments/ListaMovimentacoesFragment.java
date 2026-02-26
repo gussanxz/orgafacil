@@ -205,30 +205,60 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     public void onCheckClick(MovimentacaoModel mov) {
         String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
 
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Confirmar " + acao)
-                .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
-                .setPositiveButton("Confirmar", (dialog, which) -> {
-                    viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
-                        @Override
-                        public void onSucesso(String msg) {
-                            if (isAdded()) {
-                                Toast.makeText(getContext(), "Concluído!", Toast.LENGTH_SHORT).show();
+        // Se for parcela com sequência, perguntar sobre as demais
+        if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
 
-                                // [ATUALIZAÇÃO DUPLA]: O item saiu de uma lista e foi para outra.
-                                viewModel.fetchDados(true, null);
-                                viewModel.fetchDados(false, null);
-                            }
-                        }
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Confirmar " + acao)
+                    .setMessage("Deseja confirmar apenas '" + mov.getDescricao() + "' ou também antecipar todas as parcelas seguintes?")
+                    .setPositiveButton("Apenas esta", (d, w) -> executarConfirmacao(mov))
+                    .setNegativeButton("Esta e seguintes", (d, w) -> executarConfirmacaoEmMassa(mov))
+                    .setNeutralButton("Cancelar", null)
+                    .show();
+        } else {
 
-                        @Override
-                        public void onErro(String erro) {
-                            if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Confirmar " + acao)
+                    .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
+                    .setPositiveButton("Confirmar", (dialog, which) -> executarConfirmacao(mov))
+                    .setNegativeButton("Cancelar", null)
+                    .show();
+
+        }
+    }
+
+    private void executarConfirmacao(MovimentacaoModel mov) {
+        viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Concluído!", Toast.LENGTH_SHORT).show();
+                    viewModel.fetchDados(true, null);
+                    viewModel.fetchDados(false, null);
+                }
+            }
+            @Override
+            public void onErro(String erro) {
+                if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void executarConfirmacaoEmMassa(MovimentacaoModel movBase) {
+        viewModel.confirmarMovimentacaoEmMassa(movBase, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                if (isAdded()) {
+                    Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                    viewModel.fetchDados(true, null);
+                    viewModel.fetchDados(false, null);
+                }
+            }
+            @Override
+            public void onErro(String erro) {
+                if (isAdded()) Toast.makeText(getContext(), erro, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void exibirDialogExclusao(MovimentacaoModel mov) {

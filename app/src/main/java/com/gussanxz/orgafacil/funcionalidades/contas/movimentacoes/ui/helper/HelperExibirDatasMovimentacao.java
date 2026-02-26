@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -21,22 +22,27 @@ public class HelperExibirDatasMovimentacao {
     public static List<AdapterItemListaMovimentacao> agruparPorDiaOrdenar(List<MovimentacaoModel> movs, boolean ehModoFuturo) {
         Date hoje = zerarHora(new Date());
 
-        // 1. ORDENAÇÃO DOS ITENS (DESC para Histórico, ASC para Pendências)
+        // 1. ORDENAÇÃO UNIVERSAL (Sempre Decrescente: m2 compara com m1)
         movs.sort((m1, m2) -> {
             if (m1.getData_movimentacao() == null || m2.getData_movimentacao() == null) return 0;
             if (ehModoFuturo) {
+                // Crescente: vencimentos mais próximos (e vencidos) no topo
                 return m1.getData_movimentacao().toDate().compareTo(m2.getData_movimentacao().toDate());
-            } else {
-                return m2.getData_movimentacao().toDate().compareTo(m1.getData_movimentacao().toDate());
             }
+            // Decrescente: movimentações mais recentes no topo
+            return m2.getData_movimentacao().toDate().compareTo(m1.getData_movimentacao().toDate());
         });
 
-        // 2. ORDENAÇÃO DOS GRUPOS (DIAS)
-        Map<Date, List<MovimentacaoModel>> porDia = ehModoFuturo ? new TreeMap<>() : new TreeMap<>(Collections.reverseOrder());
+        // 2. ORDENAÇÃO DOS GRUPOS/CABEÇALHOS (Sempre Decrescente)
+        Map<Date, List<MovimentacaoModel>> porDia = ehModoFuturo
+                ? new TreeMap<>(Comparator.naturalOrder())   // crescente para futuro
+                : new TreeMap<>(Collections.reverseOrder()); // decrescente para histórico
 
         for (MovimentacaoModel m : movs) {
             if (m.getData_movimentacao() == null) continue;
             Date dataZerada = zerarHora(m.getData_movimentacao().toDate());
+            // HISTÓRICO: ignora movimentações com data futura (maior que hoje)
+            if (!ehModoFuturo && dataZerada.after(hoje)) continue;
             porDia.putIfAbsent(dataZerada, new ArrayList<>());
             porDia.get(dataZerada).add(m);
         }

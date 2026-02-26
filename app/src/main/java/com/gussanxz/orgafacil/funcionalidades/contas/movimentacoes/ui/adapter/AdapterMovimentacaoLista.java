@@ -77,6 +77,10 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 
+    // =========================================================================
+    // HEADER VIEW HOLDER
+    // =========================================================================
+
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView textDiaTitulo, textSaldoDia;
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -104,6 +108,10 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 
+    // =========================================================================
+    // MOVIMENTO VIEW HOLDER
+    // =========================================================================
+
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
         TextView textTitulo, textCategoria, textValor, textData, textHora, textSeparador;
         View viewIndicadorCor;
@@ -111,76 +119,26 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
-            textTitulo = itemView.findViewById(R.id.textAdapterTitulo);
+            textTitulo    = itemView.findViewById(R.id.textAdapterTitulo);
             textCategoria = itemView.findViewById(R.id.textAdapterCategoria);
-            textValor = itemView.findViewById(R.id.textAdapterValor);
-            textData = itemView.findViewById(R.id.textAdapterData);
-            textHora = itemView.findViewById(R.id.textAdapterHora);
+            textValor     = itemView.findViewById(R.id.textAdapterValor);
+            textData      = itemView.findViewById(R.id.textAdapterData);
+            textHora      = itemView.findViewById(R.id.textAdapterHora);
             textSeparador = itemView.findViewById(R.id.textAdapterSeparador);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
-            btnConfirmar = itemView.findViewById(R.id.btnConfirmarPagamento);
+            btnConfirmar  = itemView.findViewById(R.id.btnConfirmarPagamento);
         }
 
         void bind(MovimentacaoModel mov) {
+
+            // — Título e categoria —
             textTitulo.setText(mov.getDescricao());
+            textCategoria.setText(mov.getTotal_parcelas() > 1
+                    ? "🔁 " + mov.getCategoria_nome()
+                    : mov.getCategoria_nome());
 
-            if (mov.getTotal_parcelas() > 1) {
-                textCategoria.setText("🔁 " + mov.getCategoria_nome());
-            } else {
-                textCategoria.setText(mov.getCategoria_nome());
-            }
-
-            textData.setTextColor(Color.parseColor("#888888"));
-            textHora.setTextColor(Color.parseColor("#888888"));
-
-            if (mov.getData_movimentacao() != null) {
-                Date date = mov.getData_movimentacao().toDate();
-                textData.setText(dateFormat.format(date));
-                textHora.setText(hourFormat.format(date));
-
-                if (!mov.isPago()) {
-                    // PENDENTE: Esconde a hora (e o pontinho separador)
-                    textHora.setVisibility(View.GONE);
-                    textSeparador.setVisibility(View.GONE);
-
-                    if (btnConfirmar != null) {
-                        btnConfirmar.setVisibility(View.VISIBLE);
-                        btnConfirmar.setOnClickListener(v -> {
-                            if (listener != null) listener.onCheckClick(mov);
-                        });
-                    }
-
-                    int diasRestantes = mov.diasParaVencimento();
-                    int corAlerta = Color.parseColor("#888888");
-
-                    if (mov.estaVencida() || diasRestantes <= 0) {
-                        corAlerta = Color.parseColor("#FFB300");
-                    } else if (diasRestantes <= 3) {
-                        corAlerta = Color.parseColor("#42A5F5");
-                    }
-
-                    textData.setTextColor(corAlerta);
-
-                } else {
-                    // PAGO: Mostra a hora em que a transação aconteceu
-                    textHora.setVisibility(View.VISIBLE);
-                    textSeparador.setVisibility(View.VISIBLE);
-
-                    if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
-
-                    if (mov.getData_vencimento_original() != null) {
-                        String strPago = dateFormat.format(date);
-                        String strVenc = dateFormat.format(mov.getData_vencimento_original().toDate());
-
-                        if (!strPago.equals(strVenc)) {
-                            textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
-                        }
-                    }
-                }
-            }
-
+            // — Valor com sinal e cor —
             double valorReais = mov.getValor() / 100.0;
-
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
@@ -191,6 +149,58 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
+            // — Cores padrão de data/hora —
+            textData.setTextColor(Color.parseColor("#888888"));
+            textHora.setTextColor(Color.parseColor("#888888"));
+
+            // — Data e hora —
+            if (mov.getData_movimentacao() != null) {
+                Date date = mov.getData_movimentacao().toDate();
+                textData.setText(dateFormat.format(date));
+                textHora.setText(hourFormat.format(date));
+
+                if (!mov.isPago()) {
+                    // PENDENTE: esconde hora e separador
+                    textHora.setVisibility(View.GONE);
+                    textSeparador.setVisibility(View.GONE);
+
+                    // Botão de confirmação com animação de feedback
+                    if (btnConfirmar != null) {
+                        btnConfirmar.setVisibility(View.VISIBLE);
+                        btnConfirmar.setOnClickListener(v ->
+                                v.animate()
+                                        .scaleX(0.8f).scaleY(0.8f).setDuration(80)
+                                        .withEndAction(() ->
+                                                v.animate().scaleX(1f).scaleY(1f).setDuration(80)
+                                                        .withEndAction(() -> {
+                                                            if (listener != null) listener.onCheckClick(mov);
+                                                        }).start()
+                                        ).start()
+                        );
+                    }
+
+                    // Cor de urgência na data
+                    aplicarCorData(textData, mov);
+
+                } else {
+                    // PAGO: mostra hora da transação
+                    textHora.setVisibility(View.VISIBLE);
+                    textSeparador.setVisibility(View.VISIBLE);
+
+                    if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
+
+                    // Se pago em data diferente do vencimento, mostra ambas
+                    if (mov.getData_vencimento_original() != null) {
+                        String strPago = dateFormat.format(date);
+                        String strVenc = dateFormat.format(mov.getData_vencimento_original().toDate());
+                        if (!strPago.equals(strVenc)) {
+                            textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
+                        }
+                    }
+                }
+            }
+
+            // — Cliques no item —
             itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
@@ -201,6 +211,25 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 if (listener != null) listener.onLongClick(mov);
                 return true;
             });
+        }
+
+        // — Cor de urgência da data (apenas para pendentes) —
+        private void aplicarCorData(TextView txtData, MovimentacaoModel mov) {
+            if (mov.isPago()) {
+                txtData.setTextColor(Color.parseColor("#9E9E9E"));
+                return;
+            }
+            if (mov.getData_movimentacao() == null) return;
+
+            int diasRestantes = mov.diasParaVencimento();
+
+            if (mov.estaVencida() || diasRestantes < 0) {
+                txtData.setTextColor(Color.parseColor("#FFC107")); // amarelo — vencida
+            } else if (diasRestantes <= 3) {
+                txtData.setTextColor(Color.parseColor("#FF7043")); // laranja — vencendo
+            } else {
+                txtData.setTextColor(Color.parseColor("#1E88E5")); // azul — tranquilo
+            }
         }
     }
 }

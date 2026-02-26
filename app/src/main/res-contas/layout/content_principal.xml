@@ -23,15 +23,41 @@
             android:textColor="@android:color/white"
             android:textSize="18sp"/>
 
-        <TextView
-            android:id="@+id/textSaldo"
+        <LinearLayout
+            android:id="@+id/containerSaldoContas"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="R$ 0,00"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:textSize="25sp"
-            android:layout_marginTop="4dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/imgOlhoSaldoContas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:src="@drawable/ic_visibility_24"
+                app:tint="@color/white"/>
+
+            <TextView
+                android:id="@+id/textSaldo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="R$ 0,00"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="25sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingVertical="4dp"
+                android:paddingStart="2dp"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="14sp"
+                app:autoSizeMaxTextSize="44sp"
+                app:autoSizeStepGranularity="2sp" />
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textSaldoAtual"
@@ -44,7 +70,58 @@
 
     </LinearLayout>
 
-    <!-- FILTROS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:background="@color/colorPrimary">
+        <!-- CHIPS DE FILTRO POR TIPO -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupFiltroTipo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:paddingVertical="6dp"
+            android:background="@color/colorPrimary"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:chipSpacingHorizontal="8dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipTodos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Todos"
+                android:checked="true"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                app:chipBackgroundColor="@color/chip_todos_background"
+                android:textColor="@color/chip_todos_text"
+                app:checkedIconTint="@color/chip_todos_text"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSoReceitas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Só Receitas"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                app:chipBackgroundColor="@color/chip_background"
+                android:textColor="#43A047"
+                app:checkedIconTint="#43A047"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSoDespesas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Só Despesas"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                app:chipBackgroundColor="@color/chip_background"
+                android:textColor="#E53935"
+                app:checkedIconTint="#E53935"/>
+
+        </com.google.android.material.chip.ChipGroup>
+
+    </LinearLayout>
+    <!-- FILTROS DE BUSCA E DATA -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -52,7 +129,6 @@
         android:padding="8dp"
         android:gravity="center_vertical">
 
-        <!-- Linha 1: Busca -->
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchViewEventos"
             android:layout_width="0dp"
@@ -60,7 +136,6 @@
             android:layout_weight="1"
             android:queryHint="Categoria ou descrição"/>
 
-        <!-- Linha 2: Datas -->
         <EditText
             android:id="@+id/editDataInicial"
             android:layout_width="100dp"

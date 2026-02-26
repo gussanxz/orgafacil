@@ -19,6 +19,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.Cont
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,12 +38,14 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     private final List<ContasCategoriaModel> listaCategorias = new ArrayList<>();
     private ContasCategoriaRepository repository;
 
+    // [FIX 1] tipoAtual como campo da classe para o dialog acessar
+    private TipoCategoriaContas tipoAtual = TipoCategoriaContas.DESPESA;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tela_selecao_categoria);
 
-        // Segurança: Impede acesso de usuários deslogados
         if (!FirebaseSession.isUserLogged()) {
             finish();
             return;
@@ -60,61 +63,72 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewCategorias);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-
-        // O Adapter já foi atualizado para ler o grupo Visual
         adapter = new AdapterExibirCategoriasContas(listaCategorias, this);
         recyclerView.setAdapter(adapter);
     }
 
-    /**
-     * Busca as categorias no Firestore e inicializa padrões caso o banco esteja vazio.
-     */
-   private void carregarCategorias() {
-
-        // [CORREÇÃO] Recupera o tipo enviado pela Activity anterior (Receita ou Despesa)
-        // Se não vier nada, assume DESPESA por segurança.
+    private void carregarCategorias() {
         int tipoId = getIntent().getIntExtra("TIPO_CATEGORIA", TipoCategoriaContas.DESPESA.getId());
-        TipoCategoriaContas tipoEnum = (tipoId == TipoCategoriaContas.RECEITA.getId())
+
+        // [FIX 2] Atualiza o campo da classe para o dialog usar
+        tipoAtual = (tipoId == TipoCategoriaContas.RECEITA.getId())
                 ? TipoCategoriaContas.RECEITA
                 : TipoCategoriaContas.DESPESA;
 
-        // Filtra no banco apenas as categorias do tipo solicitado
-        repository.listarAtivasPorTipo(tipoEnum)
+        repository.listarAtivasPorTipo(tipoAtual)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     listaCategorias.clear();
+
                     if (snapshot != null) {
                         for (QueryDocumentSnapshot doc : snapshot) {
                             ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
+                            cat.setId(doc.getId()); // [FIX 3] garantir ID setado
                             listaCategorias.add(cat);
                         }
                     }
 
-                    // Se estiver vazio para esse tipo específico, inicializa os padrões
-                    if (listaCategorias.isEmpty()) {
-                        repository.inicializarPadroes(new ContasCategoriaRepository.Callback() {
-                            @Override
-                            public void onSucesso() {
-                                carregarCategorias(); // Recarrega para mostrar os novos padrões
-                            }
+                    // [FIX 4] Ordenação no cliente por nome (substitui o orderBy removido)
+                    listaCategorias.sort((a, b) -> {
+                        String nomeA = (a.getVisual() != null && a.getVisual().getNome() != null)
+                                ? a.getVisual().getNome() : "";
+                        String nomeB = (b.getVisual() != null && b.getVisual().getNome() != null)
+                                ? b.getVisual().getNome() : "";
+                        return nomeA.compareToIgnoreCase(nomeB);
+                    });
 
-                            @Override
-                            public void onErro(String erro) {
-                                Toast.makeText(SelecionarCategoriaContasActivity.this,
-                                        "Erro ao criar padrões: " + erro, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                    if (listaCategorias.isEmpty()) {
+                        // Verifica se já existe QUALQUER categoria antes de criar padrões
+                        // para não duplicar se o usuário tiver só um tipo cadastrado
+                        FirestoreSchema.contasCategoriasCol()
+                                .limit(1)
+                                .get()
+                                .addOnSuccessListener(snapGlobal -> {
+                                    if (snapGlobal.isEmpty()) {
+                                        // Banco vazio de verdade — cria padrões
+                                        repository.inicializarPadroes(new ContasCategoriaRepository.Callback() {
+                                            @Override
+                                            public void onSucesso() { carregarCategorias(); }
+                                            @Override
+                                            public void onErro(String erro) {
+                                                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                                                        "Erro ao criar padrões: " + erro, Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                    }
+                                    // Se existe algo mas não do tipo atual, só mostra lista vazia
+                                    // sem duplicar os padrões
+                                    adapter.notifyDataSetChanged();
+                                })
+                                .addOnFailureListener(e -> adapter.notifyDataSetChanged());
                     } else {
                         adapter.notifyDataSetChanged();
                     }
                 })
                 .addOnFailureListener(e -> Toast.makeText(this,
-                        "Erro ao carregar banco: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        "Erro ao carregar categorias: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
-    /**
-     * Cria uma nova categoria personalizada.
-     */
     private void mostrarDialogNovaCategoria() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Nova Categoria");
@@ -127,25 +141,22 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
             if (!TextUtils.isEmpty(nome)) {
 
                 ContasCategoriaModel novaCat = new ContasCategoriaModel();
-
-                // Define o nome dentro do grupo Visual (Mapa aninhado)
                 novaCat.getVisual().setNome(nome);
                 novaCat.getVisual().setIcone("ic_default");
-
-                // Define os dados da raiz usando o ID do Enum
-                novaCat.setTipo(TipoCategoriaContas.DESPESA.getId());
+                novaCat.setTipo(tipoAtual.getId()); // [FIX 5] usa o tipo correto da tela
                 novaCat.setAtiva(true);
 
                 repository.salvar(novaCat, new ContasCategoriaRepository.Callback() {
                     @Override
                     public void onSucesso() {
-                        Toast.makeText(SelecionarCategoriaContasActivity.this, "Categoria criada!", Toast.LENGTH_SHORT).show();
-                        carregarCategorias(); // Atualiza a lista
+                        Toast.makeText(SelecionarCategoriaContasActivity.this,
+                                "Categoria criada!", Toast.LENGTH_SHORT).show();
+                        carregarCategorias(); // Atualiza a lista automaticamente
                     }
-
                     @Override
                     public void onErro(String erro) {
-                        Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SelecionarCategoriaContasActivity.this,
+                                erro, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -154,9 +165,6 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
         builder.show();
     }
 
-    /**
-     * Implementa o "Deslizar para excluir" com trava de segurança (verificação de uso).
-     */
     private void configurarSwipeParaExcluir() {
         ItemTouchHelper.SimpleCallback itemTouch = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
@@ -174,10 +182,8 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                         adapter.notifyItemRemoved(pos);
                         Toast.makeText(SelecionarCategoriaContasActivity.this, "Excluída!", Toast.LENGTH_SHORT).show();
                     }
-
                     @Override
                     public void onErro(String erro) {
-                        // Se houver erro (categoria em uso nas movimentações), desfaz o movimento visual do swipe
                         Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
                         adapter.notifyItemChanged(pos);
                     }

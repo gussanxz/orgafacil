@@ -1,5 +1,9 @@
 package com.gussanxz.orgafacil.funcionalidades.contas;
 
+import static androidx.core.content.ContentProviderCompat.requireContext;
+
+import static java.security.AccessController.getContext;
+
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -52,6 +56,7 @@ import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.HelperExibirDatasMovimentacao;
+import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -99,6 +104,7 @@ public class ContasActivity extends AppCompatActivity {
     private TextView textEmptyStateContas;
     private Button btnEmptyStateCTA;
     ImageView imgEmptyStateContas;
+    private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +126,8 @@ public class ContasActivity extends AppCompatActivity {
         inicializarComponentes();
         configurarRecyclerView();
         configurarFiltros();
+
+        configurarChipsFiltro();
 
         setupObservers();
 
@@ -212,23 +220,27 @@ public class ContasActivity extends AppCompatActivity {
 
         // Observer para atualizar o SALDO
         Observer<Long> observerSaldo = saldoCentavos -> {
-
             if (saldoCentavos == null) return;
             ultimoSaldoCarregado = saldoCentavos;
 
             double saldoDouble = saldoCentavos / 100.0;
+            String valorFormatado = String.format(Locale.getDefault(), "R$ %.2f", saldoDouble);
 
-            textoSaldo.setText(
-                    String.format(Locale.getDefault(), "R$ %.2f", saldoDouble)
-            );
+            int corSaldo;
+            if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
+            else if (saldoCentavos < 0) corSaldo = Color.parseColor("#F44336");
+            else                         corSaldo = Color.WHITE;
 
-            if (saldoCentavos > 0) {
-                textoSaldo.setTextColor(Color.parseColor("#4CAF50")); // Verde
-            } else if (saldoCentavos < 0) {
-                textoSaldo.setTextColor(Color.parseColor("#F44336")); // Vermelho
-            } else {
-                textoSaldo.setTextColor(Color.WHITE); // Neutro
+            // Configura container clicável (olho + saldo)
+            View containerSaldoContas = findViewById(R.id.containerSaldoContas);
+            if (containerSaldoContas != null) {
+                VisibilidadeHelper.configurarVisibilidadeSaldo(
+                        containerSaldoContas, textoSaldo, findViewById(R.id.imgOlhoSaldoContas),
+                        valorFormatado, corSaldo);
             }
+
+            VisibilidadeHelper.atualizarValorSaldo(textoSaldo, findViewById(R.id.imgOlhoSaldoContas),
+                    valorFormatado, corSaldo);
 
             atualizarTextoResumo();
         };
@@ -355,6 +367,8 @@ public class ContasActivity extends AppCompatActivity {
         btnEmptyStateCTA = findViewById(R.id.btnEmptyStateCTA);
         imgEmptyStateContas = findViewById(R.id.imgEmptyStateContas);
 
+        chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
+
         if (ehAtalho) { // TELA DE FUTUROS
             imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
             textEmptyStateContas.setText("Tudo em dia. Nenhuma conta pendente 🎉");
@@ -442,6 +456,8 @@ public class ContasActivity extends AppCompatActivity {
         imgLimparFiltroData.setOnClickListener(v -> {
             editDataInicial.setText(""); editDataFinal.setText("");
             dataInicialFiltro = null; dataFinalFiltro = null;
+            chipGroupFiltroTipo.check(R.id.chipTodos); // ← reseta para "Todos"
+            viewModel.setFiltroTipo(null);
             carregarDados();
         });
 
@@ -466,27 +482,64 @@ public class ContasActivity extends AppCompatActivity {
     private void confirmarPagamentoOuRecebimento(MovimentacaoModel mov) {
         String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
 
-        // CORREÇÃO: Utilizando o viewModel para confirmar a movimentação e atualizar os dados
-        new AlertDialog.Builder(this)
-                .setTitle("Confirmar " + acao)
-                .setMessage("Você confirma que '" + mov.getDescricao() + "' foi concluído?")
-                .setPositiveButton("Sim, confirmar", (dialog, which) -> {
+        // Se for parcela com sequência, perguntar sobre as demais
+        if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
+            // MUDANÇA: Use "this" ou "ContasActivity.this" ao invés de requireContext()
+            new AlertDialog.Builder(ContasActivity.this)
+                    .setTitle("Confirmar " + acao)
+                    .setMessage("Deseja confirmar apenas '" + mov.getDescricao() + "' ou também antecipar todas as parcelas seguintes?")
+                    .setPositiveButton("Apenas esta", (d, w) -> executarConfirmacao(mov))
+                    .setNegativeButton("Esta e seguintes", (d, w) -> executarConfirmacaoEmMassa(mov))
+                    .setNeutralButton("Cancelar", null)
+                    .show();
+        } else {
+            // Fluxo normal para movimentação avulsa
+            // MUDANÇA: Use "this" ou "ContasActivity.this"
+            new AlertDialog.Builder(ContasActivity.this)
+                    .setTitle("Confirmar " + acao)
+                    .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
+                    .setPositiveButton("Confirmar", (dialog, which) -> executarConfirmacao(mov))
+                    .setNegativeButton("Cancelar", null)
+                    .show();
+        }
+    }
 
-                    viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
-                        @Override
-                        public void onSucesso(String msg) {
-                            Toast.makeText(ContasActivity.this, "Lançamento confirmado!", Toast.LENGTH_SHORT).show();
-                            // Atualiza ambos para consistência
-                            viewModel.fetchDados(true, null);
-                            viewModel.fetchDados(false, null);
-                        }
-                        @Override public void onErro(String erro) {
-                            Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                })
-                .setNegativeButton("Agora não", null)
-                .show();
+    private void executarConfirmacao(MovimentacaoModel mov) {
+        viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                // MUDANÇA: Substitua isAdded() e getContext()
+                if (!isFinishing()) {
+                    Toast.makeText(ContasActivity.this, "Concluído!", Toast.LENGTH_SHORT).show();
+                    viewModel.fetchDados(true, null);
+                    viewModel.fetchDados(false, null);
+                }
+            }
+            @Override
+            public void onErro(String erro) {
+                // MUDANÇA: Substitua isAdded() e getContext()
+                if (!isFinishing()) Toast.makeText(ContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void executarConfirmacaoEmMassa(MovimentacaoModel movBase) {
+        viewModel.confirmarMovimentacaoEmMassa(movBase, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                // MUDANÇA: Substitua isAdded() e getContext()
+                if (!isFinishing()) {
+                    Toast.makeText(ContasActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    viewModel.fetchDados(true, null);
+                    viewModel.fetchDados(false, null);
+                }
+            }
+            @Override
+            public void onErro(String erro) {
+                // MUDANÇA: Substitua isAdded() e getContext()
+                if (!isFinishing()) Toast.makeText(ContasActivity.this, erro, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void abrirMenuEscolha() {
@@ -584,5 +637,17 @@ public class ContasActivity extends AppCompatActivity {
         } else {
             textSaldoAtual.setText("Saldo atual");
         }
+    }
+
+    private void configurarChipsFiltro() {
+        chipGroupFiltroTipo.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipTodos)) {
+                viewModel.setFiltroTipo(null); // Todos
+            } else if (checkedIds.contains(R.id.chipSoReceitas)) {
+                viewModel.setFiltroTipo(TipoCategoriaContas.RECEITA);
+            } else if (checkedIds.contains(R.id.chipSoDespesas)) {
+                viewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
+            }
+        });
     }
 }

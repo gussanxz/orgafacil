@@ -125,8 +125,6 @@ public class ContasCategoriaRepository {
     public Query listarAtivasPorTipo(TipoCategoriaContas tipo) {
         return FirestoreSchema.contasCategoriasCol()
                 .whereEqualTo(ContasCategoriaModel.CAMPO_TIPO, tipo.getId())
-                .whereEqualTo(ContasCategoriaModel.CAMPO_ATIVA, true)
-                // Ordena por "visual.nome" (definido na constante CAMPO_NOME do Model)
-                .orderBy(ContasCategoriaModel.CAMPO_NOME, Query.Direction.ASCENDING);
+                .whereEqualTo(ContasCategoriaModel.CAMPO_ATIVA, true);
     }
 }
