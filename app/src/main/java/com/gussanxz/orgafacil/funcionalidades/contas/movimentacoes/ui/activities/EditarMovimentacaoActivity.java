@@ -176,14 +176,19 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void configurarListeners() {
+
         editData.setOnClickListener(v -> abrirSelecionadorDeData());
+
         if (editHora != null) {
-            editHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, editHora));
+            editHora.setOnClickListener(v -> abrirSelecionadorDeHora());
         }
+
         editCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
+
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
         }
+
         if (switchStatusPago != null) {
             switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
         }
@@ -196,12 +201,75 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             if(dataAtual != null) c.setTime(dataAtual);
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (v, y, m, d) -> {
+        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
             c.set(y, m, d);
             Date dataEscolhida = c.getTime();
             editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
             aplicarRegraStatusPorData(dataEscolhida);
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+
+            // Valida a hora logo após mudar a data
+            validarLimiteHoraAtual();
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+        // Regra de segurança anti-crash: Só aplica o bloqueio de data máxima
+        // se a data ATUAL do campo não estiver no futuro.
+        if (c.getTimeInMillis() <= System.currentTimeMillis()) {
+            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+        }
+
+        dialog.show();
+    }
+
+    private void abrirSelecionadorDeHora() {
+        Calendar agora = Calendar.getInstance();
+        int horaSet = agora.get(Calendar.HOUR_OF_DAY);
+        int minutoSet = agora.get(Calendar.MINUTE);
+
+        try {
+            String[] partes = editHora.getText().toString().split(":");
+            horaSet = Integer.parseInt(partes[0]);
+            minutoSet = Integer.parseInt(partes[1]);
+        } catch (Exception ignored) {}
+
+        android.app.TimePickerDialog timePicker = new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
+            editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
+
+            // Valida assim que o usuário confirma a hora
+            validarLimiteHoraAtual();
+        }, horaSet, minutoSet, true);
+
+        timePicker.show();
+    }
+
+    private void validarLimiteHoraAtual() {
+        try {
+            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(editData.getText().toString());
+            if (dataSelecionada == null) return;
+
+            Calendar calSelecionada = Calendar.getInstance();
+            calSelecionada.setTime(dataSelecionada);
+
+            Calendar agora = Calendar.getInstance();
+
+            // Só barra a hora se o switch estiver marcado como PAGO (finalizada)
+            boolean isPago = switchStatusPago != null && switchStatusPago.isChecked();
+
+            if (isPago && calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR) &&
+                    calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
+
+                String[] partesHora = editHora.getText().toString().split(":");
+                int horaCampo = Integer.parseInt(partesHora[0]);
+                int minCampo = Integer.parseInt(partesHora[1]);
+
+                int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
+                int minAgora = agora.get(Calendar.MINUTE);
+
+                if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
+                    editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
+                    Toast.makeText(this, "Horário ajustado: movimentações finalizadas não podem estar no futuro.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void aplicarRegraStatusPorData(Date data) {

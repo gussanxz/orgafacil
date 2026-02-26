@@ -140,7 +140,7 @@ public class ReceitasActivity extends AppCompatActivity {
 
     private void configurarListeners() {
         campoData.setOnClickListener(v -> abrirSelecionadorDeData());
-        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
+        campoHora.setOnClickListener(v -> abrirSelecionadorDeHora());
 
         checkboxRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
             textInputMeses.setVisibility(isChecked ? View.VISIBLE : View.GONE);
@@ -171,12 +171,76 @@ public class ReceitasActivity extends AppCompatActivity {
             if(dataAtual != null) c.setTime(dataAtual);
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (v, y, m, d) -> {
+        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
             c.set(y, m, d);
             Date dataEscolhida = c.getTime();
             campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
             aplicarRegraStatusPorData(dataEscolhida);
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+
+            // Se a data mudou para "Hoje", precisamos conferir se a hora que já estava lá
+            // não acabou ficando no futuro.
+            validarLimiteHoraAtual();
+
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+        // Trava a seleção de datas futuras caso NÃO seja a tela de Contas Futuras
+        if (!ehContaFutura) {
+            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+        }
+
+        dialog.show();
+    }
+
+    private void abrirSelecionadorDeHora() {
+        Calendar agora = Calendar.getInstance();
+        int horaSet = agora.get(Calendar.HOUR_OF_DAY);
+        int minutoSet = agora.get(Calendar.MINUTE);
+
+        try {
+            String[] partes = campoHora.getText().toString().split(":");
+            horaSet = Integer.parseInt(partes[0]);
+            minutoSet = Integer.parseInt(partes[1]);
+        } catch (Exception ignored) {}
+
+        android.app.TimePickerDialog timePicker = new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
+            campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
+            validarLimiteHoraAtual(); // Valida assim que o usuário aperta OK
+        }, horaSet, minutoSet, true);
+
+        timePicker.show();
+    }
+
+    private void validarLimiteHoraAtual() {
+        if (ehContaFutura) return; // Contas pendentes/futuras podem ter qualquer hora
+
+        try {
+            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
+            if (dataSelecionada == null) return;
+
+            Calendar calSelecionada = Calendar.getInstance();
+            calSelecionada.setTime(dataSelecionada);
+
+            // Pega o "AGORA" exato. Isso cobre o caso do usuário deixar a tela aberta.
+            Calendar agora = Calendar.getInstance();
+
+            // Só aplicamos o bloqueio de hora se a data selecionada for HOJE
+            if (calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR) &&
+                    calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
+
+                String[] partesHora = campoHora.getText().toString().split(":");
+                int horaCampo = Integer.parseInt(partesHora[0]);
+                int minCampo = Integer.parseInt(partesHora[1]);
+
+                int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
+                int minAgora = agora.get(Calendar.MINUTE);
+
+                // Se a hora do campo for maior que a do sistema, recua para a hora atual
+                if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
+                    campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
+                    Toast.makeText(this, "Horário reajustado: não é possível usar horas no futuro.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void aplicarRegraStatusPorData(Date data) {

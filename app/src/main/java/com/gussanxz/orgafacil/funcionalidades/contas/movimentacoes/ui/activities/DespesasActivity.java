@@ -142,7 +142,7 @@ public class DespesasActivity extends AppCompatActivity {
     private void configurarListeners() {
         campoCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
         campoData.setOnClickListener(v -> abrirSelecionadorDeData());
-        campoHora.setOnClickListener(v -> TimePickerHelper.showTimePickerDialog(this, campoHora));
+        campoHora.setOnClickListener(v -> abrirSelecionadorDeHora());
 
         checkboxRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
             textInputMeses.setVisibility(isChecked ? View.VISIBLE : View.GONE);
@@ -167,12 +167,74 @@ public class DespesasActivity extends AppCompatActivity {
             if(dataAtual != null) c.setTime(dataAtual);
         } catch (Exception ignored) {}
 
-        new DatePickerDialog(this, (v, y, m, d) -> {
+        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
             c.set(y, m, d);
             Date dataEscolhida = c.getTime();
             campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
             aplicarRegraStatusPorData(dataEscolhida);
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+
+            // [NOVO] Valida a hora logo após mudar a data
+            validarLimiteHoraAtual();
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+        // [NOVO] Trava a seleção de datas futuras caso NÃO seja a tela de Contas Futuras
+        if (!ehContaFutura) {
+            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+        }
+
+        dialog.show();
+    }
+
+    private void abrirSelecionadorDeHora() {
+        Calendar agora = Calendar.getInstance();
+        int horaSet = agora.get(Calendar.HOUR_OF_DAY);
+        int minutoSet = agora.get(Calendar.MINUTE);
+
+        try {
+            String[] partes = campoHora.getText().toString().split(":");
+            horaSet = Integer.parseInt(partes[0]);
+            minutoSet = Integer.parseInt(partes[1]);
+        } catch (Exception ignored) {}
+
+        android.app.TimePickerDialog timePicker = new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
+            campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
+
+            // [NOVO] Valida assim que o usuário confirma a hora
+            validarLimiteHoraAtual();
+        }, horaSet, minutoSet, true);
+
+        timePicker.show();
+    }
+
+    private void validarLimiteHoraAtual() {
+        if (ehContaFutura) return; // Contas pendentes/futuras não têm limite de hora
+
+        try {
+            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
+            if (dataSelecionada == null) return;
+
+            Calendar calSelecionada = Calendar.getInstance();
+            calSelecionada.setTime(dataSelecionada);
+
+            Calendar agora = Calendar.getInstance();
+
+            // Só aplicamos o bloqueio se a data selecionada for HOJE
+            if (calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR) &&
+                    calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
+
+                String[] partesHora = campoHora.getText().toString().split(":");
+                int horaCampo = Integer.parseInt(partesHora[0]);
+                int minCampo = Integer.parseInt(partesHora[1]);
+
+                int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
+                int minAgora = agora.get(Calendar.MINUTE);
+
+                if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
+                    campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
+                    Toast.makeText(this, "Horário ajustado: não é possível usar horas no futuro.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void aplicarRegraStatusPorData(Date data) {
