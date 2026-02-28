@@ -191,9 +191,13 @@ public class DespesasActivity extends AppCompatActivity {
         int minutoSet = agora.get(Calendar.MINUTE);
 
         try {
-            String[] partes = campoHora.getText().toString().split(":");
-            horaSet = Integer.parseInt(partes[0]);
-            minutoSet = Integer.parseInt(partes[1]);
+            String horaAtual = campoHora.getText().toString().trim();
+            if (!horaAtual.isEmpty() && horaAtual.contains(":")) {
+                String[] partes = horaAtual.split(":");
+                horaSet = Integer.parseInt(partes[0]);
+                minutoSet = Integer.parseInt(partes[1]);
+            }
+            // se vazio, mantém horaSet/minutoSet = hora atual do sistema (já definido acima)
         } catch (Exception ignored) {}
 
         android.app.TimePickerDialog timePicker = new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
@@ -218,16 +222,19 @@ public class DespesasActivity extends AppCompatActivity {
 
             Calendar agora = Calendar.getInstance();
 
-            // Só aplicamos o bloqueio se a data selecionada for HOJE
             if (calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR) &&
                     calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
 
-                String[] partesHora = campoHora.getText().toString().split(":");
+                // ✅ CORREÇÃO: guarda antes do split — campo pode estar vazio em agendamentos
+                String horaTexto = campoHora.getText().toString().trim();
+                if (horaTexto.isEmpty() || !horaTexto.contains(":")) return;
+
+                String[] partesHora = horaTexto.split(":");
                 int horaCampo = Integer.parseInt(partesHora[0]);
-                int minCampo = Integer.parseInt(partesHora[1]);
+                int minCampo  = Integer.parseInt(partesHora[1]);
 
                 int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
-                int minAgora = agora.get(Calendar.MINUTE);
+                int minAgora  = agora.get(Calendar.MINUTE);
 
                 if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
                     campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
@@ -305,6 +312,7 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void verificarModoEdicao() {
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
+            // --- MODO EDIÇÃO ---
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
             } else {
@@ -330,22 +338,31 @@ public class DespesasActivity extends AppCompatActivity {
                     switchStatusPago.setChecked(itemEmEdicao.isPago());
                     aplicarRegraStatusPorData(data);
                 }
+
                 if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
             }
+
         } else {
+            // --- MODO CRIAÇÃO ---
             isEdicao = false;
             layoutRecorrencia.setVisibility(View.VISIBLE);
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
 
             if (ehContaFutura) {
+                // Agendamento: pré-preenche com amanhã como sugestão,
+                // mas deixa hora em BRANCO para o usuário escolher livremente.
                 Calendar c = Calendar.getInstance();
                 c.add(Calendar.DAY_OF_YEAR, 1);
                 Date dataFutura = c.getTime();
 
                 campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataFutura));
-                campoHora.setText("08:00");
-                aplicarRegraStatusPorData(dataFutura);
+                campoHora.setText(""); // livre — sem horário fixo
+                campoHora.setHint("HH:mm"); // indica o formato esperado
+
+                aplicarRegraStatusPorData(dataFutura); // define como Pendente
+
             } else {
+                // Lançamento normal: preenche com hoje + hora atual
                 Date dataHoje = new Date();
                 campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataHoje));
                 campoHora.setText(TimePickerHelper.setHoraAtual());
@@ -375,7 +392,16 @@ public class DespesasActivity extends AppCompatActivity {
         }
 
         try {
-            String dataHoraStr = campoData.getText().toString() + " " + campoHora.getText().toString();
+            String dataStr = campoData.getText().toString().trim();
+            String horaStr = campoHora.getText().toString().trim();
+
+            // Se o campo hora estiver vazio (agendamento sem hora definida),
+            // usa meia-noite como padrão — deixa claro que é o início do dia
+            if (horaStr.isEmpty()) {
+                horaStr = "00:00";
+            }
+
+            String dataHoraStr = dataStr + " " + horaStr;
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
             Date date = sdf.parse(dataHoraStr);
             if (date != null) {
@@ -471,7 +497,11 @@ public class DespesasActivity extends AppCompatActivity {
         return true;
     }
 
-    public void retornarPrincipal(View view){ finish(); }
+    public void retornarPrincipal(View view) {
+        if (salvandoEmProgresso) return;
+        salvandoEmProgresso = true;
+        finish();
+    }
 
     private void setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

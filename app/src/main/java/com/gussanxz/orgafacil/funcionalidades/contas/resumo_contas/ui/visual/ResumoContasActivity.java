@@ -41,15 +41,20 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     // ViewModel e Dados
     private ResumoGeralViewModel viewModel;
+    private ContasViewModel contasViewModel;
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    // UI Dashboard (IDs mapeados do XML)
+    // UI Dashboard
     private TextView textSaldoGeral;
     private ImageView imgOlhoSaldo;
     private TextView labelDespesaFutura;
     private TextView labelReceitaFutura;
     private TextView labelNovaDespesa;
     private TextView labelNovaReceita;
+
+    // [CORREÇÃO 1.5] TextView de legenda do saldo (ex: "Total a pagar", "Saldo das movimentações")
+    // Certifique-se que este ID existe no XML, ou remova se não houver
+    private TextView textLegendaSaldo;
 
     // Layout Components
     private LinearLayout btnFooterContas, btnFooterMovimentacoes;
@@ -63,7 +68,6 @@ public class ResumoContasActivity extends AppCompatActivity {
     private final OvershootInterpolator interpolator = new OvershootInterpolator();
     private View overlayBackground;
     private View radialSpotlight;
-    private ContasViewModel contasViewModel;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
 
     @Override
@@ -80,14 +84,16 @@ public class ResumoContasActivity extends AppCompatActivity {
         inicializarComponentes();
 
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
+        contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
+
         setupDashboardObserver();
+        setupSaldoListaObserver(); // [CORREÇÃO 1.5]
 
         viewModel.verificarViradaDeMes(this);
 
         setupSlideView();
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
-
         configurarChipsFiltro();
 
         overlayBackground.setOnClickListener(v -> fecharMenu());
@@ -96,6 +102,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void inicializarViewsDashboard() {
         textSaldoGeral = findViewById(R.id.textSaldo);
         imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
+        textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
     }
 
     private void inicializarComponentes() {
@@ -108,6 +115,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
     }
 
+    // Observer original — mantém o saldo real do Firestore como base inicial
+    // antes de qualquer interação do usuário
     private void setupDashboardObserver() {
         viewModel.resumoDados.observe(this, resumo -> {
             if (resumo == null || textSaldoGeral == null) return;
@@ -116,27 +125,89 @@ public class ResumoContasActivity extends AppCompatActivity {
             double saldoDouble = saldoCentavos / 100.0;
             String valorFormatado = currencyFormat.format(saldoDouble);
 
-            // Determina cor do saldo
+            int corSaldo;
+            if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
+            else if (saldoCentavos < 0) corSaldo = Color.parseColor("#00D39E");
+            else                         corSaldo = Color.WHITE;
+
+            View containerSaldo = findViewById(R.id.containerSaldo);
+            VisibilidadeHelper.configurarVisibilidadeSaldo(
+                    containerSaldo, textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
+
+            VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
+        });
+    }
+
+    /**
+     * [CORREÇÃO 1.5] Observer do saldo calculado localmente.
+     * Atualiza o textSaldoGeral sempre que a lista visível muda —
+     * por filtro de tipo (só receitas/só despesas) ou troca de aba.
+     * Este observer sobrescreve o valor do setupDashboardObserver() quando ativo.
+     */
+    private void setupSaldoListaObserver() {
+        contasViewModel.saldoListaAtual.observe(this, saldoCentavos -> {
+            if (saldoCentavos == null || textSaldoGeral == null) return;
+
+            double saldoDouble = saldoCentavos / 100.0;
+            String valorFormatado = currencyFormat.format(Math.abs(saldoDouble));
+
             int corSaldo;
             if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
             else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
             else                         corSaldo = Color.WHITE;
 
-            // Atualiza o valor respeitando o estado atual de visibilidade
-            View containerSaldo = findViewById(R.id.containerSaldo); // LinearLayout do olho + texto
-            VisibilidadeHelper.configurarVisibilidadeSaldo(
-                    containerSaldo, textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
-
-            // Força a exibição do valor atualizado se já estiver visível
             VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
+
+            // Atualiza legenda contextual se a view existir no XML
+            atualizarLegendaSaldo(saldoCentavos);
         });
+    }
+
+    /**
+     * [CORREÇÃO 1.5] Atualiza o texto de contexto do saldo conforme aba e valor.
+     */
+    private void atualizarLegendaSaldo(long saldoCentavos) {
+        if (textLegendaSaldo == null) return;
+
+        int abaAtual = viewPager.getCurrentItem(); // 0 = Pendentes, 1 = Últimas Movimentações
+        String novoTexto = "";
+
+        if (abaAtual == 0) {
+            // Aba "Contas Pendentes"
+            if (saldoCentavos < 0) {
+                novoTexto = "Total a pagar";
+            } else if (saldoCentavos > 0) {
+                novoTexto = "Total a receber";
+            } else {
+                novoTexto = "Nenhum pendente";
+            }
+        } else {
+            // Aba "Últimas Movimentações"
+            novoTexto = "Saldo das movimentações";
+        }
+
+        // Se o texto for o mesmo, não faz nada
+        if (textLegendaSaldo.getText().toString().equals(novoTexto)) return;
+
+        // Animação suave: esmaece (alpha 0), troca o texto, e volta (alpha 0.8)
+        final String textoFinal = novoTexto;
+        textLegendaSaldo.animate()
+                .alpha(0f)
+                .setDuration(150) // 150 milissegundos
+                .withEndAction(() -> {
+                    textLegendaSaldo.setText(textoFinal);
+                    textLegendaSaldo.animate()
+                            .alpha(0.8f) // Volta para 80% de opacidade (conforme definimos no XML)
+                            .setDuration(150)
+                            .start();
+                }).start();
     }
 
     private void configurarBottomAppBarCustomizada() {
         bottomAppBar.setContentInsetsAbsolute(0, 0);
         View containerInterno = findViewById(R.id.linear_footer_container);
         if (containerInterno == null && bottomAppBar.getChildCount() > 0) {
-            for(int i=0; i<bottomAppBar.getChildCount(); i++) {
+            for (int i = 0; i < bottomAppBar.getChildCount(); i++) {
                 if (bottomAppBar.getChildAt(i) instanceof LinearLayout) {
                     containerInterno = bottomAppBar.getChildAt(i);
                     break;
@@ -252,8 +323,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground.setVisibility(View.VISIBLE);
         overlayBackground.animate().alpha(1f).setDuration(300).start();
         radialSpotlight.setVisibility(View.VISIBLE);
-        radialSpotlight.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(200f).
-                setInterpolator(interpolator).setDuration(400).start();
+        radialSpotlight.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(200f)
+                .setInterpolator(interpolator).setDuration(400).start();
         fabMain.animate().setInterpolator(interpolator).rotation(45f).setDuration(300).start();
 
         animarBotao(fabDespesaFutura, -320f, -200f);
@@ -262,15 +333,17 @@ public class ResumoContasActivity extends AppCompatActivity {
         animarBotao(fabNovaReceita, 320f, -200f);
 
         animarLabelAcimaDoFab(labelDespesaFutura, -320f, -200f);
-        animarLabelAcimaDoFab(labelReceitaFutura,  -150f,  -420f);
-        animarLabelAcimaDoFab(labelNovaDespesa,    150f,-420f);
-        animarLabelAcimaDoFab(labelNovaReceita,    320f, -200f);
+        animarLabelAcimaDoFab(labelReceitaFutura, -150f, -420f);
+        animarLabelAcimaDoFab(labelNovaDespesa, 150f, -420f);
+        animarLabelAcimaDoFab(labelNovaReceita, 320f, -200f);
     }
 
     private void fecharMenu() {
         isMenuOpen = false;
-        overlayBackground.animate().alpha(0f).setDuration(300).withEndAction(() -> overlayBackground.setVisibility(View.GONE)).start();
-        radialSpotlight.animate().alpha(0f).scaleX(0f).scaleY(0f).setDuration(300).withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE)).start();
+        overlayBackground.animate().alpha(0f).setDuration(300)
+                .withEndAction(() -> overlayBackground.setVisibility(View.GONE)).start();
+        radialSpotlight.animate().alpha(0f).scaleX(0f).scaleY(0f).setDuration(300)
+                .withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE)).start();
         fabMain.animate().setInterpolator(interpolator).rotation(0f).setDuration(300).start();
 
         recolherBotao(fabDespesaFutura);
@@ -287,17 +360,19 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void animarBotao(View view, float x, float y) {
         view.setVisibility(View.VISIBLE);
         view.setAlpha(0f);
-        view.animate().translationX(x).translationY(y).alpha(1f).setInterpolator(interpolator).setDuration(300).start();
+        view.animate().translationX(x).translationY(y).alpha(1f)
+                .setInterpolator(interpolator).setDuration(300).start();
     }
 
     private void recolherBotao(View view) {
-        view.animate().translationX(0f).translationY(0f).alpha(0f).setInterpolator(interpolator).setDuration(300).withEndAction(() -> view.setVisibility(View.INVISIBLE)).start();
+        view.animate().translationX(0f).translationY(0f).alpha(0f)
+                .setInterpolator(interpolator).setDuration(300)
+                .withEndAction(() -> view.setVisibility(View.INVISIBLE)).start();
     }
 
     private void animarLabelAcimaDoFab(TextView label, float fabX, float fabY) {
         label.setVisibility(View.VISIBLE);
         label.setAlpha(0f);
-
         label.animate()
                 .translationX(fabX)
                 .translationY(fabY - dp(44))
@@ -319,6 +394,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void setupSlideView() {
         DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
         viewPager.setAdapter(adapter);
+
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
                 tab.setText(R.string.tab_titulo_contas_pendentes);
@@ -326,12 +402,20 @@ public class ResumoContasActivity extends AppCompatActivity {
                 tab.setText(R.string.tab_titulo_ultimas_mov);
             }
         }).attach();
+
+        // [CORREÇÃO 1.5] Notifica o ViewModel quando o usuário troca de aba,
+        // para que saldoListaAtual seja publicado com o saldo correto (pendentes ou histórico)
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                boolean ehFuturo = (position == 0); // aba 0 = Pendentes, aba 1 = Últimas
+                contasViewModel.notificarAbaAtiva(ehFuturo);
+            }
+        });
     }
 
     private void configurarChipsFiltro() {
-        // Pega o mesmo ViewModel que os fragments usam
-        contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
-
         chipGroupFiltroTipo.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipTodos)) {
                 contasViewModel.setFiltroTipo(null);

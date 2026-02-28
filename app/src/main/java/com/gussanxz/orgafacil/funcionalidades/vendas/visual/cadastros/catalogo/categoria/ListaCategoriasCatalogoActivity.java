@@ -122,16 +122,15 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
 
         SwipeCallback swipeHelper = new SwipeCallback(this) {
             @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getAdapterPosition();
-                if (position == RecyclerView.NO_POSITION) return;
+            protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
+                                             int direction, int position) {
 
                 Categoria categoriaSelecionada = listaFiltrada.get(position);
 
                 if (direction == ItemTouchHelper.LEFT) {
                     confirmarExclusao(categoriaSelecionada, position);
                 } else if (direction == ItemTouchHelper.RIGHT) {
-                    adapter.notifyItemChanged(position); // Fecha o swipe
+                    adapter.notifyItemChanged(position);
                     abrirTelaEdicao(categoriaSelecionada);
                 }
             }

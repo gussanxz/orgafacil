@@ -16,7 +16,6 @@ import java.util.List;
 public class ContasViewModel extends ViewModel {
 
     // --- DEPENDÊNCIAS INTERNAS ---
-    // O ViewModel agora é totalmente dono do repositório, mantendo o MVVM limpo.
     private final MovimentacaoRepository repo;
 
     private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
@@ -33,6 +32,11 @@ public class ContasViewModel extends ViewModel {
 
     private final MutableLiveData<Boolean> _carregandoPaginacao = new MutableLiveData<>(false);
     public LiveData<Boolean> carregandoPaginacao = _carregandoPaginacao;
+
+    // Saldo calculado dinamicamente a partir da lista visível — NÃO vem do Firestore
+    // Atualizado sempre que aplicarFiltros() é chamado, inclusive ao trocar de aba ou filtrar por tipo
+    private final MutableLiveData<Long> _saldoListaAtual = new MutableLiveData<>(0L);
+    public LiveData<Long> saldoListaAtual = _saldoListaAtual;
 
     private List<MovimentacaoModel> cacheHistorico = new ArrayList<>();
     private List<MovimentacaoModel> cacheFuturo = new ArrayList<>();
@@ -51,7 +55,6 @@ public class ContasViewModel extends ViewModel {
     private TipoCategoriaContas lastFiltroTipo = null;
 
     public ContasViewModel() {
-        // Inicializado internamente!
         this.repo = new MovimentacaoRepository();
     }
 
@@ -66,6 +69,14 @@ public class ContasViewModel extends ViewModel {
 
     public void zerarEstatisticasMensais(MovimentacaoRepository.Callback callback) {
         repo.zerarEstatisticasMensais(callback);
+    }
+
+    public void confirmarMovimentacaoEmMassa(MovimentacaoModel mov, MovimentacaoRepository.Callback callback) {
+        repo.confirmarMovimentacaoEmMassa(mov, callback);
+    }
+
+    public void excluirEmLote(List<MovimentacaoModel> lista, MovimentacaoRepository.Callback callback) {
+        repo.excluirEmLote(lista, callback);
     }
 
     // --- MÉTODOS DE BUSCA ---
@@ -90,7 +101,9 @@ public class ContasViewModel extends ViewModel {
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
-                @Override public void onErro(String erro) {
+
+                @Override
+                public void onErro(String erro) {
                     isCarregandoPagina = false;
                     _carregandoPaginacao.setValue(false);
                     if (callbackExterno != null) callbackExterno.onErro(erro);
@@ -113,7 +126,9 @@ public class ContasViewModel extends ViewModel {
                     aplicarFiltros(lastQuery, lastInicio, lastFim);
                     if (callbackExterno != null) callbackExterno.onSucesso(lista);
                 }
-                @Override public void onErro(String erro) {
+
+                @Override
+                public void onErro(String erro) {
                     isCarregandoPagina = false;
                     _carregandoPaginacao.setValue(false);
                     if (callbackExterno != null) callbackExterno.onErro(erro);
@@ -142,7 +157,9 @@ public class ContasViewModel extends ViewModel {
                 _carregandoPaginacao.setValue(false);
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
             }
-            @Override public void onErro(String erro) {
+
+            @Override
+            public void onErro(String erro) {
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
             }
@@ -169,7 +186,9 @@ public class ContasViewModel extends ViewModel {
                 _carregandoPaginacao.setValue(false);
                 aplicarFiltros(lastQuery, lastInicio, lastFim);
             }
-            @Override public void onErro(String erro) {
+
+            @Override
+            public void onErro(String erro) {
                 isCarregandoPagina = false;
                 _carregandoPaginacao.setValue(false);
             }
@@ -189,10 +208,14 @@ public class ContasViewModel extends ViewModel {
 
         calcularSaldoHistorico(resHistorico);
         calcularSaldoFuturo(resFuturo);
+
+        // [CORREÇÃO 1.5] Atualiza saldoListaAtual com base na aba atual
+        // A aba 0 = pendentes (futuro), aba 1 = histórico — mas como o VM não sabe
+        // qual aba está ativa, publica ambos e a Activity escolhe via abaAtiva
+        calcularSaldoDaLista(resHistorico, resFuturo);
     }
 
     private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem, String query, Date inicio, Date fim, boolean isModoFuturo) {
-
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         String q = (query != null) ? query.toLowerCase().trim() : "";
 
@@ -251,8 +274,44 @@ public class ContasViewModel extends ViewModel {
         _saldoFuturo.setValue(saldoCentavos);
     }
 
-    public void confirmarMovimentacaoEmMassa(MovimentacaoModel mov, MovimentacaoRepository.Callback callback) {
-        repo.confirmarMovimentacaoEmMassa(mov, callback);
+    /**
+     * [CORREÇÃO 1.5] Calcula o saldoListaAtual armazenando ambos internamente.
+     * A Activity notifica qual aba está ativa via notificarAbaAtiva() para
+     * publicar o saldo correto no LiveData.
+     */
+    private long ultimoSaldoHistoricoCalculado = 0L;
+    private long ultimoSaldoFuturoCalculado = 0L;
+    private boolean abaAtualEhFuturo = false; // false = histórico (aba 1), true = futuro/pendentes (aba 0)
+
+    private void calcularSaldoDaLista(List<MovimentacaoModel> historico, List<MovimentacaoModel> futuro) {
+        // Recalcula ambos os lados
+        long saldoHist = 0L;
+        for (MovimentacaoModel m : historico) {
+            if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) saldoHist += m.getValor();
+            else saldoHist -= m.getValor();
+        }
+        ultimoSaldoHistoricoCalculado = saldoHist;
+
+        long saldoFut = 0L;
+        for (MovimentacaoModel m : futuro) {
+            if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) saldoFut += m.getValor();
+            else saldoFut -= m.getValor();
+        }
+        ultimoSaldoFuturoCalculado = saldoFut;
+
+        // Publica o saldo da aba que está ativa no momento
+        _saldoListaAtual.setValue(abaAtualEhFuturo ? ultimoSaldoFuturoCalculado : ultimoSaldoHistoricoCalculado);
+    }
+
+    /**
+     * [CORREÇÃO 1.5] Chamado pela ResumoContasActivity ao trocar de aba no ViewPager.
+     * Atualiza qual saldo deve ser exibido sem precisar refazer o fetch.
+     *
+     * @param ehFuturo true = aba "Contas Pendentes" (posição 0), false = aba "Últimas Movimentações" (posição 1)
+     */
+    public void notificarAbaAtiva(boolean ehFuturo) {
+        abaAtualEhFuturo = ehFuturo;
+        _saldoListaAtual.setValue(ehFuturo ? ultimoSaldoFuturoCalculado : ultimoSaldoHistoricoCalculado);
     }
 
     public void setFiltroTipo(TipoCategoriaContas tipo) {

@@ -397,4 +397,24 @@ public class MovimentacaoRepository {
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
+
+    public void excluirEmLote(List<MovimentacaoModel> lista, Callback callback) {
+        if (lista == null || lista.isEmpty()) {
+            callback.onSucesso("Nenhuma movimentação para excluir.");
+            return;
+        }
+
+        WriteBatch batch = db.batch();
+
+        for (MovimentacaoModel mov : lista) {
+            if (mov.getId() == null || mov.getId().isEmpty()) continue;
+            DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
+            batch.delete(movRef);
+            aplicarImpacto(batch, mov, -1); // reverte o impacto no resumo/categoria
+        }
+
+        batch.commit()
+                .addOnSuccessListener(aVoid -> callback.onSucesso("Dia excluído com sucesso!"))
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
 }

@@ -9,8 +9,10 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel;
 
 import java.util.List;
@@ -19,60 +21,80 @@ import java.util.List;
  * AdapterExibirCategoriasContas
  * Responsável por exibir a lista de objetos ContasCategoriaModel.
  */
-public class AdapterExibirCategoriasContas extends RecyclerView.Adapter<AdapterExibirCategoriasContas.ViewHolder> {
+public class AdapterExibirCategoriasContas
+        extends RecyclerView.Adapter<AdapterExibirCategoriasContas.ViewHolder> {
 
     private final List<ContasCategoriaModel> categorias;
-    private final Context context;
+    private final SelecionarCategoriaContasActivity activity;
 
-    public AdapterExibirCategoriasContas(List<ContasCategoriaModel> categorias, Context context) {
+    public AdapterExibirCategoriasContas(List<ContasCategoriaModel> categorias,
+                                         SelecionarCategoriaContasActivity activity) {
         this.categorias = categorias;
-        this.context = context;
+        this.activity = activity;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
+
         TextView textCategoria;
+        android.widget.ImageView btnEditar;
 
         ViewHolder(View itemView) {
             super(itemView);
-            textCategoria = itemView.findViewById(android.R.id.text1);
+            textCategoria = itemView.findViewById(R.id.textCategoria);
+            btnEditar = itemView.findViewById(R.id.btnEditarCategoria);
         }
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent,
+                                         int viewType) {
+
         View item = LayoutInflater.from(parent.getContext())
-                .inflate(android.R.layout.simple_list_item_1, parent, false);
+                .inflate(R.layout.item_categoria_custom, parent, false);
+
         return new ViewHolder(item);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder,
+                                 int position) {
+
         ContasCategoriaModel categoria = categorias.get(position);
 
-        // [ATUALIZADO]: Acessamos o grupo VISUAL para pegar o nome
-        // O helper getNome() funcionaria, mas ser explícito é melhor para manutenção
         String nomeExibicao = "Sem Nome";
-        if (categoria.getVisual() != null) {
+        if (categoria.getVisual() != null &&
+                categoria.getVisual().getNome() != null) {
             nomeExibicao = categoria.getVisual().getNome();
         }
 
         holder.textCategoria.setText(nomeExibicao);
 
-        // Configura o clique
-        String finalNomeExibicao = nomeExibicao;
+        // Clique normal → selecionar categoria
+        String finalNome = nomeExibicao;
         holder.itemView.setOnClickListener(v -> {
             Intent resultado = new Intent();
-
-            // Retorna o Nome (do Visual) e o ID (da Raiz)
-            resultado.putExtra("categoriaSelecionada", finalNomeExibicao);
+            resultado.putExtra("categoriaSelecionada", finalNome);
             resultado.putExtra("categoriaId", categoria.getId());
-
-            if (context instanceof Activity) {
-                ((Activity) context).setResult(Activity.RESULT_OK, resultado);
-                ((Activity) context).finish();
-            }
+            activity.setResult(Activity.RESULT_OK, resultado);
+            activity.finish();
         });
+
+        // LONG PRESS → excluir
+        holder.itemView.setOnLongClickListener(v -> {
+            new AlertDialog.Builder(activity)
+                    .setTitle("Excluir Categoria")
+                    .setMessage("Deseja excluir \"" + finalNome + "\"?")
+                    .setPositiveButton("Excluir", (d, w) ->
+                            activity.excluirCategoria(holder.getAdapterPosition(), categoria))
+                    .setNegativeButton("Cancelar", null)
+                    .show();
+            return true;
+        });
+
+        // BOTÃO LÁPIS → CHAMA O POPUP DE EDITAR CATEGORIA
+        holder.btnEditar.setOnClickListener(v ->
+                activity.mostrarDialogEditarCategoria(categoria));
     }
 
     @Override

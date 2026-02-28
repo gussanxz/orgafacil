@@ -396,8 +396,23 @@ public class ContasActivity extends AppCompatActivity {
                 itensAgrupados,
                 new AdapterMovimentacaoLista.OnItemActionListener() {
                     @Override public void onDeleteClick(MovimentacaoModel m) { confirmarExclusao(m, -1); }
-                    @Override public void onLongClick(MovimentacaoModel m) { abrirTelaEdicao(m); }
+
+                    // [MUDANÇA AQUI] O clique longo agora abre um popup antes de editar
+                    @Override public void onLongClick(MovimentacaoModel m) {
+                        new AlertDialog.Builder(ContasActivity.this)
+                                .setTitle("Editar")
+                                .setMessage("Você deseja editar '" + m.getDescricao() + "'?")
+                                .setPositiveButton("Sim", (dialog, which) -> abrirTelaEdicao(m, true)) // Passando true para ir direto pra edição
+                                .setNegativeButton("Cancelar", null)
+                                .show();
+                    }
+
                     @Override public void onCheckClick(MovimentacaoModel m) { confirmarPagamentoOuRecebimento(m); }
+
+                    @Override
+                    public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
+                        confirmarExclusaoDoDia(dataDia, movsDoDia);
+                    }
                 }
         );
 
@@ -429,23 +444,37 @@ public class ContasActivity extends AppCompatActivity {
         });
 
         new ItemTouchHelper(new SwipeCallback(this) {
+
             @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int dir) {
-                int pos = vh.getAdapterPosition();
-                if (itensAgrupados.get(pos).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
-                    MovimentacaoModel m = itensAgrupados.get(pos).movimentacaoModel;
-                    if (dir == ItemTouchHelper.LEFT) confirmarExclusao(m, pos);
-                    else { adapterAgrupado.notifyItemChanged(pos); abrirTelaEdicao(m); }
+            protected void onHeaderSwipeDelete(String tituloDia, List<MovimentacaoModel> movimentos) {
+                // Swipe do header — abre dialog de confirmação
+                confirmarExclusaoDoDia(tituloDia, movimentos);
+            }
+
+            @Override
+            protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
+                                             int direction,
+                                             int position) {
+                // Mantém comportamento original dos itens de movimento
+                if (itensAgrupados.get(position).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
+                    MovimentacaoModel m = itensAgrupados.get(position).movimentacaoModel;
+                    if (direction == ItemTouchHelper.LEFT) {
+                        confirmarExclusao(m, position);
+                    } else {
+                        adapterAgrupado.notifyItemChanged(position);
+                        abrirTelaEdicao(m, true);
+                    }
                 } else {
-                    adapterAgrupado.notifyItemChanged(pos);
+                    adapterAgrupado.notifyItemChanged(position);
                 }
             }
+
         }).attachToRecyclerView(recyclerView);
     }
-
-    private void abrirTelaEdicao(MovimentacaoModel m) {
+    private void abrirTelaEdicao(MovimentacaoModel m, boolean diretoPraEdicao) {
         Intent intent = new Intent(this, EditarMovimentacaoActivity.class);
         intent.putExtra("movimentacaoSelecionada", m);
+        intent.putExtra("DIRETO_PRA_EDICAO", diretoPraEdicao); // Manda o aviso
         launcher.launch(intent);
     }
 
@@ -650,4 +679,52 @@ public class ContasActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void confirmarExclusaoDoDia(String tituloDia, List<MovimentacaoModel> movimentos) {
+        if (movimentos == null || movimentos.isEmpty()) return;
+
+        int total = movimentos.size();
+
+        // Verifica se há parcelas recorrentes
+        boolean temRecorrentes = false;
+        for (MovimentacaoModel m : movimentos) {
+            if (m.getTotal_parcelas() > 1) { temRecorrentes = true; break; }
+        }
+
+        String msgPrincipal = "Deseja excluir " + total +
+                (total == 1 ? " movimentação" : " movimentações") +
+                " de \"" + tituloDia + "\"?\n\nEsta ação não pode ser desfeita.";
+
+        String msgFinal = temRecorrentes
+                ? msgPrincipal + "\n\n⚠️ Atenção: há lançamentos recorrentes neste dia. " +
+                "Apenas as parcelas deste dia serão removidas — as demais da série serão mantidas."
+                : msgPrincipal;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir " + tituloDia)
+                .setMessage(msgFinal)
+                .setPositiveButton("Excluir tudo", (dialog, which) -> executarExclusaoDoDia(movimentos))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void executarExclusaoDoDia(List<MovimentacaoModel> movimentos) {
+        viewModel.excluirEmLote(movimentos, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                if (!isFinishing()) {
+                    Toast.makeText(ContasActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    carregarDados();
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                if (!isFinishing()) {
+                    Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
 }

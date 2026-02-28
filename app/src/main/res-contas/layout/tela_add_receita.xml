@@ -71,17 +71,37 @@
         app:layout_constraintTop_toBottomOf="@+id/header">
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/textInputDescricao"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:startIconDrawable="@drawable/ic_description_24">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editDescricao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Descrição da receita"
+                android:paddingStart="44dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputValor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             app:startIconDrawable="@drawable/ic_moeda_real_24"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editValor"
@@ -90,6 +110,29 @@
                 android:hint="Informe um valor"
                 android:text="0.00"
                 android:inputType="numberDecimal"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/textInputCategoria"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textInputValor"
+            app:startIconDrawable="@drawable/ic_label_24">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editCategoria"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="false"
+                android:hint="Categoria"
+                android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -102,7 +145,7 @@
             app:layout_constraintEnd_toStartOf="@id/textInputHora"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputValor"
+            app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
             app:startIconDrawable="@drawable/ic_calendar_month_24">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -110,7 +153,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Selecione uma data"
-                android:text="01/01/2025"
                 android:clickable="true"
                 android:focusable="false"
                 android:inputType="none"
@@ -126,62 +168,17 @@
             android:paddingRight="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/textInputData"
-            app:layout_constraintTop_toBottomOf="@id/textInputValor"
+            app:layout_constraintTop_toBottomOf="@id/textInputCategoria"
             app:startIconDrawable="@drawable/ic_relogio_24">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editHora"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Selecione uma hora"
-                android:text="00:00"
                 android:clickable="true"
                 android:focusable="false"
                 android:inputType="none"
                 android:paddingStart="44dp"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputCategoria"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputData"
-            app:startIconDrawable="@drawable/ic_label_24">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editCategoria"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="false"
-                android:hint="Categoria"
-                android:paddingStart="44dp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/textInputDescricao"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
-            app:startIconDrawable="@drawable/ic_description_24">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editDescricao"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Descrição da receita"
-                android:paddingStart="44dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.materialswitch.MaterialSwitch
@@ -195,7 +192,7 @@
             android:text="Status: OK"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputDescricao" />
+            app:layout_constraintTop_toBottomOf="@+id/textInputData" />
 
         <LinearLayout
             android:id="@+id/layoutRecorrencia"
@@ -226,7 +223,7 @@
                     android:layout_height="wrap_content"
                     android:hint="Quantidade de meses"
                     android:inputType="number"
-                    android:maxLength="3" />
+                    android:maxLength="2" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <RadioGroup

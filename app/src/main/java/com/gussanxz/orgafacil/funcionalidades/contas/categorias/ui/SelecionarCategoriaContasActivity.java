@@ -20,16 +20,12 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.util_helper.CategoriaIdHelper;
+import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * SelecionarCategoriaContasActivity
- * O que esta classe faz:
- * 1. Gerenciamento de Catálogo: Lista as categorias disponíveis.
- * 2. Integração Profissional: Usa o Repository e o Model aninhado (Visual/Financeiro).
- */
 public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -38,7 +34,7 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     private final List<ContasCategoriaModel> listaCategorias = new ArrayList<>();
     private ContasCategoriaRepository repository;
 
-    // [FIX 1] tipoAtual como campo da classe para o dialog acessar
+    // Tipo atual filtrado na tela — definido pelo extra recebido
     private TipoCategoriaContas tipoAtual = TipoCategoriaContas.DESPESA;
 
     @Override
@@ -53,6 +49,13 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
         repository = new ContasCategoriaRepository();
         configurarRecycler();
+
+        // Resolve o tipo ANTES de qualquer coisa — tanto criar quanto listar dependem disso
+        int tipoId = getIntent().getIntExtra("TIPO_CATEGORIA", TipoCategoriaContas.DESPESA.getId());
+        tipoAtual = (tipoId == TipoCategoriaContas.RECEITA.getId())
+                ? TipoCategoriaContas.RECEITA
+                : TipoCategoriaContas.DESPESA;
+
         carregarCategorias();
 
         findViewById(R.id.btnNovaCategoria).setOnClickListener(v -> mostrarDialogNovaCategoria());
@@ -68,13 +71,6 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
     }
 
     private void carregarCategorias() {
-        int tipoId = getIntent().getIntExtra("TIPO_CATEGORIA", TipoCategoriaContas.DESPESA.getId());
-
-        // [FIX 2] Atualiza o campo da classe para o dialog usar
-        tipoAtual = (tipoId == TipoCategoriaContas.RECEITA.getId())
-                ? TipoCategoriaContas.RECEITA
-                : TipoCategoriaContas.DESPESA;
-
         repository.listarAtivasPorTipo(tipoAtual)
                 .get()
                 .addOnSuccessListener(snapshot -> {
@@ -83,12 +79,12 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                     if (snapshot != null) {
                         for (QueryDocumentSnapshot doc : snapshot) {
                             ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
-                            cat.setId(doc.getId()); // [FIX 3] garantir ID setado
+                            cat.setId(doc.getId());
                             listaCategorias.add(cat);
                         }
                     }
 
-                    // [FIX 4] Ordenação no cliente por nome (substitui o orderBy removido)
+                    // Ordenação no cliente por nome
                     listaCategorias.sort((a, b) -> {
                         String nomeA = (a.getVisual() != null && a.getVisual().getNome() != null)
                                 ? a.getVisual().getNome() : "";
@@ -98,14 +94,13 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                     });
 
                     if (listaCategorias.isEmpty()) {
-                        // Verifica se já existe QUALQUER categoria antes de criar padrões
-                        // para não duplicar se o usuário tiver só um tipo cadastrado
+                        // Verifica se há QUALQUER categoria antes de criar padrões
+                        // para não duplicar se o usuário só não tem do tipo atual
                         FirestoreSchema.contasCategoriasCol()
                                 .limit(1)
                                 .get()
                                 .addOnSuccessListener(snapGlobal -> {
                                     if (snapGlobal.isEmpty()) {
-                                        // Banco vazio de verdade — cria padrões
                                         repository.inicializarPadroes(new ContasCategoriaRepository.Callback() {
                                             @Override
                                             public void onSucesso() { carregarCategorias(); }
@@ -116,8 +111,6 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                                             }
                                         });
                                     }
-                                    // Se existe algo mas não do tipo atual, só mostra lista vazia
-                                    // sem duplicar os padrões
                                     adapter.notifyDataSetChanged();
                                 })
                                 .addOnFailureListener(e -> adapter.notifyDataSetChanged());
@@ -131,65 +124,187 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
 
     private void mostrarDialogNovaCategoria() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Nova Categoria");
+        builder.setTitle("Nova Categoria de " + tipoAtual.getDescricao().toLowerCase()
+                .substring(0, 1).toUpperCase() + tipoAtual.getDescricao().substring(1).toLowerCase());
+
         final EditText input = new EditText(this);
         input.setHint("Nome da categoria");
         builder.setView(input);
 
         builder.setPositiveButton("Salvar", (dialog, which) -> {
             String nome = input.getText().toString().trim();
-            if (!TextUtils.isEmpty(nome)) {
-
-                ContasCategoriaModel novaCat = new ContasCategoriaModel();
-                novaCat.getVisual().setNome(nome);
-                novaCat.getVisual().setIcone("ic_default");
-                novaCat.setTipo(tipoAtual.getId()); // [FIX 5] usa o tipo correto da tela
-                novaCat.setAtiva(true);
-
-                repository.salvar(novaCat, new ContasCategoriaRepository.Callback() {
-                    @Override
-                    public void onSucesso() {
-                        Toast.makeText(SelecionarCategoriaContasActivity.this,
-                                "Categoria criada!", Toast.LENGTH_SHORT).show();
-                        carregarCategorias(); // Atualiza a lista automaticamente
-                    }
-                    @Override
-                    public void onErro(String erro) {
-                        Toast.makeText(SelecionarCategoriaContasActivity.this,
-                                erro, Toast.LENGTH_SHORT).show();
-                    }
-                });
+            if (TextUtils.isEmpty(nome)) {
+                Toast.makeText(this, "Informe um nome", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            // Verifica duplicidade ANTES de salvar
+            verificarDuplicidadeESalvar(nome);
         });
+
         builder.setNegativeButton("Cancelar", null);
         builder.show();
     }
 
-    private void configurarSwipeParaExcluir() {
-        ItemTouchHelper.SimpleCallback itemTouch = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder vh, @NonNull RecyclerView.ViewHolder t) { return false; }
+    /**
+     * Verifica se já existe uma categoria com o mesmo nome e tipo antes de salvar.
+     * O ID é gerado por slug do nome, então nomes iguais gerariam o mesmo ID
+     * e sobreporiam silenciosamente — aqui bloqueamos isso.
+     */
+    private void verificarDuplicidadeESalvar(String nome) {
+        String idCandidato = CategoriaIdHelper.slugify(nome);
 
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int pos = viewHolder.getAdapterPosition();
-                ContasCategoriaModel categoriaParaExcluir = listaCategorias.get(pos);
-
-                repository.verificarEExcluir(categoriaParaExcluir, new ContasCategoriaRepository.Callback() {
-                    @Override
-                    public void onSucesso() {
-                        listaCategorias.remove(pos);
-                        adapter.notifyItemRemoved(pos);
-                        Toast.makeText(SelecionarCategoriaContasActivity.this, "Excluída!", Toast.LENGTH_SHORT).show();
+        // Busca pelo ID gerado — se existir, é duplicata
+        FirestoreSchema.contasCategoriaDoc(idCandidato)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        // Documento com esse slug já existe — verifica se é do mesmo tipo
+                        ContasCategoriaModel existente = doc.toObject(ContasCategoriaModel.class);
+                        if (existente != null && existente.getTipo() == tipoAtual.getId()) {
+                            Toast.makeText(this,
+                                    "Já existe uma categoria chamada \"" + nome + "\" neste tipo.",
+                                    Toast.LENGTH_LONG).show();
+                        } else {
+                            // Slug existe mas é de outro tipo — gera ID com sufixo do tipo
+                            salvarNovaCategoria(nome, idCandidato + "_" + tipoAtual.getId());
+                        }
+                    } else {
+                        // ID livre — salva normalmente
+                        salvarNovaCategoria(nome, idCandidato);
                     }
-                    @Override
-                    public void onErro(String erro) {
-                        Toast.makeText(SelecionarCategoriaContasActivity.this, erro, Toast.LENGTH_SHORT).show();
-                        adapter.notifyItemChanged(pos);
-                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Em caso de falha na verificação, tenta salvar mesmo assim
+                    salvarNovaCategoria(nome, idCandidato);
                 });
+    }
+
+    private void salvarNovaCategoria(String nome, String idForcado) {
+        ContasCategoriaModel novaCat = new ContasCategoriaModel();
+        novaCat.setId(idForcado); // força o ID para evitar que o repository gere outro
+        novaCat.getVisual().setNome(nome);
+        novaCat.getVisual().setIcone("ic_default");
+        novaCat.getVisual().setCor("#757575");
+        novaCat.setTipo(tipoAtual.getId()); // usa o tipo correto da tela
+        novaCat.setAtiva(true);
+
+        repository.salvar(novaCat, new ContasCategoriaRepository.Callback() {
+            @Override
+            public void onSucesso() {
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        "Categoria criada!", Toast.LENGTH_SHORT).show();
+                carregarCategorias();
             }
-        };
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void configurarSwipeParaExcluir() {
+
+        ItemTouchHelper.SimpleCallback itemTouch =
+                new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView r,
+                                          @NonNull RecyclerView.ViewHolder vh,
+                                          @NonNull RecyclerView.ViewHolder t) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
+                                         int direction) {
+
+                        int pos = viewHolder.getAdapterPosition();
+                        ContasCategoriaModel categoria = listaCategorias.get(pos);
+
+                        excluirCategoria(pos, categoria);
+                    }
+                };
+
         new ItemTouchHelper(itemTouch).attachToRecyclerView(recyclerView);
+    }
+
+    public void excluirCategoria(int pos, ContasCategoriaModel categoria) {
+        repository.verificarEExcluir(categoria, new ContasCategoriaRepository.Callback() {
+            @Override
+            public void onSucesso() {
+                listaCategorias.remove(pos);
+                adapter.notifyItemRemoved(pos);
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        "Excluída!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        erro, Toast.LENGTH_SHORT).show();
+                adapter.notifyItemChanged(pos);
+            }
+        });
+    }
+
+    void mostrarDialogEditarCategoria(ContasCategoriaModel categoria) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Editar Categoria");
+
+        final EditText input = new EditText(this);
+        input.setHint("Nome da categoria");
+
+        final String nomeAtual =
+                (categoria.getVisual() != null &&
+                        categoria.getVisual().getNome() != null)
+                        ? categoria.getVisual().getNome()
+                        : "";
+
+        input.setText(nomeAtual);
+        input.setSelection(nomeAtual.length());
+
+        builder.setView(input);
+
+        builder.setPositiveButton("Confirmar", (dialog, which) -> {
+
+            String novoNome = input.getText().toString().trim();
+
+            if (TextUtils.isEmpty(novoNome)) {
+                Toast.makeText(this, "Informe um nome", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (novoNome.equalsIgnoreCase(nomeAtual)) {
+                return;
+            }
+
+            atualizarCategoria(categoria, novoNome);
+        });
+
+        builder.setNegativeButton("Sair", null);
+        builder.show();
+    }
+
+    private void atualizarCategoria(ContasCategoriaModel categoria, String novoNome) {
+
+        categoria.getVisual().setNome(novoNome);
+
+        repository.salvar(categoria, new ContasCategoriaRepository.Callback() {
+            @Override
+            public void onSucesso() {
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        "Categoria atualizada!", Toast.LENGTH_SHORT).show();
+                carregarCategorias();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(SelecionarCategoriaContasActivity.this,
+                        erro, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

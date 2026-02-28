@@ -17,6 +17,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,6 +29,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.HelperExibirDatasMovimentacao;
+import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +56,10 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     // Controle para evitar o piscar do Empty State na primeira carga
     private boolean isPrimeiroCarregamento = true;
 
+    private ItemTouchHelper swipeHelper;
+
+    private androidx.activity.result.ActivityResultLauncher<android.content.Intent> launcherEdicao;
+
     // Construtor estático para facilitar a criação correta das instâncias
     public static ListaMovimentacoesFragment newInstance(boolean exibirFuturas) {
         ListaMovimentacoesFragment fragment = new ListaMovimentacoesFragment();
@@ -72,6 +78,26 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
         repository = new MovimentacaoRepository();
         // Compartilha o ViewModel com a Activity para ter acesso aos filtros globais
         viewModel = new ViewModelProvider(requireActivity()).get(ContasViewModel.class);
+
+        launcherEdicao = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK) {
+                        viewModel.fetchDados(true, null);
+                        viewModel.fetchDados(false, null);
+                    }
+                });
+    }
+
+    private void abrirTelaEdicao(MovimentacaoModel m, boolean direto) {
+        android.content.Intent intent =
+                new android.content.Intent(requireContext(),
+                        com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity.class);
+
+        intent.putExtra("movimentacaoSelecionada", m);
+        intent.putExtra("DIRETO_PRA_EDICAO", direto);
+
+        launcherEdicao.launch(intent);
     }
 
     @Nullable
@@ -160,8 +186,56 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             List<AdapterItemListaMovimentacao> listaProcessada =
                     HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(listaResumo, ehModoFuturo);
 
-            adapter = new AdapterMovimentacaoLista(getContext(), listaProcessada, this);
+            adapter = new AdapterMovimentacaoLista(getContext(), listaProcessada, new AdapterMovimentacaoLista.OnItemActionListener() {
+
+                @Override
+                public void onDeleteClick(MovimentacaoModel mov) {
+                    exibirDialogExclusao(mov);
+                }
+                @Override
+                public void onLongClick(MovimentacaoModel mov) {
+                    new AlertDialog.Builder(requireContext())
+                            .setTitle("Editar")
+                            .setMessage("Deseja editar '" + mov.getDescricao() + "'?")
+                            .setPositiveButton("Sim", (d, w) -> abrirTelaEdicao(mov, false))
+                            .setNegativeButton("Cancelar", null)
+                            .show();
+                }
+                @Override
+                public void onCheckClick(MovimentacaoModel mov) {
+                    // mantém o comportamento original
+                    String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
+                    if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle("Confirmar " + acao)
+                                .setMessage("Deseja confirmar apenas '" + mov.getDescricao() +
+                                        "' ou também antecipar todas as parcelas seguintes?")
+                                .setPositiveButton("Apenas esta", (d, w) -> executarConfirmacao(mov))
+                                .setNegativeButton("Esta e seguintes", (d, w) -> executarConfirmacaoEmMassa(mov))
+                                .setNeutralButton("Cancelar", null)
+                                .show();
+                    } else {
+                        new AlertDialog.Builder(requireContext())
+                                .setTitle("Confirmar " + acao)
+                                .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
+                                .setPositiveButton("Confirmar", (dialog, which) -> executarConfirmacao(mov))
+                                .setNegativeButton("Cancelar", null)
+                                .show();
+                    }
+                }
+
+                @Override
+                public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
+                    // Não é chamado diretamente aqui — o SwipeCallback aciona direto
+                    confirmarExclusaoDoDia(dataDia, movsDoDia);
+                }
+            });
+
             recyclerView.setAdapter(adapter);
+
+            // Garante que o SwipeCallback está configurado sempre que o adapter é recriado
+            configurarSwipeDoDashboard();
+
         };
 
         // Remove observadores antigos para evitar vazamento de memória ou duplicação
@@ -294,4 +368,94 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
         });
         dialog.show();
     }
+
+    private void configurarSwipeDoDashboard() {
+        if (swipeHelper != null) swipeHelper.attachToRecyclerView(null); // desanexa o anterior
+
+        swipeHelper = new ItemTouchHelper(new SwipeCallback(requireContext()) {
+
+            @Override
+            protected void onHeaderSwipeDelete(String tituloDia, List<MovimentacaoModel> movimentos) {
+                confirmarExclusaoDoDia(tituloDia, movimentos);
+            }
+
+            @Override
+            protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
+                                             int direction, int position) {
+                // No dashboard só temos a lista processada (listaProcessada local ao observer).
+                // Precisamos acessar pelo adapter.
+                if (adapter == null) return;
+                AdapterItemListaMovimentacao item = adapter.getItens().get(position);
+                if (item.type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
+
+                    MovimentacaoModel m = item.movimentacaoModel;
+
+                    if (direction == ItemTouchHelper.LEFT) {
+                        exibirDialogExclusao(m);
+                        adapter.notifyItemChanged(position);
+                    } else if (direction == ItemTouchHelper.RIGHT) {
+                        adapter.notifyItemChanged(position);
+                        abrirTelaEdicao(m, true); // <<< AQUI ESTÁ A MÁGICA
+                    }
+
+                } else {
+                    adapter.notifyItemChanged(position);
+                }
+            }
+        });
+
+        swipeHelper.attachToRecyclerView(recyclerView);
+    }
+
+    private void confirmarExclusaoDoDia(String tituloDia, List<MovimentacaoModel> movimentos) {
+        if (!isAdded() || movimentos == null || movimentos.isEmpty()) return;
+
+        int total = movimentos.size();
+
+        boolean temRecorrentes = false;
+        for (MovimentacaoModel m : movimentos) {
+            if (m.getTotal_parcelas() > 1) { temRecorrentes = true; break; }
+        }
+
+        String msgPrincipal = "Deseja excluir " + total +
+                (total == 1 ? " movimentação" : " movimentações") +
+                " de \"" + tituloDia + "\"?\n\nEsta ação não pode ser desfeita.";
+
+        String msgFinal = temRecorrentes
+                ? msgPrincipal + "\n\n⚠️ Atenção: há lançamentos recorrentes neste dia. " +
+                "Apenas as parcelas deste dia serão removidas — as demais da série serão mantidas."
+                : msgPrincipal;
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Excluir " + tituloDia)
+                .setMessage(msgFinal)
+                .setPositiveButton("Excluir tudo", (dialog, which) -> executarExclusaoDoDia(movimentos))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void executarExclusaoDoDia(List<MovimentacaoModel> movimentos) {
+        viewModel.excluirEmLote(movimentos, new MovimentacaoRepository.Callback() {
+            @Override
+            public void onSucesso(String msg) {
+                if (!isAdded()) return;
+                Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                // Recarrega ambas as abas para manter consistência
+                viewModel.fetchDados(true, null);
+                viewModel.fetchDados(false, null);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                if (!isAdded()) return;
+                Toast.makeText(getContext(), "Erro: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
+        confirmarExclusaoDoDia(dataDia, movsDoDia);
+    }
+
 }

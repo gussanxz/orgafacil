@@ -19,6 +19,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -36,12 +37,22 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         void onDeleteClick(MovimentacaoModel movimentacaoModel);
         void onLongClick(MovimentacaoModel movimentacaoModel);
         void onCheckClick(MovimentacaoModel movimentacaoModel);
+
+        /**
+         * Chamado quando o usuário desliza o HEADER do dia para a esquerda.
+         * Recebe a data do dia (para exibição) e a lista de movimentações daquele dia.
+         */
+        void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movimentacoesDoDia);
     }
 
     public AdapterMovimentacaoLista(Context context, List<AdapterItemListaMovimentacao> itens, OnItemActionListener listener) {
         this.context = context;
         this.itens = itens;
         this.listener = listener;
+    }
+
+    public List<AdapterItemListaMovimentacao> getItens() {
+        return itens;
     }
 
     @Override
@@ -77,11 +88,25 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 
+    /**
+     * Coleta todas as movimentações que pertencem ao mesmo grupo de data do header na posição informada.
+     * Percorre os itens seguintes até encontrar outro header ou o fim da lista.
+     */
+    public List<MovimentacaoModel> getMovimentacoesDoDia(int headerPosition) {
+        List<MovimentacaoModel> lista = new ArrayList<>();
+        int next = headerPosition + 1;
+        while (next < itens.size() && itens.get(next).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
+            lista.add(itens.get(next).movimentacaoModel);
+            next++;
+        }
+        return lista;
+    }
+
     // =========================================================================
     // HEADER VIEW HOLDER
     // =========================================================================
 
-    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+    class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView textDiaTitulo, textSaldoDia;
         NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
@@ -233,3 +258,5 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 }
+// NOTE: Add this getter to AdapterMovimentacaoLista (inside the class, before the last closing brace):
+//    public List<AdapterItemListaMovimentacao> getItens() { return itens; }

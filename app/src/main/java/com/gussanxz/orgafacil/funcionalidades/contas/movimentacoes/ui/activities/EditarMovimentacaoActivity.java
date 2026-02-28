@@ -48,6 +48,11 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     private String novoCategoriaId;
     private androidx.appcompat.widget.SwitchCompat switchStatusPago;
     private long valorCentavosAtual = 0;
+    private boolean acaoEmAndamento = false;
+
+    // Adicione essas variáveis junto com as outras no topo
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabSuperior, fabInferior;
+    private boolean isModoEdicaoAtivo = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +83,16 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         configurarListeners();
         configurarLauncherCategoria();
 
+        aplicarModoInicial();
+
         novoCategoriaId = movOriginal.getCategoria_id();
+    }
+
+    private void aplicarModoInicial() {
+        boolean direto = getIntent().getBooleanExtra("DIRETO_PRA_EDICAO", false);
+        if (direto) {
+            alternarModoEdicao(true);
+        }
     }
 
     private void inicializarComponentes() {
@@ -89,13 +103,16 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         editValor = findViewById(R.id.editValor);
         editCategoria = findViewById(R.id.editCategoria);
         btnExcluir = findViewById(R.id.btnExcluir);
-
         switchStatusPago = findViewById(R.id.switchStatusPago);
+
+        // [NOVO] Vinculando os FABs
+        fabSuperior = findViewById(R.id.fabSuperiorSalvarCategoria);
+        fabInferior = findViewById(R.id.fabInferiorSalvarCategoria);
 
         boolean isDespesa = movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA;
 
         if (textViewHeader != null) {
-            String tituloPrincipal = isDespesa ? "Editar Despesa" : "Editar Receita";
+            String tituloPrincipal = isDespesa ? "Detalhes da Despesa" : "Detalhes da Receita"; // [OPCIONAL] Mudei para "Detalhes" para fazer sentido no modo visualização
             if (movOriginal.getTotal_parcelas() > 1) {
                 tituloPrincipal += " (" + movOriginal.getParcela_atual() + "/" + movOriginal.getTotal_parcelas() + ")";
             }
@@ -106,22 +123,19 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
             editDescricao.setHint(isDespesa ? "Descrição da despesa" : "Descrição da receita");
         }
 
-        if (btnExcluir != null) btnExcluir.setVisibility(View.VISIBLE);
-
         editCategoria.setFocusable(false);
-        editCategoria.setClickable(true);
-
         editData.setFocusable(false);
-        editData.setClickable(true);
         if (editHora != null) {
             editHora.setFocusable(false);
-            editHora.setClickable(true);
         }
 
         View layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
         if (layoutRecorrencia != null) {
             layoutRecorrencia.setVisibility(View.GONE);
         }
+
+        // [NOVO] Ao terminar de carregar, trava a tela no Modo Visualização
+        alternarModoEdicao(false);
     }
 
     private void setupCurrencyMask() {
@@ -303,9 +317,15 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
+
+        // Passa o tipo correto da movimentação sendo editada
+        // para que a lista de categorias seja filtrada corretamente
+        if (movOriginal != null) {
+            intent.putExtra("TIPO_CATEGORIA", movOriginal.getTipoEnum().getId());
+        }
+
         launcherCategoria.launch(intent);
     }
-
     private void configurarLauncherCategoria() {
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -319,14 +339,32 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 });
     }
 
-    public void salvarDespesa(View v) { confirmarEdicao(); }
-    public void salvarProventos(View v) { confirmarEdicao(); }
+    public void salvarDespesa(View v) { processarAcaoFab(); }
+    public void salvarProventos(View v) { processarAcaoFab(); }
+
+    private void processarAcaoFab() {
+        if (!isModoEdicaoAtivo) {
+            // Se estava no modo visualização, o usuário clicou no lápis
+            alternarModoEdicao(true);
+            Toast.makeText(this, "Modo de edição habilitado", Toast.LENGTH_SHORT).show();
+
+            // Foca no valor e abre o teclado opcionalmente
+            editValor.requestFocus();
+        } else {
+            // Se já está no modo de edição, o usuário clicou no Check
+            confirmarEdicao();
+        }
+    }
 
     private void confirmarEdicao() {
+        if (acaoEmAndamento) return; // Trava contra duplo clique
+
         if (valorCentavosAtual <= 0) {
             editValor.setError("Preencha um valor válido");
             return;
         }
+
+        acaoEmAndamento = true; // Ativa a trava
 
         try {
             MovimentacaoModel movNova = new MovimentacaoModel();
@@ -451,7 +489,67 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         });
     }
 
+    private void alternarModoEdicao(boolean habilitar) {
+        isModoEdicaoAtivo = habilitar;
+
+        // 1. Campos de digitação (Valor e Descrição)
+        editValor.setEnabled(habilitar);
+        editDescricao.setEnabled(habilitar);
+
+        // 2. Campos Clicáveis (Categoria, Data, Hora)
+        editCategoria.setEnabled(habilitar);
+        editCategoria.setClickable(habilitar);
+
+        editData.setEnabled(habilitar);
+        editData.setClickable(habilitar);
+
+        if (editHora != null) {
+            editHora.setEnabled(habilitar);
+            editHora.setClickable(habilitar);
+        }
+
+        // 3. Botão de Excluir (esconde no modo visualização para evitar acidentes)
+        if (btnExcluir != null) {
+            btnExcluir.setVisibility(habilitar ? View.VISIBLE : View.GONE);
+        }
+
+        // 4. Switch Status Pago
+        if (switchStatusPago != null) {
+            if (habilitar) {
+                try {
+                    Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(editData.getText().toString());
+                    aplicarRegraStatusPorData(dataAtual);
+                } catch (Exception e) {
+                    switchStatusPago.setEnabled(true);
+                }
+            } else {
+                switchStatusPago.setEnabled(false);
+            }
+        }
+
+        // 5. FABs e Ícones (AGORA OS DOIS MUDAM DE ÍCONE)
+        if (fabSuperior != null) {
+            if (habilitar) {
+                fabSuperior.setImageResource(R.drawable.ic_confirmar_branco_48);
+            } else {
+                fabSuperior.setImageResource(R.drawable.ic_lapis_editar_24); // Certifique-se de ter este ícone
+            }
+        }
+
+        if (fabInferior != null) {
+            if (habilitar) {
+                // Quando entra em edição, volta o checkzinho de baixo
+                fabInferior.setImageResource(R.drawable.ic_confirmar_branco_24);
+            } else {
+                // No modo visualização, ele também vira um lápis
+                fabInferior.setImageResource(R.drawable.ic_lapis_editar_24);
+            }
+        }
+    }
+
     public void retornarPrincipal(View view) {
+        if (acaoEmAndamento) return;
+        acaoEmAndamento = true;
         finish();
     }
 }
