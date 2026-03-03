@@ -278,8 +278,7 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
-        intent.putExtra("EH_ATALHO", true);
-        intent.putExtra("TITULO_TELA", "Agendar Receita");
+        intent.putExtra("TITULO_TELA", "Adicionar Receita");
         startActivity(intent);
     }
 
@@ -294,6 +293,7 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     public void adicionarDespesa(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
+        intent.putExtra("TITULO_TELA", "Adicionar Despesa");
         startActivity(intent);
     }
 

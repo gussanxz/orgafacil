@@ -623,6 +623,8 @@ public class ContasActivity extends AppCompatActivity {
             intent.putExtra("EH_CONTA_FUTURA", true);
             intent.putExtra("TITULO_TELA", "Agendar Receita");
             intent.putExtra("EH_ATALHO", true);
+        } else {
+            intent.putExtra("TITULO_TELA", "Adicionar Receita");
         }
 
         launcher.launch(intent);
@@ -635,6 +637,8 @@ public class ContasActivity extends AppCompatActivity {
             intent.putExtra("EH_CONTA_FUTURA", true);
             intent.putExtra("TITULO_TELA", "Agendar Despesa");
             intent.putExtra("EH_ATALHO", true);
+        } else {
+            intent.putExtra("TITULO_TELA", "Adicionar Despesa");
         }
 
         launcher.launch(intent);
