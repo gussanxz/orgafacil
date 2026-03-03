@@ -110,6 +110,7 @@
         <activity android:name=".funcionalidades.boletos.BoletosActivity" android:exported="false" />
         <activity android:name=".funcionalidades.todo.ListaAtividadesActivity" android:exported="false" />
         <activity android:name=".funcionalidades.mercado.ResumoListaMercadoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.contas.movimentacoes.ui.activities.ResumoParcelasActivity" />
 
     </application>
 </manifest>

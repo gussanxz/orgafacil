@@ -138,35 +138,35 @@
 
         <EditText
             android:id="@+id/editDataInicial"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
+            android:layout_width="90dp"
+            android:layout_height="45dp"
             android:layout_marginStart="8dp"
             android:hint="Data Inicial"
             android:focusable="false"
             android:gravity="center"
             android:background="@drawable/bg_chip_filtro"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textColor="#222222"
             android:textColorHint="#888888" />
 
         <EditText
             android:id="@+id/editDataFinal"
-            android:layout_width="100dp"
-            android:layout_height="50dp"
+            android:layout_width="90dp"
+            android:layout_height="45dp"
             android:layout_marginStart="8dp"
             android:hint="Data Final"
             android:focusable="false"
             android:gravity="center"
             android:background="@drawable/bg_chip_filtro"
             android:paddingHorizontal="8dp"
-            android:textSize="15sp"
+            android:textSize="13.8sp"
             android:textColor="#222222"
             android:textColorHint="#888888" />
 
         <ImageView
             android:id="@+id/imgLimparFiltroData"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
             android:layout_marginStart="8dp"
             android:padding="8dp"
             android:src="@drawable/ic_x_24"

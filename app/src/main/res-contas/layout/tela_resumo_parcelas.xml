@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary">
+
+    <!-- HEADER -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabVoltar"
+            style="@style/NoElevationFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:onClick="retornarPrincipal"
+            app:backgroundTint="@color/colorAccentDespesa"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_arrow_back_48" />
+
+        <TextView
+            android:id="@+id/textViewHeader"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:text="Série de Parcelas"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/fabVoltar"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- CONTEÚDO -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/header_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/header">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- CARD DE RESUMO -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardResumo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Título da série -->
+                    <TextView
+                        android:id="@+id/textTitulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Carregando..."
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Progresso texto -->
+                    <TextView
+                        android:id="@+id/textProgresso"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="0/0 parcelas pagas"
+                        android:textSize="14sp"
+                        android:textColor="#555555"
+                        android:layout_marginBottom="6dp" />
+
+                    <!-- Barra de progresso -->
+                    <ProgressBar
+                        android:id="@+id/progressParcelas"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_marginBottom="16dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressTint="@color/colorPrimary"
+                        android:progressBackgroundTint="#E0E0E0" />
+
+                    <!-- Linha de valores -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <!-- Valor pago -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_chip_filtro"
+                            android:padding="10dp"
+                            android:layout_marginEnd="6dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="✓ Pago"
+                                android:textSize="11sp"
+                                android:textColor="#43A047"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/textValorPago"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:textColor="#222222" />
+                        </LinearLayout>
+
+                        <!-- Valor restante -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_chip_filtro"
+                            android:padding="10dp"
+                            android:layout_marginStart="6dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="⏳ Restante"
+                                android:textSize="11sp"
+                                android:textColor="#FB8C00"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/textValorRestante"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:textColor="#222222" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Próximo vencimento -->
+                    <TextView
+                        android:id="@+id/textProximaData"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Calculando..."
+                        android:textSize="13sp"
+                        android:textColor="#777777"
+                        android:paddingTop="4dp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- TÍTULO DA LISTA -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Todas as parcelas"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#555555"
+                android:layout_marginBottom="8dp"
+                android:paddingHorizontal="4dp" />
+
+            <!-- LISTA DE PARCELAS -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerParcelas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- LOADING -->
+    <ProgressBar
+        android:id="@+id/progressBarLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/header" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -13,8 +13,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,10 +32,11 @@ import com.google.firebase.Timestamp;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.ui.SelecionarCategoriaContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
+import com.gussanxz.orgafacil.util_helper.RecorrenciaFormHelper;
 import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
 import java.text.ParseException;
@@ -57,12 +56,9 @@ public class DespesasActivity extends AppCompatActivity {
     // --- Componentes de Recorrência ---
     private LinearLayout layoutRecorrencia;
     private MaterialCheckBox checkboxRepetir;
-    private TextInputLayout textInputMeses;
-    private TextInputEditText editQtdMeses;
 
-    // [NOVO] RadioGroup de Recorrência
-    private RadioGroup radioGroupTipoRecorrencia;
-    private RadioButton radioParcelado;
+    // [3.2] Helper que gerencia todos os tipos de recorrência
+    private RecorrenciaFormHelper recorrenciaHelper;
 
     private ActivityResultLauncher<Intent> launcherCategoria;
     private MovimentacaoRepository repository;
@@ -74,7 +70,6 @@ public class DespesasActivity extends AppCompatActivity {
     private long valorCentavosAtual = 0;
     private MaterialSwitch switchStatusPago;
 
-    //flag pra nao permitir multiplos click no botao
     private boolean salvandoEmProgresso = false;
 
     @Override
@@ -104,39 +99,35 @@ public class DespesasActivity extends AppCompatActivity {
         if (extras != null) {
             String titulo = extras.getString("TITULO_TELA");
             boolean ehAtalho = extras.getBoolean("EH_ATALHO", false);
-
             if (titulo != null) textViewHeader.setText(titulo);
             if (ehAtalho) aplicarRegrasAtalho();
         }
     }
 
     private void inicializarComponentes() {
-        campoValor = findViewById(R.id.editValor);
-        campoData = findViewById(R.id.editData);
-        campoCategoria = findViewById(R.id.editCategoria);
-        campoDescricao = findViewById(R.id.editDescricao);
-        campoHora = findViewById(R.id.editHora);
-        btnExcluir = findViewById(R.id.btnExcluir);
+        campoValor    = findViewById(R.id.editValor);
+        campoData     = findViewById(R.id.editData);
+        campoCategoria= findViewById(R.id.editCategoria);
+        campoDescricao= findViewById(R.id.editDescricao);
+        campoHora     = findViewById(R.id.editHora);
+        btnExcluir    = findViewById(R.id.btnExcluir);
         switchStatusPago = findViewById(R.id.switchStatusPago);
 
         layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
-        checkboxRepetir = findViewById(R.id.checkboxRepetir);
-        textInputMeses = findViewById(R.id.textInputMeses);
-        editQtdMeses = findViewById(R.id.editQtdMeses);
-
-        // [NOVO] Inicialização dos componentes
-        radioGroupTipoRecorrencia = findViewById(R.id.radioGroupTipoRecorrencia);
-        radioParcelado = findViewById(R.id.radioParcelado);
+        checkboxRepetir   = findViewById(R.id.checkboxRepetir);
 
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
-
         campoData.setFocusable(false);
         campoData.setClickable(true);
         if (campoHora != null) {
             campoHora.setFocusable(false);
             campoHora.setClickable(true);
         }
+
+        // [3.2] Inicializa o helper passando a view raiz do layout
+        recorrenciaHelper = new RecorrenciaFormHelper(
+                findViewById(R.id.layoutRecorrencia), null);
     }
 
     private void configurarListeners() {
@@ -144,11 +135,8 @@ public class DespesasActivity extends AppCompatActivity {
         campoData.setOnClickListener(v -> abrirSelecionadorDeData());
         campoHora.setOnClickListener(v -> abrirSelecionadorDeHora());
 
-        checkboxRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            textInputMeses.setVisibility(isChecked ? View.VISIBLE : View.GONE);
-            // [NOVO] Mostra os botões de rádio junto com a caixinha
-            radioGroupTipoRecorrencia.setVisibility(isChecked ? View.VISIBLE : View.GONE);
-        });
+        // O checkbox já é tratado internamente pelo RecorrenciaFormHelper.
+        // Mantemos apenas a referência ao checkboxRepetir para ler .isChecked() em salvarDespesa().
 
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> {
@@ -156,15 +144,16 @@ public class DespesasActivity extends AppCompatActivity {
             });
         }
         if (switchStatusPago != null) {
-            switchStatusPago.setOnCheckedChangeListener((buttonView, isChecked) -> atualizarTextoStatus());
+            switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
         }
     }
 
     private void abrirSelecionadorDeData() {
         Calendar c = Calendar.getInstance();
         try {
-            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
-            if(dataAtual != null) c.setTime(dataAtual);
+            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    .parse(campoData.getText().toString());
+            if (dataAtual != null) c.setTime(dataAtual);
         } catch (Exception ignored) {}
 
         DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
@@ -172,16 +161,12 @@ public class DespesasActivity extends AppCompatActivity {
             Date dataEscolhida = c.getTime();
             campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
             aplicarRegraStatusPorData(dataEscolhida);
-
-            // [NOVO] Valida a hora logo após mudar a data
             validarLimiteHoraAtual();
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
-        // [NOVO] Trava a seleção de datas futuras caso NÃO seja a tela de Contas Futuras
         if (!ehContaFutura) {
             dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         }
-
         dialog.show();
     }
 
@@ -194,45 +179,37 @@ public class DespesasActivity extends AppCompatActivity {
             String horaAtual = campoHora.getText().toString().trim();
             if (!horaAtual.isEmpty() && horaAtual.contains(":")) {
                 String[] partes = horaAtual.split(":");
-                horaSet = Integer.parseInt(partes[0]);
+                horaSet   = Integer.parseInt(partes[0]);
                 minutoSet = Integer.parseInt(partes[1]);
             }
-            // se vazio, mantém horaSet/minutoSet = hora atual do sistema (já definido acima)
         } catch (Exception ignored) {}
 
-        android.app.TimePickerDialog timePicker = new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
+        new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
             campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
-
-            // [NOVO] Valida assim que o usuário confirma a hora
             validarLimiteHoraAtual();
-        }, horaSet, minutoSet, true);
-
-        timePicker.show();
+        }, horaSet, minutoSet, true).show();
     }
 
     private void validarLimiteHoraAtual() {
-        if (ehContaFutura) return; // Contas pendentes/futuras não têm limite de hora
-
+        if (ehContaFutura) return;
         try {
-            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(campoData.getText().toString());
+            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    .parse(campoData.getText().toString());
             if (dataSelecionada == null) return;
 
             Calendar calSelecionada = Calendar.getInstance();
             calSelecionada.setTime(dataSelecionada);
-
             Calendar agora = Calendar.getInstance();
 
-            if (calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR) &&
+            if (calSelecionada.get(Calendar.YEAR)        == agora.get(Calendar.YEAR) &&
                     calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
 
-                // ✅ CORREÇÃO: guarda antes do split — campo pode estar vazio em agendamentos
                 String horaTexto = campoHora.getText().toString().trim();
                 if (horaTexto.isEmpty() || !horaTexto.contains(":")) return;
 
-                String[] partesHora = horaTexto.split(":");
-                int horaCampo = Integer.parseInt(partesHora[0]);
-                int minCampo  = Integer.parseInt(partesHora[1]);
-
+                String[] partes = horaTexto.split(":");
+                int horaCampo = Integer.parseInt(partes[0]);
+                int minCampo  = Integer.parseInt(partes[1]);
                 int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
                 int minAgora  = agora.get(Calendar.MINUTE);
 
@@ -246,11 +223,13 @@ public class DespesasActivity extends AppCompatActivity {
 
     private void aplicarRegraStatusPorData(Date data) {
         Calendar hoje = Calendar.getInstance();
-        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0); hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0);
+        hoje.set(Calendar.SECOND, 0);      hoje.set(Calendar.MILLISECOND, 0);
 
         Calendar selecionada = Calendar.getInstance();
         selecionada.setTime(data);
-        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0); selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
+        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0);
+        selecionada.set(Calendar.SECOND, 0);       selecionada.set(Calendar.MILLISECOND, 0);
 
         if (selecionada.after(hoje)) {
             switchStatusPago.setChecked(false);
@@ -273,9 +252,8 @@ public class DespesasActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        String nomeCat = result.getData().getStringExtra("categoriaSelecionada");
                         categoriaIdSelecionada = result.getData().getStringExtra("categoriaId");
-                        campoCategoria.setText(nomeCat);
+                        campoCategoria.setText(result.getData().getStringExtra("categoriaSelecionada"));
                     }
                 });
     }
@@ -283,36 +261,35 @@ public class DespesasActivity extends AppCompatActivity {
     private void setupCurrencyMask() {
         campoValor.addTextChangedListener(new TextWatcher() {
             private String current = "";
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void beforeTextChanged(CharSequence s, int i, int c, int a) {}
+            @Override public void onTextChanged(CharSequence s, int i, int b, int c) {}
             @Override
             public void afterTextChanged(Editable s) {
-                if (!s.toString().equals(current)) {
-                    campoValor.removeTextChangedListener(this);
-                    String cleanString = s.toString().replaceAll("[^\\d]", "");
-                    if (!cleanString.isEmpty()) {
-                        try {
-                            valorCentavosAtual = Long.parseLong(cleanString);
-                            String formatted = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
-                            current = formatted;
-                            campoValor.setText(formatted);
-                            campoValor.setSelection(formatted.length());
-                        } catch (NumberFormatException e) {
-                            Log.e(TAG, "Erro ao processar máscara");
-                        }
-                    } else {
-                        valorCentavosAtual = 0;
-                        campoValor.setText("");
+                if (s.toString().equals(current)) return;
+                campoValor.removeTextChangedListener(this);
+                String clean = s.toString().replaceAll("[^\\d]", "");
+                if (!clean.isEmpty()) {
+                    try {
+                        valorCentavosAtual = Long.parseLong(clean);
+                        String fmt = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
+                        current = fmt;
+                        campoValor.setText(fmt);
+                        campoValor.setSelection(fmt.length());
+                    } catch (NumberFormatException e) {
+                        Log.e(TAG, "Erro ao processar máscara");
                     }
-                    campoValor.addTextChangedListener(this);
+                } else {
+                    valorCentavosAtual = 0;
+                    campoValor.setText("");
                 }
+                campoValor.addTextChangedListener(this);
             }
         });
     }
 
     private void verificarModoEdicao() {
         if (getIntent().hasExtra("movimentacaoSelecionada")) {
-            // --- MODO EDIÇÃO ---
+            // MODO EDIÇÃO
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
             } else {
@@ -334,7 +311,6 @@ public class DespesasActivity extends AppCompatActivity {
                     Date data = itemEmEdicao.getData_movimentacao().toDate();
                     campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
                     campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
-
                     switchStatusPago.setChecked(itemEmEdicao.isPago());
                     aplicarRegraStatusPorData(data);
                 }
@@ -343,30 +319,23 @@ public class DespesasActivity extends AppCompatActivity {
             }
 
         } else {
-            // --- MODO CRIAÇÃO ---
+            // MODO CRIAÇÃO
             isEdicao = false;
             layoutRecorrencia.setVisibility(View.VISIBLE);
             if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
 
             if (ehContaFutura) {
-                // Agendamento: pré-preenche com amanhã como sugestão,
-                // mas deixa hora em BRANCO para o usuário escolher livremente.
                 Calendar c = Calendar.getInstance();
                 c.add(Calendar.DAY_OF_YEAR, 1);
                 Date dataFutura = c.getTime();
-
                 campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataFutura));
-                campoHora.setText(""); // livre — sem horário fixo
-                campoHora.setHint("HH:mm"); // indica o formato esperado
-
-                aplicarRegraStatusPorData(dataFutura); // define como Pendente
-
+                campoHora.setText("");
+                campoHora.setHint("HH:mm");
+                aplicarRegraStatusPorData(dataFutura);
             } else {
-                // Lançamento normal: preenche com hoje + hora atual
                 Date dataHoje = new Date();
                 campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataHoje));
                 campoHora.setText(TimePickerHelper.setHoraAtual());
-
                 switchStatusPago.setChecked(true);
                 aplicarRegraStatusPorData(dataHoje);
             }
@@ -374,7 +343,6 @@ public class DespesasActivity extends AppCompatActivity {
     }
 
     public void salvarDespesa(View view) {
-
         if (salvandoEmProgresso) return;
         if (!validarCamposDespesas()) return;
         salvandoEmProgresso = true;
@@ -383,8 +351,8 @@ public class DespesasActivity extends AppCompatActivity {
 
         mov.setDescricao(campoDescricao.getText().toString());
         mov.setTipoEnum(TipoCategoriaContas.DESPESA);
-
         mov.setCategoria_nome(campoCategoria.getText().toString());
+
         if (categoriaIdSelecionada != null) {
             mov.setCategoria_id(categoriaIdSelecionada);
         } else if (!isEdicao) {
@@ -394,19 +362,10 @@ public class DespesasActivity extends AppCompatActivity {
         try {
             String dataStr = campoData.getText().toString().trim();
             String horaStr = campoHora.getText().toString().trim();
-
-            // Se o campo hora estiver vazio (agendamento sem hora definida),
-            // usa meia-noite como padrão — deixa claro que é o início do dia
-            if (horaStr.isEmpty()) {
-                horaStr = "00:00";
-            }
-
-            String dataHoraStr = dataStr + " " + horaStr;
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            Date date = sdf.parse(dataHoraStr);
-            if (date != null) {
-                mov.setData_movimentacao(new Timestamp(date));
-            }
+            if (horaStr.isEmpty()) horaStr = "00:00";
+            Date date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    .parse(dataStr + " " + horaStr);
+            if (date != null) mov.setData_movimentacao(new Timestamp(date));
         } catch (ParseException e) {
             mov.setData_movimentacao(Timestamp.now());
         }
@@ -417,36 +376,52 @@ public class DespesasActivity extends AppCompatActivity {
             mov.setValor(valorCentavosAtual);
             repository.editar(itemEmEdicao, mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
-                @Override public void onErro(String erro) { mostrarErro(erro); }
+                @Override public void onErro(String erro)   { mostrarErro(erro); }
             });
-        } else {
-            if (checkboxRepetir.isChecked()) {
-                String strMeses = editQtdMeses.getText().toString();
-                int qtdMeses = strMeses.isEmpty() ? 0 : Integer.parseInt(strMeses);
+            return;
+        }
 
-                if (qtdMeses > 1) {
-                    // [NOVO] Lógica de Parcelar vs Repetir
-                    if (radioParcelado.isChecked()) {
-                        // Divide o valor pelas parcelas
-                        long valorParcela = valorCentavosAtual / qtdMeses;
-                        mov.setValor(valorParcela);
-                    } else {
-                        // Repete o valor total todos os meses
-                        mov.setValor(valorCentavosAtual);
-                    }
+        // ── CRIAÇÃO ──────────────────────────────────────────────────────────
+        if (recorrenciaHelper.isRepetirAtivo()) {
 
-                    repository.salvarRecorrente(mov, qtdMeses, new MovimentacaoRepository.Callback() {
-                        @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
-                        @Override public void onErro(String erro) { mostrarErro(erro); }
-                    });
-                    return;
-                }
+            // [3.2] Validação do helper (quantidade, intervalo, etc.)
+            String erroRec = recorrenciaHelper.validar();
+            if (erroRec != null) {
+                salvandoEmProgresso = false;
+                Toast.makeText(this, erroRec, Toast.LENGTH_SHORT).show();
+                return;
             }
 
+            int quantidade = recorrenciaHelper.getQuantidade();
+
+            // Data de início: usa dataReferencia se informada, senão a do formulário
+            if (recorrenciaHelper.getDataReferencia() != null) {
+                mov.setData_movimentacao(new Timestamp(recorrenciaHelper.getDataReferencia()));
+            }
+
+            // Tipo e intervalo para o repository calcular as datas
+            mov.setTipoRecorrenciaEnum(recorrenciaHelper.getTipo());
+            mov.setRecorrencia_intervalo(recorrenciaHelper.getIntervalo());
+
+            // PARCELADO divide o valor; os demais repetem o valor total
+            if (recorrenciaHelper.getTipo() ==
+                    com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoRecorrencia.PARCELADO) {
+                mov.setValor(valorCentavosAtual / quantidade);
+            } else {
+                mov.setValor(valorCentavosAtual);
+            }
+
+            repository.salvarRecorrente(mov, quantidade, new MovimentacaoRepository.Callback() {
+                @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
+                @Override public void onErro(String erro)   { mostrarErro(erro); }
+            });
+
+        } else {
+            // Lançamento único
             mov.setValor(valorCentavosAtual);
             repository.salvar(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
-                @Override public void onErro(String erro) { mostrarErro(erro); }
+                @Override public void onErro(String erro)   { mostrarErro(erro); }
             });
         }
     }
@@ -455,7 +430,7 @@ public class DespesasActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Despesa")
                 .setMessage("Tem certeza? O saldo será corrigido automaticamente.")
-                .setPositiveButton("Sim", (dialog, which) -> excluirDespesa())
+                .setPositiveButton("Sim", (d, w) -> excluirDespesa())
                 .setNegativeButton("Não", null)
                 .show();
     }
@@ -464,20 +439,20 @@ public class DespesasActivity extends AppCompatActivity {
         if (itemEmEdicao == null) return;
         repository.excluir(itemEmEdicao, new MovimentacaoRepository.Callback() {
             @Override public void onSucesso(String msg) { finalizarSucesso(msg); }
-            @Override public void onErro(String erro) { mostrarErro(erro); }
+            @Override public void onErro(String erro)   { mostrarErro(erro); }
         });
     }
 
     private void finalizarSucesso(String msg) {
         salvandoEmProgresso = false;
-        Toast.makeText(DespesasActivity.this, msg, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         setResult(RESULT_OK);
         finish();
     }
 
     private void mostrarErro(String erro) {
         salvandoEmProgresso = false;
-        Toast.makeText(DespesasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
     }
 
     public Boolean validarCamposDespesas() {
@@ -490,10 +465,7 @@ public class DespesasActivity extends AppCompatActivity {
             return false;
         }
         if (campoData.getText().toString().isEmpty()) return false;
-        if (checkboxRepetir.isChecked() && editQtdMeses.getText().toString().isEmpty()) {
-            editQtdMeses.setError("Informe a quantidade");
-            return false;
-        }
+        // Validação de quantidade do painel é feita dentro de salvarDespesa() via helper
         return true;
     }
 

@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.ColorInt;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.gussanxz.orgafacil.R;
@@ -59,18 +58,9 @@ public class VisibilidadeHelper {
     }
 
     // =========================================================================
-    // SALDO — API NOVA (clique no container inteiro)
+    // SALDO — API CORRIGIDA
     // =========================================================================
 
-    /**
-     * Configura a alternância de visibilidade de saldo de forma completa.
-     *
-     * @param containerClicavel  O LinearLayout/View que contém olho + texto. O clique será registrado nele.
-     * @param txtSaldo           O TextView que exibe o valor.
-     * @param imgOlho            O ImageView do ícone de olho.
-     * @param valorReal          O texto formatado do valor real (ex: "R$ 1.250,00").
-     * @param corSaldo           A cor do texto quando visível (ex: Color.parseColor("#4CAF50")).
-     */
     public static void configurarVisibilidadeSaldo(
             View containerClicavel,
             TextView txtSaldo,
@@ -83,28 +73,30 @@ public class VisibilidadeHelper {
             imgOlho.setTag(true); // true = visível
         }
 
-        containerClicavel.setOnClickListener(v -> _alternar(txtSaldo, imgOlho, valorReal, corSaldo));
-        // Mantém o clique no próprio olho também, para quem usar só ele
-        imgOlho.setOnClickListener(v -> _alternar(txtSaldo, imgOlho, valorReal, corSaldo));
+        // Armazena o valor real atualizado em um Object[] na Tag do TextView
+        txtSaldo.setTag(new Object[]{valorReal, corSaldo});
+
+        // O listener agora busca os dados na hora do clique (sempre atualizados)
+        View.OnClickListener listener = v -> _alternar(txtSaldo, imgOlho);
+
+        containerClicavel.setOnClickListener(listener);
+        imgOlho.setOnClickListener(listener);
     }
 
-    /**
-     * Atualiza o valor exibido sem mudar o estado de visibilidade.
-     * Usar quando o saldo muda (ex: LiveData atualiza).
-     */
     public static void atualizarValorSaldo(
             TextView txtSaldo,
             ImageView imgOlho,
             String novoValor,
             @ColorInt int novaCorSaldo) {
 
+        // Atualiza a "memória" da view para o clique futuro
+        txtSaldo.setTag(new Object[]{novoValor, novaCorSaldo});
+
         boolean visivel = imgOlho.getTag() != null && (boolean) imgOlho.getTag();
         if (visivel) {
             txtSaldo.setText(novoValor);
             txtSaldo.setTextColor(novaCorSaldo);
         }
-        // Se estiver oculto, só atualiza o valor guardado na tag do container para o próximo reveal
-        // O reveal usará o valor mais recente via closure no setOnClickListener
     }
 
     // =========================================================================
@@ -113,16 +105,21 @@ public class VisibilidadeHelper {
 
     /** @deprecated Use configurarVisibilidadeSaldo() */
     public static void alternarVisibilidadeSaldo(TextView txtSaldo, ImageView imgOlho, String valorReal) {
-        _alternar(txtSaldo, imgOlho, valorReal, Color.WHITE);
+        txtSaldo.setTag(new Object[]{valorReal, Color.WHITE});
+        _alternar(txtSaldo, imgOlho);
     }
 
     // =========================================================================
     // PRIVADO
     // =========================================================================
 
-    private static void _alternar(TextView txtSaldo, ImageView imgOlho,
-                                  String valorReal, @ColorInt int corSaldo) {
+    private static void _alternar(TextView txtSaldo, ImageView imgOlho) {
         boolean visivel = imgOlho.getTag() != null && (boolean) imgOlho.getTag();
+
+        // Recupera a string mais recente guardada na view
+        Object[] dados = (Object[]) txtSaldo.getTag();
+        String valorReal = dados != null ? (String) dados[0] : "";
+        int corSaldo = dados != null ? (int) dados[1] : Color.WHITE;
 
         if (visivel) {
             // Ocultar

@@ -10,6 +10,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoRecorrencia;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
@@ -23,6 +24,7 @@ public class MovimentacaoRepository {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    // ── interfaces de callback ───────────────────────────────────────────────
 
     public interface Callback {
         void onSucesso(String msg);
@@ -39,34 +41,30 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
+    // ── leitura ──────────────────────────────────────────────────────────────
+
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
-                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
+                .orderBy("data_pagamento", Query.Direction.ASCENDING)
                 .limit(100)
                 .get()
-                .addOnSuccessListener(querySnapshots -> callback.onSucesso(processarSnapshots(querySnapshots)))
+                .addOnSuccessListener(s -> callback.onSucesso(processarSnapshots(s)))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDocumentoVisivel, DadosPaginadosCallback callback) {
-        Query query = FirestoreSchema.contasMovimentacoesCol()
+    public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                           DadosPaginadosCallback callback) {
+        Query q = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
-
-        if (ultimoDocumentoVisivel != null) {
-            query = query.startAfter(ultimoDocumentoVisivel);
-        }
-
-        query.get()
-                .addOnSuccessListener(querySnapshots -> {
-                    List<MovimentacaoModel> lista = processarSnapshots(querySnapshots);
-                    DocumentSnapshot novoUltimoDoc = null;
-                    if (!querySnapshots.isEmpty()) {
-                        novoUltimoDoc = querySnapshots.getDocuments().get(querySnapshots.size() - 1);
-                    }
-                    callback.onSucesso(lista, novoUltimoDoc);
+        if (ultimoDoc != null) q = q.startAfter(ultimoDoc);
+        q.get()
+                .addOnSuccessListener(s -> {
+                    DocumentSnapshot novoUltimo = s.isEmpty() ? null
+                            : s.getDocuments().get(s.size() - 1);
+                    callback.onSucesso(processarSnapshots(s), novoUltimo);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
@@ -74,75 +72,81 @@ public class MovimentacaoRepository {
     public void recuperarContasFuturas(Date dataReferencia, DadosCallback callback) {
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
-                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
+                .orderBy("data_vencimento", Query.Direction.ASCENDING)
                 .get()
-                .addOnSuccessListener(querySnapshots -> callback.onSucesso(processarSnapshots(querySnapshots)))
+                .addOnSuccessListener(s -> callback.onSucesso(processarSnapshots(s)))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDocumentoVisivel, DadosPaginadosCallback callback) {
-        Query query = FirestoreSchema.contasMovimentacoesCol()
+    public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                               DadosPaginadosCallback callback) {
+        Query q = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
-
-        if (ultimoDocumentoVisivel != null) {
-            query = query.startAfter(ultimoDocumentoVisivel);
-        }
-
-        query.get()
-                .addOnSuccessListener(querySnapshots -> {
-                    List<MovimentacaoModel> lista = processarSnapshots(querySnapshots);
-                    DocumentSnapshot novoUltimoDoc = null;
-                    if (!querySnapshots.isEmpty()) {
-                        novoUltimoDoc = querySnapshots.getDocuments().get(querySnapshots.size() - 1);
-                    }
-                    callback.onSucesso(lista, novoUltimoDoc);
+        if (ultimoDoc != null) q = q.startAfter(ultimoDoc);
+        q.get()
+                .addOnSuccessListener(s -> {
+                    DocumentSnapshot novoUltimo = s.isEmpty() ? null
+                            : s.getDocuments().get(s.size() - 1);
+                    callback.onSucesso(processarSnapshots(s), novoUltimo);
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    private List<MovimentacaoModel> processarSnapshots(Iterable<QueryDocumentSnapshot> snapshots) {
+    private List<MovimentacaoModel> processarSnapshots(Iterable<QueryDocumentSnapshot> snaps) {
         List<MovimentacaoModel> lista = new ArrayList<>();
-        for (QueryDocumentSnapshot doc : snapshots) {
-            MovimentacaoModel mov = doc.toObject(MovimentacaoModel.class);
-            mov.setId(doc.getId());
-            lista.add(mov);
+        for (QueryDocumentSnapshot doc : snaps) {
+            MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+            m.setId(doc.getId());
+            lista.add(m);
         }
         return lista;
     }
 
+    // ── escrita simples ──────────────────────────────────────────────────────
+
     public void salvar(MovimentacaoModel mov, Callback callback) {
         WriteBatch batch = db.batch();
-        DocumentReference movRef = FirestoreSchema.contasMovimentacoesCol().document();
-        mov.setId(movRef.getId());
-        batch.set(movRef, mov);
+        DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
+        mov.setId(ref.getId());
+
+        if (mov.getData_vencimento() == null) {
+            if (mov.getData_movimentacao() != null) {
+                mov.setData_vencimento(mov.getData_movimentacao());
+            } else {
+                mov.setData_vencimento(Timestamp.now());
+                mov.setData_movimentacao(mov.getData_vencimento());
+            }
+        }
+
+        batch.set(ref, mov);
         aplicarImpacto(batch, mov, 1);
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Lançado com sucesso!"))
+                .addOnSuccessListener(v -> callback.onSucesso("Lançado com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
     public void excluir(MovimentacaoModel mov, Callback callback) {
         WriteBatch batch = db.batch();
-        DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
-        batch.delete(movRef);
+        batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
         aplicarImpacto(batch, mov, -1);
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Excluído com sucesso!"))
+                .addOnSuccessListener(v -> callback.onSucesso("Excluído com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
     public void editar(MovimentacaoModel movAntigo, MovimentacaoModel movNovo, Callback callback) {
         WriteBatch batch = db.batch();
-        DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(movNovo.getId());
-        batch.set(movRef, movNovo);
+        batch.set(FirestoreSchema.contasMovimentacaoDoc(movNovo.getId()), movNovo);
         aplicarImpacto(batch, movAntigo, -1);
         aplicarImpacto(batch, movNovo, 1);
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Editado com sucesso!"))
+                .addOnSuccessListener(v -> callback.onSucesso("Editado com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
+
+    // ── confirmação ──────────────────────────────────────────────────────────
 
     public void confirmarMovimentacao(MovimentacaoModel mov, Callback callback) {
         if (mov.isPago()) {
@@ -151,125 +155,181 @@ public class MovimentacaoRepository {
         }
 
         WriteBatch batch = db.batch();
-        DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
+        DocumentReference ref = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
+        Timestamp agora = Timestamp.now();
 
         impactoPendente(batch, mov, -1);
 
-        Timestamp dataVencimentoAntiga = mov.getData_movimentacao();
-        batch.update(movRef, "data_vencimento_original", dataVencimentoAntiga);
+        Timestamp vencAtual = mov.getData_vencimento();
+
+        // Compatibilidade com registros antigos que só possuem data_movimentacao
+        if (vencAtual == null) {
+            vencAtual = mov.getData_movimentacao();
+            if (vencAtual != null) {
+                batch.update(ref, "data_vencimento", vencAtual);
+                mov.setData_vencimento(vencAtual);
+            }
+        }
+
+        batch.update(ref, MovimentacaoModel.CAMPO_PAGO, true);
+        batch.update(ref, "data_pagamento", agora);
 
         mov.setPago(true);
-        Timestamp dataPagamentoReal = Timestamp.now();
-        mov.setData_movimentacao(dataPagamentoReal);
-
-        batch.update(movRef, MovimentacaoModel.CAMPO_PAGO, true);
-        batch.update(movRef, MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, dataPagamentoReal);
+        mov.setData_pagamento(agora);
 
         impactoRealizado(batch, mov, 1);
 
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Confirmado e registrado na data de hoje!"))
+                .addOnSuccessListener(v -> callback.onSucesso("Confirmado e registrado corretamente!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
+    // ── impactos no resumo ───────────────────────────────────────────────────
+
     private void aplicarImpacto(WriteBatch batch, MovimentacaoModel mov, int fator) {
-        if (mov.isPago()) {
-            impactoRealizado(batch, mov, fator);
-        } else {
-            impactoPendente(batch, mov, fator);
-        }
+        if (mov.isPago()) impactoRealizado(batch, mov, fator);
+        else impactoPendente(batch, mov, fator);
     }
 
     private void impactoRealizado(WriteBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-        long valorCentavos = Math.abs(mov.getValor());
+        long centavos = Math.abs(mov.getValor());
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
 
-        batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
-                FieldValue.increment(isReceita ? valorCentavos * fator : -valorCentavos * fator));
+        batch.update(resumoRef,
+                ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
+                FieldValue.increment(isReceita ? centavos * fator : -centavos * fator));
 
-        if (mov.getData_movimentacao() != null && isMesmoMesEAno(mov.getData_movimentacao().toDate(), new Date())) {
-            long deltaBalanco = (isReceita ? valorCentavos : -valorCentavos) * fator;
-            batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, FieldValue.increment(deltaBalanco));
+        if (mov.getData_pagamento() != null &&
+                isMesmoMesEAno(mov.getData_pagamento().toDate(), new Date())) {
+
+            long delta = (isReceita ? centavos : -centavos) * fator;
+
+            batch.update(resumoRef,
+                    ResumoFinanceiroModel.CAMPO_BALANCO_MES,
+                    FieldValue.increment(delta));
 
             if (isReceita) {
-                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, FieldValue.increment(valorCentavos * fator));
+                batch.update(resumoRef,
+                        ResumoFinanceiroModel.CAMPO_RECEITAS_MES,
+                        FieldValue.increment(centavos * fator));
             } else {
-                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, FieldValue.increment(valorCentavos * fator));
-
-                if (mov.getCategoria_id() != null && !mov.getCategoria_id().isEmpty()) {
-                    DocumentReference catRef = FirestoreSchema.contasCategoriaDoc(mov.getCategoria_id());
-                    batch.update(catRef, ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, FieldValue.increment(valorCentavos * fator));
-                }
+                batch.update(resumoRef,
+                        ResumoFinanceiroModel.CAMPO_DESPESAS_MES,
+                        FieldValue.increment(centavos * fator));
             }
         }
     }
 
     private void impactoPendente(WriteBatch batch, MovimentacaoModel mov, int fator) {
-        DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
-        String campoPendencia = isReceita
+        String campo = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
-        batch.update(resumoRef, campoPendencia, FieldValue.increment(fator));
+
+        batch.update(FirestoreSchema.contasResumoDoc(),
+                campo,
+                FieldValue.increment(fator));
     }
 
-    public void zerarEstatisticasMensais(Callback callback) {
-        FirestoreSchema.contasCategoriasCol().get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    WriteBatch batch = db.batch();
-                    DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+    // ── salvar recorrente (REFATORADO) ───────────────────────────────────────
 
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0);
+    /**
+     * Gera e salva todas as parcelas de uma série recorrente.
+     *
+     * @param movBase     movimentação-modelo com data, valor, categoria, tipo e
+     *                    recorrencia_tipo / recorrencia_intervalo já preenchidos.
+     * @param quantidade  número de repetições (parcelas ou ocorrências).
+     * @param callback    resultado da operação em lote.
+     */
+    public void salvarRecorrente(MovimentacaoModel movBase, int quantidade, Callback callback) {
 
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        DocumentReference catRef = doc.getReference();
-                        batch.update(catRef, ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
-                    }
-
-                    batch.commit()
-                            .addOnSuccessListener(v -> callback.onSucesso("Estatísticas do mês zeradas com sucesso!"))
-                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
-                })
-                .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
-    }
-
-    private boolean isMesmoMesEAno(Date d1, Date d2) {
-        Calendar cal1 = Calendar.getInstance();
-        Calendar cal2 = Calendar.getInstance();
-        cal1.setTime(d1);
-        cal2.setTime(d2);
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH);
-    }
-
-    public void salvarRecorrente(MovimentacaoModel movBase, int qtdMeses, Callback callback) {
         WriteBatch batch = db.batch();
-        Calendar calendar = Calendar.getInstance();
         String grupoId = java.util.UUID.randomUUID().toString();
 
-        for (int i = 0; i < qtdMeses; i++) {
+        TipoRecorrencia tipoRec = movBase.getTipoRecorrenciaEnum();
+        boolean isParcelado = (tipoRec == TipoRecorrencia.PARCELADO);
+
+        // Segurança básica
+        if (quantidade <= 0) {
+            callback.onErro("Quantidade inválida para recorrência.");
+            return;
+        }
+
+        // Valor por parcela
+        long valorParcela = isParcelado
+                ? movBase.getValor() / quantidade
+                : movBase.getValor();
+
+        // ── DATA BASE SEGURA ─────────────────────────────────────────────
+
+        Timestamp dataBase = movBase.getData_vencimento();
+
+        if (dataBase == null) {
+            dataBase = movBase.getData_movimentacao();
+        }
+
+        if (dataBase == null) {
+            dataBase = Timestamp.now();
+        }
+
+        // ── LOOP DE CRIAÇÃO ──────────────────────────────────────────────
+
+        for (int i = 0; i < quantidade; i++) {
+
             MovimentacaoModel parcela = new MovimentacaoModel();
 
-            parcela.setDescricao(movBase.getDescricao() + (qtdMeses > 1 ? " (" + (i + 1) + "/" + qtdMeses + ")" : ""));
-            parcela.setValor(movBase.getValor());
+            // ── descrição com tag (x/y)
+            String descBase = movBase.getDescricao()
+                    .replaceAll("\\s*\\(\\d+/\\d+\\)$", "")
+                    .trim();
+
+            parcela.setDescricao(quantidade > 1
+                    ? descBase + " (" + (i + 1) + "/" + quantidade + ")"
+                    : descBase);
+
+            parcela.setValor(valorParcela);
             parcela.setCategoria_id(movBase.getCategoria_id());
             parcela.setCategoria_nome(movBase.getCategoria_nome());
             parcela.setTipoEnum(movBase.getTipoEnum());
 
+            // ── metadados da série
             parcela.setRecorrencia_id(grupoId);
             parcela.setParcela_atual(i + 1);
-            parcela.setTotal_parcelas(qtdMeses);
+            parcela.setTotal_parcelas(quantidade);
+            parcela.setRecorrencia_tipo(tipoRec.name());
+            parcela.setRecorrencia_intervalo(movBase.getRecorrencia_intervalo());
 
+            // ── status
             parcela.setPago(i == 0 && movBase.isPago());
 
-            calendar.setTime(movBase.getData_movimentacao().toDate());
-            calendar.add(Calendar.MONTH, i);
-            parcela.setData_movimentacao(new Timestamp(calendar.getTime()));
+            // ── cálculo do vencimento
+            Timestamp vencimento;
 
-            DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
+            if (i > 0) {
+                Calendar base = Calendar.getInstance();
+                base.setTime(dataBase.toDate());
+                calcularProximaData(base, tipoRec,
+                        movBase.getRecorrencia_intervalo(), i);
+                vencimento = new Timestamp(base.getTime());
+            } else {
+                vencimento = dataBase;
+            }
+
+            // ── aplicar datas corretamente
+            parcela.setData_vencimento(vencimento);
+            parcela.setData_movimentacao(vencimento); // compatibilidade legado
+
+            if (parcela.isPago()) {
+                parcela.setData_pagamento(Timestamp.now());
+            } else {
+                parcela.setData_pagamento(null);
+            }
+
+            // ── persistência
+            DocumentReference ref =
+                    FirestoreSchema.contasMovimentacoesCol().document();
+
             parcela.setId(ref.getId());
             batch.set(ref, parcela);
 
@@ -277,15 +337,55 @@ public class MovimentacaoRepository {
         }
 
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Recorrência agendada!"))
+                .addOnSuccessListener(v -> callback.onSucesso(
+                        tipoRec == TipoRecorrencia.PARCELADO
+                                ? quantidade + " parcelas criadas!"
+                                : "Série recorrente agendada!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    // =========================================================================
-    // EDIÇÃO E EXCLUSÃO EM MASSA (O "EFEITO GOOGLE AGENDA")
-    // =========================================================================
+    /**
+     * Avança o Calendar em `passos` unidades conforme o TipoRecorrencia.
+     *
+     * @param cal       instância a ser modificada in-place
+     * @param tipo      tipo de recorrência
+     * @param intervalo valor de N para CADA_X_DIAS / CADA_X_MESES (ignorado nos demais)
+     * @param passos    quantas vezes avançar (normalmente i, o índice da parcela)
+     */
+    private void calcularProximaData(Calendar cal, TipoRecorrencia tipo, int intervalo, int passos) {
+        switch (tipo) {
+            case PARCELADO:
+            case MENSAL:
+                cal.add(Calendar.MONTH, passos);
+                break;
 
-    public void editarMultiplos(MovimentacaoModel movOriginal, MovimentacaoModel movNova, boolean todasSeguintes, Callback callback) {
+            case SEMANAL:
+                cal.add(Calendar.DAY_OF_YEAR, 7 * passos);
+                break;
+
+            case QUINZENAL:
+                cal.add(Calendar.DAY_OF_YEAR, 15 * passos);
+                break;
+
+            case CADA_X_DIAS:
+                int dias = (intervalo > 0) ? intervalo : 1;
+                cal.add(Calendar.DAY_OF_YEAR, dias * passos);
+                break;
+
+            case CADA_X_MESES:
+                int meses = (intervalo > 0) ? intervalo : 1;
+                cal.add(Calendar.MONTH, meses * passos);
+                break;
+        }
+    }
+
+    // ── edição e exclusão em massa ───────────────────────────────────────────
+
+    public void editarMultiplos(MovimentacaoModel movOriginal,
+                                MovimentacaoModel movNova,
+                                boolean todasSeguintes,
+                                Callback callback) {
+
         if (!todasSeguintes) {
             editar(movOriginal, movNova, callback);
             return;
@@ -295,48 +395,84 @@ public class MovimentacaoRepository {
                 .whereEqualTo("recorrencia_id", movOriginal.getRecorrencia_id())
                 .whereGreaterThanOrEqualTo("parcela_atual", movOriginal.getParcela_atual())
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+                .addOnSuccessListener(snap -> {
+
                     WriteBatch batch = db.batch();
 
-                    // Limpa a string base da descrição caso o usuário não tenha removido a tag "(x/y)" na edição
-                    String novaDescBase = movNova.getDescricao().replaceAll("\\s*\\(\\d+/\\d+\\)$", "");
+                    String novaDescBase = movNova.getDescricao()
+                            .replaceAll("\\s*\\(\\d+/\\d+\\)$", "")
+                            .trim();
 
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        MovimentacaoModel mBanco = doc.toObject(MovimentacaoModel.class);
-                        mBanco.setId(doc.getId());
+                    for (QueryDocumentSnapshot doc : snap) {
 
-                        // Reverte o impacto antigo do banco
-                        aplicarImpacto(batch, mBanco, -1);
+                        MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                        m.setId(doc.getId());
 
-                        // Aplica os novos valores que são universais para a recorrência
-                        mBanco.setValor(movNova.getValor());
-                        mBanco.setCategoria_id(movNova.getCategoria_id());
-                        mBanco.setCategoria_nome(movNova.getCategoria_nome());
+                        // ── Remove impacto antigo ──────────────────────────────
+                        aplicarImpacto(batch, m, -1);
 
-                        // Reconstrói a descrição garantindo que a tag (x/y) correta será mantida
-                        mBanco.setDescricao(novaDescBase + " (" + mBanco.getParcela_atual() + "/" + mBanco.getTotal_parcelas() + ")");
+                        // ── Atualiza dados básicos ─────────────────────────────
+                        m.setValor(movNova.getValor());
+                        m.setCategoria_id(movNova.getCategoria_id());
+                        m.setCategoria_nome(movNova.getCategoria_nome());
 
-                        // REGRA DE OURO UX: Data e Status SÓ se alteram na parcela atual em que o usuário está editando.
-                        if (mBanco.getId().equals(movOriginal.getId())) {
-                            mBanco.setData_movimentacao(movNova.getData_movimentacao());
-                            mBanco.setPago(movNova.isPago());
+                        m.setDescricao(novaDescBase + " ("
+                                + m.getParcela_atual()
+                                + "/" + m.getTotal_parcelas() + ")");
+
+                        // ── Se for a parcela originalmente editada ────────────
+                        if (m.getId().equals(movOriginal.getId())) {
+
+                            // Atualiza vencimento corretamente
+                            Timestamp novoVenc = movNova.getData_vencimento();
+
+                            if (novoVenc == null) {
+                                novoVenc = movNova.getData_movimentacao();
+                            }
+
+                            if (novoVenc == null) {
+                                novoVenc = Timestamp.now();
+                            }
+
+                            m.setData_vencimento(novoVenc);
+                            m.setData_movimentacao(novoVenc); // compatibilidade
+
+                            // Controle de pagamento
+                            boolean novoPago = movNova.isPago();
+                            m.setPago(novoPago);
+
+                            if (novoPago) {
+                                // Se virou pago agora e não tinha data_pagamento
+                                if (m.getData_pagamento() == null) {
+                                    m.setData_pagamento(Timestamp.now());
+                                }
+                            } else {
+                                // Se voltou a ser pendente
+                                m.setData_pagamento(null);
+                            }
                         }
 
-                        // Salva no batch
-                        batch.set(doc.getReference(), mBanco);
+                        // ── Persistência ───────────────────────────────────────
+                        batch.set(doc.getReference(), m);
 
-                        // Aplica o novo impacto
-                        aplicarImpacto(batch, mBanco, 1);
+                        // ── Aplica novo impacto ────────────────────────────────
+                        aplicarImpacto(batch, m, 1);
                     }
 
                     batch.commit()
-                            .addOnSuccessListener(aVoid -> callback.onSucesso("Série atualizada com sucesso!"))
-                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                            .addOnSuccessListener(v ->
+                                    callback.onSucesso("Série atualizada com sucesso!"))
+                            .addOnFailureListener(e ->
+                                    callback.onErro(e.getMessage()));
                 })
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                .addOnFailureListener(e ->
+                        callback.onErro(e.getMessage()));
     }
 
-    public void excluirMultiplos(MovimentacaoModel movBase, boolean todasSeguintes, Callback callback) {
+    public void excluirMultiplos(MovimentacaoModel movBase,
+                                 boolean todasSeguintes,
+                                 Callback callback) {
+
         if (!todasSeguintes) {
             excluir(movBase, callback);
             return;
@@ -346,19 +482,36 @@ public class MovimentacaoRepository {
                 .whereEqualTo("recorrencia_id", movBase.getRecorrencia_id())
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+                .addOnSuccessListener(snap -> {
+
                     WriteBatch batch = db.batch();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+
+                    for (QueryDocumentSnapshot doc : snap) {
+
                         MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
                         m.setId(doc.getId());
-                        batch.delete(doc.getReference());
+
+                        // ── Blindagem contra inconsistência legado ───────────
+                        if (m.isPago() && m.getData_pagamento() == null) {
+                            // se por algum motivo estiver pago sem data_pagamento
+                            m.setData_pagamento(m.getData_vencimento());
+                        }
+
+                        // ── Remove impacto financeiro primeiro ──────────────
                         aplicarImpacto(batch, m, -1);
+
+                        // ── Depois remove documento ─────────────────────────
+                        batch.delete(doc.getReference());
                     }
+
                     batch.commit()
-                            .addOnSuccessListener(aVoid -> callback.onSucesso("Série excluída com sucesso!"))
-                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                            .addOnSuccessListener(v ->
+                                    callback.onSucesso("Série excluída com sucesso!"))
+                            .addOnFailureListener(e ->
+                                    callback.onErro(e.getMessage()));
                 })
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                .addOnFailureListener(e ->
+                        callback.onErro(e.getMessage()));
     }
 
     public void confirmarMovimentacaoEmMassa(MovimentacaoModel movBase, Callback callback) {
@@ -367,27 +520,31 @@ public class MovimentacaoRepository {
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+                .addOnSuccessListener(snap -> {
                     WriteBatch batch = db.batch();
-                    Timestamp dataPagamento = Timestamp.now();
+                    Timestamp agora = Timestamp.now();
 
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                    for (QueryDocumentSnapshot doc : snap) {
                         MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
                         m.setId(doc.getId());
 
-                        // Remove impacto pendente
                         impactoPendente(batch, m, -1);
 
-                        // Salva data de vencimento original antes de sobrescrever
-                        batch.update(doc.getReference(), "data_vencimento_original", m.getData_movimentacao());
+                        Timestamp vencAtual = m.getData_vencimento();
+                        if (vencAtual == null) {
+                            vencAtual = m.getData_movimentacao();
+                            if (vencAtual != null) {
+                                batch.update(doc.getReference(), "data_vencimento", vencAtual);
+                                m.setData_vencimento(vencAtual);
+                            }
+                        }
 
-                        // Marca como pago e data de hoje
                         batch.update(doc.getReference(), MovimentacaoModel.CAMPO_PAGO, true);
-                        batch.update(doc.getReference(), MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, dataPagamento);
+                        batch.update(doc.getReference(), "data_pagamento", agora);
 
-                        // Aplica impacto realizado
                         m.setPago(true);
-                        m.setData_movimentacao(dataPagamento);
+                        m.setData_pagamento(agora);
+
                         impactoRealizado(batch, m, 1);
                     }
 
@@ -398,23 +555,48 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
+    // ── lote ─────────────────────────────────────────────────────────────────
+
     public void excluirEmLote(List<MovimentacaoModel> lista, Callback callback) {
         if (lista == null || lista.isEmpty()) {
             callback.onSucesso("Nenhuma movimentação para excluir.");
             return;
         }
-
         WriteBatch batch = db.batch();
-
         for (MovimentacaoModel mov : lista) {
             if (mov.getId() == null || mov.getId().isEmpty()) continue;
-            DocumentReference movRef = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
-            batch.delete(movRef);
-            aplicarImpacto(batch, mov, -1); // reverte o impacto no resumo/categoria
+            batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
+            aplicarImpacto(batch, mov, -1);
         }
-
         batch.commit()
-                .addOnSuccessListener(aVoid -> callback.onSucesso("Dia excluído com sucesso!"))
+                .addOnSuccessListener(v -> callback.onSucesso("Dia excluído com sucesso!"))
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
+
+    public void zerarEstatisticasMensais(Callback callback) {
+        FirestoreSchema.contasCategoriasCol().get()
+                .addOnSuccessListener(snap -> {
+                    WriteBatch batch = db.batch();
+                    DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES,   0);
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES,  0);
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES,  0);
+                    for (QueryDocumentSnapshot doc : snap) {
+                        batch.update(doc.getReference(), ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(v -> callback.onSucesso("Estatísticas do mês zeradas com sucesso!"))
+                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
+    }
+
+    // ── utilitário ───────────────────────────────────────────────────────────
+
+    private boolean isMesmoMesEAno(Date d1, Date d2) {
+        Calendar c1 = Calendar.getInstance(); c1.setTime(d1);
+        Calendar c2 = Calendar.getInstance(); c2.setTime(d2);
+        return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
+                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH);
     }
 }
