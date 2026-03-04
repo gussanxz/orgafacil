@@ -51,9 +51,6 @@ public class ResumoContasActivity extends AppCompatActivity {
     private TextView labelReceitaFutura;
     private TextView labelNovaDespesa;
     private TextView labelNovaReceita;
-
-    // [CORREÇÃO 1.5] TextView de legenda do saldo (ex: "Total a pagar", "Saldo das movimentações")
-    // Certifique-se que este ID existe no XML, ou remova se não houver
     private TextView textLegendaSaldo;
 
     // Layout Components
@@ -69,6 +66,9 @@ public class ResumoContasActivity extends AppCompatActivity {
     private View overlayBackground;
     private View radialSpotlight;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
+
+    // Controle de Carregamento para o Observer
+    private boolean aguardandoPrimeiroFetch = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +86,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
-        setupDashboardObserver();
-        setupSaldoListaObserver(); // [CORREÇÃO 1.5]
+        // Somente o Observer da Lista manda no layout, sem brigas!
+        setupSaldoListaObserver();
 
         viewModel.verificarViradaDeMes(this);
 
@@ -103,6 +103,18 @@ public class ResumoContasActivity extends AppCompatActivity {
         textSaldoGeral = findViewById(R.id.textSaldo);
         imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
         textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
+
+        // 1. ABRIR A TELA -> MOSTRAR "CARREGANDO" (Estado inicial cravado)
+        if (textSaldoGeral != null) {
+            textSaldoGeral.setText("Carregando...");
+            textSaldoGeral.setTextColor(Color.WHITE);
+        }
+        if (textLegendaSaldo != null) {
+            textLegendaSaldo.setText("Calculando...");
+        }
+        if (imgOlhoSaldo != null) {
+            imgOlhoSaldo.setVisibility(View.GONE);
+        }
     }
 
     private void inicializarComponentes() {
@@ -115,57 +127,55 @@ public class ResumoContasActivity extends AppCompatActivity {
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
     }
 
-    // Observer original — mantém o saldo real do Firestore como base inicial
-    // antes de qualquer interação do usuário
-    private void setupDashboardObserver() {
-        viewModel.resumoDados.observe(this, resumo -> {
-            if (resumo == null || textSaldoGeral == null) return;
+    private void setupSaldoListaObserver() {
+        // Escuta o status de carregamento
+        contasViewModel.carregandoPaginacao.observe(this, isCarregando -> {
+            if (isCarregando) {
+                if (textLegendaSaldo != null) textLegendaSaldo.setText("Calculando...");
+            } else {
+                // Quando o carregamento do Firebase terminar, ele destrava a permissão
+                aguardandoPrimeiroFetch = false;
+            }
+        });
 
-            long saldoCentavos = resumo.getBalanco().getSaldoAtual();
-            double saldoDouble = saldoCentavos / 100.0;
-            String valorFormatado = currencyFormat.format(saldoDouble);
+        // 2. Escuta a emissão de saldo do ViewModel e substitui na tela
+        contasViewModel.saldoListaAtual.observe(this, saldoCentavos -> {
+            if (saldoCentavos == null) return;
 
-            int corSaldo;
-            if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
-            else if (saldoCentavos < 0) corSaldo = Color.parseColor("#00D39E");
-            else                         corSaldo = Color.WHITE;
+            // Se o app ainda tá conectando no banco, não faz nada
+            if (Boolean.TRUE.equals(contasViewModel.carregandoPaginacao.getValue())) return;
 
-            View containerSaldo = findViewById(R.id.containerSaldo);
+            // BLOQUEIO DO PISCA: O ViewModel emite "0L" no milissegundo em que abre.
+            // A gente ignora esse 0L mentiroso se ainda estiver aguardando o primeiro fetch.
+            if (aguardandoPrimeiroFetch && saldoCentavos == 0L) return;
+
+            // O saldo agora é validado e real. Manda desenhar na tela!
+            desenharSaldoNaTela(saldoCentavos);
+        });
+    }
+
+    private void desenharSaldoNaTela(long saldoCentavos) {
+        double saldoDouble = saldoCentavos / 100.0;
+        String valorFormatado = currencyFormat.format(Math.abs(saldoDouble));
+
+        int corSaldo;
+        if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
+        else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
+        else                        corSaldo = Color.WHITE;
+
+        if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.VISIBLE);
+
+        View containerSaldo = findViewById(R.id.containerSaldo);
+        if (containerSaldo != null) {
             VisibilidadeHelper.configurarVisibilidadeSaldo(
                     containerSaldo, textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
+        }
+        VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
 
-            VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
-        });
+        // 3. Atualiza a legenda de forma suave
+        atualizarLegendaSaldo(saldoCentavos);
     }
 
-    /**
-     * [CORREÇÃO 1.5] Observer do saldo calculado localmente.
-     * Atualiza o textSaldoGeral sempre que a lista visível muda —
-     * por filtro de tipo (só receitas/só despesas) ou troca de aba.
-     * Este observer sobrescreve o valor do setupDashboardObserver() quando ativo.
-     */
-    private void setupSaldoListaObserver() {
-        contasViewModel.saldoListaAtual.observe(this, saldoCentavos -> {
-            if (saldoCentavos == null || textSaldoGeral == null) return;
-
-            double saldoDouble = saldoCentavos / 100.0;
-            String valorFormatado = currencyFormat.format(Math.abs(saldoDouble));
-
-            int corSaldo;
-            if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
-            else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
-            else                         corSaldo = Color.WHITE;
-
-            VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
-
-            // Atualiza legenda contextual se a view existir no XML
-            atualizarLegendaSaldo(saldoCentavos);
-        });
-    }
-
-    /**
-     * [CORREÇÃO 1.5] Atualiza o texto de contexto do saldo conforme aba e valor.
-     */
     private void atualizarLegendaSaldo(long saldoCentavos) {
         if (textLegendaSaldo == null) return;
 
@@ -189,15 +199,15 @@ public class ResumoContasActivity extends AppCompatActivity {
         // Se o texto for o mesmo, não faz nada
         if (textLegendaSaldo.getText().toString().equals(novoTexto)) return;
 
-        // Animação suave: esmaece (alpha 0), troca o texto, e volta (alpha 0.8)
+        // Animação suave: esmaece, troca e volta
         final String textoFinal = novoTexto;
         textLegendaSaldo.animate()
                 .alpha(0f)
-                .setDuration(150) // 150 milissegundos
+                .setDuration(150)
                 .withEndAction(() -> {
                     textLegendaSaldo.setText(textoFinal);
                     textLegendaSaldo.animate()
-                            .alpha(0.8f) // Volta para 80% de opacidade (conforme definimos no XML)
+                            .alpha(0.8f)
                             .setDuration(150)
                             .start();
                 }).start();
@@ -403,8 +413,7 @@ public class ResumoContasActivity extends AppCompatActivity {
             }
         }).attach();
 
-        // [CORREÇÃO 1.5] Notifica o ViewModel quando o usuário troca de aba,
-        // para que saldoListaAtual seja publicado com o saldo correto (pendentes ou histórico)
+        // Notifica o ViewModel quando o usuário troca de aba
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {

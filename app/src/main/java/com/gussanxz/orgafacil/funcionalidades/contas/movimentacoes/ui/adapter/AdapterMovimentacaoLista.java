@@ -24,12 +24,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
+import java.util.Objects;
 
-    private final List<AdapterItemListaMovimentacao> itens;
+public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovimentacao, RecyclerView.ViewHolder> {
+
+    // A lista local 'itens' foi removida, o ListAdapter gerencia o estado da lista em background para nós.
     private final Context context;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
-    private final SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
+    private final SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm",       new Locale("pt", "BR"));
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final OnItemActionListener listener;
 
@@ -40,29 +44,57 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
 
         /**
          * Chamado quando o usuário desliza o HEADER do dia para a esquerda.
-         * Recebe a data do dia (para exibição) e a lista de movimentações daquele dia.
+         *
+         * @param dataDia    string da data do grupo ("dd/MM/yyyy")
+         * @param movsDoDia  lista de movimentações daquele dia
          */
-        void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movimentacoesDoDia);
+        void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia);
     }
 
-    public AdapterMovimentacaoLista(Context context, List<AdapterItemListaMovimentacao> itens, OnItemActionListener listener) {
-        this.context = context;
-        this.itens = itens;
+    public AdapterMovimentacaoLista(Context context, OnItemActionListener listener) {
+        super(new MovimentacaoDiffCallback()); // 2. Passamos o comparador no construtor
+        this.context  = context;
         this.listener = listener;
     }
 
     public List<AdapterItemListaMovimentacao> getItens() {
-        return itens;
+        return getCurrentList();
     }
 
     @Override
     public int getItemViewType(int position) {
-        return itens.get(position).type;
+        // Usa getItem() nativo do ListAdapter
+        return getItem(position).type;
     }
 
-    @Override
-    public int getItemCount() {
-        return itens.size();
+    public static class MovimentacaoDiffCallback extends DiffUtil.ItemCallback<AdapterItemListaMovimentacao> {
+        @Override
+        public boolean areItemsTheSame(@NonNull AdapterItemListaMovimentacao oldItem, @NonNull AdapterItemListaMovimentacao newItem) {
+            if (oldItem.type != newItem.type) return false;
+            if (oldItem.type == AdapterItemListaMovimentacao.TYPE_HEADER) {
+                return Objects.equals(oldItem.data, newItem.data);
+            } else {
+                return oldItem.movimentacaoModel.getId().equals(newItem.movimentacaoModel.getId());
+            }
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull AdapterItemListaMovimentacao oldItem, @NonNull AdapterItemListaMovimentacao newItem) {
+            if (oldItem.type == AdapterItemListaMovimentacao.TYPE_HEADER) {
+                // Aqui comparamos com segurança o saldo usando o formato inteiro/long, garantindo exatidão
+                return oldItem.saldoDia == newItem.saldoDia &&
+                        Objects.equals(oldItem.tituloDia, newItem.tituloDia);
+            } else {
+                MovimentacaoModel m1 = oldItem.movimentacaoModel;
+                MovimentacaoModel m2 = newItem.movimentacaoModel;
+
+                // Compara as propriedades de UI. O dinheiro é validado estritamente como número inteiro.
+                return m1.getValor() == m2.getValor() &&
+                        m1.isPago() == m2.isPago() &&
+                        Objects.equals(m1.getDescricao(), m2.getDescricao()) &&
+                        Objects.equals(m1.getCategoria_nome(), m2.getCategoria_nome());
+            }
+        }
     }
 
     @NonNull
@@ -80,7 +112,9 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        AdapterItemListaMovimentacao item = itens.get(position);
+        // Usa getItem() nativo do ListAdapter
+        AdapterItemListaMovimentacao item = getItem(position);
+
         if (holder instanceof HeaderViewHolder) {
             ((HeaderViewHolder) holder).bind(item);
         } else if (holder instanceof MovimentoViewHolder) {
@@ -88,15 +122,12 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 
-    /**
-     * Coleta todas as movimentações que pertencem ao mesmo grupo de data do header na posição informada.
-     * Percorre os itens seguintes até encontrar outro header ou o fim da lista.
-     */
     public List<MovimentacaoModel> getMovimentacoesDoDia(int headerPosition) {
         List<MovimentacaoModel> lista = new ArrayList<>();
         int next = headerPosition + 1;
-        while (next < itens.size() && itens.get(next).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
-            lista.add(itens.get(next).movimentacaoModel);
+        while (next < getCurrentList().size()
+                && getItem(next).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
+            lista.add(getItem(next).movimentacaoModel);
             next++;
         }
         return lista;
@@ -107,28 +138,35 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
     // =========================================================================
 
     class HeaderViewHolder extends RecyclerView.ViewHolder {
-        TextView textDiaTitulo, textSaldoDia;
-        NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+        TextView textDiaTitulo;
+        TextView textSaldoDia;
+        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
             textDiaTitulo = itemView.findViewById(R.id.textDiaTitulo);
-            textSaldoDia = itemView.findViewById(R.id.textSaldoDia);
+            textSaldoDia  = itemView.findViewById(R.id.textSaldoDia);
         }
 
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
-            if (textSaldoDia != null) {
-                double saldoReal = item.saldoDia / 100.0;
-                textSaldoDia.setText("Saldo: " + currencyFormat.format(saldoReal));
 
-                if (item.saldoDia > 0) {
-                    textSaldoDia.setTextColor(Color.parseColor("#008000"));
-                } else if (item.saldoDia < 0) {
-                    textSaldoDia.setTextColor(Color.parseColor("#B00020"));
-                } else {
-                    textSaldoDia.setTextColor(Color.parseColor("#9E9E9E"));
-                }
+            if (textSaldoDia == null) return;
+
+            // CORREÇÃO: item.saldoDia é long — divisão por 100.0 produz double correto.
+            // Antes havia um cast (int) no Helper que truncava valores > R$ 21.474,83,
+            // causando saldo negativo ou zero silenciosamente na UI.
+            double saldoReais = item.saldoDia / 100.0;
+            textSaldoDia.setText("Saldo: " + fmt.format(saldoReais));
+
+            // Cor do saldo: verde positivo, vermelho negativo, cinza neutro
+            if (item.saldoDia > 0) {
+                textSaldoDia.setTextColor(Color.parseColor("#008000"));
+            } else if (item.saldoDia < 0) {
+                textSaldoDia.setTextColor(Color.parseColor("#B00020"));
+            } else {
+                textSaldoDia.setTextColor(Color.parseColor("#9E9E9E"));
             }
         }
     }
@@ -138,32 +176,35 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
     // =========================================================================
 
     class MovimentoViewHolder extends RecyclerView.ViewHolder {
+
         TextView textTitulo, textCategoria, textValor, textData, textHora, textSeparador;
         View viewIndicadorCor;
         ImageButton btnConfirmar;
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
-            textTitulo    = itemView.findViewById(R.id.textAdapterTitulo);
-            textCategoria = itemView.findViewById(R.id.textAdapterCategoria);
-            textValor     = itemView.findViewById(R.id.textAdapterValor);
-            textData      = itemView.findViewById(R.id.textAdapterData);
-            textHora      = itemView.findViewById(R.id.textAdapterHora);
-            textSeparador = itemView.findViewById(R.id.textAdapterSeparador);
+            textTitulo       = itemView.findViewById(R.id.textAdapterTitulo);
+            textCategoria    = itemView.findViewById(R.id.textAdapterCategoria);
+            textValor        = itemView.findViewById(R.id.textAdapterValor);
+            textData         = itemView.findViewById(R.id.textAdapterData);
+            textHora         = itemView.findViewById(R.id.textAdapterHora);
+            textSeparador    = itemView.findViewById(R.id.textAdapterSeparador);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
-            btnConfirmar  = itemView.findViewById(R.id.btnConfirmarPagamento);
+            btnConfirmar     = itemView.findViewById(R.id.btnConfirmarPagamento);
         }
 
         void bind(MovimentacaoModel mov) {
 
-            // — Título e categoria —
+            // ── Título e categoria ────────────────────────────────────────────
             textTitulo.setText(mov.getDescricao());
             textCategoria.setText(mov.getTotal_parcelas() > 1
                     ? "🔁 " + mov.getCategoria_nome()
                     : mov.getCategoria_nome());
 
-            // — Valor com sinal e cor —
+            // ── Valor com sinal e cor ─────────────────────────────────────────
+            // getValor() é long → divisão por 100.0 sempre em double, sem truncamento
             double valorReais = mov.getValor() / 100.0;
+
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 textValor.setText("- " + currencyFormat.format(valorReais));
                 textValor.setTextColor(Color.parseColor("#E53935"));
@@ -174,11 +215,11 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
 
-            // — Cores padrão de data/hora —
+            // ── Cores padrão de data/hora ─────────────────────────────────────
             textData.setTextColor(Color.parseColor("#888888"));
             textHora.setTextColor(Color.parseColor("#888888"));
 
-            // — Data e hora —
+            // ── Data e hora ───────────────────────────────────────────────────
             if (mov.getData_movimentacao() != null) {
                 Date date = mov.getData_movimentacao().toDate();
                 textData.setText(dateFormat.format(date));
@@ -189,7 +230,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                     textHora.setVisibility(View.GONE);
                     textSeparador.setVisibility(View.GONE);
 
-                    // Botão de confirmação com animação de feedback
+                    // Botão de confirmação com animação de feedback tátil
                     if (btnConfirmar != null) {
                         btnConfirmar.setVisibility(View.VISIBLE);
                         btnConfirmar.setOnClickListener(v ->
@@ -204,17 +245,15 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                         );
                     }
 
-                    // Cor de urgência na data
                     aplicarCorData(textData, mov);
 
                 } else {
                     // PAGO: mostra hora da transação
                     textHora.setVisibility(View.VISIBLE);
                     textSeparador.setVisibility(View.VISIBLE);
-
                     if (btnConfirmar != null) btnConfirmar.setVisibility(View.GONE);
 
-                    // Se pago em data diferente do vencimento, mostra ambas
+                    // Se pago em data diferente do vencimento original, exibe ambas
                     if (mov.getData_vencimento_original() != null) {
                         String strPago = dateFormat.format(date);
                         String strVenc = dateFormat.format(mov.getData_vencimento_original().toDate());
@@ -225,7 +264,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
                 }
             }
 
-            // — Cliques no item —
+            // ── Cliques no item ───────────────────────────────────────────────
             itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
                 intent.putExtra("movimentacaoSelecionada", mov);
@@ -238,7 +277,7 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
             });
         }
 
-        // — Cor de urgência da data (apenas para pendentes) —
+        // ── Cor de urgência da data (apenas para pendentes) ───────────────────
         private void aplicarCorData(TextView txtData, MovimentacaoModel mov) {
             if (mov.isPago()) {
                 txtData.setTextColor(Color.parseColor("#9E9E9E"));
@@ -258,5 +297,3 @@ public class AdapterMovimentacaoLista extends RecyclerView.Adapter<RecyclerView.
         }
     }
 }
-// NOTE: Add this getter to AdapterMovimentacaoLista (inside the class, before the last closing brace):
-//    public List<AdapterItemListaMovimentacao> getItens() { return itens; }

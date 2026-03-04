@@ -41,6 +41,68 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
+    // ── SMART BATCH (SOLUÇÃO #8) ─────────────────────────────────────────────
+
+    /**
+     * O Firestore aceita no máximo 500 operações por WriteBatch.
+     * O SmartBatch gerencia isso automaticamente, criando novos lotes
+     * quando atinge 400 operações e comitando todos em sequência.
+     */
+    private class SmartBatch {
+        private final FirebaseFirestore firestore;
+        private WriteBatch loteAtual;
+        private int contadorOperacoes = 0;
+        private final List<WriteBatch> todosOsLotes = new ArrayList<>();
+
+        public SmartBatch(FirebaseFirestore firestore) {
+            this.firestore = firestore;
+            novoLote();
+        }
+
+        private void novoLote() {
+            loteAtual = firestore.batch();
+            todosOsLotes.add(loteAtual);
+            contadorOperacoes = 0;
+        }
+
+        private void checarLimite() {
+            // Limite conservador de 400 para evitar margem de erro
+            if (contadorOperacoes >= 400) {
+                novoLote();
+            }
+            contadorOperacoes++;
+        }
+
+        public void set(DocumentReference ref, Object data) {
+            checarLimite();
+            loteAtual.set(ref, data);
+        }
+
+        public void update(DocumentReference ref, String field, Object value) {
+            checarLimite();
+            loteAtual.update(ref, field, value);
+        }
+
+        public void delete(DocumentReference ref) {
+            checarLimite();
+            loteAtual.delete(ref);
+        }
+
+        public void commit(Callback callback, String mensagemSucesso) {
+            commitRecursivo(0, callback, mensagemSucesso);
+        }
+
+        private void commitRecursivo(int index, Callback callback, String mensagemSucesso) {
+            if (index >= todosOsLotes.size()) {
+                callback.onSucesso(mensagemSucesso);
+                return;
+            }
+            todosOsLotes.get(index).commit()
+                    .addOnSuccessListener(v -> commitRecursivo(index + 1, callback, mensagemSucesso))
+                    .addOnFailureListener(e -> callback.onErro("Falha no lote " + (index + 1) + ": " + e.getMessage()));
+        }
+    }
+
     // ── leitura ──────────────────────────────────────────────────────────────
 
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
@@ -107,7 +169,7 @@ public class MovimentacaoRepository {
     // ── escrita simples ──────────────────────────────────────────────────────
 
     public void salvar(MovimentacaoModel mov, Callback callback) {
-        WriteBatch batch = db.batch();
+        SmartBatch batch = new SmartBatch(db);
         DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
         mov.setId(ref.getId());
 
@@ -122,28 +184,22 @@ public class MovimentacaoRepository {
 
         batch.set(ref, mov);
         aplicarImpacto(batch, mov, 1);
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso("Lançado com sucesso!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        batch.commit(callback, "Lançado com sucesso!");
     }
 
     public void excluir(MovimentacaoModel mov, Callback callback) {
-        WriteBatch batch = db.batch();
+        SmartBatch batch = new SmartBatch(db);
         batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
         aplicarImpacto(batch, mov, -1);
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso("Excluído com sucesso!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        batch.commit(callback, "Excluído com sucesso!");
     }
 
     public void editar(MovimentacaoModel movAntigo, MovimentacaoModel movNovo, Callback callback) {
-        WriteBatch batch = db.batch();
+        SmartBatch batch = new SmartBatch(db);
         batch.set(FirestoreSchema.contasMovimentacaoDoc(movNovo.getId()), movNovo);
         aplicarImpacto(batch, movAntigo, -1);
         aplicarImpacto(batch, movNovo, 1);
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso("Editado com sucesso!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        batch.commit(callback, "Editado com sucesso!");
     }
 
     // ── confirmação ──────────────────────────────────────────────────────────
@@ -154,7 +210,7 @@ public class MovimentacaoRepository {
             return;
         }
 
-        WriteBatch batch = db.batch();
+        SmartBatch batch = new SmartBatch(db);
         DocumentReference ref = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
         Timestamp agora = Timestamp.now();
 
@@ -162,7 +218,6 @@ public class MovimentacaoRepository {
 
         Timestamp vencAtual = mov.getData_vencimento();
 
-        // Compatibilidade com registros antigos que só possuem data_movimentacao
         if (vencAtual == null) {
             vencAtual = mov.getData_movimentacao();
             if (vencAtual != null) {
@@ -179,19 +234,17 @@ public class MovimentacaoRepository {
 
         impactoRealizado(batch, mov, 1);
 
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso("Confirmado e registrado corretamente!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        batch.commit(callback, "Confirmado e registrado corretamente!");
     }
 
     // ── impactos no resumo ───────────────────────────────────────────────────
 
-    private void aplicarImpacto(WriteBatch batch, MovimentacaoModel mov, int fator) {
+    private void aplicarImpacto(SmartBatch batch, MovimentacaoModel mov, int fator) {
         if (mov.isPago()) impactoRealizado(batch, mov, fator);
         else impactoPendente(batch, mov, fator);
     }
 
-    private void impactoRealizado(WriteBatch batch, MovimentacaoModel mov, int fator) {
+    private void impactoRealizado(SmartBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
         long centavos = Math.abs(mov.getValor());
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
@@ -221,7 +274,7 @@ public class MovimentacaoRepository {
         }
     }
 
-    private void impactoPendente(WriteBatch batch, MovimentacaoModel mov, int fator) {
+    private void impactoPendente(SmartBatch batch, MovimentacaoModel mov, int fator) {
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
         String campo = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
@@ -232,57 +285,33 @@ public class MovimentacaoRepository {
                 FieldValue.increment(fator));
     }
 
-    // ── salvar recorrente (REFATORADO) ───────────────────────────────────────
+    // ── salvar recorrente ───────────────────────────────────────
 
-    /**
-     * Gera e salva todas as parcelas de uma série recorrente.
-     *
-     * @param movBase     movimentação-modelo com data, valor, categoria, tipo e
-     *                    recorrencia_tipo / recorrencia_intervalo já preenchidos.
-     * @param quantidade  número de repetições (parcelas ou ocorrências).
-     * @param callback    resultado da operação em lote.
-     */
     public void salvarRecorrente(MovimentacaoModel movBase, int quantidade, Callback callback) {
 
-        WriteBatch batch = db.batch();
+        SmartBatch batch = new SmartBatch(db);
         String grupoId = java.util.UUID.randomUUID().toString();
 
         TipoRecorrencia tipoRec = movBase.getTipoRecorrenciaEnum();
         boolean isParcelado = (tipoRec == TipoRecorrencia.PARCELADO);
 
-        // Segurança básica
         if (quantidade <= 0) {
             callback.onErro("Quantidade inválida para recorrência.");
             return;
         }
 
-        // Valor por parcela
         long valorParcela = isParcelado
                 ? movBase.getValor() / quantidade
                 : movBase.getValor();
 
-        // ── DATA BASE SEGURA ─────────────────────────────────────────────
-
         Timestamp dataBase = movBase.getData_vencimento();
-
-        if (dataBase == null) {
-            dataBase = movBase.getData_movimentacao();
-        }
-
-        if (dataBase == null) {
-            dataBase = Timestamp.now();
-        }
-
-        // ── LOOP DE CRIAÇÃO ──────────────────────────────────────────────
+        if (dataBase == null) dataBase = movBase.getData_movimentacao();
+        if (dataBase == null) dataBase = Timestamp.now();
 
         for (int i = 0; i < quantidade; i++) {
-
             MovimentacaoModel parcela = new MovimentacaoModel();
 
-            // ── descrição com tag (x/y)
-            String descBase = movBase.getDescricao()
-                    .replaceAll("\\s*\\(\\d+/\\d+\\)$", "")
-                    .trim();
+            String descBase = movBase.getDescricao().replaceAll("\\s*\\(\\d+/\\d+\\)$", "").trim();
 
             parcela.setDescricao(quantidade > 1
                     ? descBase + " (" + (i + 1) + "/" + quantidade + ")"
@@ -293,85 +322,60 @@ public class MovimentacaoRepository {
             parcela.setCategoria_nome(movBase.getCategoria_nome());
             parcela.setTipoEnum(movBase.getTipoEnum());
 
-            // ── metadados da série
             parcela.setRecorrencia_id(grupoId);
             parcela.setParcela_atual(i + 1);
             parcela.setTotal_parcelas(quantidade);
             parcela.setRecorrencia_tipo(tipoRec.name());
             parcela.setRecorrencia_intervalo(movBase.getRecorrencia_intervalo());
 
-            // ── status
             parcela.setPago(i == 0 && movBase.isPago());
 
-            // ── cálculo do vencimento
             Timestamp vencimento;
-
             if (i > 0) {
                 Calendar base = Calendar.getInstance();
                 base.setTime(dataBase.toDate());
-                calcularProximaData(base, tipoRec,
-                        movBase.getRecorrencia_intervalo(), i);
+                calcularProximaData(base, tipoRec, movBase.getRecorrencia_intervalo(), i);
                 vencimento = new Timestamp(base.getTime());
             } else {
                 vencimento = dataBase;
             }
 
-            // ── aplicar datas corretamente
             parcela.setData_vencimento(vencimento);
-            parcela.setData_movimentacao(vencimento); // compatibilidade legado
+            parcela.setData_movimentacao(vencimento);
 
-            if (parcela.isPago()) {
-                parcela.setData_pagamento(Timestamp.now());
-            } else {
-                parcela.setData_pagamento(null);
-            }
+            if (parcela.isPago()) parcela.setData_pagamento(Timestamp.now());
+            else parcela.setData_pagamento(null);
 
-            // ── persistência
-            DocumentReference ref =
-                    FirestoreSchema.contasMovimentacoesCol().document();
-
+            DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
             parcela.setId(ref.getId());
             batch.set(ref, parcela);
 
             aplicarImpacto(batch, parcela, 1);
         }
 
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso(
-                        tipoRec == TipoRecorrencia.PARCELADO
-                                ? quantidade + " parcelas criadas!"
-                                : "Série recorrente agendada!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        String msgFinal = tipoRec == TipoRecorrencia.PARCELADO
+                ? quantidade + " parcelas criadas!"
+                : "Série recorrente agendada!";
+
+        batch.commit(callback, msgFinal);
     }
 
-    /**
-     * Avança o Calendar em `passos` unidades conforme o TipoRecorrencia.
-     *
-     * @param cal       instância a ser modificada in-place
-     * @param tipo      tipo de recorrência
-     * @param intervalo valor de N para CADA_X_DIAS / CADA_X_MESES (ignorado nos demais)
-     * @param passos    quantas vezes avançar (normalmente i, o índice da parcela)
-     */
     private void calcularProximaData(Calendar cal, TipoRecorrencia tipo, int intervalo, int passos) {
         switch (tipo) {
             case PARCELADO:
             case MENSAL:
                 cal.add(Calendar.MONTH, passos);
                 break;
-
             case SEMANAL:
                 cal.add(Calendar.DAY_OF_YEAR, 7 * passos);
                 break;
-
             case QUINZENAL:
                 cal.add(Calendar.DAY_OF_YEAR, 15 * passos);
                 break;
-
             case CADA_X_DIAS:
                 int dias = (intervalo > 0) ? intervalo : 1;
                 cal.add(Calendar.DAY_OF_YEAR, dias * passos);
                 break;
-
             case CADA_X_MESES:
                 int meses = (intervalo > 0) ? intervalo : 1;
                 cal.add(Calendar.MONTH, meses * passos);
@@ -396,77 +400,45 @@ public class MovimentacaoRepository {
                 .whereGreaterThanOrEqualTo("parcela_atual", movOriginal.getParcela_atual())
                 .get()
                 .addOnSuccessListener(snap -> {
-
-                    WriteBatch batch = db.batch();
-
-                    String novaDescBase = movNova.getDescricao()
-                            .replaceAll("\\s*\\(\\d+/\\d+\\)$", "")
-                            .trim();
+                    SmartBatch batch = new SmartBatch(db);
+                    String novaDescBase = movNova.getDescricao().replaceAll("\\s*\\(\\d+/\\d+\\)$", "").trim();
 
                     for (QueryDocumentSnapshot doc : snap) {
-
                         MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
                         m.setId(doc.getId());
 
-                        // ── Remove impacto antigo ──────────────────────────────
                         aplicarImpacto(batch, m, -1);
 
-                        // ── Atualiza dados básicos ─────────────────────────────
                         m.setValor(movNova.getValor());
                         m.setCategoria_id(movNova.getCategoria_id());
                         m.setCategoria_nome(movNova.getCategoria_nome());
+                        m.setDescricao(novaDescBase + " (" + m.getParcela_atual() + "/" + m.getTotal_parcelas() + ")");
 
-                        m.setDescricao(novaDescBase + " ("
-                                + m.getParcela_atual()
-                                + "/" + m.getTotal_parcelas() + ")");
-
-                        // ── Se for a parcela originalmente editada ────────────
                         if (m.getId().equals(movOriginal.getId())) {
-
-                            // Atualiza vencimento corretamente
                             Timestamp novoVenc = movNova.getData_vencimento();
-
-                            if (novoVenc == null) {
-                                novoVenc = movNova.getData_movimentacao();
-                            }
-
-                            if (novoVenc == null) {
-                                novoVenc = Timestamp.now();
-                            }
+                            if (novoVenc == null) novoVenc = movNova.getData_movimentacao();
+                            if (novoVenc == null) novoVenc = Timestamp.now();
 
                             m.setData_vencimento(novoVenc);
-                            m.setData_movimentacao(novoVenc); // compatibilidade
+                            m.setData_movimentacao(novoVenc);
 
-                            // Controle de pagamento
                             boolean novoPago = movNova.isPago();
                             m.setPago(novoPago);
 
                             if (novoPago) {
-                                // Se virou pago agora e não tinha data_pagamento
-                                if (m.getData_pagamento() == null) {
-                                    m.setData_pagamento(Timestamp.now());
-                                }
+                                if (m.getData_pagamento() == null) m.setData_pagamento(Timestamp.now());
                             } else {
-                                // Se voltou a ser pendente
                                 m.setData_pagamento(null);
                             }
                         }
 
-                        // ── Persistência ───────────────────────────────────────
                         batch.set(doc.getReference(), m);
-
-                        // ── Aplica novo impacto ────────────────────────────────
                         aplicarImpacto(batch, m, 1);
                     }
 
-                    batch.commit()
-                            .addOnSuccessListener(v ->
-                                    callback.onSucesso("Série atualizada com sucesso!"))
-                            .addOnFailureListener(e ->
-                                    callback.onErro(e.getMessage()));
+                    batch.commit(callback, "Série atualizada com sucesso!");
                 })
-                .addOnFailureListener(e ->
-                        callback.onErro(e.getMessage()));
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
     public void excluirMultiplos(MovimentacaoModel movBase,
@@ -483,35 +455,23 @@ public class MovimentacaoRepository {
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
                 .get()
                 .addOnSuccessListener(snap -> {
-
-                    WriteBatch batch = db.batch();
+                    SmartBatch batch = new SmartBatch(db);
 
                     for (QueryDocumentSnapshot doc : snap) {
-
                         MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
                         m.setId(doc.getId());
 
-                        // ── Blindagem contra inconsistência legado ───────────
                         if (m.isPago() && m.getData_pagamento() == null) {
-                            // se por algum motivo estiver pago sem data_pagamento
                             m.setData_pagamento(m.getData_vencimento());
                         }
 
-                        // ── Remove impacto financeiro primeiro ──────────────
                         aplicarImpacto(batch, m, -1);
-
-                        // ── Depois remove documento ─────────────────────────
                         batch.delete(doc.getReference());
                     }
 
-                    batch.commit()
-                            .addOnSuccessListener(v ->
-                                    callback.onSucesso("Série excluída com sucesso!"))
-                            .addOnFailureListener(e ->
-                                    callback.onErro(e.getMessage()));
+                    batch.commit(callback, "Série excluída com sucesso!");
                 })
-                .addOnFailureListener(e ->
-                        callback.onErro(e.getMessage()));
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
     public void confirmarMovimentacaoEmMassa(MovimentacaoModel movBase, Callback callback) {
@@ -521,7 +481,7 @@ public class MovimentacaoRepository {
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .get()
                 .addOnSuccessListener(snap -> {
-                    WriteBatch batch = db.batch();
+                    SmartBatch batch = new SmartBatch(db);
                     Timestamp agora = Timestamp.now();
 
                     for (QueryDocumentSnapshot doc : snap) {
@@ -548,9 +508,7 @@ public class MovimentacaoRepository {
                         impactoRealizado(batch, m, 1);
                     }
 
-                    batch.commit()
-                            .addOnSuccessListener(v -> callback.onSucesso("Todas as parcelas confirmadas!"))
-                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+                    batch.commit(callback, "Todas as parcelas confirmadas!");
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
@@ -562,31 +520,33 @@ public class MovimentacaoRepository {
             callback.onSucesso("Nenhuma movimentação para excluir.");
             return;
         }
-        WriteBatch batch = db.batch();
+
+        SmartBatch batch = new SmartBatch(db);
+
         for (MovimentacaoModel mov : lista) {
             if (mov.getId() == null || mov.getId().isEmpty()) continue;
             batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
             aplicarImpacto(batch, mov, -1);
         }
-        batch.commit()
-                .addOnSuccessListener(v -> callback.onSucesso("Dia excluído com sucesso!"))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+
+        batch.commit(callback, "Dia excluído com sucesso!");
     }
 
     public void zerarEstatisticasMensais(Callback callback) {
         FirestoreSchema.contasCategoriasCol().get()
                 .addOnSuccessListener(snap -> {
-                    WriteBatch batch = db.batch();
+                    SmartBatch batch = new SmartBatch(db);
                     DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES,   0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES,  0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES,  0);
+
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0);
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0);
+                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0);
+
                     for (QueryDocumentSnapshot doc : snap) {
                         batch.update(doc.getReference(), ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
                     }
-                    batch.commit()
-                            .addOnSuccessListener(v -> callback.onSucesso("Estatísticas do mês zeradas com sucesso!"))
-                            .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+
+                    batch.commit(callback, "Estatísticas do mês zeradas com sucesso!");
                 })
                 .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
     }

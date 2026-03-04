@@ -146,10 +146,9 @@ public class ResumoParcelasActivity extends AppCompatActivity {
             itens.add(AdapterItemListaMovimentacao.linha(p));
         }
 
-        // Listener mínimo — na tela de resumo só usamos o clique para navegar para edição
+        // 1. Instanciamos sem a lista
         AdapterMovimentacaoLista adapter = new AdapterMovimentacaoLista(
                 this,
-                itens,
                 new AdapterMovimentacaoLista.OnItemActionListener() {
                     @Override
                     public void onDeleteClick(MovimentacaoModel mov) {
@@ -173,9 +172,11 @@ public class ResumoParcelasActivity extends AppCompatActivity {
                 }
         );
 
+        // 2. Enviamos a lista para o background calcular e desenhar
+        adapter.submitList(itens);
+
         recyclerParcelas.setAdapter(adapter);
     }
-
     /**
      * Confirma o pagamento de uma parcela individual diretamente desta tela.
      */

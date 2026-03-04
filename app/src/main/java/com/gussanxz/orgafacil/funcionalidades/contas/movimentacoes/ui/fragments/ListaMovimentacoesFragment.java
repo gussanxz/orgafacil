@@ -115,7 +115,7 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
 
         // Ajusta a frase para fazer sentido com a aba atual
         if (ehModoFuturo) {
-            textEmptyState.setText("Ufa! Nenhuma conta pendente. 🎉");
+            textEmptyState.setText("Ufa! Nenhuma conta pendente. \uD83C\uDF89");
         } else {
             textEmptyState.setText("Nenhum histórico no momento.");
         }
@@ -158,7 +158,6 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             }
         });
 
-
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
 
             // Se ainda estiver na primeira vez e o loading não acabou, ignora e não desenha a tela vazia
@@ -186,56 +185,63 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             List<AdapterItemListaMovimentacao> listaProcessada =
                     HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(listaResumo, ehModoFuturo);
 
-            adapter = new AdapterMovimentacaoLista(getContext(), listaProcessada, new AdapterMovimentacaoLista.OnItemActionListener() {
+            // 1. Só criamos o adapter se ele ainda não existir!
+            if (adapter == null) {
+                adapter = new AdapterMovimentacaoLista(getContext(), new AdapterMovimentacaoLista.OnItemActionListener() {
 
-                @Override
-                public void onDeleteClick(MovimentacaoModel mov) {
-                    exibirDialogExclusao(mov);
-                }
-                @Override
-                public void onLongClick(MovimentacaoModel mov) {
-                    new AlertDialog.Builder(requireContext())
-                            .setTitle("Editar")
-                            .setMessage("Deseja editar '" + mov.getDescricao() + "'?")
-                            .setPositiveButton("Sim", (d, w) -> abrirTelaEdicao(mov, false))
-                            .setNegativeButton("Cancelar", null)
-                            .show();
-                }
-                @Override
-                public void onCheckClick(MovimentacaoModel mov) {
-                    // mantém o comportamento original
-                    String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
-                    if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
+                    @Override
+                    public void onDeleteClick(MovimentacaoModel mov) {
+                        exibirDialogExclusao(mov);
+                    }
+
+                    @Override
+                    public void onLongClick(MovimentacaoModel mov) {
                         new AlertDialog.Builder(requireContext())
-                                .setTitle("Confirmar " + acao)
-                                .setMessage("Deseja confirmar apenas '" + mov.getDescricao() +
-                                        "' ou também antecipar todas as parcelas seguintes?")
-                                .setPositiveButton("Apenas esta", (d, w) -> executarConfirmacao(mov))
-                                .setNegativeButton("Esta e seguintes", (d, w) -> executarConfirmacaoEmMassa(mov))
-                                .setNeutralButton("Cancelar", null)
-                                .show();
-                    } else {
-                        new AlertDialog.Builder(requireContext())
-                                .setTitle("Confirmar " + acao)
-                                .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
-                                .setPositiveButton("Confirmar", (dialog, which) -> executarConfirmacao(mov))
+                                .setTitle("Editar")
+                                .setMessage("Deseja editar '" + mov.getDescricao() + "'?")
+                                .setPositiveButton("Sim", (d, w) -> abrirTelaEdicao(mov, false))
                                 .setNegativeButton("Cancelar", null)
                                 .show();
                     }
-                }
 
-                @Override
-                public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
-                    // Não é chamado diretamente aqui — o SwipeCallback aciona direto
-                    confirmarExclusaoDoDia(dataDia, movsDoDia);
-                }
-            });
+                    @Override
+                    public void onCheckClick(MovimentacaoModel mov) {
+                        // mantém o comportamento original
+                        String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
+                        if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Confirmar " + acao)
+                                    .setMessage("Deseja confirmar apenas '" + mov.getDescricao() +
+                                            "' ou também antecipar todas as parcelas seguintes?")
+                                    .setPositiveButton("Apenas esta", (d, w) -> executarConfirmacao(mov))
+                                    .setNegativeButton("Esta e seguintes", (d, w) -> executarConfirmacaoEmMassa(mov))
+                                    .setNeutralButton("Cancelar", null)
+                                    .show();
+                        } else {
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Confirmar " + acao)
+                                    .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
+                                    .setPositiveButton("Confirmar", (dialog, which) -> executarConfirmacao(mov))
+                                    .setNegativeButton("Cancelar", null)
+                                    .show();
+                        }
+                    }
 
-            recyclerView.setAdapter(adapter);
+                    @Override
+                    public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
+                        // Não é chamado diretamente aqui — o SwipeCallback aciona direto
+                        confirmarExclusaoDoDia(dataDia, movsDoDia);
+                    }
+                });
 
-            // Garante que o SwipeCallback está configurado sempre que o adapter é recriado
-            configurarSwipeDoDashboard();
+                recyclerView.setAdapter(adapter);
 
+                // Garante que o SwipeCallback está configurado sempre que o adapter é recriado
+                configurarSwipeDoDashboard();
+            }
+
+            // 2. Agora sim, entregamos a lista para o ListAdapter fazer a animação!
+            adapter.submitList(listaProcessada);
         };
 
         // Remove observadores antigos para evitar vazamento de memória ou duplicação
@@ -382,10 +388,10 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
             @Override
             protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
                                              int direction, int position) {
-                // No dashboard só temos a lista processada (listaProcessada local ao observer).
-                // Precisamos acessar pelo adapter.
+                // Lemos diretamente do ListAdapter (que tem os itens mais recentes)
                 if (adapter == null) return;
-                AdapterItemListaMovimentacao item = adapter.getItens().get(position);
+                AdapterItemListaMovimentacao item = adapter.getCurrentList().get(position);
+
                 if (item.type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
 
                     MovimentacaoModel m = item.movimentacaoModel;
@@ -457,5 +463,4 @@ public class ListaMovimentacoesFragment extends Fragment implements AdapterMovim
     public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
         confirmarExclusaoDoDia(dataDia, movsDoDia);
     }
-
 }
