@@ -46,8 +46,8 @@ public class ProdutoRepository {
         try {
             normalizarCategoriaProduto(produtoModel);
 
-            boolean categoriaPadrao = CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO
-                    .equals(produtoModel.getCategoria());
+            boolean categoriaPadrao = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO
+                    .equals(produtoModel.getCategoriaId());
 
             if (categoriaPadrao) {
                 categoriaRepository.garantirCategoriaPadrao(new CategoriaCatalogoRepository.Callback() {
@@ -124,12 +124,18 @@ public class ProdutoRepository {
     }
 
     private void normalizarCategoriaProduto(@NonNull ProdutoModel produtoModel) {
-        String categoria = produtoModel.getCategoria();
+        String categoriaId = produtoModel.getCategoriaId();
+        String categoriaNome = produtoModel.getCategoria();
 
-        if (categoria == null || categoria.trim().isEmpty()) {
+        boolean categoriaIdVazia = categoriaId == null || categoriaId.trim().isEmpty();
+        boolean categoriaNomeVazia = categoriaNome == null || categoriaNome.trim().isEmpty();
+
+        if (categoriaIdVazia || categoriaNomeVazia) {
+            produtoModel.setCategoriaId(CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
             produtoModel.setCategoria(CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
         } else {
-            produtoModel.setCategoria(categoria.trim());
+            produtoModel.setCategoriaId(categoriaId.trim());
+            produtoModel.setCategoria(categoriaNome.trim());
         }
     }
 }

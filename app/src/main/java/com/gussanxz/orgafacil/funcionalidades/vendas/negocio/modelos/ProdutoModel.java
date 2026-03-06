@@ -3,14 +3,16 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
 public class ProdutoModel implements ItemVendaModel {
     private String id;
     private String nome;
+    private String categoriaId;
     private String categoria;
     private double preco;
 
     public ProdutoModel() {} // Construtor vazio para o Firebase
 
-    public ProdutoModel(String id, String nome, String categoria, double preco) {
+    public ProdutoModel(String id, String nome, String categoriaId, String categoria, double preco) {
         this.id = id;
         this.nome = nome;
+        this.categoriaId = categoriaId;
         this.categoria = categoria;
         this.preco = preco;
     }
@@ -42,4 +44,11 @@ public class ProdutoModel implements ItemVendaModel {
     public String getCategoria() { return categoria; }
     public void setCategoria(String categoria) { this.categoria = categoria; }
     public void setPreco(double preco) { this.preco = preco; }
+    public String getCategoriaId() {
+        return categoriaId;
+    }
+
+    public void setCategoriaId(String categoriaId) {
+        this.categoriaId = categoriaId;
+    }
 }

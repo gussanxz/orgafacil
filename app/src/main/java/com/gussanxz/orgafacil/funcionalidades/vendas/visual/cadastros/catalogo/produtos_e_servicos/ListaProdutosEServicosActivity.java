@@ -157,6 +157,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
             ProdutoModel p = (ProdutoModel) item;
             intent.putExtra("id", p.getId());
             intent.putExtra("nome", p.getNome());
+            intent.putExtra("categoriaId", p.getCategoriaId());
             intent.putExtra("categoria", p.getCategoria());
             intent.putExtra("preco", p.getPreco());
         } else {

@@ -77,6 +77,7 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.categoria.SelecionarCategoriaVendasActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity" android:exported="false" />

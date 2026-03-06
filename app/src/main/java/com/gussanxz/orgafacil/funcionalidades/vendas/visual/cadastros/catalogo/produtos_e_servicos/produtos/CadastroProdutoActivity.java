@@ -1,10 +1,15 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -14,6 +19,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.categoria.SelecionarCategoriaVendasActivity;
 
 public class CadastroProdutoActivity extends AppCompatActivity {
 
@@ -24,6 +30,8 @@ public class CadastroProdutoActivity extends AppCompatActivity {
 
     private ProdutoRepository repository;
     private String idEmEdicao = null;
+    private String categoriaIdSelecionada = null;
+    private String categoriaNomeSelecionada = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +47,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
 
         repository = new ProdutoRepository();
         inicializarComponentes();
+        configurarCampoCategoria();
 
         // Configura Listener
         fabSalvar.setOnClickListener(this::salvarProduto);
@@ -62,6 +71,25 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         textViewHeader.setText("Novo Produto");
     }
 
+    private void configurarCampoCategoria() {
+        if (textInputCategoria.getEditText() != null) {
+            textInputCategoria.getEditText().setFocusable(false);
+            textInputCategoria.getEditText().setClickable(true);
+            textInputCategoria.getEditText().setCursorVisible(false);
+            textInputCategoria.getEditText().setKeyListener(null);
+
+            textInputCategoria.getEditText().setOnClickListener(v -> abrirSelecaoCategoria());
+        }
+
+        textInputCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
+        textInputCategoria.setEndIconOnClickListener(v -> abrirSelecaoCategoria());
+    }
+
+    private void abrirSelecaoCategoria() {
+        Intent intent = new Intent(this, SelecionarCategoriaVendasActivity.class);
+        selecionarCategoriaLauncher.launch(intent);
+    }
+
     private void prepararEdicao(Bundle dados) {
         textViewHeader.setText("Editar Produto");
         idEmEdicao = dados.getString("id");
@@ -69,8 +97,12 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         if(textInputNome.getEditText() != null)
             textInputNome.getEditText().setText(dados.getString("nome"));
 
-        if(textInputCategoria.getEditText() != null)
-            textInputCategoria.getEditText().setText(dados.getString("categoria"));
+        categoriaIdSelecionada = dados.getString("categoriaId");
+        categoriaNomeSelecionada = dados.getString("categoria");
+
+        if (textInputCategoria.getEditText() != null) {
+            textInputCategoria.getEditText().setText(categoriaNomeSelecionada != null ? categoriaNomeSelecionada : "");
+        }
 
         if(textInputPreco.getEditText() != null)
             textInputPreco.getEditText().setText(String.valueOf(dados.getDouble("preco")));
@@ -90,12 +122,8 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         ProdutoModel produtoModel = new ProdutoModel();
         produtoModel.setId(idEmEdicao);
         produtoModel.setNome(nome);
-        String categoriaInformada = "";
-        if (textInputCategoria.getEditText() != null) {
-            categoriaInformada = textInputCategoria.getEditText().getText().toString();
-        }
-
-        produtoModel.setCategoria(categoriaInformada);
+        produtoModel.setCategoriaId(categoriaIdSelecionada);
+        produtoModel.setCategoria(categoriaNomeSelecionada);
         produtoModel.setPreco(preco);
 
         // Salvar
@@ -111,4 +139,18 @@ public class CadastroProdutoActivity extends AppCompatActivity {
             }
         });
     }
+
+    private final ActivityResultLauncher<Intent> selecionarCategoriaLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+
+                    categoriaIdSelecionada = data.getStringExtra("idCategoria");
+                    categoriaNomeSelecionada = data.getStringExtra("nomeCategoria");
+
+                    if (textInputCategoria.getEditText() != null) {
+                        textInputCategoria.getEditText().setText(categoriaNomeSelecionada != null ? categoriaNomeSelecionada : "");
+                    }
+                }
+            });
 }
