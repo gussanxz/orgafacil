@@ -25,7 +25,6 @@ public final class FirestoreSchema {
     // ======== Coleções Raiz ========
     public static final String ROOT = "teste"; // Mudar para "usuarios" em produção
     public static final String CONFIG = "config";
-    public static final String MODULO = "moduloSistema";
 
     // Sub-documentos de Configuração
     public static final String PERFIL = "config_perfil";
@@ -43,11 +42,13 @@ public final class FirestoreSchema {
 
     // ======== MÓDULO VENDAS ========
     public static final String VENDAS = "vendas";
-    public static final String VENDAS_CATEGORIAS = "vendas_categorias";
-    public static final String VENDAS_CATALOGO = "vendas_catalogo";
-    public static final String VENDAS_CAIXA = "vendas_caixa";
-    public static final String VENDAS_VENDAS = "vendas_vendas";
-    public static final String VENDAS_CLIENTES = "vendas_clientes";
+    public static final String VENDAS_RESUMO_GERAL = "resumo_geral";
+
+    public static final String VENDAS_CATEGORIAS = "categorias";
+    public static final String VENDAS_PRODUTOS = "produtos";
+    public static final String VENDAS_CAIXA = "caixa";
+    public static final String VENDAS_VENDAS = "vendas_registradas";
+    public static final String VENDAS_CLIENTES = "clientes";
     public static final String VENDAS_VENDEDORES = "vendedores";
     public static final String VENDAS_FORNECEDORES = "fornecedores";
 
@@ -130,11 +131,16 @@ public final class FirestoreSchema {
         return contasFuturasCol().document(contaId);
     }
 
-    // ======== MODULO SISTEMA / VENDAS ========
+    // ======== VENDAS ========
+
+    @NonNull
+    public static DocumentReference vendasResumoDoc() {
+        return myUserDoc().collection(VENDAS).document(VENDAS_RESUMO_GERAL);
+    }
 
     @NonNull
     public static CollectionReference vendasCategoriasCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATEGORIAS);
+        return vendasResumoDoc().collection(VENDAS_CATEGORIAS);
     }
 
     @NonNull
@@ -143,18 +149,18 @@ public final class FirestoreSchema {
     }
 
     @NonNull
-    public static CollectionReference vendasCatalogoCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CATALOGO);
+    public static CollectionReference vendasProdutosCol() {
+        return vendasResumoDoc().collection(VENDAS_PRODUTOS);
     }
 
     @NonNull
     public static DocumentReference vendasProdutoDoc(@NonNull String produtoId) {
-        return vendasCatalogoCol().document(produtoId);
+        return vendasProdutosCol().document(produtoId);
     }
 
     @NonNull
     public static CollectionReference vendasCaixaCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CAIXA);
+        return vendasResumoDoc().collection(VENDAS_CAIXA);
     }
 
     @NonNull
@@ -164,7 +170,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasVendasCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDAS);
+        return vendasResumoDoc().collection(VENDAS_VENDAS);
     }
 
     @NonNull
@@ -174,7 +180,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasClientesCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CLIENTES);
+        return vendasResumoDoc().collection(VENDAS_CLIENTES);
     }
 
     @NonNull
@@ -184,7 +190,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasVendedoresCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_VENDEDORES);
+        return vendasResumoDoc().collection(VENDAS_VENDEDORES);
     }
 
     @NonNull
@@ -194,7 +200,7 @@ public final class FirestoreSchema {
 
     @NonNull
     public static CollectionReference vendasFornecedoresCol() {
-        return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_FORNECEDORES);
+        return vendasResumoDoc().collection(VENDAS_FORNECEDORES);
     }
 
     @NonNull

@@ -22,7 +22,6 @@ import java.util.List;
 public class ProdutoRepository {
 
     // Nome da coleção centralizado
-    private static final String COL_VENDAS_PRODUTOS = "vendas_produtos";
 
     public ProdutoRepository() {
         // O repositório agora é "stateless" em relação ao UID. [cite: 2025-11-10]
@@ -48,13 +47,9 @@ public class ProdutoRepository {
             DocumentReference docRef;
 
             if (isEdicao) {
-                docRef = FirestoreSchema.myUserDoc()
-                        .collection(COL_VENDAS_PRODUTOS)
-                        .document(produtoModel.getId());
+                docRef = FirestoreSchema.vendasProdutoDoc(produtoModel.getId());
             } else {
-                docRef = FirestoreSchema.myUserDoc()
-                        .collection(COL_VENDAS_PRODUTOS)
-                        .document();
+                docRef = FirestoreSchema.vendasProdutosCol().document();
                 produtoModel.setId(docRef.getId());
             }
 
@@ -77,8 +72,7 @@ public class ProdutoRepository {
      */
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         try {
-            return FirestoreSchema.myUserDoc()
-                    .collection(COL_VENDAS_PRODUTOS)
+            return FirestoreSchema.vendasProdutosCol()
                     .orderBy("nome", Query.Direction.ASCENDING)
                     .addSnapshotListener((snapshots, error) -> {
                         if (error != null) {

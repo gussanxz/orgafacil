@@ -11,13 +11,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,17 +23,15 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
     private RecyclerView recyclerView;
     private AdapterItemListaCategoriasCatalogoVendas adapter;
     private List<Categoria> listaCategorias = new ArrayList<>();
-    private DatabaseReference firebaseRef;
-    private FirebaseAuth mAuth;
+    private CategoriaCatalogoRepository repository;
+    private ListenerRegistration listenerRegistration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
-        //Inicializar o firebase
-        firebaseRef = FirebaseDatabase.getInstance().getReference();
-        mAuth = FirebaseAuth.getInstance();
+        repository = new CategoriaCatalogoRepository();
 
         //Configura o recyclerView
         recyclerView = findViewById(R.id.recyclerCategorias);
@@ -53,51 +47,29 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
     }
 
     private void carregarCategoriasDoFirebase() {
-
-        if (mAuth.getCurrentUser() == null) return;
-
-        String idUsuario = mAuth.getCurrentUser().getUid();
-
-        // CAMINHO
-        // vendas -> uid -> idUsuario -> cadastros -> categorias
-        DatabaseReference categoriasRef = firebaseRef
-                .child("vendas")
-                .child("uid")
-                .child(idUsuario)
-                .child("cadastros")
-                .child("categorias");
-
-        //Listener para ler os dados
-        categoriasRef.addValueEventListener(new ValueEventListener() {
-
+        listenerRegistration = repository.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-
-                listaCategorias.clear(); // Limpa a lista antes de adicionar para não duplicar
-
-                for (DataSnapshot ds : snapshot.getChildren()) {
-
-                    //Converte JSON do Firebase para Objeto Categoria
-                    Categoria categoria = ds.getValue(Categoria.class);
-
-                    //Verifica se a categoria não está vazia
-                    if (categoria != null) {
-                        listaCategorias.add(categoria);
-                    }
-                }
-
-                //Notifica o adapter que os dados foram atualizados
+            public void onNovosDados(List<Categoria> lista) {
+                listaCategorias.clear();
+                listaCategorias.addAll(lista);
                 adapter.notifyDataSetChanged();
-
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+            public void onErro(String erro) {
                 Toast.makeText(SelecionarCategoriaVendasActivity.this,
-                        "Erro ao carregar: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-
+                        "Erro ao carregar: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (listenerRegistration != null) {
+            listenerRegistration.remove();
+            listenerRegistration = null;
+        }
     }
 
     // --- 3. IMPLEMENTAÇÃO DOS CLIQUES (Obrigatório por causa da Interface) ---
