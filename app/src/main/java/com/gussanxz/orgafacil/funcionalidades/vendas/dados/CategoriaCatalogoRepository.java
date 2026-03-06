@@ -23,7 +23,9 @@ import java.util.UUID;
  * Agora utiliza FirebaseSession para garantir a identidade do usuário.
  */
 public class CategoriaCatalogoRepository {
-
+    public static final String ID_CATEGORIA_PADRAO = "nao_alocado";
+    public static final String NOME_CATEGORIA_PADRAO = "Não alocado";
+    public static final String DESCRICAO_CATEGORIA_PADRAO = "Categoria padrão para produtos sem categoria definida";
     private final StorageReference storageRef;
 
     public CategoriaCatalogoRepository() {
@@ -111,6 +113,11 @@ public class CategoriaCatalogoRepository {
     }
 
     public void excluir(@NonNull String idCategoria, @NonNull Callback callback) {
+        if (ID_CATEGORIA_PADRAO.equals(idCategoria)) {
+            callback.onErro("A categoria padrão não pode ser excluída.");
+            return;
+        }
+
         try {
             FirestoreSchema.vendasCategoriaDoc(idCategoria)
                     .delete()
@@ -142,4 +149,24 @@ public class CategoriaCatalogoRepository {
     }
 
     private interface BiConsumer<T, U> { void accept(T t, U u); }
+
+    public void garantirCategoriaPadrao(@NonNull Callback callback) {
+        try {
+            Categoria categoriaPadrao = new Categoria();
+            categoriaPadrao.setId(ID_CATEGORIA_PADRAO);
+            categoriaPadrao.setNome(NOME_CATEGORIA_PADRAO);
+            categoriaPadrao.setDescricao(DESCRICAO_CATEGORIA_PADRAO);
+            categoriaPadrao.setIndexIcone(-1);
+            categoriaPadrao.setUrlImagem(null);
+            categoriaPadrao.setAtiva(true);
+            categoriaPadrao.setTipo(Categoria.Tipo.PRODUTO.toString());
+
+            FirestoreSchema.vendasCategoriaDoc(ID_CATEGORIA_PADRAO)
+                    .set(categoriaPadrao, com.google.firebase.firestore.SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> callback.onSucesso("Categoria padrão garantida"))
+                    .addOnFailureListener(e -> callback.onErro("Erro ao garantir categoria padrão: " + e.getMessage()));
+        } catch (IllegalStateException e) {
+            callback.onErro(e.getMessage());
+        }
+    }
 }

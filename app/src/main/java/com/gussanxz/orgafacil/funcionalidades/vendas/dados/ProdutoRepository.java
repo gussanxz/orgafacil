@@ -20,11 +20,12 @@ import java.util.List;
  * - Utiliza FirebaseSession para identidade e FirestoreSchema para caminhos. [cite: 2025-11-10]
  */
 public class ProdutoRepository {
+    private final CategoriaCatalogoRepository categoriaRepository;
 
     // Nome da coleção centralizado
 
     public ProdutoRepository() {
-        // O repositório agora é "stateless" em relação ao UID. [cite: 2025-11-10]
+        this.categoriaRepository = new CategoriaCatalogoRepository();
     }
 
     public interface Callback {
@@ -43,28 +44,50 @@ public class ProdutoRepository {
      */
     public void salvar(@NonNull ProdutoModel produtoModel, @NonNull Callback callback) {
         try {
-            boolean isEdicao = (produtoModel.getId() != null && !produtoModel.getId().isEmpty());
-            DocumentReference docRef;
+            normalizarCategoriaProduto(produtoModel);
 
-            if (isEdicao) {
-                docRef = FirestoreSchema.vendasProdutoDoc(produtoModel.getId());
+            boolean categoriaPadrao = CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO
+                    .equals(produtoModel.getCategoria());
+
+            if (categoriaPadrao) {
+                categoriaRepository.garantirCategoriaPadrao(new CategoriaCatalogoRepository.Callback() {
+                    @Override
+                    public void onSucesso(String mensagem) {
+                        salvarProdutoNoFirestore(produtoModel, callback);
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        callback.onErro(erro);
+                    }
+                });
             } else {
-                docRef = FirestoreSchema.vendasProdutosCol().document();
-                produtoModel.setId(docRef.getId());
+                salvarProdutoNoFirestore(produtoModel, callback);
             }
 
-            docRef.set(produtoModel)
-                    .addOnSuccessListener(aVoid ->
-                            callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!")
-                    )
-                    .addOnFailureListener(e ->
-                            callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar produto")
-                    );
-
         } catch (IllegalStateException e) {
-            // Tratamento de erro caso o usuário perca a sessão. [cite: 2025-11-10]
             callback.onErro("Sessão expirada: " + e.getMessage());
         }
+    }
+
+    private void salvarProdutoNoFirestore(@NonNull ProdutoModel produtoModel, @NonNull Callback callback) {
+        boolean isEdicao = (produtoModel.getId() != null && !produtoModel.getId().isEmpty());
+        DocumentReference docRef;
+
+        if (isEdicao) {
+            docRef = FirestoreSchema.vendasProdutoDoc(produtoModel.getId());
+        } else {
+            docRef = FirestoreSchema.vendasProdutosCol().document();
+            produtoModel.setId(docRef.getId());
+        }
+
+        docRef.set(produtoModel)
+                .addOnSuccessListener(aVoid ->
+                        callback.onSucesso(isEdicao ? "Produto atualizado!" : "Produto salvo!")
+                )
+                .addOnFailureListener(e ->
+                        callback.onErro(e.getMessage() != null ? e.getMessage() : "Erro ao salvar produto")
+                );
     }
 
     /**
@@ -97,6 +120,16 @@ public class ProdutoRepository {
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
             return null;
+        }
+    }
+
+    private void normalizarCategoriaProduto(@NonNull ProdutoModel produtoModel) {
+        String categoria = produtoModel.getCategoria();
+
+        if (categoria == null || categoria.trim().isEmpty()) {
+            produtoModel.setCategoria(CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
+        } else {
+            produtoModel.setCategoria(categoria.trim());
         }
     }
 }

@@ -51,6 +51,18 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
 
         repository = new CategoriaCatalogoRepository();
 
+        repository.garantirCategoriaPadrao(new CategoriaCatalogoRepository.Callback() {
+            @Override
+            public void onSucesso(String mensagem) {
+                // não precisa fazer nada aqui
+            }
+
+            @Override
+            public void onErro(String erro) {
+                // opcional: logar ou ignorar silenciosamente
+            }
+        });
+
         inicializarComponentes();
         configurarRecyclerView();
         configurarListenerDeFiltro();

@@ -90,7 +90,12 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         ProdutoModel produtoModel = new ProdutoModel();
         produtoModel.setId(idEmEdicao);
         produtoModel.setNome(nome);
-        produtoModel.setCategoria(textInputCategoria.getEditText().getText().toString());
+        String categoriaInformada = "";
+        if (textInputCategoria.getEditText() != null) {
+            categoriaInformada = textInputCategoria.getEditText().getText().toString();
+        }
+
+        produtoModel.setCategoria(categoriaInformada);
         produtoModel.setPreco(preco);
 
         // Salvar
