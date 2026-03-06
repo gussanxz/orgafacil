@@ -53,7 +53,7 @@ public class VendasRepository {
     // =========================
 
     public void listarProdutosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasCatalogoCol()
+        FirestoreSchema.vendasProdutosCol()
                 .whereEqualTo("statusAtivo", true)
                 .orderBy("nome", Query.Direction.ASCENDING)
                 .get()
