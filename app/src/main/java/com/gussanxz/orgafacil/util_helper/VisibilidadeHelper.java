@@ -104,6 +104,7 @@ public class VisibilidadeHelper {
     // =========================================================================
 
     /** @deprecated Use configurarVisibilidadeSaldo() */
+    @Deprecated
     public static void alternarVisibilidadeSaldo(TextView txtSaldo, ImageView imgOlho, String valorReal) {
         txtSaldo.setTag(new Object[]{valorReal, Color.WHITE});
         _alternar(txtSaldo, imgOlho);
