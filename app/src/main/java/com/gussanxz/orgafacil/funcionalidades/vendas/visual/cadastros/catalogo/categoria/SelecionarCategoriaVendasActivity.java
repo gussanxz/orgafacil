@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -81,7 +82,6 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
         // nós devolvemos o resultado para a tela anterior em vez de abrir a edição.
 
         Intent intent = new Intent();
-        intent.putExtra("categoriaSelecionada", categoria); // Sua classe Categoria precisa ser Serializable ou Parcelable
         intent.putExtra("idCategoria", categoria.getId());
         intent.putExtra("nomeCategoria", categoria.getNome());
 
@@ -96,6 +96,13 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
         Toast.makeText(this, "Para excluir, vá ao menu Cadastros", Toast.LENGTH_SHORT).show();
 
         // Se quiser permitir excluir mesmo assim, copie a lógica do AlertDialog da outra Activity para cá.
+    }
+    public void retornarParaVendasCadastros(View view) {
+        finish();
+    }
+
+    public void acessarCadastroCategoria(View view) {
+        Toast.makeText(this, "Para cadastrar, use a tela de categorias.", Toast.LENGTH_SHORT).show();
     }
 }
 

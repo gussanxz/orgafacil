@@ -49,7 +49,7 @@ public class VendasRepository {
     }
 
     // =========================
-    // CATALOGO (vendas/catalogoVendas)
+    // PRODUTOS (vendas/resumo_geral/produtos)
     // =========================
 
     public void listarProdutosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
