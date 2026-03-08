@@ -15,6 +15,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
@@ -32,6 +33,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
     private String idEmEdicao = null;
     private String categoriaIdSelecionada = null;
     private String categoriaNomeSelecionada = null;
+    private MaterialSwitch switchStatusAtivo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +71,9 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         textViewHeader = findViewById(R.id.textViewHeader);
 
         textViewHeader.setText("Novo Produto");
+
+        switchStatusAtivo = findViewById(R.id.switchStatusAtivo);
+        switchStatusAtivo.setChecked(true);
     }
 
     private void configurarCampoCategoria() {
