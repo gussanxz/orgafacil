@@ -6,15 +6,17 @@ public class ProdutoModel implements ItemVendaModel {
     private String categoriaId;
     private String categoria;
     private double preco;
+    private boolean statusAtivo = true;
 
     public ProdutoModel() {} // Construtor vazio para o Firebase
 
-    public ProdutoModel(String id, String nome, String categoriaId, String categoria, double preco) {
+    public ProdutoModel(String id, String nome, String categoriaId, String categoria, double preco, boolean statusAtivo) {
         this.id = id;
         this.nome = nome;
         this.categoriaId = categoriaId;
         this.categoria = categoria;
         this.preco = preco;
+        this.statusAtivo = statusAtivo;
     }
 
     // --- MÉTODOS OBRIGATÓRIOS DA INTERFACE (CORRIGIDOS) ---
@@ -51,4 +53,7 @@ public class ProdutoModel implements ItemVendaModel {
     public void setCategoriaId(String categoriaId) {
         this.categoriaId = categoriaId;
     }
+    public boolean isStatusAtivo() { return statusAtivo; }
+
+    public void setStatusAtivo(boolean statusAtivo) { this.statusAtivo = statusAtivo; }
 }

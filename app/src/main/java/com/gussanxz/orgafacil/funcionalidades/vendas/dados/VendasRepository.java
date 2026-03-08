@@ -214,4 +214,12 @@ public class VendasRepository {
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
+    public void listarServicosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasServicosCol()
+                .whereEqualTo("statusAtivo", true)
+                .orderBy("descricao", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(cb::onSuccess)
+                .addOnFailureListener(cb::onError);
+    }
 }

@@ -51,6 +51,7 @@ public final class FirestoreSchema {
     public static final String VENDAS_CLIENTES = "clientes";
     public static final String VENDAS_VENDEDORES = "vendedores";
     public static final String VENDAS_FORNECEDORES = "fornecedores";
+    public static final String VENDAS_SERVICOS = "servicos";
 
     // ======== Referências Base ========
 
@@ -206,6 +207,16 @@ public final class FirestoreSchema {
     @NonNull
     public static DocumentReference fornecedorDoc(@NonNull String fornecedorId) {
         return vendasFornecedoresCol().document(fornecedorId);
+    }
+
+    @NonNull
+    public static CollectionReference vendasServicosCol() {
+        return vendasResumoDoc().collection(VENDAS_SERVICOS);
+    }
+
+    @NonNull
+    public static DocumentReference vendasServicoDoc(@NonNull String servicoId) {
+        return vendasServicosCol().document(servicoId);
     }
 
     // ======== Helpers de Utilidade ========

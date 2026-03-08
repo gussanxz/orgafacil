@@ -5,15 +5,19 @@ public class ServicoModel implements ItemVendaModel {
     private String id;
     private String descricao;
     private String categoria;
+    private String categoriaId;
     private double valor;
+    private boolean statusAtivo = true;
 
     public ServicoModel() {}
 
-    public ServicoModel(String id, String descricao, String categoria, double valor) {
+    public ServicoModel(String id, String descricao, String categoriaId, String categoria, double valor, boolean statusAtivo) {
         this.id = id;
         this.descricao = descricao;
+        this.categoriaId = categoriaId;
         this.categoria = categoria;
         this.valor = valor;
+        this.statusAtivo = statusAtivo;
     }
 
     // --- MÉTODOS QUE FAZEM O TEXTO APARECER NA LISTA ---
@@ -29,7 +33,7 @@ public class ServicoModel implements ItemVendaModel {
     }
 
     @Override
-    public String getDescricao() { return categoria; }
+    public String getDescricao() { return descricao; }
 
     @Override
     public double getPreco() { return valor; }
@@ -46,4 +50,8 @@ public class ServicoModel implements ItemVendaModel {
     public void setCategoria(String categoria) { this.categoria = categoria; }
     public double getValor() { return valor; }
     public void setValor(double valor) { this.valor = valor; }
+    public String getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(String categoriaId) { this.categoriaId = categoriaId; }
+    public boolean isStatusAtivo() { return statusAtivo; }
+    public void setStatusAtivo(boolean statusAtivo) { this.statusAtivo = statusAtivo; }
 }

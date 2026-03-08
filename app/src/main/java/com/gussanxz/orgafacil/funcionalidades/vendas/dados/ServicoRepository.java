@@ -21,9 +21,6 @@ import java.util.List;
  */
 public class ServicoRepository {
 
-    // Nomes de coleções centralizados para facilitar manutenção
-    private static final String COL_SERVICOS = "vendas_servicos";
-
     public ServicoRepository() {
         // Agora o repositório é "stateless" (sem estado de UID fixo)
     }
@@ -48,13 +45,9 @@ public class ServicoRepository {
             DocumentReference docRef;
 
             if (isEdicao) {
-                docRef = FirestoreSchema.myUserDoc()
-                        .collection(COL_SERVICOS)
-                        .document(servicoModel.getId());
+                docRef = FirestoreSchema.vendasServicoDoc(servicoModel.getId());
             } else {
-                docRef = FirestoreSchema.myUserDoc()
-                        .collection(COL_SERVICOS)
-                        .document();
+                docRef = FirestoreSchema.vendasServicosCol().document();
                 servicoModel.setId(docRef.getId());
             }
 
@@ -76,8 +69,7 @@ public class ServicoRepository {
      */
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         try {
-            return FirestoreSchema.myUserDoc()
-                    .collection(COL_SERVICOS)
+            return FirestoreSchema.vendasServicosCol()
                     .orderBy("descricao", Query.Direction.ASCENDING)
                     .addSnapshotListener((snapshots, error) -> {
                         if (error != null) {
