@@ -2,7 +2,6 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activitie
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -46,25 +45,44 @@ import java.util.Locale;
 /**
  * BaseMovimentacaoActivity
  *
- * Classe abstrata que centraliza toda a lógica compartilhada entre
- * DespesasActivity e ReceitasActivity, eliminando ~80% de duplicação de código.
+ * Centraliza toda a lógica compartilhada entre DespesasActivity, ReceitasActivity
+ * e EditarMovimentacaoActivity.
  *
- * Subclasses devem implementar:
- *  - getTipo()            → define se é RECEITA ou DESPESA
- *  - getLayoutResId()     → ID do layout XML a inflar
- *  - getCategoriaDefault()→ ID de categoria fallback (ex: "geral_despesa")
- *  - onExcluirConfirmado()→ lógica específica de confirmação de exclusão (título/mensagem)
+ * MUDANÇAS NESTA VERSÃO (para suportar EditarMovimentacaoActivity):
  *
- * Subclasses podem sobrescrever:
- *  - onSalvarSucesso()    → comportamento após salvar (padrão: finish())
- *  - validarCamposExtra() → validações adicionais além das padrão
+ *   - Campos de UI elevados de private → protected para acesso direto pela subclasse Editar.
+ *     (campoValor, campoData, campoHora, campoCategoria, campoDescricao, switchStatusPago,
+ *      layoutRecorrencia, checkboxRepetir, btnExcluir, recorrenciaHelper)
+ *
+ *   - Campos de estado elevados de private → protected.
+ *     (repository, isEdicao, ehContaFutura, itemEmEdicao, categoriaIdSelecionada,
+ *      valorCentavosAtual, salvandoEmProgresso)
+ *
+ *   - Métodos de comportamento elevados de private → protected para que o Editar
+ *     possa reutilizar sem reimplementar:
+ *       · setupCurrencyMask()
+ *       · aplicarRegraStatusPorData()
+ *       · atualizarTextoStatus()
+ *       · abrirSelecaoCategoria()
+ *       · configurarLauncherCategoria()
+ *       · abrirSelecionadorDeData()
+ *       · abrirSelecionadorDeHora()
+ *       · validarLimiteHoraAtual()
+ *
+ *   - Novo hook onModoEdicaoAlternado(boolean) para que EditarMovimentacaoActivity
+ *     possa reagir à troca de modo (ex: habilitar/desabilitar campos, trocar ícone FAB)
+ *     sem precisar reimplementar toda a lógica de alternância.
+ *
+ *   - getTipo() tem implementação padrão baseada em itemEmEdicao, então o Editar
+ *     não precisa implementar esse método abstrato (que ele não pode responder
+ *     de forma estática, já que o tipo vem do objeto carregado).
  */
 public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
 
     // ── Constantes ─────────────────────────────────────────────────────────────
-    private static final long VALOR_MAXIMO_CENTAVOS = 999_999_999_99L; // R$ 9.999.999,99
+    private static final long VALOR_MAXIMO_CENTAVOS = 999_999_999_99L;
 
-    // ── Campos de UI (acessíveis às subclasses) ────────────────────────────────
+    // ── Campos de UI — protected para acesso pelas subclasses ─────────────────
     protected TextInputEditText campoData;
     protected TextInputEditText campoDescricao;
     protected TextInputEditText campoHora;
@@ -76,7 +94,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     protected MaterialCheckBox checkboxRepetir;
     protected RecorrenciaFormHelper recorrenciaHelper;
 
-    // ── Estado ─────────────────────────────────────────────────────────────────
+    // ── Estado — protected para acesso pelas subclasses ───────────────────────
     protected MovimentacaoRepository repository;
     protected boolean isEdicao = false;
     protected boolean ehContaFutura = false;
@@ -88,34 +106,36 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> launcherCategoria;
     private String TAG;
 
-    // ── Métodos abstratos que as subclasses DEVEM implementar ──────────────────
+    // ── Métodos abstratos que DespesasActivity e ReceitasActivity implementam ──
+    // EditarMovimentacaoActivity NÃO os implementa — usa as versões default abaixo.
 
-    /** Define o tipo da movimentação: RECEITA ou DESPESA */
+    /**
+     * Define o tipo da movimentação.
+     * DespesasActivity → DESPESA, ReceitasActivity → RECEITA.
+     * EditarMovimentacaoActivity sobrescreve este método usando itemEmEdicao.getTipoEnum().
+     */
     protected abstract TipoCategoriaContas getTipo();
 
-    /** Retorna o ID do layout XML a ser inflado */
+    /** Retorna o ID do layout XML a ser inflado. */
     protected abstract int getLayoutResId();
 
-    /** Retorna o ID de categoria padrão caso nenhuma seja selecionada */
+    /** Retorna o ID de categoria padrão caso nenhuma seja selecionada. */
     protected abstract String getCategoriaDefault();
 
-    /** Retorna o título do diálogo de exclusão */
+    /** Retorna o título do diálogo de exclusão. */
     protected abstract String getTituloExclusao();
 
-    /** Retorna a mensagem do diálogo de exclusão */
+    /** Retorna a mensagem do diálogo de exclusão. */
     protected abstract String getMensagemExclusao();
 
     // ── Métodos que subclasses PODEM sobrescrever ──────────────────────────────
 
-    /**
-     * Ponto de extensão para validações extras além das padrão.
-     * Retorne null se válido, ou a mensagem de erro para exibir.
-     */
+    /** Validações extras além das padrão. Retorne null se válido. */
     protected String validarCamposExtra() {
-        return null; // sem validação extra por padrão
+        return null;
     }
 
-    /** Chamado após salvar/editar com sucesso. Padrão: exibe toast e encerra. */
+    /** Chamado após salvar/editar com sucesso. */
     protected void onSalvarSucesso(String msg) {
         salvandoEmProgresso = false;
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -127,6 +147,17 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     protected void onSalvarErro(String erro) {
         salvandoEmProgresso = false;
         Toast.makeText(this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Hook chamado sempre que o modo de edição é alternado.
+     * EditarMovimentacaoActivity sobrescreve para habilitar/desabilitar campos
+     * e trocar o ícone dos FABs sem precisar reimplementar nada da Base.
+     *
+     * @param modoEdicaoAtivo true = campos habilitados para edição, false = só visualização
+     */
+    protected void onModoEdicaoAlternado(boolean modoEdicaoAtivo) {
+        // sem comportamento padrão — subclasses implementam se precisarem
     }
 
     // ── Ciclo de vida ──────────────────────────────────────────────────────────
@@ -160,13 +191,13 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     // ── Inicialização ──────────────────────────────────────────────────────────
 
     private void inicializarComponentes() {
-        campoValor      = findViewById(R.id.editValor);
-        campoData       = findViewById(R.id.editData);
-        campoCategoria  = findViewById(R.id.editCategoria);
-        campoDescricao  = findViewById(R.id.editDescricao);
-        campoHora       = findViewById(R.id.editHora);
-        btnExcluir      = findViewById(R.id.btnExcluir);
-        switchStatusPago = findViewById(R.id.switchStatusPago);
+        campoValor        = findViewById(R.id.editValor);
+        campoData         = findViewById(R.id.editData);
+        campoCategoria    = findViewById(R.id.editCategoria);
+        campoDescricao    = findViewById(R.id.editDescricao);
+        campoHora         = findViewById(R.id.editHora);
+        btnExcluir        = findViewById(R.id.btnExcluir);
+        switchStatusPago  = findViewById(R.id.switchStatusPago);
         layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
         checkboxRepetir   = findViewById(R.id.checkboxRepetir);
 
@@ -202,19 +233,24 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         if (campoHora != null) {
             campoHora.setOnClickListener(v -> abrirSelecionadorDeHora());
         }
-
         if (btnExcluir != null) {
             btnExcluir.setOnClickListener(v -> {
                 if (isEdicao && itemEmEdicao != null) confirmarExcluir();
             });
         }
-
         if (switchStatusPago != null) {
             switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
         }
     }
 
-    private void configurarLauncherCategoria() {
+    // ── Launcher de categoria — protected para o Editar reutilizar ────────────
+
+    /**
+     * Configura o launcher de seleção de categoria.
+     * Chamado em onCreate pela Base. O Editar herda automaticamente.
+     * Se o Editar precisar de comportamento diferente, pode sobrescrever.
+     */
+    protected void configurarLauncherCategoria() {
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -225,15 +261,15 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 });
     }
 
-    // ── Seletores de Data e Hora ───────────────────────────────────────────────
+    // ── Seletores de Data e Hora — protected ──────────────────────────────────
 
-    private void abrirSelecionadorDeData() {
+    protected void abrirSelecionadorDeData() {
         DateHelper.exibirSeletorData(this, campoData);
     }
 
-    private void abrirSelecionadorDeHora() {
+    protected void abrirSelecionadorDeHora() {
         Calendar agora = Calendar.getInstance();
-        int horaSet = agora.get(Calendar.HOUR_OF_DAY);
+        int horaSet   = agora.get(Calendar.HOUR_OF_DAY);
         int minutoSet = agora.get(Calendar.MINUTE);
 
         try {
@@ -251,7 +287,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         }, horaSet, minutoSet, true).show();
     }
 
-    private void validarLimiteHoraAtual() {
+    protected void validarLimiteHoraAtual() {
         if (ehContaFutura) return;
         try {
             Date dataSelecionada = DateHelper.parsearData(campoData.getText().toString());
@@ -267,24 +303,25 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 String horaTexto = campoHora != null ? campoHora.getText().toString().trim() : "";
                 if (horaTexto.isEmpty() || !horaTexto.contains(":")) return;
 
-                String[] partes = horaTexto.split(":");
-                int horaCampo = Integer.parseInt(partes[0]);
-                int minCampo  = Integer.parseInt(partes[1]);
-                int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
-                int minAgora  = agora.get(Calendar.MINUTE);
+                String[] partes  = horaTexto.split(":");
+                int horaCampo    = Integer.parseInt(partes[0]);
+                int minCampo     = Integer.parseInt(partes[1]);
+                int horaAgora    = agora.get(Calendar.HOUR_OF_DAY);
+                int minAgora     = agora.get(Calendar.MINUTE);
 
                 if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
                     if (campoHora != null) {
                         campoHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
                     }
-                    Toast.makeText(this, "Horário ajustado: não é possível usar horas no futuro.",
+                    Toast.makeText(this,
+                            "Horário ajustado: não é possível usar horas no futuro.",
                             Toast.LENGTH_SHORT).show();
                 }
             }
         } catch (Exception ignored) {}
     }
 
-    // ── Regras de Status ───────────────────────────────────────────────────────
+    // ── Regras de Status ── protected ─────────────────────────────────────────
 
     protected void aplicarRegraStatusPorData(Date data) {
         if (switchStatusPago == null) return;
@@ -318,17 +355,17 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         }
     }
 
-    // ── Seleção de Categoria ───────────────────────────────────────────────────
+    // ── Seleção de Categoria — protected ──────────────────────────────────────
 
-    private void abrirSelecaoCategoria() {
+    protected void abrirSelecaoCategoria() {
         Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
         intent.putExtra("TIPO_CATEGORIA", getTipo().getId());
         launcherCategoria.launch(intent);
     }
 
-    // ── Máscara de Moeda ───────────────────────────────────────────────────────
+    // ── Máscara de Moeda — protected ──────────────────────────────────────────
 
-    private void setupCurrencyMask() {
+    protected void setupCurrencyMask() {
         campoValor.addTextChangedListener(new TextWatcher() {
             private String current = "";
 
@@ -343,7 +380,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 if (!clean.isEmpty()) {
                     try {
                         long parsed = Long.parseLong(clean);
-                        // Limite de segurança: evita overflow e valores absurdos
                         valorCentavosAtual = Math.min(parsed, VALOR_MAXIMO_CENTAVOS);
                         String fmt = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
                         current = fmt;
@@ -418,32 +454,22 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DAY_OF_YEAR, 1);
             Date dataFutura = c.getTime();
-
-            // ALTERADO: Usando o Helper
             campoData.setText(DateHelper.formatarData(dataFutura));
-
             if (campoHora != null) {
                 campoHora.setText("");
                 campoHora.setHint("HH:mm");
             }
             aplicarRegraStatusPorData(dataFutura);
         } else {
-            // ALTERADO: Usando o Helper para data e hora atual
             campoData.setText(DateHelper.dataAtual());
             if (campoHora != null) campoHora.setText(DateHelper.horaAtual());
-
             if (switchStatusPago != null) switchStatusPago.setChecked(true);
             aplicarRegraStatusPorData(new Date());
         }
     }
 
-    // ── Salvar (lógica unificada para Receita e Despesa) ───────────────────────
+    // ── Salvar ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Método central de salvamento. Chame-o nos botões de ação das subclasses:
-     *   public void salvarDespesa(View view) { salvarMovimentacao(); }
-     *   public void salvarProventos(View view) { salvarMovimentacao(); }
-     */
     protected final void salvarMovimentacao() {
         if (salvandoEmProgresso) return;
         if (!validarCamposPadrao()) return;
@@ -467,14 +493,11 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             mov.setCategoria_id(getCategoriaDefault());
         }
 
-        // ── Lógica de Data Centralizada ──
         String dataStr = campoData.getText().toString().trim();
         String horaStr = (campoHora != null) ? campoHora.getText().toString().trim() : "00:00";
 
-        // O DateHelper trata o erro internamente. Sem try/catch aqui!
         Date date = DateHelper.parsearDataHora(dataStr, horaStr);
         mov.setData_movimentacao(new Timestamp(date));
-
         mov.setPago(switchStatusPago != null && switchStatusPago.isChecked());
 
         if (isEdicao) {
@@ -486,7 +509,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // ── CRIAÇÃO RECORRENTE ──────────────────────────────────────────────────
         if (recorrenciaHelper != null && recorrenciaHelper.isRepetirAtivo()) {
             String erroRec = recorrenciaHelper.validar();
             if (erroRec != null) {
@@ -514,7 +536,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 @Override public void onErro(String erro)   { onSalvarErro(erro); }
             });
         } else {
-            // ── LANÇAMENTO ÚNICO ────────────────────────────────────────────────────
             mov.setValor(valorCentavosAtual);
             repository.salvar(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { onSalvarSucesso(msg); }
@@ -523,7 +544,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         }
     }
 
-    // ── Validação padrão ───────────────────────────────────────────────────────
+    // ── Validação ──────────────────────────────────────────────────────────────
 
     private boolean validarCamposPadrao() {
         if (valorCentavosAtual <= 0) {
@@ -531,7 +552,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             campoValor.requestFocus();
             return false;
         }
-        // 👇 NOVA BARREIRA: Bloqueia salvamento de valores astronômicos (Proteção de UI/Overflow)
         if (valorCentavosAtual > VALOR_MAXIMO_CENTAVOS) {
             campoValor.setError("O valor máximo permitido é R$ 9.999.999,99");
             campoValor.requestFocus();
@@ -578,8 +598,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                     .setPositiveButton("Sair", (d, w) -> finish())
                     .setNegativeButton("Aguardar", null)
                     .show();
-            // 👇 Remova o 'return;' daqui se ele estiver bloqueando a execução do diálogo!
-            return; // Mantemos o return para a função não chamar o finish() da linha de baixo
+            return;
         }
         finish();
     }

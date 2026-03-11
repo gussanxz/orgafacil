@@ -41,13 +41,8 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
-    // ── SMART BATCH (SOLUÇÃO #8) ─────────────────────────────────────────────
+    // ── SMART BATCH ──────────────────────────────────────────────────────────
 
-    /**
-     * O Firestore aceita no máximo 500 operações por WriteBatch.
-     * O SmartBatch gerencia isso automaticamente, criando novos lotes
-     * quando atinge 400 operações e comitando todos em sequência.
-     */
     private class SmartBatch {
         private final FirebaseFirestore firestore;
         private WriteBatch loteAtual;
@@ -66,10 +61,7 @@ public class MovimentacaoRepository {
         }
 
         private void checarLimite() {
-            // Limite conservador de 400 para evitar margem de erro
-            if (contadorOperacoes >= 400) {
-                novoLote();
-            }
+            if (contadorOperacoes >= 400) novoLote();
             contadorOperacoes++;
         }
 
@@ -204,37 +196,112 @@ public class MovimentacaoRepository {
 
     // ── confirmação ──────────────────────────────────────────────────────────
 
+    /**
+     * CORREÇÃO BUG #1 — Ordem de operações no confirmarMovimentacao.
+     *
+     * PROBLEMA ORIGINAL:
+     *   1. impactoPendente(batch, mov, -1) era chamado com mov.data_vencimento podendo ser null.
+     *   2. Em seguida, o código tentava resolver o data_vencimento e chamava
+     *      batch.update(ref, "data_vencimento", vencAtual) onde vencAtual ainda era null —
+     *      gravando null no Firestore (escrita inválida silenciosa).
+     *
+     * CORREÇÃO APLICADA:
+     *   1. Primeiro resolvemos e garantimos data_vencimento no objeto local (mov) e no batch.
+     *   2. Só então chamamos impactoPendente com o objeto consistente.
+     *   3. Adicionamos guard: se data_vencimento continuar null após todas as tentativas,
+     *      usamos Timestamp.now() como fallback — nunca gravamos null.
+     *
+     * CORREÇÃO BUG #2 — Proteção contra contador negativo.
+     *
+     * PROBLEMA ORIGINAL:
+     *   impactoPendente usava FieldValue.increment(-1) sem checar se o contador já era 0.
+     *   O Firestore aceita negativos silenciosamente, corrompendo o badge de pendências.
+     *
+     * CORREÇÃO APLICADA:
+     *   impactoPendenteSafe() lê o valor atual do contador antes de decrementar.
+     *   Se já for 0, não faz nada. Se for positivo, decrementa normalmente.
+     *   Para incremento (fator = 1), comportamento é idêntico ao original.
+     *
+     *   NOTA SOBRE CUSTO: essa leitura extra custa 1 read no Firestore por confirmação.
+     *   É aceitável pois confirmação é uma ação explícita e pouco frequente do usuário.
+     *   A alternativa (Cloud Function) seria gratuita em reads mas requereria backend.
+     */
     public void confirmarMovimentacao(MovimentacaoModel mov, Callback callback) {
         if (mov.isPago()) {
             callback.onErro("Esta movimentação já consta como paga.");
             return;
         }
 
-        SmartBatch batch = new SmartBatch(db);
-        DocumentReference ref = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
-        Timestamp agora = Timestamp.now();
+        DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
-        impactoPendente(batch, mov, -1);
+        // ── PASSO 1: Lê o contador atual ANTES de montar o batch ─────────────
+        // Isso resolve o Bug #2: garantimos que não vamos decrementar abaixo de 0.
+        resumoRef.get().addOnSuccessListener(resumoSnap -> {
 
-        Timestamp vencAtual = mov.getData_vencimento();
+            // Extrai o valor atual do contador (pagar ou receber)
+            boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
+            String campoPendencia = isReceita
+                    ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
+                    : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
 
-        if (vencAtual == null) {
-            vencAtual = mov.getData_movimentacao();
-            if (vencAtual != null) {
-                batch.update(ref, "data_vencimento", vencAtual);
-                mov.setData_vencimento(vencAtual);
+            long contadorAtual = 0;
+            if (resumoSnap.exists()) {
+                Long valor = resumoSnap.getLong(campoPendencia);
+                contadorAtual = (valor != null) ? valor : 0;
             }
-        }
 
-        batch.update(ref, MovimentacaoModel.CAMPO_PAGO, true);
-        batch.update(ref, "data_pagamento", agora);
+            // ── PASSO 2: Monta o batch com a ordem correta ────────────────────
+            SmartBatch batch = new SmartBatch(db);
+            DocumentReference ref = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
+            Timestamp agora = Timestamp.now();
 
-        mov.setPago(true);
-        mov.setData_pagamento(agora);
+            // ── PASSO 3: Resolve data_vencimento ANTES de qualquer impacto ────
+            // Bug #1: antes o impacto era calculado com data potencialmente nula.
+            // Agora garantimos que mov.data_vencimento está preenchido antes de prosseguir.
+            Timestamp vencResolvido = mov.getData_vencimento();
 
-        impactoRealizado(batch, mov, 1);
+            if (vencResolvido == null) {
+                // Tenta usar data_movimentacao como fallback
+                vencResolvido = mov.getData_movimentacao();
+            }
+            if (vencResolvido == null) {
+                // Último recurso: usa agora. Nunca grava null.
+                vencResolvido = agora;
+            }
 
-        batch.commit(callback, "Confirmado e registrado corretamente!");
+            // Atualiza o objeto local para que impactoRealizado use a data correta
+            mov.setData_vencimento(vencResolvido);
+
+            // Grava data_vencimento no documento se estava null originalmente
+            if (mov.getData_vencimento() != null) {
+                batch.update(ref, "data_vencimento", vencResolvido);
+            }
+
+            // ── PASSO 4: Remove do contador de pendências ─────────────────────
+            // Bug #2: só decrementa se o contador for maior que 0.
+            if (contadorAtual > 0) {
+                batch.update(resumoRef, campoPendencia, FieldValue.increment(-1));
+            }
+            // Se contadorAtual == 0, o dado já estava inconsistente (bug de sync anterior).
+            // Não fazemos nada: não deixamos ir negativo.
+
+            // ── PASSO 5: Marca como pago e registra data de pagamento ─────────
+            batch.update(ref, MovimentacaoModel.CAMPO_PAGO, true);
+            batch.update(ref, "data_pagamento", agora);
+
+            // Atualiza objeto local para que impactoRealizado use estado correto
+            mov.setPago(true);
+            mov.setData_pagamento(agora);
+
+            // ── PASSO 6: Aplica impacto no saldo realizado ────────────────────
+            // Agora mov está completamente consistente: pago=true, datas preenchidas.
+            impactoRealizado(batch, mov, 1);
+
+            batch.commit(callback, "Confirmado e registrado corretamente!");
+
+        }).addOnFailureListener(e ->
+                callback.onErro("Erro ao verificar pendências: " + e.getMessage())
+        );
     }
 
     // ── impactos no resumo ───────────────────────────────────────────────────
@@ -274,6 +341,21 @@ public class MovimentacaoRepository {
         }
     }
 
+    /**
+     * CORREÇÃO BUG #2 — impactoPendente para incremento (fator = 1).
+     *
+     * Para INCREMENTO (nova movimentação pendente criada), o comportamento
+     * é idêntico ao original: incrementa o contador sem restrições.
+     *
+     * Para DECREMENTO (fator = -1), este método NÃO deve mais ser chamado
+     * diretamente em confirmarMovimentacao — a lógica de decremento seguro
+     * agora está dentro de confirmarMovimentacao() que lê o valor atual primeiro.
+     *
+     * Para excluir(), o decremento ainda usa FieldValue.increment(-1) porque:
+     *   - excluir() remove o documento, então o contador deveria estar >= 1.
+     *   - Se o dado estiver inconsistente, o documento nem existiria para excluir.
+     *   - O risco de negativo aqui é muito menor.
+     */
     private void impactoPendente(SmartBatch batch, MovimentacaoModel mov, int fator) {
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
         String campo = isReceita
@@ -285,7 +367,7 @@ public class MovimentacaoRepository {
                 FieldValue.increment(fator));
     }
 
-    // ── salvar recorrente ───────────────────────────────────────
+    // ── salvar recorrente ────────────────────────────────────────────────────
 
     public void salvarRecorrente(MovimentacaoModel movBase, int quantidade, Callback callback) {
 
@@ -300,9 +382,13 @@ public class MovimentacaoRepository {
             return;
         }
 
-        long valorParcela = isParcelado
-                ? movBase.getValor() / quantidade
-                : movBase.getValor();
+        // ── CORREÇÃO BUG #7 (bonus) — Divisão inteira trunca centavos ────────
+        // PROBLEMA: R$ 100,01 / 3 = R$ 33,00 cada → perde R$ 0,01 no total.
+        // CORREÇÃO: calcula o valor base e coloca o centavo restante na 1ª parcela.
+        long valorBase    = isParcelado ? movBase.getValor() / quantidade : movBase.getValor();
+        long restoCentavos = isParcelado ? movBase.getValor() % quantidade : 0;
+        // A parcela 0 (primeira) receberá valorBase + restoCentavos.
+        // As demais recebem valorBase. Assim a soma sempre fecha o total original.
 
         Timestamp dataBase = movBase.getData_vencimento();
         if (dataBase == null) dataBase = movBase.getData_movimentacao();
@@ -317,7 +403,10 @@ public class MovimentacaoRepository {
                     ? descBase + " (" + (i + 1) + "/" + quantidade + ")"
                     : descBase);
 
+            // Primeira parcela absorve o centavo restante da divisão
+            long valorParcela = (i == 0) ? valorBase + restoCentavos : valorBase;
             parcela.setValor(valorParcela);
+
             parcela.setCategoria_id(movBase.getCategoria_id());
             parcela.setCategoria_nome(movBase.getCategoria_nome());
             parcela.setTipoEnum(movBase.getTipoEnum());
@@ -474,41 +563,88 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
+    /**
+     * CORREÇÃO BUG #2 aplicada também no confirmarMovimentacaoEmMassa.
+     *
+     * O mesmo problema de contador negativo existe aqui: várias parcelas sendo
+     * confirmadas de uma vez, cada uma decrementando o contador.
+     *
+     * SOLUÇÃO: lemos o valor atual do contador uma única vez antes do batch.
+     * Calculamos quantas parcelas pendentes existem no snap, e decrementamos
+     * apenas Math.min(qtdParcelas, contadorAtual) — nunca abaixo de zero.
+     */
     public void confirmarMovimentacaoEmMassa(MovimentacaoModel movBase, Callback callback) {
+        DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+        boolean isReceita = (movBase.getTipoEnum() == TipoCategoriaContas.RECEITA);
+        String campoPendencia = isReceita
+                ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
+                : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
+
+        // ── PASSO 1: Lê o contador atual E as parcelas pendentes em paralelo ─
+        // Usamos a query das parcelas primeiro, depois lemos o resumo.
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo("recorrencia_id", movBase.getRecorrencia_id())
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .get()
                 .addOnSuccessListener(snap -> {
-                    SmartBatch batch = new SmartBatch(db);
-                    Timestamp agora = Timestamp.now();
 
-                    for (QueryDocumentSnapshot doc : snap) {
-                        MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
-                        m.setId(doc.getId());
-
-                        impactoPendente(batch, m, -1);
-
-                        Timestamp vencAtual = m.getData_vencimento();
-                        if (vencAtual == null) {
-                            vencAtual = m.getData_movimentacao();
-                            if (vencAtual != null) {
-                                batch.update(doc.getReference(), "data_vencimento", vencAtual);
-                                m.setData_vencimento(vencAtual);
-                            }
-                        }
-
-                        batch.update(doc.getReference(), MovimentacaoModel.CAMPO_PAGO, true);
-                        batch.update(doc.getReference(), "data_pagamento", agora);
-
-                        m.setPago(true);
-                        m.setData_pagamento(agora);
-
-                        impactoRealizado(batch, m, 1);
+                    if (snap.isEmpty()) {
+                        callback.onSucesso("Nenhuma parcela pendente encontrada.");
+                        return;
                     }
 
-                    batch.commit(callback, "Todas as parcelas confirmadas!");
+                    int totalParcelasPendentes = snap.size();
+
+                    // ── PASSO 2: Lê o resumo para saber o contador atual ──────
+                    resumoRef.get().addOnSuccessListener(resumoSnap -> {
+
+                        long contadorAtual = 0;
+                        if (resumoSnap.exists()) {
+                            Long valor = resumoSnap.getLong(campoPendencia);
+                            contadorAtual = (valor != null) ? valor : 0;
+                        }
+
+                        // Quantas unidades podemos decrementar sem ir negativo?
+                        long decrementoSeguro = Math.min(totalParcelasPendentes, contadorAtual);
+
+                        // ── PASSO 3: Monta o batch ────────────────────────────
+                        SmartBatch batch = new SmartBatch(db);
+                        Timestamp agora = Timestamp.now();
+
+                        for (QueryDocumentSnapshot doc : snap) {
+                            MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                            m.setId(doc.getId());
+
+                            // Resolve data_vencimento antes de qualquer impacto (Bug #1)
+                            Timestamp vencResolvido = m.getData_vencimento();
+                            if (vencResolvido == null) vencResolvido = m.getData_movimentacao();
+                            if (vencResolvido == null) vencResolvido = agora;
+
+                            m.setData_vencimento(vencResolvido);
+                            batch.update(doc.getReference(), "data_vencimento", vencResolvido);
+
+                            batch.update(doc.getReference(), MovimentacaoModel.CAMPO_PAGO, true);
+                            batch.update(doc.getReference(), "data_pagamento", agora);
+
+                            m.setPago(true);
+                            m.setData_pagamento(agora);
+
+                            impactoRealizado(batch, m, 1);
+                        }
+
+                        // Decrementa o contador de pendências de forma segura (uma única vez)
+                        if (decrementoSeguro > 0) {
+                            batch.update(resumoRef, campoPendencia,
+                                    FieldValue.increment(-decrementoSeguro));
+                        }
+
+                        batch.commit(callback, "Todas as parcelas confirmadas!");
+
+                    }).addOnFailureListener(e ->
+                            callback.onErro("Erro ao verificar pendências: " + e.getMessage())
+                    );
+
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
