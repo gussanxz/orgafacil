@@ -35,12 +35,10 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.RecorrenciaFormHelper;
-import com.gussanxz.orgafacil.util_helper.TimePickerHelper;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -230,25 +228,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     // ── Seletores de Data e Hora ───────────────────────────────────────────────
 
     private void abrirSelecionadorDeData() {
-        Calendar c = Calendar.getInstance();
-        try {
-            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    .parse(campoData.getText().toString());
-            if (dataAtual != null) c.setTime(dataAtual);
-        } catch (Exception ignored) {}
-
-        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
-            c.set(y, m, d);
-            Date dataEscolhida = c.getTime();
-            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
-            aplicarRegraStatusPorData(dataEscolhida);
-            validarLimiteHoraAtual();
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-
-        if (!ehContaFutura) {
-            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        }
-        dialog.show();
+        DateHelper.exibirSeletorData(this, campoData);
     }
 
     private void abrirSelecionadorDeHora() {
@@ -274,8 +254,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     private void validarLimiteHoraAtual() {
         if (ehContaFutura) return;
         try {
-            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    .parse(campoData.getText().toString());
+            Date dataSelecionada = DateHelper.parsearData(campoData.getText().toString());
             if (dataSelecionada == null) return;
 
             Calendar calSelecionada = Calendar.getInstance();
@@ -419,9 +398,9 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
 
         if (itemEmEdicao.getData_movimentacao() != null) {
             Date data = itemEmEdicao.getData_movimentacao().toDate();
-            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(data));
+            campoData.setText(DateHelper.formatarData(data));
             if (campoHora != null) {
-                campoHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(data));
+                campoHora.setText(DateHelper.formatarHora(data));
             }
             if (switchStatusPago != null) switchStatusPago.setChecked(itemEmEdicao.isPago());
             aplicarRegraStatusPorData(data);
@@ -439,18 +418,22 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.DAY_OF_YEAR, 1);
             Date dataFutura = c.getTime();
-            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataFutura));
+
+            // ALTERADO: Usando o Helper
+            campoData.setText(DateHelper.formatarData(dataFutura));
+
             if (campoHora != null) {
                 campoHora.setText("");
                 campoHora.setHint("HH:mm");
             }
             aplicarRegraStatusPorData(dataFutura);
         } else {
-            Date dataHoje = new Date();
-            campoData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataHoje));
-            if (campoHora != null) campoHora.setText(TimePickerHelper.setHoraAtual());
+            // ALTERADO: Usando o Helper para data e hora atual
+            campoData.setText(DateHelper.dataAtual());
+            if (campoHora != null) campoHora.setText(DateHelper.horaAtual());
+
             if (switchStatusPago != null) switchStatusPago.setChecked(true);
-            aplicarRegraStatusPorData(dataHoje);
+            aplicarRegraStatusPorData(new Date());
         }
     }
 
@@ -465,7 +448,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         if (salvandoEmProgresso) return;
         if (!validarCamposPadrao()) return;
 
-        // Validação extra definida pela subclasse
         String erroExtra = validarCamposExtra();
         if (erroExtra != null) {
             Toast.makeText(this, erroExtra, Toast.LENGTH_SHORT).show();
@@ -475,7 +457,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         salvandoEmProgresso = true;
 
         MovimentacaoModel mov = isEdicao ? itemEmEdicao : new MovimentacaoModel();
-
         mov.setDescricao(campoDescricao.getText().toString().trim());
         mov.setTipoEnum(getTipo());
         mov.setCategoria_nome(campoCategoria.getText().toString());
@@ -486,17 +467,13 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             mov.setCategoria_id(getCategoriaDefault());
         }
 
-        // Parseia data + hora
-        try {
-            String dataStr = campoData.getText().toString().trim();
-            String horaStr = (campoHora != null) ? campoHora.getText().toString().trim() : "";
-            if (horaStr.isEmpty()) horaStr = "00:00";
-            Date date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    .parse(dataStr + " " + horaStr);
-            if (date != null) mov.setData_movimentacao(new Timestamp(date));
-        } catch (ParseException e) {
-            mov.setData_movimentacao(Timestamp.now());
-        }
+        // ── Lógica de Data Centralizada ──
+        String dataStr = campoData.getText().toString().trim();
+        String horaStr = (campoHora != null) ? campoHora.getText().toString().trim() : "00:00";
+
+        // O DateHelper trata o erro internamente. Sem try/catch aqui!
+        Date date = DateHelper.parsearDataHora(dataStr, horaStr);
+        mov.setData_movimentacao(new Timestamp(date));
 
         mov.setPago(switchStatusPago != null && switchStatusPago.isChecked());
 
@@ -509,9 +486,8 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             return;
         }
 
-        // ── CRIAÇÃO ──────────────────────────────────────────────────────────────
+        // ── CRIAÇÃO RECORRENTE ──────────────────────────────────────────────────
         if (recorrenciaHelper != null && recorrenciaHelper.isRepetirAtivo()) {
-
             String erroRec = recorrenciaHelper.validar();
             if (erroRec != null) {
                 salvandoEmProgresso = false;
@@ -520,7 +496,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             }
 
             int quantidade = recorrenciaHelper.getQuantidade();
-
             if (recorrenciaHelper.getDataReferencia() != null) {
                 mov.setData_movimentacao(new Timestamp(recorrenciaHelper.getDataReferencia()));
             }
@@ -528,7 +503,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
             mov.setTipoRecorrenciaEnum(recorrenciaHelper.getTipo());
             mov.setRecorrencia_intervalo(recorrenciaHelper.getIntervalo());
 
-            // PARCELADO divide o valor; os demais repetem o valor total
             if (recorrenciaHelper.getTipo() == TipoRecorrencia.PARCELADO) {
                 mov.setValor(valorCentavosAtual / quantidade);
             } else {
@@ -539,9 +513,8 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 @Override public void onSucesso(String msg) { onSalvarSucesso(msg); }
                 @Override public void onErro(String erro)   { onSalvarErro(erro); }
             });
-
         } else {
-            // Lançamento único
+            // ── LANÇAMENTO ÚNICO ────────────────────────────────────────────────────
             mov.setValor(valorCentavosAtual);
             repository.salvar(mov, new MovimentacaoRepository.Callback() {
                 @Override public void onSucesso(String msg) { onSalvarSucesso(msg); }

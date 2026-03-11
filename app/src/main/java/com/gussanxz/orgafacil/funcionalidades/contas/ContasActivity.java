@@ -42,13 +42,13 @@ import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.HelperExibirDatasMovimentacao;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -154,9 +154,14 @@ public class ContasActivity extends AppCompatActivity {
                 listaProcessada = HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho);
             }
 
-            // Aqui está o segredo: enviamos a lista processada.
-            // O background cuida de calcular as diferenças e animar a entrada!
-            adapterAgrupado.submitList(listaProcessada);
+            adapterAgrupado.submitList(listaProcessada, () -> {
+                // Se o campo de busca estiver vazio e não houver datas filtradas,
+                // significa que o usuário limpou o filtro ou a lista carregou agora.
+                if (searchView.getQuery().toString().isEmpty() && dataInicialFiltro == null) {
+                    recyclerView.scrollToPosition(0);
+                    // Ou use recyclerView.smoothScrollToPosition(0) para um efeito de deslize
+                }
+            });
 
             atualizarLegendasFiltro(searchView.getQuery().toString());
         };
@@ -321,6 +326,29 @@ public class ContasActivity extends AppCompatActivity {
             abrirMenuEscolha();
             v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         });
+
+        // Adicione isso para que o filtro rode assim que a data for selecionada pelo Helper
+        editDataInicial.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                if (!s.toString().isEmpty()) {
+                    dataInicialFiltro = DateHelper.parsearData(s.toString());
+                    aplicarFiltros();
+                }
+            }
+        });
+
+        editDataFinal.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) {
+                if (!s.toString().isEmpty()) {
+                    dataFinalFiltro = DateHelper.parsearDataFim(s.toString());
+                    aplicarFiltros();
+                }
+            }
+        });
     }
 
     private void configurarRecyclerView() {
@@ -389,28 +417,70 @@ public class ContasActivity extends AppCompatActivity {
         editDataFinal.setOnClickListener(v -> abrirDataPicker(false));
 
         imgLimparFiltroData.setOnClickListener(v -> {
-            editDataInicial.setText(""); editDataFinal.setText("");
-            dataInicialFiltro = null; dataFinalFiltro = null;
+            // 1. Limpa os campos de data
+            editDataInicial.setText("");
+            editDataFinal.setText("");
+            dataInicialFiltro = null;
+            dataFinalFiltro = null;
+
+            // 2. Limpa o campo de busca visualmente (false para não disparar o listener agora)
+            searchView.setQuery("", false);
+            searchView.clearFocus(); // Remove o teclado se estiver aberto
+
+            // 3. Reseta o filtro de tipo (Receita/Despesa)
             chipGroupFiltroTipo.check(R.id.chipTodos);
             viewModel.setFiltroTipo(null);
-            carregarDados();
+
+            // 4. A MÁGICA: Em vez de carregarDados() (Firebase), chamamos aplicarFiltros()
+            // Como limpamos as variáveis acima, o motor de busca vai entender que deve exibir TUDO.
+            aplicarFiltros();
+
+            Toast.makeText(this, "Filtros limpos", Toast.LENGTH_SHORT).show();
         });
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override public boolean onQueryTextSubmit(String q) { return false; }
-            @Override public boolean onQueryTextChange(String n) { aplicarFiltros(); return true; }
+            @Override public boolean onQueryTextSubmit(String q) {
+                searchView.clearFocus(); // Fecha o teclado ao dar "Enter"
+                return true;
+            }
+            @Override public boolean onQueryTextChange(String n) {
+                aplicarFiltros();
+                return true;
+            }
         });
     }
 
     private void abrirDataPicker(boolean isInicio) {
+        // Abre o calendário na data já selecionada, ou hoje como fallback
+        Date dataPreSelecionada = isInicio ? dataInicialFiltro : dataFinalFiltro;
         Calendar c = Calendar.getInstance();
-        new DatePickerDialog(this, (v, y, m, d) -> {
-            c.set(y, m, d, isInicio ? 0 : 23, isInicio ? 0 : 59);
-            if (isInicio) dataInicialFiltro = c.getTime(); else dataFinalFiltro = c.getTime();
-            String format = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(c.getTime());
-            if (isInicio) editDataInicial.setText(format); else editDataFinal.setText(format);
+        if (dataPreSelecionada != null) c.setTime(dataPreSelecionada);
+
+        DatePickerDialog picker = new DatePickerDialog(this, (v, y, m, d) -> {
+            // Cria um novo Calendar dentro do callback (sem risco de captura suja)
+            Calendar cal = Calendar.getInstance();
+            if (isInicio) {
+                cal.set(y, m, d, 0, 0, 0);
+                cal.set(Calendar.MILLISECOND, 0);
+                dataInicialFiltro = cal.getTime();
+                editDataInicial.setText(DateHelper.formatarData(dataInicialFiltro));
+            } else {
+                cal.set(y, m, d, 23, 59, 59);
+                cal.set(Calendar.MILLISECOND, 999);
+                dataFinalFiltro = cal.getTime();
+                editDataFinal.setText(DateHelper.formatarData(dataFinalFiltro));
+            }
             aplicarFiltros();
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+        // ── PONTO CENTRAL DA MELHORIA ──
+        // Histórico: bloqueia datas futuras (máximo = hoje)
+        // Pendentes (atalho): calendário livre, sem restrição
+        if (!ehAtalho) {
+            picker.getDatePicker().setMaxDate(System.currentTimeMillis());
+        }
+
+        picker.show();
     }
 
     private void executarConfirmacao(MovimentacaoModel mov) {

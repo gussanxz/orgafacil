@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,8 +29,7 @@ import java.util.TreeMap;
  */
 public class HelperExibirDatasMovimentacao {
 
-    private static final SimpleDateFormat sdfKey =
-            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    private static final SimpleDateFormat sdfKey = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO, Locale.getDefault());
 
     /**
      * Agrupa e ordena movimentações por dia, retornando uma lista mesclada de

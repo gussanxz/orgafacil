@@ -16,6 +16,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -32,8 +33,8 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
 
     // A lista local 'itens' foi removida, o ListAdapter gerencia o estado da lista em background para nós.
     private final Context context;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
-    private final SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm",       new Locale("pt", "BR"));
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO, new Locale("pt", "BR"));
+    private final SimpleDateFormat hourFormat = new SimpleDateFormat(DateHelper.FORMATO_HORA, new Locale("pt", "BR"));
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final OnItemActionListener listener;
 

@@ -5,6 +5,7 @@ import android.os.Looper;
 
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -67,10 +68,19 @@ public class ContasFiltroEngine {
     }
 
     private List<MovimentacaoModel> filtrarListaGenerica(List<MovimentacaoModel> origem,
-                                                         String query, Date inicio, Date fim,
+                                                         String query, Date inicioOrig, Date fimOrig,
                                                          boolean isModoFuturo, TipoCategoriaContas filtroTipo) {
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         String q = query.toLowerCase(java.util.Locale.getDefault()).trim();
+
+        // ── MELHORIA DE UX: Inversão inteligente ──
+        // Se o usuário colocar Fim ANTES do Início, o motor inverte automaticamente
+        Date inicio = (inicioOrig != null && fimOrig != null && inicioOrig.after(fimOrig)) ? fimOrig  : inicioOrig;
+        Date fim    = (inicioOrig != null && fimOrig != null && inicioOrig.after(fimOrig)) ? inicioOrig : fimOrig;
+
+        // Pré-calcula os limites uma única vez fora do loop (evita alocação de objeto por item)
+        final Date inicioTruncado = (inicio != null) ? DateHelper.truncarParaInicioDia(inicio) : null;
+        final Date fimMaximizado  = (fim    != null) ? DateHelper.maximizarParaFimDia(fim)      : null;
 
         for (MovimentacaoModel m : origem) {
             if (m == null) continue;
@@ -78,9 +88,18 @@ public class ContasFiltroEngine {
             if (!isModoFuturo && !m.isPago()) continue;
             if (filtroTipo != null && m.getTipoEnum() != filtroTipo) continue;
 
-            if (inicio != null && fim != null && m.getData_movimentacao() != null) {
+            // Filtro de data seguro
+            if (m.getData_movimentacao() != null) {
                 Date dM = m.getData_movimentacao().toDate();
-                if (dM.before(inicio) || dM.after(fim)) continue;
+
+                if (inicioTruncado != null) {
+                    // Trunca a movimentação para 00:00:00 e compara: inclui o dia inteiro do início
+                    if (DateHelper.truncarParaInicioDia(dM).before(inicioTruncado)) continue;
+                }
+                if (fimMaximizado != null) {
+                    // Usa o fim pré-calculado com 23:59:59.999: garante que o dia inteiro do fim seja incluído
+                    if (dM.after(fimMaximizado)) continue;
+                }
             }
 
             if (!q.isEmpty()) {

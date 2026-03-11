@@ -25,6 +25,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.categorias.ui.SelecionarCat
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 
 import java.text.SimpleDateFormat;
@@ -200,9 +201,9 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
         if (movOriginal.getData_movimentacao() != null) {
             Date date = movOriginal.getData_movimentacao().toDate();
-            editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date));
+            editData.setText(DateHelper.formatarData(date)); // Se você criou esse método, ou sdfExibicao.format
             if (editHora != null) {
-                editHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date));
+                editHora.setText(DateHelper.formatarHora(date));
             }
             if (switchStatusPago != null) {
                 switchStatusPago.setChecked(movOriginal.isPago());
@@ -222,25 +223,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void abrirSelecionadorDeData() {
-        Calendar c = Calendar.getInstance();
-        try {
-            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    .parse(editData.getText().toString());
-            if (dataAtual != null) c.setTime(dataAtual);
-        } catch (Exception ignored) {}
-
-        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
-            c.set(y, m, d);
-            Date dataEscolhida = c.getTime();
-            editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
-            aplicarRegraStatusPorData(dataEscolhida);
-            validarLimiteHoraAtual();
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-
-        if (c.getTimeInMillis() <= System.currentTimeMillis()) {
-            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        }
-        dialog.show();
+        DateHelper.exibirSeletorData(this, editData);
     }
 
     private void abrirSelecionadorDeHora() {
@@ -262,7 +245,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
     private void validarLimiteHoraAtual() {
         try {
-            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            Date dataSelecionada = new SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                     .parse(editData.getText().toString());
             if (dataSelecionada == null) return;
 
@@ -383,7 +366,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                 dataHoraStr += " 00:00";
             }
 
-            Date date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).parse(dataHoraStr);
+            Date date = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO + " " + DateHelper.FORMATO_HORA, Locale.getDefault()).parse(dataHoraStr);
             if (date != null) {
                 movNova.setData_movimentacao(new Timestamp(date));
                 boolean ok = switchStatusPago != null
@@ -490,8 +473,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
         if (switchStatusPago != null) {
             if (habilitar) {
                 try {
-                    Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            .parse(editData.getText().toString());
+                    Date dataAtual = DateHelper.parsearData(editData.getText().toString());
                     aplicarRegraStatusPorData(dataAtual);
                 } catch (Exception e) {
                     switchStatusPago.setEnabled(true);
