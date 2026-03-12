@@ -159,6 +159,9 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
             intent.putExtra("nome", p.getNome());
             intent.putExtra("categoriaId", p.getCategoriaId());
             intent.putExtra("categoria", p.getCategoria());
+            intent.putExtra("descricao", p.getDescricao());
+            intent.putExtra("statusAtivo", p.isStatusAtivo());
+            intent.putExtra("iconeIndex", p.getIconeIndex());
             intent.putExtra("preco", p.getPreco());
         } else {
             intent = new Intent(this, CadastroServicoActivity.class);
