@@ -53,6 +53,8 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         textMetaProjecao = view.findViewById(R.id.textMetaProjecao);
         barChartDias = view.findViewById(R.id.barChartDias);
 
+        view.findViewById(R.id.layoutEditarMeta).setOnClickListener(v -> abrirDialogEdicaoMeta());
+
         repository = new MovimentacaoRepository();
         carregarDadosPlanejamento();
     }
@@ -92,23 +94,67 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             }
         }
 
-        // 1. Lógica da Meta (Exemplo: Meta fixa de R$ 3000 ou buscar do seu ResumoGeralViewModel)
-        long metaCentavos = 300000; // R$ 3.000,00
-        int percentual = (int) ((gastoTotalCentavos * 100) / metaCentavos);
+        // 1. Lógica da Meta (Agora dinâmica, lendo do SharedPreferences!)
+        android.content.SharedPreferences prefs = requireActivity().getSharedPreferences("OrgaFacilPrefs", android.content.Context.MODE_PRIVATE);
+        long metaCentavos = prefs.getLong("meta_mensal", 300000L);
+
+        // 🔥 CORREÇÃO: Blindagem contra Divisão por Zero 🔥
+        int percentual = 0;
+        if (metaCentavos > 0) {
+            percentual = (int) ((gastoTotalCentavos * 100) / metaCentavos);
+        } else if (gastoTotalCentavos > 0) {
+            // Se a meta é 0 e o usuário gastou qualquer coisa, ele já estourou 100% da meta
+            percentual = 100;
+        }
 
         progressMetaMensal.setProgress(Math.min(percentual, 100));
-        textMetaStatus.setText(percentual + "% consumido");
 
+        progressMetaMensal.setProgress(Math.min(percentual, 100));
+
+        // 🔥 A MÁGICA DA GAMIFICAÇÃO: Cores e Emojis Dinâmicos 🔥
+        int corStatus;
+        String mensagemGamificada;
+
+        if (percentual < 50) {
+            corStatus = Color.parseColor("#43A047"); // Verde (Tranquilo)
+            mensagemGamificada = "😎 Tudo sob controle!";
+        } else if (percentual <= 80) {
+            corStatus = Color.parseColor("#F57C00"); // Laranja (Atenção)
+            mensagemGamificada = "⚠️ Atenção, chegando no limite!";
+        } else {
+            corStatus = Color.parseColor("#E53935"); // Vermelho (Perigo)
+            mensagemGamificada = "🛑 Alerta vermelho! Pise no freio.";
+        }
+
+        // Aplicando a cor dinamicamente na barra de progresso
+        progressMetaMensal.setProgressTintList(android.content.res.ColorStateList.valueOf(corStatus));
+
+        // Atualizando o texto principal com a cor e o emoji
+        textMetaStatus.setText(percentual + "% consumido\n" + mensagemGamificada);
+        textMetaStatus.setTextColor(corStatus);
+
+        // Tratando o saldo restante ou o valor estourado
         long restante = metaCentavos - gastoTotalCentavos;
-        textMetaRestante.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante)) + " restantes");
+        if (restante >= 0) {
+            textMetaRestante.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante)) + " restantes");
+            textMetaRestante.setTextColor(Color.parseColor("#757575")); // Cinza normal
+        } else {
+            // Se gastou mais que a meta, mostramos quanto estourou (usando Math.abs para tirar o sinal negativo)
+            textMetaRestante.setText("Estourou em " + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(Math.abs(restante))));
+            textMetaRestante.setTextColor(Color.parseColor("#E53935")); // Vermelho
+        }
 
         // 2. Projeção "Fora da Caixa"
-        long mediaDiaria = gastoTotalCentavos / diaAtual;
+        long mediaDiaria = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
         long projecaoFinal = mediaDiaria * totalDiasMes;
         textMetaProjecao.setText("Projeção: " + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(projecaoFinal)) + " até o fim do mês.");
 
         if (projecaoFinal > metaCentavos) {
-            textMetaProjecao.setTextColor(Color.RED);
+            textMetaProjecao.setTextColor(Color.parseColor("#E53935"));
+            textMetaProjecao.setTypeface(null, android.graphics.Typeface.BOLD);
+        } else {
+            textMetaProjecao.setTextColor(Color.parseColor("#F57C00")); // Laranja para projeção normal
+            textMetaProjecao.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
 
         // 3. Gráfico de Barras Diário
@@ -132,5 +178,39 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         barChartDias.animateY(1000);
         barChartDias.getDescription().setEnabled(false);
         barChartDias.invalidate();
+    }
+
+    private void abrirDialogEdicaoMeta() {
+        android.widget.EditText input = new android.widget.EditText(getContext());
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Ex: 3000.00");
+        input.setPadding(50, 50, 50, 50);
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Definir Meta Mensal")
+                .setMessage("Qual o valor máximo que você deseja gastar este mês?")
+                .setView(input)
+                .setPositiveButton("Salvar", (dialog, which) -> {
+                    String valorDigitado = input.getText().toString();
+                    if (!valorDigitado.isEmpty()) {
+                        try {
+                            // Converte o que o usuário digitou para DOUBLE, e depois multiplica por 100 para virar LONG (centavos)
+                            double valorDouble = Double.parseDouble(valorDigitado.replace(",", "."));
+                            long valorEmCentavos = (long) (valorDouble * 100);
+
+                            // Salva no SharedPreferences
+                            android.content.SharedPreferences prefs = requireActivity().getSharedPreferences("OrgaFacilPrefs", android.content.Context.MODE_PRIVATE);
+                            prefs.edit().putLong("meta_mensal", valorEmCentavos).apply();
+
+                            // Recarrega a tela com o novo valor!
+                            carregarDadosPlanejamento();
+
+                        } catch (NumberFormatException e) {
+                            android.widget.Toast.makeText(getContext(), "Valor inválido", android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 }

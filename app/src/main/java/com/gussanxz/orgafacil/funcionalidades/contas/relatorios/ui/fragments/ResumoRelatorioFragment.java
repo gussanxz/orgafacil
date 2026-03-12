@@ -35,6 +35,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.utils.ColorTemplate;
+
 public class ResumoRelatorioFragment extends Fragment {
 
     // Componentes Visuais
@@ -45,6 +52,7 @@ public class ResumoRelatorioFragment extends Fragment {
     private List<MovimentacaoModel> listaDoMesAtual = new ArrayList<>();
     private androidx.recyclerview.widget.RecyclerView recyclerTopMaioresGastos;
     private TopGastosAdapter topGastosAdapter;
+    private PieChart pieChartCategorias;
 
     @Nullable
     @Override
@@ -60,6 +68,7 @@ public class ResumoRelatorioFragment extends Fragment {
         textTotalReceitas = view.findViewById(R.id.textTotalReceitas);
         textTotalDespesas = view.findViewById(R.id.textTotalDespesas);
         textSaldoResumo = view.findViewById(R.id.textSaldoResumo);
+        pieChartCategorias = view.findViewById(R.id.pieChartCategorias);
 
         repository = new MovimentacaoRepository();
 
@@ -69,6 +78,7 @@ public class ResumoRelatorioFragment extends Fragment {
         recyclerTopMaioresGastos.setAdapter(topGastosAdapter);
 
         carregarResumoMesAtual();
+        configurarVisualDoGrafico();
     }
 
     private void calcularEAtualizarDashboard() {
@@ -121,6 +131,68 @@ public class ResumoRelatorioFragment extends Fragment {
 
         // 🔥 CORREÇÃO: Acionando os insights inteligentes após o cálculo do dashboard
         gerarInsightsInteligentes(totalDespesas, mapaGastosPorCategoria);
+
+        if (totalDespesas > 0) {
+
+            pieChartCategorias.setTouchEnabled(true); // Reativa o toque caso estivesse desativado
+
+            List<PieEntry> entradasGrafico = new ArrayList<>();
+
+            for (Map.Entry<String, Long> entry : mapaGastosPorCategoria.entrySet()) {
+                float valorParaGrafico = (float) MoedaHelper.centavosParaDouble(entry.getValue());
+                entradasGrafico.add(new PieEntry(valorParaGrafico, entry.getKey()));
+            }
+
+            PieDataSet dataSet = new PieDataSet(entradasGrafico, "Categorias");
+            dataSet.setSliceSpace(3f);
+            dataSet.setSelectionShift(5f);
+
+            List<Integer> cores = new ArrayList<>();
+            for (int c : ColorTemplate.MATERIAL_COLORS) cores.add(c);
+            for (int c : ColorTemplate.PASTEL_COLORS) cores.add(c);
+            dataSet.setColors(cores);
+
+            PieData data = new PieData(dataSet);
+            data.setValueFormatter(new PercentFormatter(pieChartCategorias));
+            data.setValueTextSize(12f);
+            data.setValueTextColor(android.graphics.Color.WHITE);
+            data.setValueTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+
+            pieChartCategorias.setData(data);
+
+            String totalFormatado = MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(totalDespesas));
+            pieChartCategorias.setCenterText("Total\n" + totalFormatado);
+            pieChartCategorias.setCenterTextSize(16f);
+            pieChartCategorias.setCenterTextColor(android.graphics.Color.parseColor("#E53935"));
+
+            pieChartCategorias.animateY(1400, com.github.mikephil.charting.animation.Easing.EaseInOutQuad);
+            pieChartCategorias.invalidate();
+
+        } else {
+            // 🔥 A MÁGICA FORA DA CAIXA: O ESTADO VAZIO ANIMADO 🔥
+
+            List<PieEntry> entradasVazias = new ArrayList<>();
+            // Adicionamos uma única fatia valendo 100% para fechar o círculo
+            entradasVazias.add(new PieEntry(100f, ""));
+
+            PieDataSet dataSetVazio = new PieDataSet(entradasVazias, "");
+            dataSetVazio.setColor(android.graphics.Color.parseColor("#EEEEEE")); // Um cinza bem suave e neutro
+            dataSetVazio.setDrawValues(false); // Esconde o texto de "100%" para não confundir
+            dataSetVazio.setSelectionShift(0f); // Tira o pulinho se clicar
+
+            PieData dataVazio = new PieData(dataSetVazio);
+            pieChartCategorias.setData(dataVazio);
+
+            // Uma mensagem super positiva no centro!
+            pieChartCategorias.setCenterText("Uhuul!\nNenhum gasto\neste mês 💰");
+            pieChartCategorias.setCenterTextSize(14f);
+            pieChartCategorias.setCenterTextColor(android.graphics.Color.parseColor("#43A047")); // Verde sucesso
+
+            pieChartCategorias.setTouchEnabled(false); // Desativa o toque para não rodar o gráfico vazio
+
+            pieChartCategorias.animateY(1000); // Dá uma animada suave na rosca cinza
+            pieChartCategorias.invalidate();
+        }
     }
 
     // --- LÓGICA DE INSIGHTS ---
@@ -245,5 +317,32 @@ public class ResumoRelatorioFragment extends Fragment {
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private void configurarVisualDoGrafico() {
+        // 1. Mensagem de Loading (Aparece super rápido enquanto busca no banco)
+        pieChartCategorias.setNoDataText("Carregando seus gastos...");
+        pieChartCategorias.setNoDataTextColor(android.graphics.Color.parseColor("#9E9E9E"));
+
+        // 2. Transformando em "Donut"
+        pieChartCategorias.setUsePercentValues(true);
+        pieChartCategorias.getDescription().setEnabled(false);
+        pieChartCategorias.setExtraOffsets(5, 10, 5, 5);
+
+        pieChartCategorias.setDragDecelerationFrictionCoef(0.95f);
+
+        pieChartCategorias.setDrawHoleEnabled(true);
+        pieChartCategorias.setHoleColor(android.graphics.Color.WHITE);
+        pieChartCategorias.setTransparentCircleColor(android.graphics.Color.WHITE);
+        pieChartCategorias.setTransparentCircleAlpha(110);
+        pieChartCategorias.setHoleRadius(58f);
+        pieChartCategorias.setTransparentCircleRadius(61f);
+
+        pieChartCategorias.setDrawCenterText(true);
+        pieChartCategorias.setRotationAngle(0);
+        pieChartCategorias.setRotationEnabled(true);
+        pieChartCategorias.setHighlightPerTapEnabled(true);
+
+        pieChartCategorias.getLegend().setEnabled(false);
     }
 }

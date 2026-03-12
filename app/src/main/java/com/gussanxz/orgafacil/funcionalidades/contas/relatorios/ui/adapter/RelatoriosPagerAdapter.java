@@ -6,6 +6,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.fragments.EvolucaoRelatorioFragment;
+import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.fragments.ExportacaoRelatorioFragment;
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.fragments.PlanejamentoRelatorioFragment;
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.fragments.ResumoRelatorioFragment;
 
@@ -20,11 +21,13 @@ public class RelatoriosPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                return new ResumoRelatorioFragment(); // Nossa Aba 1
+                return new ResumoRelatorioFragment();
             case 1:
-                return new EvolucaoRelatorioFragment(); // Placeholder Aba 2 (Evolução)
+                return new EvolucaoRelatorioFragment();
             case 2:
                 return new PlanejamentoRelatorioFragment();
+            case 3:
+                return new ExportacaoRelatorioFragment();
             default:
                 return new ResumoRelatorioFragment();
         }
@@ -32,6 +35,6 @@ public class RelatoriosPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 3; // Nossas 3 abas planejadas
+        return 4; // Agora temos 4 abas exatas
     }
 }

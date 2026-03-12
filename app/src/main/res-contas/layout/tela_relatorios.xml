@@ -19,12 +19,27 @@
         android:titleTextColor="@android:color/white"
         android:background="@color/colorPrimary"/>
 
-        <FrameLayout
-            android:id="@+id/containerRelatorios"
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPagerRelatorios"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
 
     </LinearLayout>
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabPontinhos"
+        android:layout_width="wrap_content"
+        android:layout_height="24dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="80dp"
+        android:background="@android:color/transparent"
+        app:tabBackground="@drawable/seletor_pontinhos"
+        app:tabGravity="center"
+        app:tabIndicatorHeight="0dp"
+        app:tabPaddingStart="6dp"
+        app:tabPaddingEnd="6dp"
+        app:tabRippleColor="@null" />
 
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
