@@ -109,6 +109,34 @@ public class MovimentacaoRepository {
         return lista;
     }
 
+    public void buscarMovimentacoesParaExportacao(Date dataInicio, Date dataFim, DadosCallback callback) {
+        if (dataInicio == null || dataFim == null) {
+            callback.onErro("Período inválido para exportação.");
+            return;
+        }
+
+        Timestamp tsInicio = new Timestamp(dataInicio);
+        Timestamp tsFim = new Timestamp(dataFim);
+
+        // Usamos o seu FirestoreSchema e ordenamos para o extrato sair cronológico
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereGreaterThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, tsInicio)
+                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, tsFim)
+                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    // Usamos o seu método existente que já popula o ID da movimentação
+                    List<MovimentacaoModel> lista = processarSnapshots(snap);
+
+                    if (lista.isEmpty()) {
+                        callback.onErro("Nenhuma movimentação encontrada neste período.");
+                    } else {
+                        callback.onSucesso(lista);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onErro("Erro ao buscar dados: " + e.getMessage()));
+    }
+
     // ── escrita simples ──────────────────────────────────────────────────────
 
     public void salvar(MovimentacaoModel mov, Callback callback) {
@@ -632,5 +660,27 @@ public class MovimentacaoRepository {
                 callbackOriginal.onErro(erro);
             }
         };
+    }
+
+    public void recuperarDadosEvolucao(int mesesParaTras, DadosCallback callback) {
+        Calendar cal = Calendar.getInstance();
+        Date dataFim = cal.getTime(); // Hoje
+
+        cal.add(Calendar.MONTH, -mesesParaTras);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        Date dataInicio = cal.getTime();
+
+        Timestamp tsInicio = new Timestamp(dataInicio);
+        Timestamp tsFim = new Timestamp(dataFim);
+
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereGreaterThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, tsInicio)
+                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, tsFim)
+                .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(snap -> callback.onSucesso(processarSnapshots(snap)))
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 }

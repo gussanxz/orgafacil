@@ -112,5 +112,19 @@
         <activity android:name=".funcionalidades.mercado.ResumoListaMercadoActivity" android:exported="false" />
         <activity android:name=".funcionalidades.contas.movimentacoes.ui.activities.ResumoParcelasActivity" />
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity
+            android:name=".funcionalidades.contas.relatorios.ui.activities.RelatoriosActivity"
+            android:exported="false"/>
+
     </application>
 </manifest>

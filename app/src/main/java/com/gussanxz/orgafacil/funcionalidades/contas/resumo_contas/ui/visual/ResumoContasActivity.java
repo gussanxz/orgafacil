@@ -26,6 +26,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.adapter.RelatoriosPagerAdapter;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -75,20 +76,20 @@ public class ResumoContasActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tela_resumo_contas);
 
+        // Ajuste de insets (Edge-to-Edge)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        // 1. Inicializa IDs e ViewModels
         inicializarComponentes();
-
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
-        // Somente o Observer da Lista manda no layout, sem brigas!
+        // 3. Configurações de UI e Comportamento
         setupSaldoListaObserver();
-
         viewModel.verificarViradaDeMes(this);
 
         setupSlideView();
@@ -96,6 +97,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         setupMenuRadial();
         configurarChipsFiltro();
 
+        // Listener para fechar menu radial ao clicar fora
         overlayBackground.setOnClickListener(v -> fecharMenu());
     }
 
@@ -125,6 +127,11 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground = findViewById(R.id.overlay_background);
         bottomAppBar = findViewById(R.id.bottomAppBar);
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
+        ImageView btnRelatoriosTop = findViewById(R.id.btnRelatoriosTop);
+
+        if (btnRelatoriosTop != null) {
+            btnRelatoriosTop.setOnClickListener(v -> acessarRelatorios(v));
+        }
     }
 
     private void setupSaldoListaObserver() {
@@ -434,5 +441,36 @@ public class ResumoContasActivity extends AppCompatActivity {
                 contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
             }
         });
+    }
+
+    private void configurarAbasRelatorio() {
+
+        RelatoriosPagerAdapter adapter = new RelatoriosPagerAdapter(this);
+        viewPager.setAdapter(adapter);
+
+        // Desativa o swipe lateral se quiser que a navegação seja apenas pelos cliques nos Chips/Tabs
+        // viewPager.setUserInputEnabled(false);
+
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("Resumo");
+                    break;
+                case 1:
+                    tab.setText("Evolução");
+                    break;
+                case 2:
+                    tab.setText("Planejamento");
+                    break;
+            }
+        }).attach();
+    }
+
+    public void acessarRelatorios(View v) {
+
+        Intent intent = new Intent(this,
+                com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.activities.RelatoriosActivity.class);
+
+        startActivity(intent);
     }
 }
