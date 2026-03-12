@@ -11,7 +11,8 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
  */
 public class AdapterItemListaMovimentacao {
 
-    public static final int TYPE_HEADER   = 0;
+    public boolean ehVencido = false;
+    public static final int TYPE_HEADER    = 0;
     public static final int TYPE_MOVIMENTO = 1;
 
     public int type;
@@ -34,18 +35,31 @@ public class AdapterItemListaMovimentacao {
     // ── Fábricas estáticas ─────────────────────────────────────────────────────
 
     /**
-     * Cria um item do tipo cabeçalho de dia.
+     * Cria um item do tipo cabeçalho de dia (compatibilidade — ehVencido = false).
      *
      * @param data      string de data no formato "dd/MM/yyyy" (usada como chave de grupo)
      * @param tituloDia texto exibido ao usuário ("Hoje", "Ontem", "15/03/2025" etc.)
      * @param saldoDia  saldo líquido do dia em CENTAVOS (long — nunca int)
      */
     public static AdapterItemListaMovimentacao header(String data, String tituloDia, long saldoDia) {
+        return header(data, tituloDia, saldoDia, false);
+    }
+
+    /**
+     * Cria um item do tipo cabeçalho de dia.
+     *
+     * @param data      string de data no formato "dd/MM/yyyy" (usada como chave de grupo)
+     * @param tituloDia texto exibido ao usuário ("Hoje", "Ontem", "15/03/2025" etc.)
+     * @param saldoDia  saldo líquido do dia em CENTAVOS (long — nunca int)
+     * @param ehVencido true quando o grupo representa pendências com data já passada
+     */
+    public static AdapterItemListaMovimentacao header(String data, String tituloDia, long saldoDia, boolean ehVencido) {
         AdapterItemListaMovimentacao item = new AdapterItemListaMovimentacao();
         item.type      = TYPE_HEADER;
         item.data      = data;
         item.tituloDia = tituloDia;
-        item.saldoDia  = saldoDia; // long → long, sem cast
+        item.saldoDia  = saldoDia;
+        item.ehVencido = ehVencido;
         return item;
     }
 

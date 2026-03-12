@@ -7,13 +7,13 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoRecorrencia;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSmartBatch;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -41,60 +41,6 @@ public class MovimentacaoRepository {
         void onErro(String erro);
     }
 
-    // ── SMART BATCH ──────────────────────────────────────────────────────────
-
-    private class SmartBatch {
-        private final FirebaseFirestore firestore;
-        private WriteBatch loteAtual;
-        private int contadorOperacoes = 0;
-        private final List<WriteBatch> todosOsLotes = new ArrayList<>();
-
-        public SmartBatch(FirebaseFirestore firestore) {
-            this.firestore = firestore;
-            novoLote();
-        }
-
-        private void novoLote() {
-            loteAtual = firestore.batch();
-            todosOsLotes.add(loteAtual);
-            contadorOperacoes = 0;
-        }
-
-        private void checarLimite() {
-            if (contadorOperacoes >= 400) novoLote();
-            contadorOperacoes++;
-        }
-
-        public void set(DocumentReference ref, Object data) {
-            checarLimite();
-            loteAtual.set(ref, data);
-        }
-
-        public void update(DocumentReference ref, String field, Object value) {
-            checarLimite();
-            loteAtual.update(ref, field, value);
-        }
-
-        public void delete(DocumentReference ref) {
-            checarLimite();
-            loteAtual.delete(ref);
-        }
-
-        public void commit(Callback callback, String mensagemSucesso) {
-            commitRecursivo(0, callback, mensagemSucesso);
-        }
-
-        private void commitRecursivo(int index, Callback callback, String mensagemSucesso) {
-            if (index >= todosOsLotes.size()) {
-                callback.onSucesso(mensagemSucesso);
-                return;
-            }
-            todosOsLotes.get(index).commit()
-                    .addOnSuccessListener(v -> commitRecursivo(index + 1, callback, mensagemSucesso))
-                    .addOnFailureListener(e -> callback.onErro("Falha no lote " + (index + 1) + ": " + e.getMessage()));
-        }
-    }
-
     // ── leitura ──────────────────────────────────────────────────────────────
 
     public void recuperarHistorico(Date dataReferencia, DadosCallback callback) {
@@ -109,8 +55,13 @@ public class MovimentacaoRepository {
 
     public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
                                            DadosPaginadosCallback callback) {
+        com.google.firebase.Timestamp limite = dataReferencia != null
+                ? new com.google.firebase.Timestamp(dataReferencia)
+                : com.google.firebase.Timestamp.now();
+
         Query q = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, true)
+                .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, limite)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
         if (ultimoDoc != null) q = q.startAfter(ultimoDoc);
@@ -161,7 +112,7 @@ public class MovimentacaoRepository {
     // ── escrita simples ──────────────────────────────────────────────────────
 
     public void salvar(MovimentacaoModel mov, Callback callback) {
-        SmartBatch batch = new SmartBatch(db);
+        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
         DocumentReference ref = FirestoreSchema.contasMovimentacoesCol().document();
         mov.setId(ref.getId());
 
@@ -176,56 +127,26 @@ public class MovimentacaoRepository {
 
         batch.set(ref, mov);
         aplicarImpacto(batch, mov, 1);
-        batch.commit(callback, "Lançado com sucesso!");
+        batch.commit(criarBatchCallback(callback, "Lançado com sucesso!"));
     }
 
     public void excluir(MovimentacaoModel mov, Callback callback) {
-        SmartBatch batch = new SmartBatch(db);
+        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
         batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
         aplicarImpacto(batch, mov, -1);
-        batch.commit(callback, "Excluído com sucesso!");
+        batch.commit(criarBatchCallback(callback, "Excluído com sucesso!"));
     }
 
     public void editar(MovimentacaoModel movAntigo, MovimentacaoModel movNovo, Callback callback) {
-        SmartBatch batch = new SmartBatch(db);
+        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
         batch.set(FirestoreSchema.contasMovimentacaoDoc(movNovo.getId()), movNovo);
         aplicarImpacto(batch, movAntigo, -1);
         aplicarImpacto(batch, movNovo, 1);
-        batch.commit(callback, "Editado com sucesso!");
+        batch.commit(criarBatchCallback(callback, "Editado com sucesso!"));
     }
 
     // ── confirmação ──────────────────────────────────────────────────────────
 
-    /**
-     * CORREÇÃO BUG #1 — Ordem de operações no confirmarMovimentacao.
-     *
-     * PROBLEMA ORIGINAL:
-     *   1. impactoPendente(batch, mov, -1) era chamado com mov.data_vencimento podendo ser null.
-     *   2. Em seguida, o código tentava resolver o data_vencimento e chamava
-     *      batch.update(ref, "data_vencimento", vencAtual) onde vencAtual ainda era null —
-     *      gravando null no Firestore (escrita inválida silenciosa).
-     *
-     * CORREÇÃO APLICADA:
-     *   1. Primeiro resolvemos e garantimos data_vencimento no objeto local (mov) e no batch.
-     *   2. Só então chamamos impactoPendente com o objeto consistente.
-     *   3. Adicionamos guard: se data_vencimento continuar null após todas as tentativas,
-     *      usamos Timestamp.now() como fallback — nunca gravamos null.
-     *
-     * CORREÇÃO BUG #2 — Proteção contra contador negativo.
-     *
-     * PROBLEMA ORIGINAL:
-     *   impactoPendente usava FieldValue.increment(-1) sem checar se o contador já era 0.
-     *   O Firestore aceita negativos silenciosamente, corrompendo o badge de pendências.
-     *
-     * CORREÇÃO APLICADA:
-     *   impactoPendenteSafe() lê o valor atual do contador antes de decrementar.
-     *   Se já for 0, não faz nada. Se for positivo, decrementa normalmente.
-     *   Para incremento (fator = 1), comportamento é idêntico ao original.
-     *
-     *   NOTA SOBRE CUSTO: essa leitura extra custa 1 read no Firestore por confirmação.
-     *   É aceitável pois confirmação é uma ação explícita e pouco frequente do usuário.
-     *   A alternativa (Cloud Function) seria gratuita em reads mas requereria backend.
-     */
     public void confirmarMovimentacao(MovimentacaoModel mov, Callback callback) {
         if (mov.isPago()) {
             callback.onErro("Esta movimentação já consta como paga.");
@@ -234,11 +155,8 @@ public class MovimentacaoRepository {
 
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
-        // ── PASSO 1: Lê o contador atual ANTES de montar o batch ─────────────
-        // Isso resolve o Bug #2: garantimos que não vamos decrementar abaixo de 0.
         resumoRef.get().addOnSuccessListener(resumoSnap -> {
 
-            // Extrai o valor atual do contador (pagar ou receber)
             boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
             String campoPendencia = isReceita
                     ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
@@ -250,54 +168,30 @@ public class MovimentacaoRepository {
                 contadorAtual = (valor != null) ? valor : 0;
             }
 
-            // ── PASSO 2: Monta o batch com a ordem correta ────────────────────
-            SmartBatch batch = new SmartBatch(db);
+            FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
             DocumentReference ref = FirestoreSchema.contasMovimentacaoDoc(mov.getId());
             Timestamp agora = Timestamp.now();
 
-            // ── PASSO 3: Resolve data_vencimento ANTES de qualquer impacto ────
-            // Bug #1: antes o impacto era calculado com data potencialmente nula.
-            // Agora garantimos que mov.data_vencimento está preenchido antes de prosseguir.
             Timestamp vencResolvido = mov.getData_vencimento();
+            if (vencResolvido == null) vencResolvido = mov.getData_movimentacao();
+            if (vencResolvido == null) vencResolvido = agora;
 
-            if (vencResolvido == null) {
-                // Tenta usar data_movimentacao como fallback
-                vencResolvido = mov.getData_movimentacao();
-            }
-            if (vencResolvido == null) {
-                // Último recurso: usa agora. Nunca grava null.
-                vencResolvido = agora;
-            }
-
-            // Atualiza o objeto local para que impactoRealizado use a data correta
             mov.setData_vencimento(vencResolvido);
+            batch.update(ref, "data_vencimento", vencResolvido);
 
-            // Grava data_vencimento no documento se estava null originalmente
-            if (mov.getData_vencimento() != null) {
-                batch.update(ref, "data_vencimento", vencResolvido);
-            }
-
-            // ── PASSO 4: Remove do contador de pendências ─────────────────────
-            // Bug #2: só decrementa se o contador for maior que 0.
             if (contadorAtual > 0) {
                 batch.update(resumoRef, campoPendencia, FieldValue.increment(-1));
             }
-            // Se contadorAtual == 0, o dado já estava inconsistente (bug de sync anterior).
-            // Não fazemos nada: não deixamos ir negativo.
 
-            // ── PASSO 5: Marca como pago e registra data de pagamento ─────────
             batch.update(ref, MovimentacaoModel.CAMPO_PAGO, true);
             batch.update(ref, "data_pagamento", agora);
 
-            // Atualiza objeto local para que impactoRealizado use estado correto
             mov.setPago(true);
             mov.setData_pagamento(agora);
 
-            // ── PASSO 6: Aplica impacto no saldo realizado ────────────────────
-            // Agora mov está completamente consistente: pago=true, datas preenchidas.
             impactoRealizado(batch, mov, 1);
 
-            batch.commit(callback, "Confirmado e registrado corretamente!");
+            batch.commit(criarBatchCallback(callback, "Confirmado e registrado corretamente!"));
 
         }).addOnFailureListener(e ->
                 callback.onErro("Erro ao verificar pendências: " + e.getMessage())
@@ -306,12 +200,12 @@ public class MovimentacaoRepository {
 
     // ── impactos no resumo ───────────────────────────────────────────────────
 
-    private void aplicarImpacto(SmartBatch batch, MovimentacaoModel mov, int fator) {
+    private void aplicarImpacto(FirestoreSmartBatch batch, MovimentacaoModel mov, int fator) {
         if (mov.isPago()) impactoRealizado(batch, mov, fator);
         else impactoPendente(batch, mov, fator);
     }
 
-    private void impactoRealizado(SmartBatch batch, MovimentacaoModel mov, int fator) {
+    private void impactoRealizado(FirestoreSmartBatch batch, MovimentacaoModel mov, int fator) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
         long centavos = Math.abs(mov.getValor());
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
@@ -341,22 +235,7 @@ public class MovimentacaoRepository {
         }
     }
 
-    /**
-     * CORREÇÃO BUG #2 — impactoPendente para incremento (fator = 1).
-     *
-     * Para INCREMENTO (nova movimentação pendente criada), o comportamento
-     * é idêntico ao original: incrementa o contador sem restrições.
-     *
-     * Para DECREMENTO (fator = -1), este método NÃO deve mais ser chamado
-     * diretamente em confirmarMovimentacao — a lógica de decremento seguro
-     * agora está dentro de confirmarMovimentacao() que lê o valor atual primeiro.
-     *
-     * Para excluir(), o decremento ainda usa FieldValue.increment(-1) porque:
-     *   - excluir() remove o documento, então o contador deveria estar >= 1.
-     *   - Se o dado estiver inconsistente, o documento nem existiria para excluir.
-     *   - O risco de negativo aqui é muito menor.
-     */
-    private void impactoPendente(SmartBatch batch, MovimentacaoModel mov, int fator) {
+    private void impactoPendente(FirestoreSmartBatch batch, MovimentacaoModel mov, int fator) {
         boolean isReceita = (mov.getTipoEnum() == TipoCategoriaContas.RECEITA);
         String campo = isReceita
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
@@ -371,7 +250,7 @@ public class MovimentacaoRepository {
 
     public void salvarRecorrente(MovimentacaoModel movBase, int quantidade, Callback callback) {
 
-        SmartBatch batch = new SmartBatch(db);
+        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
         String grupoId = java.util.UUID.randomUUID().toString();
 
         TipoRecorrencia tipoRec = movBase.getTipoRecorrenciaEnum();
@@ -382,13 +261,8 @@ public class MovimentacaoRepository {
             return;
         }
 
-        // ── CORREÇÃO BUG #7 (bonus) — Divisão inteira trunca centavos ────────
-        // PROBLEMA: R$ 100,01 / 3 = R$ 33,00 cada → perde R$ 0,01 no total.
-        // CORREÇÃO: calcula o valor base e coloca o centavo restante na 1ª parcela.
-        long valorBase    = isParcelado ? movBase.getValor() / quantidade : movBase.getValor();
+        long valorBase     = isParcelado ? movBase.getValor() / quantidade : movBase.getValor();
         long restoCentavos = isParcelado ? movBase.getValor() % quantidade : 0;
-        // A parcela 0 (primeira) receberá valorBase + restoCentavos.
-        // As demais recebem valorBase. Assim a soma sempre fecha o total original.
 
         Timestamp dataBase = movBase.getData_vencimento();
         if (dataBase == null) dataBase = movBase.getData_movimentacao();
@@ -403,7 +277,6 @@ public class MovimentacaoRepository {
                     ? descBase + " (" + (i + 1) + "/" + quantidade + ")"
                     : descBase);
 
-            // Primeira parcela absorve o centavo restante da divisão
             long valorParcela = (i == 0) ? valorBase + restoCentavos : valorBase;
             parcela.setValor(valorParcela);
 
@@ -446,7 +319,7 @@ public class MovimentacaoRepository {
                 ? quantidade + " parcelas criadas!"
                 : "Série recorrente agendada!";
 
-        batch.commit(callback, msgFinal);
+        batch.commit(criarBatchCallback(callback, msgFinal));
     }
 
     private void calcularProximaData(Calendar cal, TipoRecorrencia tipo, int intervalo, int passos) {
@@ -489,7 +362,7 @@ public class MovimentacaoRepository {
                 .whereGreaterThanOrEqualTo("parcela_atual", movOriginal.getParcela_atual())
                 .get()
                 .addOnSuccessListener(snap -> {
-                    SmartBatch batch = new SmartBatch(db);
+                    FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
                     String novaDescBase = movNova.getDescricao().replaceAll("\\s*\\(\\d+/\\d+\\)$", "").trim();
 
                     for (QueryDocumentSnapshot doc : snap) {
@@ -525,7 +398,7 @@ public class MovimentacaoRepository {
                         aplicarImpacto(batch, m, 1);
                     }
 
-                    batch.commit(callback, "Série atualizada com sucesso!");
+                    batch.commit(criarBatchCallback(callback, "Série atualizada com sucesso!"));
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
@@ -544,7 +417,7 @@ public class MovimentacaoRepository {
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
                 .get()
                 .addOnSuccessListener(snap -> {
-                    SmartBatch batch = new SmartBatch(db);
+                    FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
 
                     for (QueryDocumentSnapshot doc : snap) {
                         MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
@@ -558,21 +431,11 @@ public class MovimentacaoRepository {
                         batch.delete(doc.getReference());
                     }
 
-                    batch.commit(callback, "Série excluída com sucesso!");
+                    batch.commit(criarBatchCallback(callback, "Série excluída com sucesso!"));
                 })
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    /**
-     * CORREÇÃO BUG #2 aplicada também no confirmarMovimentacaoEmMassa.
-     *
-     * O mesmo problema de contador negativo existe aqui: várias parcelas sendo
-     * confirmadas de uma vez, cada uma decrementando o contador.
-     *
-     * SOLUÇÃO: lemos o valor atual do contador uma única vez antes do batch.
-     * Calculamos quantas parcelas pendentes existem no snap, e decrementamos
-     * apenas Math.min(qtdParcelas, contadorAtual) — nunca abaixo de zero.
-     */
     public void confirmarMovimentacaoEmMassa(MovimentacaoModel movBase, Callback callback) {
         DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
         boolean isReceita = (movBase.getTipoEnum() == TipoCategoriaContas.RECEITA);
@@ -580,8 +443,6 @@ public class MovimentacaoRepository {
                 ? ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER
                 : ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR;
 
-        // ── PASSO 1: Lê o contador atual E as parcelas pendentes em paralelo ─
-        // Usamos a query das parcelas primeiro, depois lemos o resumo.
         FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo("recorrencia_id", movBase.getRecorrencia_id())
                 .whereGreaterThanOrEqualTo("parcela_atual", movBase.getParcela_atual())
@@ -596,7 +457,6 @@ public class MovimentacaoRepository {
 
                     int totalParcelasPendentes = snap.size();
 
-                    // ── PASSO 2: Lê o resumo para saber o contador atual ──────
                     resumoRef.get().addOnSuccessListener(resumoSnap -> {
 
                         long contadorAtual = 0;
@@ -605,18 +465,15 @@ public class MovimentacaoRepository {
                             contadorAtual = (valor != null) ? valor : 0;
                         }
 
-                        // Quantas unidades podemos decrementar sem ir negativo?
                         long decrementoSeguro = Math.min(totalParcelasPendentes, contadorAtual);
 
-                        // ── PASSO 3: Monta o batch ────────────────────────────
-                        SmartBatch batch = new SmartBatch(db);
+                        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
                         Timestamp agora = Timestamp.now();
 
                         for (QueryDocumentSnapshot doc : snap) {
                             MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
                             m.setId(doc.getId());
 
-                            // Resolve data_vencimento antes de qualquer impacto (Bug #1)
                             Timestamp vencResolvido = m.getData_vencimento();
                             if (vencResolvido == null) vencResolvido = m.getData_movimentacao();
                             if (vencResolvido == null) vencResolvido = agora;
@@ -633,13 +490,12 @@ public class MovimentacaoRepository {
                             impactoRealizado(batch, m, 1);
                         }
 
-                        // Decrementa o contador de pendências de forma segura (uma única vez)
                         if (decrementoSeguro > 0) {
                             batch.update(resumoRef, campoPendencia,
                                     FieldValue.increment(-decrementoSeguro));
                         }
 
-                        batch.commit(callback, "Todas as parcelas confirmadas!");
+                        batch.commit(criarBatchCallback(callback, "Todas as parcelas confirmadas!"));
 
                     }).addOnFailureListener(e ->
                             callback.onErro("Erro ao verificar pendências: " + e.getMessage())
@@ -657,34 +513,99 @@ public class MovimentacaoRepository {
             return;
         }
 
-        SmartBatch batch = new SmartBatch(db);
+        long pendentesPagar = 0, pendentesReceber = 0;
+        for (MovimentacaoModel mov : lista) {
+            if (!mov.isPago()) {
+                if (mov.getTipoEnum() == TipoCategoriaContas.RECEITA) pendentesReceber++;
+                else pendentesPagar++;
+            }
+        }
+
+        if (pendentesPagar == 0 && pendentesReceber == 0) {
+            commitExcluirEmLote(lista, 0, 0, callback);
+            return;
+        }
+
+        final long finalPendentesPagar   = pendentesPagar;
+        final long finalPendentesReceber = pendentesReceber;
+
+        FirestoreSchema.contasResumoDoc().get()
+                .addOnSuccessListener(snap -> {
+                    long contPagar   = 0, contReceber = 0;
+                    if (snap.exists()) {
+                        Long vp = snap.getLong(ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR);
+                        Long vr = snap.getLong(ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER);
+                        contPagar   = (vp != null) ? vp : 0;
+                        contReceber = (vr != null) ? vr : 0;
+                    }
+                    long decPagar   = Math.min(finalPendentesPagar,   contPagar);
+                    long decReceber = Math.min(finalPendentesReceber, contReceber);
+                    commitExcluirEmLote(lista, decPagar, decReceber, callback);
+                })
+                .addOnFailureListener(e -> callback.onErro("Erro ao verificar pendências: " + e.getMessage()));
+    }
+
+    private void commitExcluirEmLote(List<MovimentacaoModel> lista,
+                                     long decPagar, long decReceber,
+                                     Callback callback) {
+        FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
+        DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
         for (MovimentacaoModel mov : lista) {
             if (mov.getId() == null || mov.getId().isEmpty()) continue;
             batch.delete(FirestoreSchema.contasMovimentacaoDoc(mov.getId()));
-            aplicarImpacto(batch, mov, -1);
+            if (mov.isPago()) impactoRealizado(batch, mov, -1);
         }
 
-        batch.commit(callback, "Dia excluído com sucesso!");
+        if (decPagar > 0)
+            batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR,
+                    FieldValue.increment(-decPagar));
+        if (decReceber > 0)
+            batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER,
+                    FieldValue.increment(-decReceber));
+
+        batch.commit(criarBatchCallback(callback, "Dia excluído com sucesso!"));
     }
 
     public void zerarEstatisticasMensais(Callback callback) {
-        FirestoreSchema.contasCategoriasCol().get()
-                .addOnSuccessListener(snap -> {
-                    SmartBatch batch = new SmartBatch(db);
-                    DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+        FirestoreSchema.contasMovimentacoesCol()
+                .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
+                .get()
+                .addOnSuccessListener(snapPendentes -> {
 
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0);
-                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0);
-
-                    for (QueryDocumentSnapshot doc : snap) {
-                        batch.update(doc.getReference(), ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
+                    long totalPagar = 0, totalReceber = 0;
+                    for (QueryDocumentSnapshot doc : snapPendentes) {
+                        MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                        if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) totalReceber++;
+                        else totalPagar++;
                     }
 
-                    batch.commit(callback, "Estatísticas do mês zeradas com sucesso!");
+                    final long finalPagar   = totalPagar;
+                    final long finalReceber = totalReceber;
+
+                    FirestoreSchema.contasCategoriasCol().get()
+                            .addOnSuccessListener(snapCategorias -> {
+                                FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
+                                DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+
+                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0);
+                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0);
+                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0);
+
+                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR,   finalPagar);
+                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER, finalReceber);
+
+                                for (QueryDocumentSnapshot doc : snapCategorias) {
+                                    batch.update(doc.getReference(),
+                                            ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
+                                }
+
+                                batch.commit(criarBatchCallback(callback, "Estatísticas do mês zeradas com sucesso!"));
+                            })
+                            .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
+
                 })
-                .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
+                .addOnFailureListener(e -> callback.onErro("Erro ao recontar pendências: " + e.getMessage()));
     }
 
     // ── utilitário ───────────────────────────────────────────────────────────
@@ -694,5 +615,22 @@ public class MovimentacaoRepository {
         Calendar c2 = Calendar.getInstance(); c2.setTime(d2);
         return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
                 && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH);
+    }
+
+    /**
+     * Utilitário para converter o Callback interno do repositório no Callback do FirestoreSmartBatch
+     */
+    private FirestoreSmartBatch.Callback criarBatchCallback(Callback callbackOriginal, String mensagemSucesso) {
+        return new FirestoreSmartBatch.Callback() {
+            @Override
+            public void onSucesso() {
+                callbackOriginal.onSucesso(mensagemSucesso);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                callbackOriginal.onErro(erro);
+            }
+        };
     }
 }

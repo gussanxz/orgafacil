@@ -217,34 +217,37 @@ public class SelecionarCategoriaContasActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
-                                         int direction) {
-
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                         int pos = viewHolder.getAdapterPosition();
+                        if (pos == RecyclerView.NO_POSITION) {
+                            adapter.notifyDataSetChanged();
+                            return;
+                        }
                         ContasCategoriaModel categoria = listaCategorias.get(pos);
-
-                        excluirCategoria(pos, categoria);
+                        excluirCategoria(viewHolder, categoria);
                     }
                 };
 
         new ItemTouchHelper(itemTouch).attachToRecyclerView(recyclerView);
     }
 
-    public void excluirCategoria(int pos, ContasCategoriaModel categoria) {
+    public void excluirCategoria(RecyclerView.ViewHolder holder, ContasCategoriaModel categoria) {
         repository.verificarEExcluir(categoria, new ContasCategoriaRepository.Callback() {
             @Override
             public void onSucesso() {
-                listaCategorias.remove(pos);
-                adapter.notifyItemRemoved(pos);
+                int posAtual = holder.getAdapterPosition();
+                if (posAtual == RecyclerView.NO_POSITION) return;
+                listaCategorias.remove(posAtual);
+                adapter.notifyItemRemoved(posAtual);
                 Toast.makeText(SelecionarCategoriaContasActivity.this,
                         "Excluída!", Toast.LENGTH_SHORT).show();
             }
-
             @Override
             public void onErro(String erro) {
                 Toast.makeText(SelecionarCategoriaContasActivity.this,
                         erro, Toast.LENGTH_SHORT).show();
-                adapter.notifyItemChanged(pos);
+                int posAtual = holder.getAdapterPosition();
+                if (posAtual != RecyclerView.NO_POSITION) adapter.notifyItemChanged(posAtual);
             }
         });
     }

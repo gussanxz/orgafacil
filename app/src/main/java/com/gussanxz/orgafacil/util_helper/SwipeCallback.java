@@ -87,7 +87,7 @@ public abstract class SwipeCallback extends ItemTouchHelper.SimpleCallback {
     @Override
     public final void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
         int pos = viewHolder.getAdapterPosition();
-        if (pos == RecyclerView.NO_ID) return;
+        if (pos == RecyclerView.NO_POSITION) return;
 
         if (viewHolder.getItemViewType() == AdapterItemListaMovimentacao.TYPE_HEADER) {
             if (viewHolder.itemView.getParent() instanceof RecyclerView) {

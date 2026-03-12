@@ -107,13 +107,21 @@ public class HelperExibirDatasMovimentacao {
 
             // ── Label do cabeçalho ────────────────────────────────────────────
             String tituloDia = dataStr;
-            if (dataGrupo.equals(hoje))                     tituloDia = "Hoje";
-            else if (dataGrupo.equals(ontem))               tituloDia = "Ontem";
-            else if (dataGrupo.equals(amanha) && ehModoFuturo) tituloDia = "Amanhã";
+            boolean ehVencido = false;
 
-            // CORREÇÃO: passa saldoDiaCentavos como long — sem (int) cast
-            // O método header() agora aceita long, eliminando o overflow silencioso
-            resultado.add(AdapterItemListaMovimentacao.header(dataStr, tituloDia, saldoDiaCentavos));
+            if (ehModoFuturo && dataGrupo.before(hoje)) {
+                // Pendente com data já passada — grupo destacado
+                tituloDia = "Vencida em " + dataStr;
+                ehVencido = true;
+            } else if (dataGrupo.equals(hoje)) {
+                tituloDia = "Hoje";
+            } else if (dataGrupo.equals(ontem)) {
+                tituloDia = "Ontem";
+            } else if (dataGrupo.equals(amanha) && ehModoFuturo) {
+                tituloDia = "Amanhã";
+            }
+
+            resultado.add(AdapterItemListaMovimentacao.header(dataStr, tituloDia, saldoDiaCentavos, ehVencido));
 
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(AdapterItemListaMovimentacao.linha(m));

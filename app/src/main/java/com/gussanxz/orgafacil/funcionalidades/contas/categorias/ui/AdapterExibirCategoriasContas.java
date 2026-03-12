@@ -86,7 +86,7 @@ public class AdapterExibirCategoriasContas
                     .setTitle("Excluir Categoria")
                     .setMessage("Deseja excluir \"" + finalNome + "\"?")
                     .setPositiveButton("Excluir", (d, w) ->
-                            activity.excluirCategoria(holder.getAdapterPosition(), categoria))
+                            activity.excluirCategoria(holder, categoria))
                     .setNegativeButton("Cancelar", null)
                     .show();
             return true;

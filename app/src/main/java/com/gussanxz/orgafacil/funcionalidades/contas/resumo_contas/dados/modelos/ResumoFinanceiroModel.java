@@ -139,8 +139,16 @@ public class ResumoFinanceiroModel implements Serializable {
         public void setReceber(long receber) { this.receber = receber; }
     }
 
+    // ── helpers @Exclude ──────────────────────────────────────────────────────
+
+    /**
+     * Retorna o status de saúde calculado dinamicamente a partir dos dados atuais.
+     * calcularStatusSaude() é chamado aqui automaticamente — o Repository não precisa
+     * mais invocar isso manualmente após o toObject().
+     */
     @Exclude
     public StatusSaudeFinanceira getStatusSaudeEnum() {
+        calcularStatusSaude();
         return StatusSaudeFinanceira.desdeId(this.inteligencia.getStatusSaudeFinanceira());
     }
 

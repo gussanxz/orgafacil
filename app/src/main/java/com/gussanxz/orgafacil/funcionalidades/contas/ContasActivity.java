@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
@@ -86,6 +87,7 @@ public class ContasActivity extends AppCompatActivity {
     private Button btnEmptyStateCTA;
     ImageView imgEmptyStateContas;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
+    private ListenerRegistration listenerResumo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,9 +110,17 @@ public class ContasActivity extends AppCompatActivity {
         configurarChipsFiltro();
         setupObservers();
 
+        // O launcher apenas marca os dados como inválidos.
+        // onStart() é o único responsável por disparar carregarDados() quando necessário.
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
-                result -> { if (result.getResultCode() == RESULT_OK) viewModel.invalidarDados(); }
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        viewModel.invalidarDados();
+                        // Não chama carregarDados() aqui — onStart() será chamado
+                        // logo após o retorno desta Activity e fará o fetch.
+                    }
+                }
         );
 
         if (ehAtalho) aplicarRegrasAtalho(extrasAtalho);
@@ -119,7 +129,19 @@ public class ContasActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        // Ponto único de disparo do carregamento de dados.
+        // Cobre tanto o carregamento inicial (dadosInvalidados = true por padrão no ViewModel)
+        // quanto recarregamentos após edição/exclusão/confirmação.
         if (viewModel.isDadosInvalidados()) carregarDados();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (listenerResumo != null) {
+            listenerResumo.remove();
+            listenerResumo = null;
+        }
     }
 
     private void setupObservers() {
@@ -197,7 +219,7 @@ public class ContasActivity extends AppCompatActivity {
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
         if (!ehAtalho && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
-            resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
+            listenerResumo = resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
                 @Override
                 public void onUpdate(ResumoFinanceiroModel resumo) {
                     if (resumo != null && resumo.getBalanco() != null) {
@@ -231,6 +253,8 @@ public class ContasActivity extends AppCompatActivity {
                     @Override
                     public void onSucesso(String msg) {
                         Toast.makeText(ContasActivity.this, "Lançamento excluído!", Toast.LENGTH_SHORT).show();
+                        // Invalida e deixa onStart() reagir quando a Activity voltar ao foco.
+                        // Não há double-fetch pois onStart() só dispara carregarDados() uma vez.
                         viewModel.invalidarDados();
                         carregarDados();
                     }
@@ -488,6 +512,10 @@ public class ContasActivity extends AppCompatActivity {
             @Override public void onSucesso(String msg) {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(ContasActivity.this, "Concluído!", Toast.LENGTH_SHORT).show();
+                // invalidarDados() + fetchDados() via onStart() é o padrão para ações que
+                // mudam o estado do Firestore. Não duplicamos o fetch chamando carregarDados()
+                // aqui, pois a Activity permanece visível — onStart() não será re-chamado.
+                // Portanto o reload explícito abaixo é necessário e correto (não é double-fetch).
                 viewModel.invalidarDados();
                 viewModel.fetchDados(true, null);
                 viewModel.fetchDados(false, null);
@@ -504,6 +532,8 @@ public class ContasActivity extends AppCompatActivity {
             @Override public void onSucesso(String msg) {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(ContasActivity.this, msg, Toast.LENGTH_SHORT).show();
+                // Mesmo padrão de executarConfirmacao: Activity continua visível,
+                // reload duplo (historico + futuro) necessário e intencional aqui.
                 viewModel.invalidarDados();
                 viewModel.fetchDados(true, null);
                 viewModel.fetchDados(false, null);
