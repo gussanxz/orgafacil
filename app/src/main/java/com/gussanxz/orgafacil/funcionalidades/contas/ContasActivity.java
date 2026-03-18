@@ -64,11 +64,11 @@ public class ContasActivity extends AppCompatActivity {
     private Bundle extrasAtalho = null;
     private Long ultimoSaldoCarregado = null;
 
-    private TextView textoSaudacao, textoSaldo, textSaldoAtual;
+    private TextView textoSaudacao, textoSaldo, textoTituloSaldo, textPeriodoSelecionado;
     private RecyclerView recyclerView;
     private SearchView searchView;
     private EditText editDataInicial, editDataFinal;
-    private ImageView imgLimparFiltroData;
+    private ImageView imgLimparFiltroData, imgFiltroCalendario;
     private Button btnNovaDespesa, btnNovaReceita;
     private ProgressBar progressBarPaginacao;
 
@@ -151,7 +151,7 @@ public class ContasActivity extends AppCompatActivity {
                 if (isPrimeiroCarregamento) {
                     textoSaldo.setText("--");
                     textoSaldo.setTextColor(Color.WHITE);
-                    textSaldoAtual.setText("Carregando saldo...");
+                    textoTituloSaldo.setText("Carregando saldo...");
                 }
             } else {
                 progressBarPaginacao.setVisibility(View.GONE);
@@ -174,6 +174,12 @@ public class ContasActivity extends AppCompatActivity {
             List<AdapterItemListaMovimentacao> listaProcessada = new ArrayList<>();
             if (lista != null) {
                 listaProcessada = HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho);
+            }
+
+            // Antes de submeter a lista, se ela estava vazia, preparamos a animação
+            boolean listaEstavaVazia = adapterAgrupado.getCurrentList().isEmpty();
+            if (listaEstavaVazia && !listaProcessada.isEmpty()) {
+                recyclerView.scheduleLayoutAnimation();
             }
 
             adapterAgrupado.submitList(listaProcessada, () -> {
@@ -318,11 +324,13 @@ public class ContasActivity extends AppCompatActivity {
     private void inicializarComponentes() {
         textoSaudacao = findViewById(R.id.textSaudacao);
         textoSaldo = findViewById(R.id.textSaldo);
-        textSaldoAtual = findViewById(R.id.textSaldoAtual);
+        textoTituloSaldo = findViewById(R.id.textoTituloSaldo);
         recyclerView = findViewById(R.id.recyclesMovimentos);
         editDataInicial = findViewById(R.id.editDataInicial);
         editDataFinal = findViewById(R.id.editDataFinal);
         imgLimparFiltroData = findViewById(R.id.imgLimparFiltroData);
+        imgFiltroCalendario = findViewById(R.id.imgFiltroCalendario);
+        textPeriodoSelecionado = findViewById(R.id.textPeriodoSelecionado);
         searchView = findViewById(R.id.searchViewEventos);
         btnNovaDespesa = findViewById(R.id.btnNovaDespesa);
         btnNovaReceita = findViewById(R.id.btnNovaReceita);
@@ -383,7 +391,11 @@ public class ContasActivity extends AppCompatActivity {
                 new AlertDialog.Builder(ContasActivity.this).setTitle("Editar").setMessage("Você deseja editar '" + m.getDescricao() + "'?")
                         .setPositiveButton("Sim", (dialog, which) -> abrirTelaEdicao(m, true)).setNegativeButton("Cancelar", null).show();
             }
-            @Override public void onCheckClick(MovimentacaoModel m) { confirmarPagamentoOuRecebimento(m); }
+            @Override public void onCheckClick(MovimentacaoModel m) {
+                // Dá a vibradinha tátil (Haptic Feedback)
+                recyclerView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                confirmarPagamentoOuRecebimento(m);
+            }
             @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) { confirmarExclusaoDoDia(dataDia, movsDoDia); }
         });
 
@@ -437,34 +449,31 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void configurarFiltros() {
-        editDataInicial.setOnClickListener(v -> abrirDataPicker(true));
-        editDataFinal.setOnClickListener(v -> abrirDataPicker(false));
+        // Agora o clique é no ícone do calendário (começando pela data inicial)
+        imgFiltroCalendario.setOnClickListener(v -> abrirDataPicker(true));
 
         imgLimparFiltroData.setOnClickListener(v -> {
-            // 1. Limpa os campos de data
             editDataInicial.setText("");
             editDataFinal.setText("");
             dataInicialFiltro = null;
             dataFinalFiltro = null;
 
-            // 2. Limpa o campo de busca visualmente (false para não disparar o listener agora)
-            searchView.setQuery("", false);
-            searchView.clearFocus(); // Remove o teclado se estiver aberto
+            // Esconde o texto do período novamente
+            textPeriodoSelecionado.setVisibility(View.GONE);
 
-            // 3. Reseta o filtro de tipo (Receita/Despesa)
+            searchView.setQuery("", false);
+            searchView.clearFocus();
+
             chipGroupFiltroTipo.check(R.id.chipTodos);
             viewModel.setFiltroTipo(null);
 
-            // 4. A MÁGICA: Em vez de carregarDados() (Firebase), chamamos aplicarFiltros()
-            // Como limpamos as variáveis acima, o motor de busca vai entender que deve exibir TUDO.
             aplicarFiltros();
-
             Toast.makeText(this, "Filtros limpos", Toast.LENGTH_SHORT).show();
         });
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override public boolean onQueryTextSubmit(String q) {
-                searchView.clearFocus(); // Fecha o teclado ao dar "Enter"
+                searchView.clearFocus();
                 return true;
             }
             @Override public boolean onQueryTextChange(String n) {
@@ -473,33 +482,38 @@ public class ContasActivity extends AppCompatActivity {
             }
         });
     }
-
     private void abrirDataPicker(boolean isInicio) {
-        // Abre o calendário na data já selecionada, ou hoje como fallback
         Date dataPreSelecionada = isInicio ? dataInicialFiltro : dataFinalFiltro;
         Calendar c = Calendar.getInstance();
         if (dataPreSelecionada != null) c.setTime(dataPreSelecionada);
 
         DatePickerDialog picker = new DatePickerDialog(this, (v, y, m, d) -> {
-            // Cria um novo Calendar dentro do callback (sem risco de captura suja)
             Calendar cal = Calendar.getInstance();
             if (isInicio) {
                 cal.set(y, m, d, 0, 0, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 dataInicialFiltro = cal.getTime();
                 editDataInicial.setText(DateHelper.formatarData(dataInicialFiltro));
+
+                // Abre automaticamente o calendário para escolher a data final
+                Toast.makeText(this, "Selecione a data final", Toast.LENGTH_SHORT).show();
+                abrirDataPicker(false);
             } else {
                 cal.set(y, m, d, 23, 59, 59);
                 cal.set(Calendar.MILLISECOND, 999);
                 dataFinalFiltro = cal.getTime();
                 editDataFinal.setText(DateHelper.formatarData(dataFinalFiltro));
+
+                // Mostra o período selecionado bonitinho na tela
+                if (dataInicialFiltro != null && dataFinalFiltro != null) {
+                    textPeriodoSelecionado.setText("Período: " + DateHelper.formatarData(dataInicialFiltro) + " a " + DateHelper.formatarData(dataFinalFiltro));
+                    textPeriodoSelecionado.setVisibility(View.VISIBLE);
+                }
+
+                aplicarFiltros();
             }
-            aplicarFiltros();
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
-        // ── PONTO CENTRAL DA MELHORIA ──
-        // Histórico: bloqueia datas futuras (máximo = hoje)
-        // Pendentes (atalho): calendário livre, sem restrição
         if (!ehAtalho) {
             picker.getDatePicker().setMaxDate(System.currentTimeMillis());
         }
@@ -546,10 +560,10 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void atualizarLegendasFiltro(String query) {
-        if (ehAtalho) textSaldoAtual.setText("Total pendente");
-        else if (dataInicialFiltro != null) textSaldoAtual.setText("Saldo do período");
-        else if (!query.isEmpty()) textSaldoAtual.setText("Saldo da pesquisa");
-        else textSaldoAtual.setText("Saldo total atual");
+        if (ehAtalho) textoTituloSaldo.setText("Total pendente");
+        else if (dataInicialFiltro != null) textoTituloSaldo.setText("Saldo do período");
+        else if (!query.isEmpty()) textoTituloSaldo.setText("Saldo da pesquisa");
+        else textoTituloSaldo.setText("Balanço Projetado");
     }
 
     @Override
@@ -590,11 +604,11 @@ public class ContasActivity extends AppCompatActivity {
     private void atualizarTextoResumo() {
         if (ehAtalho) {
             long saldoCentavos = (viewModel.saldoFuturo.getValue() != null) ? viewModel.saldoFuturo.getValue() : 0;
-            if (saldoCentavos < 0) textSaldoAtual.setText("Total a pagar");
-            else if (saldoCentavos > 0) textSaldoAtual.setText("Total a receber");
-            else textSaldoAtual.setText("Nenhum valor pendente");
+            if (saldoCentavos < 0) textoTituloSaldo.setText("Total a pagar");
+            else if (saldoCentavos > 0) textoTituloSaldo.setText("Total a receber");
+            else textoTituloSaldo.setText("Nenhum valor pendente");
         } else {
-            textSaldoAtual.setText("Saldo atual");
+            textoTituloSaldo.setText("Balanço Projetado");
         }
     }
 

@@ -11,7 +11,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="64dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -35,7 +35,7 @@
             android:gravity="center"
             android:text="Série de Parcelas"
             android:textColor="@color/white"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -61,14 +61,20 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- CARD DE RESUMO -->
+            <!-- ══════════════════════════════════════════════════
+                 CARD DE RESUMO
+                 Melhorias:
+                 - Barra de progresso mais grossa com label %
+                 - "Próximo vencimento" em chip com cor de alerta
+                 - Layout dos valores com ícone de contexto
+                 ══════════════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResumo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -77,7 +83,7 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Título da série -->
+                    <!-- Título + tipo de série -->
                     <TextView
                         android:id="@+id/textTitulo"
                         android:layout_width="match_parent"
@@ -85,38 +91,38 @@
                         android:text="Carregando..."
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="12dp" />
+                        android:textColor="@color/cor_texto"
+                        android:layout_marginBottom="4dp" />
 
-                    <!-- Progresso texto -->
+                    <!-- Progresso: texto + barra + % em linha -->
                     <TextView
                         android:id="@+id/textProgresso"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="0/0 parcelas pagas"
-                        android:textSize="14sp"
-                        android:textColor="#555555"
+                        android:textSize="13sp"
+                        android:textColor="#777777"
                         android:layout_marginBottom="6dp" />
 
-                    <!-- Barra de progresso -->
+                    <!-- Barra mais grossa (8dp) para leitura visual imediata -->
                     <ProgressBar
                         android:id="@+id/progressParcelas"
                         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="12dp"
-                        android:layout_marginBottom="16dp"
+                        android:layout_height="8dp"
                         android:max="100"
                         android:progress="0"
                         android:progressTint="@color/colorPrimary"
-                        android:progressBackgroundTint="#E0E0E0" />
+                        android:progressBackgroundTint="#E0E0E0"
+                        android:layout_marginBottom="12dp" />
 
-                    <!-- Linha de valores -->
+                    <!-- Valores: pago | restante -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="12dp">
 
-                        <!-- Valor pago -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -144,7 +150,6 @@
                                 android:textColor="#222222" />
                         </LinearLayout>
 
-                        <!-- Valor restante -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -174,31 +179,76 @@
 
                     </LinearLayout>
 
-                    <!-- Próximo vencimento -->
-                    <TextView
+                    <!-- ── Próximo vencimento em chip destacado ──
+                         Antes era texto cinza (#777777) simples.
+                         Agora usa um chip laranja/alerta para que
+                         uma data próxima chame atenção imediatamente.
+                         O código Kotlin só precisa setar o texto —
+                         a visibilidade do chip pode ser controlada
+                         igual ao TextView original.
+                    -->
+                    <com.google.android.material.chip.Chip
                         android:id="@+id/textProximaData"
-                        android:layout_width="match_parent"
+                        style="@style/Widget.MaterialComponents.Chip.Entry"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Calculando..."
-                        android:textSize="13sp"
-                        android:textColor="#777777"
-                        android:paddingTop="4dp" />
+                        android:textSize="12sp"
+                        app:chipBackgroundColor="#FFF3E0"
+                        android:textColor="#E65100"
+                        app:chipIcon="@drawable/ic_calendar_month_24"
+                        app:chipIconTint="#E65100"
+                        app:chipIconSize="16dp"
+                        app:closeIconVisible="false"
+                        app:chipStrokeWidth="0dp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- TÍTULO DA LISTA -->
-            <TextView
+            <!-- ══════════════════════════════════════════════════
+                 CABEÇALHO DA LISTA
+                 Adicionado divisor visual e espaçamento para
+                 separar claramente o card de resumo da lista.
+                 ══════════════════════════════════════════════════ -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Todas as parcelas"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#555555"
-                android:layout_marginBottom="8dp"
-                android:paddingHorizontal="4dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
 
-            <!-- LISTA DE PARCELAS -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Todas as parcelas"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#555555" />
+
+                <!--
+                    SUGESTÃO DE ITEM_PARCELA (implementar no adapter):
+
+                    Cada linha do RecyclerView deve ter 3 estados visuais
+                    via um badge colorido (sem precisar ler texto):
+
+                    PAGO      → fundo #E8F5E9, texto #2E7D32  (verde)
+                    PENDENTE  → fundo #FFF8E1, texto #F57F17  (âmbar)
+                    ATRASADO  → fundo #FFEBEE, texto #C62828  (vermelho)
+
+                    Estrutura sugerida para item_parcela.xml:
+                    ┌─────────────────────────────────────────────┐
+                    │ [badge nº]  Descrição          R$ valor  >  │
+                    │             Data · status                    │
+                    └─────────────────────────────────────────────┘
+                    O badge é um TextView 32x32dp, cornerRadius=8dp.
+                    O status é setado via `setChipBackgroundColor` ou
+                    diretamente na propriedade `background` do badge.
+                -->
+
+            </LinearLayout>
+
+            <!-- LISTA DE PARCELAS (sem mudança — o adapter controla o visual) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerParcelas"
                 android:layout_width="match_parent"

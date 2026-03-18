@@ -20,120 +20,125 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp">
 
             <TextView
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/app_name"
                 android:textSize="18sp"
-                android:gravity="center_vertical|start"
-                android:padding="15dp"
                 android:textColor="@color/white"
-                android:textStyle="bold"/>
-
-            <ImageView
-                android:id="@+id/btnRelatoriosTop"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_marginEnd="12dp"
-                android:padding="8dp"
-                android:src="@drawable/ic_analytics_24"
-                app:tint="@color/white"
-                android:background="?attr/selectableItemBackgroundBorderless"/>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/headerResumoVendas"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="4dp"
-            android:paddingBottom="8dp"
-            android:layout_marginBottom="24dp" android:gravity="center"
-            android:orientation="horizontal"
-            android:baselineAligned="false">
+                android:textStyle="bold"
+                android:paddingStart="4dp"/>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/btnRelatoriosTop"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_analytics_24"
+                    app:tint="@color/white" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Saldo Atual"
-                    android:textColor="@android:color/white"
+                    android:text="Relatórios"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
                     android:textStyle="bold"
-                    android:textSize="18sp" />
-
-                <LinearLayout
-                    android:id="@+id/containerSaldo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="4dp">
-
-                    <ImageView
-                        android:id="@+id/imgOlhoSaldo"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:padding="5dp"
-                        android:src="@drawable/ic_visibility_24"
-                        app:tint="@color/white"/>
-
-                    <TextView
-                        android:id="@+id/textSaldo"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="R$ 0,00"
-                        android:textColor="@android:color/white"
-                        android:textStyle="bold"
-                        android:textSize="25sp"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:paddingVertical="4dp"
-                        android:paddingStart="2dp"
-                        app:autoSizeTextType="uniform"
-                        app:autoSizeMinTextSize="14sp"
-                        app:autoSizeMaxTextSize="44sp"
-                        app:autoSizeStepGranularity="2sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/textLegendaSaldo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:alpha="0.8"
-                    android:paddingTop="2dp"
-                    tools:text="Saldo das movimentações" />
+                    android:textAllCaps="true" />
             </LinearLayout>
 
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/scrollMeio"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/header_background"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:paddingBottom="8dp">
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:id="@+id/textSaudacao"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Olá, Usuário"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:alpha="0.9"/>
+
+            <TextView
+                android:id="@+id/textLegendaSaldo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Saldo Atual"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:layout_marginTop="12dp"
+                android:alpha="0.8" />
+
+            <LinearLayout
+                android:id="@+id/containerSaldo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:id="@+id/textSaldo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R$ 0,00"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:textSize="28sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:paddingVertical="2dp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="18sp"
+                    app:autoSizeMaxTextSize="44sp"
+                    app:autoSizeStepGranularity="2sp" />
+
+                <ImageView
+                    android:id="@+id/imgOlhoSaldo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:src="@drawable/ic_visibility_24"
+                    app:tint="@color/white"/>
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/progressBarResumo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:theme="@style/ThemeOverlay.AppCompat.Dark"
+                android:visibility="gone" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupFiltroTipo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:chipSpacingHorizontal="8dp">
@@ -142,18 +147,18 @@
                     android:id="@+id/chipTodos"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Todos"
+                    android:text="TODOS"
                     android:checked="true"
                     style="@style/Widget.MaterialComponents.Chip.Filter"
-                    app:chipBackgroundColor="@color/chip_background"
-                    android:textColor="@color/chip_text"
-                    app:checkedIconTint="@color/chip_text"/>
+                    app:chipBackgroundColor="@color/chip_todos_background"
+                    android:textColor="#222222"
+                    app:checkedIconTint="#222222"/>
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipSoReceitas"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Só Receitas"
+                    android:text="RECEITAS"
                     style="@style/Widget.MaterialComponents.Chip.Filter"
                     app:chipBackgroundColor="@color/chip_background"
                     android:textColor="#43A047"
@@ -163,22 +168,30 @@
                     android:id="@+id/chipSoDespesas"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Só Despesas"
+                    android:text="DESPESAS"
                     style="@style/Widget.MaterialComponents.Chip.Filter"
                     app:chipBackgroundColor="@color/chip_background"
                     android:textColor="#E53935"
                     app:checkedIconTint="#E53935"/>
-
             </com.google.android.material.chip.ChipGroup>
-
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/scrollMeio"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/header_background"
+            android:orientation="vertical"
+            android:paddingTop="16dp">
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabLayoutDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:tabMode="fixed"
-                app:tabGravity="fill"/>
+                app:tabGravity="fill"
+                android:background="@android:color/transparent"/>
 
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPagerDashboard"
@@ -309,7 +322,6 @@
         app:tint="@color/white"
         app:elevation="12dp"
         app:pressedTranslationZ="12dp"/>
-
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_nova_despesa"

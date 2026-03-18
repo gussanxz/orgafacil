@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
@@ -24,6 +24,11 @@ import java.util.Locale;
 /**
  * Encapsula toda a lógica de UI do painel de recorrência.
  * Usado por DespesasActivity e ReceitasActivity — basta chamar init() no onCreate.
+ *
+ * FIX: MaterialCheckBox → MaterialSwitch para corresponder ao XML atualizado.
+ * O import de MaterialCheckBox foi removido; toda a API usada aqui
+ * (isChecked, setOnCheckedChangeListener) é idêntica em ambos os tipos,
+ * pois ambos herdam de CompoundButton — nenhuma outra linha precisou mudar.
  */
 public class RecorrenciaFormHelper {
 
@@ -36,7 +41,8 @@ public class RecorrenciaFormHelper {
     private final Context context;
 
     // Views
-    private final MaterialCheckBox    checkboxRepetir;
+    // FIX: era MaterialCheckBox — trocado para MaterialSwitch
+    private final MaterialSwitch      checkboxRepetir;
     private final View                painelRecorrencia;
     private final ChipGroup           chipGroup;
     private final Chip                chipParcelado, chipSemanal, chipQuinzenal,
@@ -58,6 +64,7 @@ public class RecorrenciaFormHelper {
         this.context  = root.getContext();
         this.listener = listener;
 
+        // FIX: o cast agora é para MaterialSwitch, que é o tipo real no XML
         checkboxRepetir    = root.findViewById(R.id.checkboxRepetir);
         painelRecorrencia  = root.findViewById(R.id.painelRecorrencia);
         chipGroup          = root.findViewById(R.id.chipGroupTipoRecorrencia);
@@ -81,7 +88,7 @@ public class RecorrenciaFormHelper {
 
     private void configurarListeners() {
 
-        // Checkbox mostra/esconde o painel
+        // Switch mostra/esconde o painel
         checkboxRepetir.setOnCheckedChangeListener((btn, checked) -> {
             painelRecorrencia.setVisibility(checked ? View.VISIBLE : View.GONE);
             atualizarPreview();
@@ -128,12 +135,12 @@ public class RecorrenciaFormHelper {
         // Hint do campo de quantidade muda conforme o tipo
         String hintQtd;
         switch (tipoAtual) {
-            case PARCELADO:    hintQtd = "Nº de parcelas";         break;
-            case SEMANAL:      hintQtd = "Nº de semanas";          break;
-            case QUINZENAL:    hintQtd = "Nº de quinzenas";        break;
-            case MENSAL:       hintQtd = "Nº de meses";            break;
-            case CADA_X_DIAS:  hintQtd = "Nº de repetições";       break;
-            case CADA_X_MESES: hintQtd = "Nº de repetições";       break;
+            case PARCELADO:    hintQtd = "Nº de parcelas";          break;
+            case SEMANAL:      hintQtd = "Nº de semanas";           break;
+            case QUINZENAL:    hintQtd = "Nº de quinzenas";         break;
+            case MENSAL:       hintQtd = "Nº de meses";             break;
+            case CADA_X_DIAS:  hintQtd = "Nº de repetições";        break;
+            case CADA_X_MESES: hintQtd = "Nº de repetições";        break;
             default:           hintQtd = "Quantidade de repetições"; break;
         }
         layoutQtd.setHint(hintQtd);
@@ -167,7 +174,7 @@ public class RecorrenciaFormHelper {
             return;
         }
 
-        int qtd      = parseIntSafe(editQtd.getText());
+        int qtd       = parseIntSafe(editQtd.getText());
         int intervalo = parseIntSafe(editIntervalo.getText());
 
         if (qtd <= 0) { textPreview.setVisibility(View.GONE); return; }
@@ -243,7 +250,7 @@ public class RecorrenciaFormHelper {
         if (!isRepetirAtivo()) return null; // sem recorrência, sem validação aqui
 
         int qtd = getQuantidade();
-        if (qtd < 2)  return "Informe ao menos 2 repetições.";
+        if (qtd < 2)   return "Informe ao menos 2 repetições.";
         if (qtd > 999) return "Máximo de 999 repetições.";
 
         if (tipoAtual == TipoRecorrencia.CADA_X_DIAS || tipoAtual == TipoRecorrencia.CADA_X_MESES) {

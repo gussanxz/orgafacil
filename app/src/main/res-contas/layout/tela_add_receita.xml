@@ -12,7 +12,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -24,23 +24,22 @@
             android:layout_marginStart="8dp"
             android:clickable="true"
             android:onClick="retornarPrincipal"
-            app:backgroundTint="@color/colorAccentProventos"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:backgroundTint="#33FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textViewHeader"
             app:srcCompat="@drawable/ic_arrow_back_48" />
 
         <TextView
             android:id="@+id/textViewHeader"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="70dp"
             android:gravity="center"
             android:text="Adicionar Receita"
             android:textAlignment="gravity"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fabSuperiorSalvarCategoria"
             app:layout_constraintStart_toEndOf="@+id/fabVoltar"
             app:layout_constraintTop_toTopOf="parent" />
@@ -53,22 +52,115 @@
             android:layout_marginEnd="8dp"
             android:clickable="true"
             android:onClick="salvarProventos"
-            app:backgroundTint="@color/colorAccentProventos"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:backgroundTint="#33FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textViewHeader"
             app:srcCompat="@drawable/ic_confirmar_branco_48" />
+
+        <!-- HERO VALOR -->
+        <LinearLayout
+            android:id="@+id/heroValor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="20dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textViewHeader">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Valor da receita"
+                android:textColor="@android:color/white"
+                android:alpha="0.75"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editValor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:gravity="center"
+                android:hint="R$ 0,00"
+                android:inputType="numberDecimal"
+                android:textColor="@android:color/white"
+                android:textColorHint="#80FFFFFF"
+                android:textSize="36sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTEÚDO scrollável -->
+    <!-- ══════════════════════════════════════════════════════
+         BARRA INFERIOR FIXA
+         FIX 1: @color/white (cor do projeto) — mesmo valor
+         usado pelo @drawable/header_background como fundo
+         do card branco do scroll.
+    ═══════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/barraInferior"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="20dp"
+        android:background="@color/cor_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- Botão excluir: gone por padrão, VISIBLE no modo edição via código -->
+        <ImageButton
+            android:id="@+id/btnExcluir"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_btn_excluir_circular"
+            android:contentDescription="Excluir lançamento"
+            android:elevation="2dp"
+            android:src="@drawable/ic_lixeira_excluir_24"
+            android:visibility="gone"
+            app:tint="#FFFFFF" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fabInferiorSalvarCategoria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:onClick="salvarProventos"
+            android:text="Salvar"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/colorAccentProventos"
+            app:icon="@drawable/ic_confirmar_branco_24"
+            app:iconTint="@color/white" />
+
+    </LinearLayout>
+
+    <!-- CONTEÚDO SCROLLÁVEL — bottom ancorado no TOP da barraInferior -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/content"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@drawable/header_background"
         android:fillViewport="true"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/barraInferior"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/header">
@@ -76,14 +168,15 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="100dp">
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp">
 
             <!-- DESCRIÇÃO -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputDescricao"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -136,7 +229,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- VALOR -->
+            <!-- VALOR legado (gone) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputValor"
                 android:layout_width="0dp"
@@ -144,13 +237,14 @@
                 android:layout_marginTop="8dp"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/bannerVerSerie"
                 app:startIconDrawable="@drawable/ic_moeda_real_24">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editValor"
+                    android:id="@+id/editValorLegado"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Informe um valor"
@@ -242,197 +336,244 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textInputData" />
 
-            <!-- ══════════════ BLOCO RECORRÊNCIA ══════════════ -->
-            <LinearLayout
-                android:id="@+id/layoutRecorrencia"
+            <!-- CARD DE RECORRÊNCIA -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRecorrencia"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E0E0E0"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/switchStatusPago">
 
-                <!-- Checkbox gatilho -->
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/checkboxRepetir"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Repetir lançamento" />
-
-                <!-- Painel expandido -->
                 <LinearLayout
-                    android:id="@+id/painelRecorrencia"
+                    android:id="@+id/layoutRecorrencia"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:layout_marginTop="8dp">
+                    android:orientation="vertical">
 
-                    <!-- Label -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tipo de repetição"
-                        android:textSize="12sp"
-                        android:textColor="#666666"
-                        android:layout_marginBottom="6dp" />
-
-                    <!-- Chips de tipo -->
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupTipoRecorrencia"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true"
-                        app:chipSpacingHorizontal="4dp"
-                        app:chipSpacingVertical="4dp">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="14dp">
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipParcelado"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Repetir lançamento"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/cor_texto" />
+
+                            <TextView
+                                android:id="@+id/textResumoRecorrencia"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Desativado"
+                                android:textSize="12sp"
+                                android:textColor="#888888"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/checkboxRepetir"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="true"
-                            android:text="Parcelar" />
+                            android:text="" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipSemanal"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Semanal" />
+                    </LinearLayout>
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipQuinzenal"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Quinzenal" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipMensal"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Mensal" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipCadaXDias"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="A cada X dias" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipCadaXMeses"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="A cada X meses" />
-
-                    </com.google.android.material.chip.ChipGroup>
-
-                    <!-- Campo de intervalo (só para "A cada X dias/meses") -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/textInputIntervalo"
+                    <View
+                        android:id="@+id/divisorRecorrencia"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:visibility="gone"
-                        app:startIconDrawable="@drawable/ic_calendar_month_24">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/editIntervalo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Intervalo (ex: 3)"
-                            android:inputType="number"
-                            android:maxLength="3" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Quantidade de repetições -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/textInputMeses"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        app:startIconDrawable="@drawable/ic_calendar_month_24">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/editQtdMeses"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Quantidade de repetições"
-                            android:inputType="number"
-                            android:maxLength="3" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Data de referência -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/textInputDataReferencia"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        app:startIconDrawable="@drawable/ic_calendar_month_24">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/editDataReferencia"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Iniciar a partir de (opcional)"
-                            android:clickable="true"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:paddingStart="44dp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Preview da série -->
-                    <TextView
-                        android:id="@+id/textPreviewRecorrencia"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:background="#F5F5F5"
-                        android:padding="10dp"
-                        android:text=""
-                        android:textColor="#555555"
-                        android:textSize="12sp"
+                        android:layout_height="1dp"
+                        android:background="#E0E0E0"
                         android:visibility="gone" />
 
+                    <LinearLayout
+                        android:id="@+id/painelRecorrencia"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:paddingHorizontal="16dp"
+                        android:paddingBottom="20dp"
+                        android:paddingTop="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Como repetir?"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/cor_texto"
+                            android:layout_marginBottom="10dp" />
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupTipoRecorrencia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:chipSpacingHorizontal="6dp"
+                            app:chipSpacingVertical="6dp">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipParcelado"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="Parcelar" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSemanal"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Semanal" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipQuinzenal"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Quinzenal" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipMensal"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mensal" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipCadaXDias"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="A cada X dias" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipCadaXMeses"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="A cada X meses" />
+
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#F0F0F0"
+                            android:layout_marginTop="14dp"
+                            android:layout_marginBottom="14dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Configuração"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/cor_texto"
+                            android:layout_marginBottom="10dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/textInputIntervalo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:visibility="gone"
+                            app:startIconDrawable="@drawable/ic_calendar_month_24">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editIntervalo"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Intervalo (ex: 3)"
+                                android:inputType="number"
+                                android:maxLength="3" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/textInputMeses"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            app:startIconDrawable="@drawable/ic_calendar_month_24">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editQtdMeses"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Quantidade de repetições"
+                                android:inputType="number"
+                                android:maxLength="3" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/textInputDataReferencia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:startIconDrawable="@drawable/ic_calendar_month_24">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/editDataReferencia"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Iniciar a partir de (opcional)"
+                                android:clickable="true"
+                                android:focusable="false"
+                                android:inputType="none"
+                                android:paddingStart="44dp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <LinearLayout
+                            android:id="@+id/containerPreviewRecorrencia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal"
+                            android:background="#F5F5F5"
+                            android:visibility="gone">
+
+                            <View
+                                android:layout_width="4dp"
+                                android:layout_height="match_parent"
+                                android:background="@color/colorPrimaryProventos" />
+
+                            <TextView
+                                android:id="@+id/textPreviewRecorrencia"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:padding="10dp"
+                                android:text=""
+                                android:textColor="#555555"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-
-            <!-- FAB salvar inferior -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabInferiorSalvarCategoria"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp"
-                android:layout_marginEnd="24dp"
-                android:clickable="true"
-                android:onClick="salvarProventos"
-                app:backgroundTint="@color/colorAccentProventos"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:srcCompat="@drawable/ic_confirmar_branco_24" />
-
-            <!-- Botão excluir -->
-            <ImageButton
-                android:id="@+id/btnExcluir"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_marginStart="24dp"
-                android:layout_marginBottom="24dp"
-                android:background="@drawable/bg_btn_excluir_circular"
-                android:contentDescription="Excluir"
-                android:elevation="6dp"
-                android:src="@drawable/ic_lixeira_excluir_24"
-                app:tint="#FFFFFF"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
+            </com.google.android.material.card.MaterialCardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

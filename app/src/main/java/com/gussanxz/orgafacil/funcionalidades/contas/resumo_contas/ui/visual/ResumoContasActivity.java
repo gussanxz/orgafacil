@@ -67,6 +67,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     private View overlayBackground;
     private View radialSpotlight;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
+    private View btnRelatoriosTop;
 
     // Controle de Carregamento para o Observer
     private boolean aguardandoPrimeiroFetch = true;
@@ -127,7 +128,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground = findViewById(R.id.overlay_background);
         bottomAppBar = findViewById(R.id.bottomAppBar);
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
-        ImageView btnRelatoriosTop = findViewById(R.id.btnRelatoriosTop);
+        btnRelatoriosTop = findViewById(R.id.btnRelatoriosTop);
 
         if (btnRelatoriosTop != null) {
             btnRelatoriosTop.setOnClickListener(v -> acessarRelatorios(v));

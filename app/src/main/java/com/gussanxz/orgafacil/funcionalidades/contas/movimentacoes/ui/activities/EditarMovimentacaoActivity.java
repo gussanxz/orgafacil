@@ -2,13 +2,17 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activitie
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.firebase.Timestamp;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
@@ -27,7 +31,7 @@ import java.util.Date;
  *
  * AGORA: ~200 linhas contendo APENAS o que é exclusivo desta tela:
  *   - Modo visualização/edição (campos desabilitados por padrão, FAB alterna)
- *   - FABs com dois estados (lápis → confirmar)
+ *   - FABs com dois estados (lápis → confirmar), texto e cor incluídos
  *   - Header dinâmico com "(parcela x/y)"
  *   - Banner "Ver série completa"
  *   - Dialog de edição em série ("esta e seguintes")
@@ -37,20 +41,15 @@ import java.util.Date;
  * Tudo o mais (máscara, data, hora, categoria, status, validação, save)
  * é herdado de BaseMovimentacaoActivity sem reimplementação.
  *
- * ── Como a herança funciona aqui ──────────────────────────────────────────
+ * ── Comportamento dos botões ──────────────────────────────────────────────
  *
- * getTipo()          → retorna o tipo DO OBJETO CARREGADO (não é estático como
- *                       nas subclasses Despesa/Receita). Funciona porque a Base
- *                       chama carregarModoEdicao() que popula itemEmEdicao antes
- *                       de qualquer chamada a getTipo().
+ * Modo visualização (isModoEdicaoAtivo = false):
+ *   fabSuperior  → ícone lápis, cor neutra semitransparente no header
+ *   fabInferior  → ícone lápis, texto "Editar", cor cinza neutra
  *
- * getLayoutResId()   → decidido dinamicamente pelo tipo da movimentação.
- *
- * getCategoriaDefault() → não é usado no modo edição (itemEmEdicao já tem categoria).
- *
- * getTituloExclusao() / getMensagemExclusao() → usados pelo btnExcluir da Base,
- *   mas esta tela tem seu próprio confirmarExclusao() com lógica de série,
- *   então o btnExcluir da Base é sobrescrito via onModoEdicaoAlternado().
+ * Modo edição (isModoEdicaoAtivo = true):
+ *   fabSuperior  → ícone confirmar, cor semitransparente no header
+ *   fabInferior  → ícone confirmar, texto "Salvar", cor accent da movimentação
  */
 public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
@@ -60,31 +59,21 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
     private boolean isModoEdicaoAtivo = false;
     private boolean acaoEmAndamento   = false;
 
-    // ── FABs exclusivos desta tela (dois estados: lápis ↔ confirmar) ──────────
+    // ── FABs exclusivos desta tela ─────────────────────────────────────────────
     private com.google.android.material.floatingactionbutton.FloatingActionButton fabSuperior;
-    private com.google.android.material.floatingactionbutton.FloatingActionButton fabInferior;
+    private ExtendedFloatingActionButton fabInferior;
 
     // =========================================================================
     // IMPLEMENTAÇÃO DOS MÉTODOS ABSTRATOS DA BASE
     // =========================================================================
 
-    /**
-     * O tipo vem do objeto carregado, não é definido estaticamente.
-     * itemEmEdicao é populado pela Base em carregarModoEdicao() que roda
-     * antes de qualquer chamada a getTipo() no fluxo normal de onCreate().
-     */
     @Override
     protected TipoCategoriaContas getTipo() {
         return (itemEmEdicao != null)
                 ? itemEmEdicao.getTipoEnum()
-                : TipoCategoriaContas.DESPESA; // fallback seguro
+                : TipoCategoriaContas.DESPESA;
     }
 
-    /**
-     * O layout é decidido pelo tipo da movimentação.
-     * itemEmEdicao é lido do Intent aqui, pois getLayoutResId() é chamado
-     * ANTES de carregarModoEdicao() — é o primeiro método chamado pela Base.
-     */
     @Override
     protected int getLayoutResId() {
         MovimentacaoModel mov = null;
@@ -100,13 +89,11 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
     @Override
     protected String getCategoriaDefault() {
-        // Nunca usado no modo edição — itemEmEdicao já tem categoria.
         return "";
     }
 
     @Override
     protected String getTituloExclusao() {
-        // Usado como fallback — esta tela usa confirmarExclusao() próprio.
         return "Excluir lançamento";
     }
 
@@ -121,31 +108,23 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // A Base cuida de: setContentView, inicializar campos, máscara, data/hora,
-        // categoria, status, carregar itemEmEdicao, preencher campos.
         super.onCreate(savedInstanceState);
 
         if (itemEmEdicao == null) {
-            // Se chegou sem movimentação, não há o que editar.
             finish();
             return;
         }
 
-        // Vincula os FABs exclusivos desta tela
         fabSuperior = findViewById(R.id.fabSuperiorSalvarCategoria);
         fabInferior = findViewById(R.id.fabInferiorSalvarCategoria);
 
-        // Configura o header e o banner de série
         configurarHeader();
         configurarBannerSerie();
 
-        // Esconde o painel de recorrência (não aplicável na edição)
         if (layoutRecorrencia != null) layoutRecorrencia.setVisibility(View.GONE);
 
-        // Configura os FABs desta tela
         configurarFabs();
 
-        // Verifica se deve entrar direto no modo edição
         boolean diretoPraEdicao = getIntent().getBooleanExtra("DIRETO_PRA_EDICAO", false);
         alternarModoEdicao(diretoPraEdicao);
     }
@@ -208,14 +187,18 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
     /**
      * Hook da Base: chamado sempre que o modo de edição é alternado.
-     * Aqui habilitamos/desabilitamos os campos e trocamos os ícones dos FABs.
+     *
+     * FIX 2 — comportamento dos botões por modo:
+     *   Visualizando → fabInferior: ícone lápis, texto "Editar", cor neutra cinza
+     *   Editando     → fabInferior: ícone confirmar, texto "Salvar", cor accent
+     *   fabSuperior  → apenas troca ícone (está no header colorido)
      */
     @Override
     protected void onModoEdicaoAlternado(boolean modoEdicaoAtivo) {
         // Habilita ou desabilita todos os campos de input
-        if (campoValor    != null) campoValor.setEnabled(modoEdicaoAtivo);
-        if (campoDescricao!= null) campoDescricao.setEnabled(modoEdicaoAtivo);
-        if (campoCategoria!= null) {
+        if (campoValor     != null) campoValor.setEnabled(modoEdicaoAtivo);
+        if (campoDescricao != null) campoDescricao.setEnabled(modoEdicaoAtivo);
+        if (campoCategoria != null) {
             campoCategoria.setEnabled(modoEdicaoAtivo);
             campoCategoria.setClickable(modoEdicaoAtivo);
         }
@@ -243,20 +226,37 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
         // Botão excluir só aparece no modo edição
         if (btnExcluir != null) {
             btnExcluir.setVisibility(modoEdicaoAtivo ? View.VISIBLE : View.GONE);
-            // Sobrescreve o listener padrão da Base para usar o confirmarExclusao() desta tela
             btnExcluir.setOnClickListener(v -> confirmarExclusao());
         }
 
-        // Troca o ícone dos FABs
-        int icone = modoEdicaoAtivo
+        // ── fabSuperior: apenas troca o ícone ─────────────────────────────────
+        int iconeSuperior = modoEdicaoAtivo
                 ? R.drawable.ic_confirmar_branco_48
                 : R.drawable.ic_lapis_editar_24;
-        if (fabSuperior != null) fabSuperior.setImageResource(icone);
+        if (fabSuperior != null) fabSuperior.setImageResource(iconeSuperior);
 
-        int iconePequeno = modoEdicaoAtivo
-                ? R.drawable.ic_confirmar_branco_24
-                : R.drawable.ic_lapis_editar_24;
-        if (fabInferior != null) fabInferior.setImageResource(iconePequeno);
+        // ── fabInferior: troca ícone + texto + cor de fundo ───────────────────
+        if (fabInferior != null) {
+            if (modoEdicaoAtivo) {
+                // Modo edição: destaque total — cor accent + "Salvar"
+                fabInferior.setIconResource(R.drawable.ic_confirmar_branco_24);
+                fabInferior.setText("Salvar");
+
+                // Cor accent depende do tipo da movimentação
+                int corAccent = (itemEmEdicao != null
+                        && itemEmEdicao.getTipoEnum() == TipoCategoriaContas.RECEITA)
+                        ? R.color.colorAccentProventos
+                        : R.color.colorAccentDespesa;
+                fabInferior.setBackgroundTintList(
+                        ColorStateList.valueOf(ContextCompat.getColor(this, corAccent)));
+            } else {
+                // Modo visualização: neutro — cinza + "Editar"
+                fabInferior.setIconResource(R.drawable.ic_lapis_editar_24);
+                fabInferior.setText("Editar");
+                fabInferior.setBackgroundTintList(
+                        ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorPrimaryDark)));
+            }
+        }
     }
 
     /**
@@ -284,10 +284,6 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
     // SALVAR — lógica exclusiva desta tela (série, parcelas, etc.)
     // =========================================================================
 
-    /**
-     * Botões de salvar do XML chamam este método.
-     * Compatível com os IDs usados nos layouts tela_add_despesa e tela_add_receita.
-     */
     public void salvarDespesa(View v)   { processarAcaoFab(); }
     public void salvarProventos(View v) { processarAcaoFab(); }
 
@@ -300,7 +296,6 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
         acaoEmAndamento = true;
 
         try {
-            // Monta a movimentação nova preservando todos os campos de série da original
             MovimentacaoModel movNova = new MovimentacaoModel();
             movNova.setId(itemEmEdicao.getId());
             movNova.setTipoEnum(itemEmEdicao.getTipoEnum());
@@ -313,7 +308,6 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
             movNova.setCategoria_nome(campoCategoria.getText().toString());
             movNova.setCategoria_id(categoriaIdSelecionada);
 
-            // Monta data+hora usando o DateHelper centralizado (igual à Base)
             String dataStr = campoData.getText().toString().trim();
             String horaStr = (campoHora != null && !campoHora.getText().toString().isEmpty())
                     ? campoHora.getText().toString().trim()
@@ -327,7 +321,6 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
                     : itemEmEdicao.isPago();
             movNova.setPago(ok);
 
-            // Se for parcela de uma série, pergunta se atualiza só esta ou todas as seguintes
             boolean ehSerie = itemEmEdicao.getTotal_parcelas() > 1
                     && itemEmEdicao.getParcela_atual() < itemEmEdicao.getTotal_parcelas();
 

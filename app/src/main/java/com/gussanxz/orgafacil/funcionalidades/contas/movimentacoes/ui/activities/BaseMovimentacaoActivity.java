@@ -23,7 +23,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
@@ -40,6 +40,7 @@ import com.gussanxz.orgafacil.util_helper.RecorrenciaFormHelper;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -76,6 +77,15 @@ import java.util.Locale;
  *   - getTipo() tem implementação padrão baseada em itemEmEdicao, então o Editar
  *     não precisa implementar esse método abstrato (que ele não pode responder
  *     de forma estática, já que o tipo vem do objeto carregado).
+ *
+ *   - Card de recorrência: adicionado suporte a textResumoRecorrencia e
+ *     divisorRecorrencia — IDs novos no layout que exibem o estado resumido
+ *     do bloco de repetição sem precisar expandi-lo.
+ *
+ *   - FIX: checkboxRepetir alterado de MaterialCheckBox → MaterialSwitch para
+ *     ficar consistente com o XML atualizado. A lógica não muda pois ambos
+ *     herdam de CompoundButton (isChecked / setChecked / setOnCheckedChangeListener).
+ *     O import de MaterialCheckBox foi removido pois não é mais referenciado.
  */
 public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
 
@@ -91,8 +101,19 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     protected ImageButton btnExcluir;
     protected MaterialSwitch switchStatusPago;
     protected LinearLayout layoutRecorrencia;
-    protected MaterialCheckBox checkboxRepetir;
+
+    // FIX: era MaterialCheckBox — trocado para MaterialSwitch para corresponder
+    // ao XML (id checkboxRepetir agora é um MaterialSwitch). A API pública usada
+    // aqui (isChecked, setOnCheckedChangeListener) é idêntica em ambos os tipos.
+    protected MaterialSwitch checkboxRepetir;
+
     protected RecorrenciaFormHelper recorrenciaHelper;
+
+    // ── Novos campos do card de recorrência ────────────────────────────────────
+    protected TextView textResumoRecorrencia;
+    protected View divisorRecorrencia;
+    private ChipGroup chipGroupTipoRecorrencia;
+    private TextInputEditText editQtdMeses;
 
     // ── Estado — protected para acesso pelas subclasses ───────────────────────
     protected MovimentacaoRepository repository;
@@ -107,25 +128,11 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     private String TAG;
 
     // ── Métodos abstratos que DespesasActivity e ReceitasActivity implementam ──
-    // EditarMovimentacaoActivity NÃO os implementa — usa as versões default abaixo.
 
-    /**
-     * Define o tipo da movimentação.
-     * DespesasActivity → DESPESA, ReceitasActivity → RECEITA.
-     * EditarMovimentacaoActivity sobrescreve este método usando itemEmEdicao.getTipoEnum().
-     */
     protected abstract TipoCategoriaContas getTipo();
-
-    /** Retorna o ID do layout XML a ser inflado. */
     protected abstract int getLayoutResId();
-
-    /** Retorna o ID de categoria padrão caso nenhuma seja selecionada. */
     protected abstract String getCategoriaDefault();
-
-    /** Retorna o título do diálogo de exclusão. */
     protected abstract String getTituloExclusao();
-
-    /** Retorna a mensagem do diálogo de exclusão. */
     protected abstract String getMensagemExclusao();
 
     // ── Métodos que subclasses PODEM sobrescrever ──────────────────────────────
@@ -153,8 +160,6 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
      * Hook chamado sempre que o modo de edição é alternado.
      * EditarMovimentacaoActivity sobrescreve para habilitar/desabilitar campos
      * e trocar o ícone dos FABs sem precisar reimplementar nada da Base.
-     *
-     * @param modoEdicaoAtivo true = campos habilitados para edição, false = só visualização
      */
     protected void onModoEdicaoAlternado(boolean modoEdicaoAtivo) {
         // sem comportamento padrão — subclasses implementam se precisarem
@@ -199,7 +204,15 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         btnExcluir        = findViewById(R.id.btnExcluir);
         switchStatusPago  = findViewById(R.id.switchStatusPago);
         layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
+
+        // FIX: o cast agora é para MaterialSwitch, que é o tipo real no XML
         checkboxRepetir   = findViewById(R.id.checkboxRepetir);
+
+        // Novos campos do card de recorrência (podem ser null em layouts antigos)
+        textResumoRecorrencia    = findViewById(R.id.textResumoRecorrencia);
+        divisorRecorrencia       = findViewById(R.id.divisorRecorrencia);
+        chipGroupTipoRecorrencia = findViewById(R.id.chipGroupTipoRecorrencia);
+        editQtdMeses             = findViewById(R.id.editQtdMeses);
 
         campoCategoria.setFocusable(false);
         campoCategoria.setClickable(true);
@@ -241,15 +254,90 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         if (switchStatusPago != null) {
             switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
         }
+
+        configurarListenersRecorrencia();
+    }
+
+    /**
+     * Configura os listeners do card de recorrência.
+     *
+     * checkboxRepetir (agora MaterialSwitch): mostra/oculta o painel e
+     * atualiza o subtítulo do card.
+     * chipGroupTipoRecorrencia: atualiza o subtítulo ao mudar o tipo.
+     * editQtdMeses: atualiza o subtítulo ao digitar a quantidade.
+     *
+     * Todos os IDs são opcionais — layouts que não têm o card simplificado
+     * continuam funcionando normalmente (os campos serão null).
+     */
+    private void configurarListenersRecorrencia() {
+        if (checkboxRepetir == null) return;
+
+        checkboxRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            View painelRecorrencia = findViewById(R.id.painelRecorrencia);
+            if (painelRecorrencia != null) {
+                painelRecorrencia.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            }
+            if (divisorRecorrencia != null) {
+                divisorRecorrencia.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            }
+            if (textResumoRecorrencia != null) {
+                textResumoRecorrencia.setText(
+                        isChecked ? "Ativado — configure abaixo" : "Desativado"
+                );
+            }
+        });
+
+        if (chipGroupTipoRecorrencia != null) {
+            chipGroupTipoRecorrencia.setOnCheckedStateChangeListener(
+                    (group, checkedIds) -> atualizarResumoRecorrencia()
+            );
+        }
+
+        if (editQtdMeses != null) {
+            editQtdMeses.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
+                    atualizarResumoRecorrencia();
+                }
+            });
+        }
+    }
+
+    /**
+     * Atualiza o subtítulo do card de recorrência com o tipo e quantidade atuais.
+     * Exemplo: "Parcelado · 6x", "Mensal · 12x", "Semanal".
+     */
+    protected void atualizarResumoRecorrencia() {
+        if (textResumoRecorrencia == null) return;
+        if (checkboxRepetir == null || !checkboxRepetir.isChecked()) return;
+        if (chipGroupTipoRecorrencia == null) return;
+
+        String tipo;
+        List<Integer> ids = chipGroupTipoRecorrencia.getCheckedChipIds();
+        if (ids.isEmpty()) {
+            tipo = "—";
+        } else {
+            int chipId = ids.get(0);
+            if      (chipId == R.id.chipParcelado)  tipo = "Parcelado";
+            else if (chipId == R.id.chipSemanal)    tipo = "Semanal";
+            else if (chipId == R.id.chipQuinzenal)  tipo = "Quinzenal";
+            else if (chipId == R.id.chipMensal)     tipo = "Mensal";
+            else if (chipId == R.id.chipCadaXDias)  tipo = "A cada X dias";
+            else if (chipId == R.id.chipCadaXMeses) tipo = "A cada X meses";
+            else                                    tipo = "—";
+        }
+
+        String qtdTexto = (editQtdMeses != null && editQtdMeses.getText() != null)
+                ? editQtdMeses.getText().toString().trim()
+                : "";
+
+        String resumo = qtdTexto.isEmpty() ? tipo : tipo + " · " + qtdTexto + "x";
+        textResumoRecorrencia.setText(resumo);
     }
 
     // ── Launcher de categoria — protected para o Editar reutilizar ────────────
 
-    /**
-     * Configura o launcher de seleção de categoria.
-     * Chamado em onCreate pela Base. O Editar herda automaticamente.
-     * Se o Editar precisar de comportamento diferente, pode sobrescrever.
-     */
     protected void configurarLauncherCategoria() {
         launcherCategoria = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -449,6 +537,10 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         isEdicao = false;
         if (layoutRecorrencia != null) layoutRecorrencia.setVisibility(View.VISIBLE);
         if (btnExcluir != null) btnExcluir.setVisibility(View.GONE);
+
+        if (textResumoRecorrencia != null) {
+            textResumoRecorrencia.setText("Desativado");
+        }
 
         if (ehContaFutura) {
             Calendar c = Calendar.getInstance();

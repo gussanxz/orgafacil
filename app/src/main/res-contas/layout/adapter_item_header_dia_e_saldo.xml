@@ -34,7 +34,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Hoje - 08/12/2025"
+                android:text="FEV 22, 2026"
+                android:textAllCaps="true"
                 android:textStyle="bold"
                 android:textSize="14sp"
                 android:textColor="@color/cardDiaTextPrimary" />
@@ -43,7 +44,7 @@
                 android:id="@+id/textSaldoDia"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Saldo do dia: R$ 0,00"
+                android:text="Subtotal: R$ 0,00"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/cardDiaTextSecondary" />
