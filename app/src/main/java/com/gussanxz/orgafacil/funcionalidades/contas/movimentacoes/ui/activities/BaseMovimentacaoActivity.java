@@ -502,10 +502,16 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void carregarModoEdicao() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
-        } else {
-            itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada");
+        // Só lê do Intent se a subclasse ainda não preencheu itemEmEdicao.
+        // EditarMovimentacaoActivity faz isso em getLayoutResId() para garantir
+        // leitura única do Parcelable (ver BUG 4 no javadoc da subclasse).
+        if (itemEmEdicao == null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                itemEmEdicao = getIntent().getParcelableExtra(
+                        "movimentacaoSelecionada", MovimentacaoModel.class);
+            } else {
+                itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada");
+            }
         }
 
         if (itemEmEdicao == null) return;

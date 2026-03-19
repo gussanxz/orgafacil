@@ -111,10 +111,10 @@ public class ResumoContasActivity extends AppCompatActivity {
     }
 
     private void inicializarViewsDashboard() {
-        textSaldoGeral = findViewById(R.id.textSaldo);
+
         imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
         textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
-        textSaudacao = findViewById(R.id.textSaudacao); // NOVO
+        textSaudacao = findViewById(R.id.textSaudacao);
         textSaldoGeral = findViewById(R.id.textSaldo);
 
         // 1. ABRIR A TELA -> MOSTRAR "CARREGANDO" (Estado inicial cravado)
@@ -174,12 +174,28 @@ public class ResumoContasActivity extends AppCompatActivity {
 
     private void desenharSaldoNaTela(long saldoCentavos) {
         double saldoDouble = saldoCentavos / 100.0;
-        String valorFormatado = currencyFormat.format(Math.abs(saldoDouble));
 
+        // 1. Formatamos APENAS o número puro no padrão brasileiro (ex: 500,00 ou 1.500,00)
+        java.text.NumberFormat numberFormat = java.text.NumberFormat.getNumberInstance(new java.util.Locale("pt", "BR"));
+        numberFormat.setMinimumFractionDigits(2);
+        numberFormat.setMaximumFractionDigits(2);
+
+        String numeroPuro = numberFormat.format(Math.abs(saldoDouble));
+
+        String valorFormatado;
         int corSaldo;
-        if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
-        else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
-        else                        corSaldo = Color.WHITE;
+
+        // 2. Montamos a string cirurgicamente do jeito que você quer: "R$ -{VALOR}"
+        if (saldoCentavos > 0) {
+            corSaldo = Color.parseColor("#4CAF50");
+            valorFormatado = "R$ " + numeroPuro;
+        } else if (saldoCentavos < 0) {
+            corSaldo = Color.parseColor("#E53935");
+            valorFormatado = "R$ -" + numeroPuro; // <- O sinal fica exatamente onde você pediu
+        } else {
+            corSaldo = Color.WHITE;
+            valorFormatado = "R$ " + numeroPuro;
+        }
 
         if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.VISIBLE);
 
@@ -190,7 +206,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         }
         VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
 
-        // 3. Atualiza a legenda de forma suave
         atualizarLegendaSaldo(saldoCentavos);
     }
 
@@ -452,29 +467,6 @@ public class ResumoContasActivity extends AppCompatActivity {
                 contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
             }
         });
-    }
-
-    private void configurarAbasRelatorio() {
-
-        RelatoriosPagerAdapter adapter = new RelatoriosPagerAdapter(this);
-        viewPager.setAdapter(adapter);
-
-        // Desativa o swipe lateral se quiser que a navegação seja apenas pelos cliques nos Chips/Tabs
-        // viewPager.setUserInputEnabled(false);
-
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            switch (position) {
-                case 0:
-                    tab.setText("Resumo");
-                    break;
-                case 1:
-                    tab.setText("Evolução");
-                    break;
-                case 2:
-                    tab.setText("Planejamento");
-                    break;
-            }
-        }).attach();
     }
 
     public void acessarRelatorios(View v) {

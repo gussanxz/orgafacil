@@ -7,16 +7,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
@@ -28,6 +33,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class PlanejamentoRelatorioFragment extends Fragment {
@@ -39,7 +45,9 @@ public class PlanejamentoRelatorioFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_planejamento_relatorio, container, false);
     }
 
@@ -48,10 +56,10 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         progressMetaMensal = view.findViewById(R.id.progressMetaMensal);
-        textMetaStatus = view.findViewById(R.id.textMetaStatus);
-        textMetaRestante = view.findViewById(R.id.textMetaRestante);
-        textMetaProjecao = view.findViewById(R.id.textMetaProjecao);
-        barChartDias = view.findViewById(R.id.barChartDias);
+        textMetaStatus     = view.findViewById(R.id.textMetaStatus);
+        textMetaRestante   = view.findViewById(R.id.textMetaRestante);
+        textMetaProjecao   = view.findViewById(R.id.textMetaProjecao);
+        barChartDias       = view.findViewById(R.id.barChartDias);
 
         view.findViewById(R.id.layoutEditarMeta).setOnClickListener(v -> abrirDialogEdicaoMeta());
 
@@ -62,127 +70,193 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     private void carregarDadosPlanejamento() {
         Calendar cal = Calendar.getInstance();
         Date hoje = cal.getTime();
-        int diaAtual = cal.get(Calendar.DAY_OF_MONTH);
+        int diaAtual     = cal.get(Calendar.DAY_OF_MONTH);
         int totalDiasMes = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
         cal.set(Calendar.DAY_OF_MONTH, 1);
         Date inicioMes = cal.getTime();
 
-        repository.buscarMovimentacoesParaExportacao(inicioMes, hoje, new MovimentacaoRepository.DadosCallback() {
-            @Override
-            public void onSucesso(List<MovimentacaoModel> lista) {
-                if (isAdded()) processarPlanejamento(lista, diaAtual, totalDiasMes);
-            }
-
-            @Override
-            public void onErro(String erro) {}
-        });
+        repository.buscarMovimentacoesParaExportacao(inicioMes, hoje,
+                new MovimentacaoRepository.DadosCallback() {
+                    @Override
+                    public void onSucesso(List<MovimentacaoModel> lista) {
+                        if (!isAdded()) return;
+                        processarPlanejamento(lista, diaAtual, totalDiasMes);
+                    }
+                    @Override
+                    public void onErro(String erro) {
+                        if (!isAdded()) return;
+                        Toast.makeText(requireContext(),
+                                "Erro ao carregar planejamento: " + erro,
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
-    private void processarPlanejamento(List<MovimentacaoModel> lista, int diaAtual, int totalDiasMes) {
+    private void processarPlanejamento(List<MovimentacaoModel> lista,
+                                       int diaAtual, int totalDiasMes) {
         long gastoTotalCentavos = 0;
         Map<Integer, Long> gastosPorDia = new HashMap<>();
 
         for (MovimentacaoModel mov : lista) {
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 gastoTotalCentavos += mov.getValor();
-
-                Calendar c = Calendar.getInstance();
-                c.setTime(mov.getData_movimentacao().toDate());
-                int dia = c.get(Calendar.DAY_OF_MONTH);
-                gastosPorDia.put(dia, gastosPorDia.getOrDefault(dia, 0L) + mov.getValor());
+                if (mov.getData_movimentacao() != null) {
+                    Calendar c = Calendar.getInstance();
+                    c.setTime(mov.getData_movimentacao().toDate());
+                    int dia = c.get(Calendar.DAY_OF_MONTH);
+                    gastosPorDia.put(dia, gastosPorDia.getOrDefault(dia, 0L) + mov.getValor());
+                }
             }
         }
 
-        // 1. Lógica da Meta (Agora dinâmica, lendo do SharedPreferences!)
-        android.content.SharedPreferences prefs = requireActivity().getSharedPreferences("OrgaFacilPrefs", android.content.Context.MODE_PRIVATE);
-        long metaCentavos = prefs.getLong("meta_mensal", 300000L);
+        // BUG 8 CORRIGIDO: getContext() em vez de requireActivity()
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
 
-        // 🔥 CORREÇÃO: Blindagem contra Divisão por Zero 🔥
+        long metaCentavos = ctx.getSharedPreferences(
+                        "OrgaFacilPrefs", android.content.Context.MODE_PRIVATE)
+                .getLong("meta_mensal", 300000L);
+
+        // Blindagem contra divisão por zero
         int percentual = 0;
         if (metaCentavos > 0) {
             percentual = (int) ((gastoTotalCentavos * 100) / metaCentavos);
         } else if (gastoTotalCentavos > 0) {
-            // Se a meta é 0 e o usuário gastou qualquer coisa, ele já estourou 100% da meta
             percentual = 100;
         }
 
+        // BUG 7 CORRIGIDO: setProgress chamado apenas uma vez
         progressMetaMensal.setProgress(Math.min(percentual, 100));
 
-        progressMetaMensal.setProgress(Math.min(percentual, 100));
-
-        // 🔥 A MÁGICA DA GAMIFICAÇÃO: Cores e Emojis Dinâmicos 🔥
         int corStatus;
         String mensagemGamificada;
 
         if (percentual < 50) {
-            corStatus = Color.parseColor("#43A047"); // Verde (Tranquilo)
+            corStatus = Color.parseColor("#43A047");
             mensagemGamificada = "😎 Tudo sob controle!";
         } else if (percentual <= 80) {
-            corStatus = Color.parseColor("#F57C00"); // Laranja (Atenção)
+            corStatus = Color.parseColor("#F57C00");
             mensagemGamificada = "⚠️ Atenção, chegando no limite!";
         } else {
-            corStatus = Color.parseColor("#E53935"); // Vermelho (Perigo)
+            corStatus = Color.parseColor("#E53935");
             mensagemGamificada = "🛑 Alerta vermelho! Pise no freio.";
         }
 
-        // Aplicando a cor dinamicamente na barra de progresso
-        progressMetaMensal.setProgressTintList(android.content.res.ColorStateList.valueOf(corStatus));
+        progressMetaMensal.setProgressTintList(
+                android.content.res.ColorStateList.valueOf(corStatus));
 
-        // Atualizando o texto principal com a cor e o emoji
         textMetaStatus.setText(percentual + "% consumido\n" + mensagemGamificada);
         textMetaStatus.setTextColor(corStatus);
 
-        // Tratando o saldo restante ou o valor estourado
         long restante = metaCentavos - gastoTotalCentavos;
         if (restante >= 0) {
-            textMetaRestante.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante)) + " restantes");
-            textMetaRestante.setTextColor(Color.parseColor("#757575")); // Cinza normal
+            textMetaRestante.setText(
+                    MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante))
+                            + " restantes");
+            textMetaRestante.setTextColor(Color.parseColor("#757575"));
         } else {
-            // Se gastou mais que a meta, mostramos quanto estourou (usando Math.abs para tirar o sinal negativo)
-            textMetaRestante.setText("Estourou em " + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(Math.abs(restante))));
-            textMetaRestante.setTextColor(Color.parseColor("#E53935")); // Vermelho
+            textMetaRestante.setText("Estourou em " +
+                    MoedaHelper.formatarParaBRL(
+                            MoedaHelper.centavosParaDouble(Math.abs(restante))));
+            textMetaRestante.setTextColor(Color.parseColor("#E53935"));
         }
 
-        // 2. Projeção "Fora da Caixa"
-        long mediaDiaria = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
+        long mediaDiaria  = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
         long projecaoFinal = mediaDiaria * totalDiasMes;
-        textMetaProjecao.setText("Projeção: " + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(projecaoFinal)) + " até o fim do mês.");
+        textMetaProjecao.setText("Projeção: "
+                + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(projecaoFinal))
+                + " até o fim do mês.");
 
         if (projecaoFinal > metaCentavos) {
             textMetaProjecao.setTextColor(Color.parseColor("#E53935"));
             textMetaProjecao.setTypeface(null, android.graphics.Typeface.BOLD);
         } else {
-            textMetaProjecao.setTextColor(Color.parseColor("#F57C00")); // Laranja para projeção normal
+            textMetaProjecao.setTextColor(Color.parseColor("#F57C00"));
             textMetaProjecao.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
 
-        // 3. Gráfico de Barras Diário
         List<BarEntry> entries = new ArrayList<>();
         for (int i = 1; i <= totalDiasMes; i++) {
-            float valor = (float) MoedaHelper.centavosParaDouble(gastosPorDia.getOrDefault(i, 0L));
+            float valor = (float) MoedaHelper.centavosParaDouble(
+                    gastosPorDia.getOrDefault(i, 0L));
             entries.add(new BarEntry(i, valor));
         }
 
-        configurarGraficoDiario(entries);
+        configurarGraficoDiario(entries, diaAtual, metaCentavos, totalDiasMes);
     }
 
-    private void configurarGraficoDiario(List<BarEntry> entries) {
+    private void configurarGraficoDiario(List<BarEntry> entries, int diaAtual,
+                                         long metaCentavos, int totalDiasMes) {
+        // PONTO 2: cor_texto via ContextCompat para visibilidade em temas claro/escuro
+        int corTexto = ContextCompat.getColor(requireContext(), R.color.cor_texto);
+
         BarDataSet dataSet = new BarDataSet(entries, "Gastos Diários");
-        dataSet.setColor(Color.parseColor("#2196F3"));
+        dataSet.setColor(Color.parseColor("#1E88E5"));
+        dataSet.setHighLightColor(Color.parseColor("#FB8C00"));
+        dataSet.setDrawValues(false);
 
         BarData data = new BarData(dataSet);
+        data.setBarWidth(0.7f);
         barChartDias.setData(data);
-        barChartDias.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        barChartDias.getXAxis().setLabelCount(10); // Mostra alguns dias para não poluir
-        barChartDias.animateY(1000);
+
+        // Eixo X: apenas 7 labels para não poluir
+        XAxis xAxis = barChartDias.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setLabelCount(7, true);
+        xAxis.setGranularity(1f);
+        xAxis.setTextColor(corTexto);          // PONTO 2
+        xAxis.setTextSize(11f);
+        xAxis.setDrawGridLines(false);
+        xAxis.setAxisMinimum(0.5f);
+        xAxis.setAxisMaximum(totalDiasMes + 0.5f);
+
+        // Eixo Y com formatação BRL e cor_texto
+        YAxis yAxisLeft = barChartDias.getAxisLeft();
+        yAxisLeft.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                if (value >= 1000) return String.format(Locale.getDefault(), "R$%.0fk", value / 1000f);
+                return String.format(Locale.getDefault(), "R$%.0f", value);
+            }
+        });
+        yAxisLeft.setTextColor(corTexto);      // PONTO 2
+        yAxisLeft.setTextSize(11f);
+        yAxisLeft.setGridColor(Color.parseColor("#EEEEEE"));
+        barChartDias.getAxisRight().setEnabled(false);
+
+        // Linha de meta diária tracejada
+        if (metaCentavos > 0) {
+            float metaDiariaReais = (float) MoedaHelper.centavosParaDouble(
+                    metaCentavos / totalDiasMes);
+            LimitLine linhaMeta = new LimitLine(metaDiariaReais, "Meta/dia");
+            linhaMeta.setLineColor(Color.parseColor("#E53935"));
+            linhaMeta.setLineWidth(1.5f);
+            linhaMeta.setTextColor(Color.parseColor("#E53935"));
+            linhaMeta.setTextSize(10f);
+            linhaMeta.enableDashedLine(10f, 5f, 0f);
+            yAxisLeft.removeAllLimitLines();
+            yAxisLeft.addLimitLine(linhaMeta);
+            yAxisLeft.setDrawLimitLinesBehindData(true);
+        }
+
+        // Destaca o dia atual
+        if (diaAtual >= 1 && diaAtual <= entries.size()) {
+            barChartDias.highlightValue(diaAtual, 0, false);
+        }
+
         barChartDias.getDescription().setEnabled(false);
+        barChartDias.getLegend().setEnabled(false);
+        barChartDias.setFitBars(true);
+        barChartDias.setExtraBottomOffset(8f);
+        barChartDias.animateY(900);
         barChartDias.invalidate();
     }
 
     private void abrirDialogEdicaoMeta() {
         android.widget.EditText input = new android.widget.EditText(getContext());
-        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
+                | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
         input.setHint("Ex: 3000.00");
         input.setPadding(50, 50, 50, 50);
 
@@ -194,19 +268,25 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                     String valorDigitado = input.getText().toString();
                     if (!valorDigitado.isEmpty()) {
                         try {
-                            // Converte o que o usuário digitou para DOUBLE, e depois multiplica por 100 para virar LONG (centavos)
-                            double valorDouble = Double.parseDouble(valorDigitado.replace(",", "."));
+                            double valorDouble = Double.parseDouble(
+                                    valorDigitado.replace(",", "."));
                             long valorEmCentavos = (long) (valorDouble * 100);
 
-                            // Salva no SharedPreferences
-                            android.content.SharedPreferences prefs = requireActivity().getSharedPreferences("OrgaFacilPrefs", android.content.Context.MODE_PRIVATE);
-                            prefs.edit().putLong("meta_mensal", valorEmCentavos).apply();
+                            // BUG 8 CORRIGIDO: getContext() em vez de requireActivity()
+                            android.content.Context ctx = getContext();
+                            if (ctx == null) return;
 
-                            // Recarrega a tela com o novo valor!
+                            ctx.getSharedPreferences("OrgaFacilPrefs",
+                                            android.content.Context.MODE_PRIVATE)
+                                    .edit()
+                                    .putLong("meta_mensal", valorEmCentavos)
+                                    .apply();
+
                             carregarDadosPlanejamento();
 
                         } catch (NumberFormatException e) {
-                            android.widget.Toast.makeText(getContext(), "Valor inválido", android.widget.Toast.LENGTH_SHORT).show();
+                            android.widget.Toast.makeText(getContext(),
+                                    "Valor inválido", android.widget.Toast.LENGTH_SHORT).show();
                         }
                     }
                 })

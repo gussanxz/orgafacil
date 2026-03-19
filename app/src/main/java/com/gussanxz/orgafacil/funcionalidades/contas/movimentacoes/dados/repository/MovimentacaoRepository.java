@@ -125,14 +125,9 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(snap -> {
-                    // Usamos o seu método existente que já popula o ID da movimentação
-                    List<MovimentacaoModel> lista = processarSnapshots(snap);
-
-                    if (lista.isEmpty()) {
-                        callback.onErro("Nenhuma movimentação encontrada neste período.");
-                    } else {
-                        callback.onSucesso(lista);
-                    }
+                    // Lista vazia é um resultado válido, não um erro.
+                    // Cabe a quem chama decidir o que exibir quando não há dados.
+                    callback.onSucesso(processarSnapshots(snap));
                 })
                 .addOnFailureListener(e -> callback.onErro("Erro ao buscar dados: " + e.getMessage()));
     }

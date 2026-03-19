@@ -66,7 +66,7 @@
                 android:text="Selecione o período"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#555555"
+                android:textColor="@color/cor_texto"
                 android:layout_marginBottom="8dp"
                 android:paddingHorizontal="4dp" />
 
@@ -173,7 +173,7 @@
                             android:layout_height="wrap_content"
                             android:text="Receitas"
                             android:textSize="12sp"
-                            android:textColor="#888888" />
+                            android:textColor="@color/cor_texto" />
                         <TextView
                             android:id="@+id/textTotalReceitas"
                             android:layout_width="wrap_content"
@@ -202,7 +202,7 @@
                             android:layout_height="wrap_content"
                             android:text="Despesas"
                             android:textSize="12sp"
-                            android:textColor="#888888" />
+                            android:textColor="@color/cor_texto" />
                         <TextView
                             android:id="@+id/textTotalDespesas"
                             android:layout_width="wrap_content"
@@ -231,7 +231,7 @@
                             android:layout_height="wrap_content"
                             android:text="Saldo"
                             android:textSize="12sp"
-                            android:textColor="#888888" />
+                            android:textColor="@color/cor_texto" />
                         <TextView
                             android:id="@+id/textSaldoRelatorio"
                             android:layout_width="wrap_content"
@@ -252,7 +252,7 @@
                 android:text="Prévia do Extrato"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#555555"
+                android:textColor="@color/cor_texto"
                 android:layout_marginBottom="8dp"
                 android:paddingHorizontal="4dp" />
 
@@ -305,7 +305,7 @@
         android:id="@+id/layoutBotaoExportar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
+        android:background="@color/cor_background"
         android:elevation="16dp"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"

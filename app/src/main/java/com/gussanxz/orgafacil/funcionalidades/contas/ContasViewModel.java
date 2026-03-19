@@ -10,6 +10,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.Cont
 import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.repository.ContasCategoriaRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.CategoriaMovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasFiltroEngine;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
@@ -22,7 +23,7 @@ public class ContasViewModel extends ViewModel {
 
     // ── Dependências ───────────────────────────────────────────────────────────
     private final MovimentacaoRepository repo;
-    private final ContasCategoriaRepository categoriaRepo; // NOVO
+    private final ContasCategoriaRepository categoriaRepo;
     private final ContasFiltroEngine filtroEngine;
 
     // ── LiveData públicos ──────────────────────────────────────────────────────
@@ -67,6 +68,9 @@ public class ContasViewModel extends ViewModel {
     private long    ultimoSaldoHistoricoCalculado = 0L;
     private long    ultimoSaldoFuturoCalculado    = 0L;
     private boolean abaAtualEhFuturo              = false;
+    private final MutableLiveData<Boolean> _isPrimeiroCarregamento = new MutableLiveData<>(true);
+    public final LiveData<Boolean> isPrimeiroCarregamento = _isPrimeiroCarregamento;
+
 
     // ── Construtor ─────────────────────────────────────────────────────────────
 
@@ -80,6 +84,9 @@ public class ContasViewModel extends ViewModel {
 
     public boolean isDadosInvalidados() { return dadosInvalidados; }
     public void invalidarDados() { dadosInvalidados = true; }
+
+    public boolean isUltimaPaginaHistorico() { return isUltimaPaginaHistorico; }
+    public boolean isUltimaPaginaFuturo()    { return isUltimaPaginaFuturo; }
 
     // ── Wrappers de ação (delegam ao repository) ───────────────────────────────
 
@@ -97,24 +104,18 @@ public class ContasViewModel extends ViewModel {
     }
 
     public void buscarCategoriasParaFiltro(CategoriasFiltroCallback callback) {
-        // A responsabilidade de buscar no banco agora fica no ViewModel/Repository
-        FirestoreSchema.contasCategoriasCol()
-                .whereEqualTo("ativa", true)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<ContasCategoriaModel> lista = new ArrayList<>();
-                    if (snapshot != null) {
-                        for (QueryDocumentSnapshot doc : snapshot) {
-                            ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
-                            cat.setId(doc.getId());
-                            lista.add(cat);
-                        }
-                        // Ordena alfabeticamente
-                        lista.sort((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()));
-                    }
-                    callback.onSucesso(lista);
-                })
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+        // Agora sim, delegando para o repositório oficial que você indicou!
+        categoriaRepo.listarTodasAtivas(new ContasCategoriaRepository.ListaCallback() {
+            @Override
+            public void onSucesso(List<ContasCategoriaModel> lista) {
+                callback.onSucesso(lista);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                callback.onErro(erro);
+            }
+        });
     }
 
     // ── Busca e paginação ──────────────────────────────────────────────────────
@@ -158,6 +159,9 @@ public class ContasViewModel extends ViewModel {
         isCarregandoPagina = false;
         dadosInvalidados = false;
         _carregandoPaginacao.setValue(false);
+
+        _isPrimeiroCarregamento.setValue(false); // <--- NOVO: Avisa que o primeiro carregamento acabou!
+
         agendarFiltro();
         if (callbackExterno != null) callbackExterno.onSucesso(lista);
     }
@@ -259,4 +263,6 @@ public class ContasViewModel extends ViewModel {
         super.onCleared();
         filtroEngine.encerrar(); // Limpa as threads quando o ViewModel for destruído
     }
+
+
 }

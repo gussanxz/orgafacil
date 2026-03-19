@@ -65,7 +65,6 @@ public class ListaMovimentacoesFragment extends Fragment
     private View layoutEmptyState;
     private TextView textEmptyState;
     private ProgressBar progressBarFragment;
-    private boolean isPrimeiroCarregamento = true;
 
     private ItemTouchHelper swipeHelper;
 
@@ -140,19 +139,20 @@ public class ListaMovimentacoesFragment extends Fragment
     private void setupObservers() {
         viewModel.carregandoPaginacao.observe(getViewLifecycleOwner(), isCarregando -> {
             if (isCarregando) {
-                if (isPrimeiroCarregamento) {
+                // ✅ Lendo do ViewModel!
+                if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())) {
                     progressBarFragment.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
                     layoutEmptyState.setVisibility(View.GONE);
                 }
             } else {
                 progressBarFragment.setVisibility(View.GONE);
-                isPrimeiroCarregamento = false;
             }
         });
 
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
-            if (isPrimeiroCarregamento
+            // ✅ Lendo do ViewModel!
+            if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
                     && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
             if (lista == null || lista.isEmpty()) {

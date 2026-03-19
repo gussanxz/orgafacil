@@ -50,6 +50,24 @@ import java.util.Date;
  * Modo edição (isModoEdicaoAtivo = true):
  *   fabSuperior  → ícone confirmar, cor semitransparente no header
  *   fabInferior  → ícone confirmar, texto "Salvar", cor accent da movimentação
+ *
+ * ── CORREÇÃO BUG 4 ────────────────────────────────────────────────────────
+ *
+ * ANTES: getLayoutResId() desserializava o Parcelable do Intent de forma
+ * independente apenas para decidir o layout, criando uma instância descartada.
+ * A Base então desserializava novamente em verificarModoEdicao(), produzindo
+ * uma segunda instância diferente atribuída a itemEmEdicao.
+ * Resultado: dois objetos distintos para a mesma movimentação, com risco de
+ * inconsistência em edge cases de memória baixa.
+ *
+ * DEPOIS: getLayoutResId() lê o Parcelable UMA ÚNICA VEZ e armazena em
+ * itemEmEdicao imediatamente (campo herdado de BaseMovimentacaoActivity).
+ * A Base detecta que itemEmEdicao já está preenchido e não lê o Intent de
+ * novo — a desserialização ocorre exatamente uma vez durante todo o ciclo.
+ *
+ * Para isso funcionar, BaseMovimentacaoActivity.carregarModoEdicao() foi
+ * ajustado para verificar se itemEmEdicao já tem valor antes de ler o Intent.
+ * Ver comentário em carregarModoEdicao() na Base.
  */
 public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
@@ -74,15 +92,32 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
                 : TipoCategoriaContas.DESPESA;
     }
 
+    /**
+     * CORREÇÃO BUG 4 — leitura única do Parcelable.
+     *
+     * Este método é chamado pela Base em setContentView(), antes de
+     * verificarModoEdicao(). Aproveitamos essa chamada obrigatória para
+     * popular itemEmEdicao de uma vez, eliminando a segunda leitura do Intent
+     * que ocorreria em carregarModoEdicao() da Base.
+     *
+     * A Base foi ajustada para respeitar itemEmEdicao já preenchido:
+     * se itemEmEdicao != null ao entrar em carregarModoEdicao(), ela não
+     * chama getParcelableExtra() novamente.
+     */
     @Override
     protected int getLayoutResId() {
-        MovimentacaoModel mov = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            mov = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
-        } else {
-            mov = getIntent().getParcelableExtra("movimentacaoSelecionada");
+        // Só lê do Intent se ainda não foi populado (ex: rotação de tela
+        // onde onCreate() é chamado novamente mas o campo já foi salvo).
+        if (itemEmEdicao == null) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                itemEmEdicao = getIntent().getParcelableExtra(
+                        "movimentacaoSelecionada", MovimentacaoModel.class);
+            } else {
+                itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada");
+            }
         }
-        return (mov != null && mov.getTipoEnum() == TipoCategoriaContas.RECEITA)
+
+        return (itemEmEdicao != null && itemEmEdicao.getTipoEnum() == TipoCategoriaContas.RECEITA)
                 ? R.layout.tela_add_receita
                 : R.layout.tela_add_despesa;
     }
@@ -108,6 +143,9 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Nota: super.onCreate() já chama getLayoutResId() internamente,
+        // que por sua vez popula itemEmEdicao. Quando chegarmos na linha
+        // abaixo do super, itemEmEdicao já está disponível.
         super.onCreate(savedInstanceState);
 
         if (itemEmEdicao == null) {

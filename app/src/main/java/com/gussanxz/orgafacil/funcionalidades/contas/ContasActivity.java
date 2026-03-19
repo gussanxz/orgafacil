@@ -24,13 +24,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasDialogHelper;
@@ -55,12 +58,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ContasActivity extends AppCompatActivity {
 
     private final String TAG = "ContasActivity";
     private boolean ehAtalho = false;
-    private boolean isPrimeiroCarregamento = true;
     private Bundle extrasAtalho = null;
     private Long ultimoSaldoCarregado = null;
 
@@ -90,6 +93,7 @@ public class ContasActivity extends AppCompatActivity {
     private ListenerRegistration listenerResumo;
     private ImageView imgFiltroCategoria;
     private String categoriaIdFiltro = null;
+    private static final int LIMIAR_PAGINACAO_PROATIVA = 50;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,15 +116,11 @@ public class ContasActivity extends AppCompatActivity {
         configurarChipsFiltro();
         setupObservers();
 
-        // O launcher apenas marca os dados como inválidos.
-        // onStart() é o único responsável por disparar carregarDados() quando necessário.
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
                         viewModel.invalidarDados();
-                        // Não chama carregarDados() aqui — onStart() será chamado
-                        // logo após o retorno desta Activity e fará o fetch.
                     }
                 }
         );
@@ -131,15 +131,16 @@ public class ContasActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Ponto único de disparo do carregamento de dados.
-        // Cobre tanto o carregamento inicial (dadosInvalidados = true por padrão no ViewModel)
-        // quanto recarregamentos após edição/exclusão/confirmação.
         if (viewModel.isDadosInvalidados()) carregarDados();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        removerListenerResumo();
+    }
+
+    private void removerListenerResumo() {
         if (listenerResumo != null) {
             listenerResumo.remove();
             listenerResumo = null;
@@ -150,19 +151,22 @@ public class ContasActivity extends AppCompatActivity {
         viewModel.carregandoPaginacao.observe(this, isCarregando -> {
             if (isCarregando) {
                 progressBarPaginacao.setVisibility(View.VISIBLE);
-                if (isPrimeiroCarregamento) {
+
+                // ✅ Lendo do ViewModel!
+                if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())) {
                     textoSaldo.setText("--");
                     textoSaldo.setTextColor(Color.WHITE);
                     textoTituloSaldo.setText("Carregando saldo...");
                 }
             } else {
                 progressBarPaginacao.setVisibility(View.GONE);
-                isPrimeiroCarregamento = false;
             }
         });
 
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
-            if (isPrimeiroCarregamento && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
+            // ✅ Lendo do ViewModel!
+            if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
+                    && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
             if (lista == null || lista.isEmpty()) {
                 recyclerView.setVisibility(View.GONE);
@@ -172,25 +176,24 @@ public class ContasActivity extends AppCompatActivity {
                 layoutEmptyStateContas.setVisibility(View.GONE);
             }
 
-            // Criamos uma lista zerada e processamos os itens
             List<AdapterItemListaMovimentacao> listaProcessada = new ArrayList<>();
             if (lista != null) {
                 listaProcessada = HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehAtalho);
             }
 
-            // Antes de submeter a lista, se ela estava vazia, preparamos a animação
             boolean listaEstavaVazia = adapterAgrupado.getCurrentList().isEmpty();
             if (listaEstavaVazia && !listaProcessada.isEmpty()) {
                 recyclerView.scheduleLayoutAnimation();
             }
 
-            adapterAgrupado.submitList(listaProcessada, () -> {
-                // Se o campo de busca estiver vazio e não houver datas filtradas,
-                // significa que o usuário limpou o filtro ou a lista carregou agora.
+            final int totalMovimentacoesFiltradas = (lista != null) ? lista.size() : 0;
+            final List<AdapterItemListaMovimentacao> listaFinal = listaProcessada;
+
+            adapterAgrupado.submitList(listaFinal, () -> {
                 if (searchView.getQuery().toString().isEmpty() && dataInicialFiltro == null) {
                     recyclerView.scrollToPosition(0);
-                    // Ou use recyclerView.smoothScrollToPosition(0) para um efeito de deslize
                 }
+                verificarPaginacaoProativaAposSubmit(totalMovimentacoesFiltradas);
             });
 
             atualizarLegendasFiltro(searchView.getQuery().toString());
@@ -227,19 +230,39 @@ public class ContasActivity extends AppCompatActivity {
         usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
 
         if (!ehAtalho && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
-            listenerResumo = resumoRepository.escutarResumoGeral(new ResumoFinanceiroRepository.ResumoCallback() {
-                @Override
-                public void onUpdate(ResumoFinanceiroModel resumo) {
-                    if (resumo != null && resumo.getBalanco() != null) {
-                        if (isPrimeiroCarregamento || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue()) || ultimoSaldoCarregado != null) return;
-                        long saldoCentavos = resumo.getBalanco().getSaldoAtual();
-                        textoSaldo.setText(String.format(Locale.getDefault(), "R$ %.2f", saldoCentavos / 100.0));
-                    }
-                }
-                @Override public void onError(String erro) { Log.e(TAG, "Erro no resumo: " + erro); }
-            });
+            registrarListenerResumo();
+        } else {
+            removerListenerResumo();
         }
+
         recuperarMovimentacoesDoBanco();
+    }
+
+    private void registrarListenerResumo() {
+        removerListenerResumo();
+
+        listenerResumo = resumoRepository.escutarResumoGeral(
+                new ResumoFinanceiroRepository.ResumoCallback() {
+                    @Override
+                    public void onUpdate(ResumoFinanceiroModel resumo) {
+                        if (resumo != null && resumo.getBalanco() != null) {
+
+                            // ✅ CORREÇÃO: Lendo o isPrimeiroCarregamento direto do ViewModel!
+                            if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
+                                    || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())
+                                    || ultimoSaldoCarregado != null) return;
+
+                            long saldoCentavos = resumo.getBalanco().getSaldoAtual();
+                            textoSaldo.setText(String.format(
+                                    Locale.getDefault(), "R$ %.2f", saldoCentavos / 100.0));
+                        }
+                    }
+
+                    @Override
+                    public void onError(String erro) {
+                        Log.e(TAG, "Erro no resumo: " + erro);
+                    }
+                });
     }
 
     private void recuperarMovimentacoesDoBanco() {
@@ -261,10 +284,7 @@ public class ContasActivity extends AppCompatActivity {
                     @Override
                     public void onSucesso(String msg) {
                         Toast.makeText(ContasActivity.this, "Lançamento excluído!", Toast.LENGTH_SHORT).show();
-                        // Invalida e deixa onStart() reagir quando a Activity voltar ao foco.
-                        // Não há double-fetch pois onStart() só dispara carregarDados() uma vez.
-                        viewModel.invalidarDados();
-                        carregarDados();
+                        recarregarDadosAposMutacao();
                     }
                     @Override public void onErro(String erro) {
                         Toast.makeText(ContasActivity.this, erro, Toast.LENGTH_SHORT).show();
@@ -295,8 +315,7 @@ public class ContasActivity extends AppCompatActivity {
                     public void onSucesso(String msg) {
                         if (!isFinishing()) {
                             Toast.makeText(ContasActivity.this, msg, Toast.LENGTH_SHORT).show();
-                            viewModel.invalidarDados();
-                            carregarDados();
+                            recarregarDadosAposMutacao();
                         }
                     }
                     @Override
@@ -318,7 +337,6 @@ public class ContasActivity extends AppCompatActivity {
     // --- FILTROS ---
 
     private void aplicarFiltros() {
-        // Agora passamos a categoriaIdFiltro para o ViewModel
         viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro, categoriaIdFiltro);
     }
 
@@ -363,7 +381,6 @@ public class ContasActivity extends AppCompatActivity {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
         });
 
-        // Adicione isso para que o filtro rode assim que a data for selecionada pelo Helper
         editDataInicial.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -391,22 +408,26 @@ public class ContasActivity extends AppCompatActivity {
         adapterAgrupado = new AdapterMovimentacaoLista(this, new AdapterMovimentacaoLista.OnItemActionListener() {
             @Override public void onDeleteClick(MovimentacaoModel m) { confirmarExclusao(m, -1); }
             @Override public void onLongClick(MovimentacaoModel m) {
-                new AlertDialog.Builder(ContasActivity.this).setTitle("Editar").setMessage("Você deseja editar '" + m.getDescricao() + "'?")
-                        .setPositiveButton("Sim", (dialog, which) -> abrirTelaEdicao(m, true)).setNegativeButton("Cancelar", null).show();
+                new AlertDialog.Builder(ContasActivity.this)
+                        .setTitle("Editar")
+                        .setMessage("Você deseja editar '" + m.getDescricao() + "'?")
+                        .setPositiveButton("Sim", (dialog, which) -> abrirTelaEdicao(m, true))
+                        .setNegativeButton("Cancelar", null)
+                        .show();
             }
             @Override public void onCheckClick(MovimentacaoModel m) {
-                recyclerView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                recyclerView.performHapticFeedback(
+                        android.view.HapticFeedbackConstants.VIRTUAL_KEY,
+                        android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 confirmarPagamentoOuRecebimento(m);
             }
-            @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) { confirmarExclusaoDoDia(dataDia, movsDoDia); }
-
-            // 👇 ADICIONE ESSA NOVA LINHA AQUI 👇
+            @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
+                confirmarExclusaoDoDia(dataDia, movsDoDia);
+            }
             @Override public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
                 exibirPopupResumoDia(tituloDia, movsDoDia);
             }
         });
-
-        // ... resto do seu código ...
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
@@ -416,8 +437,27 @@ public class ContasActivity extends AppCompatActivity {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (dy > 0 && (layoutManager.getChildCount() + layoutManager.findFirstVisibleItemPosition()) >= layoutManager.getItemCount()) {
-                    if (ehAtalho) viewModel.carregarMaisFuturo(); else viewModel.carregarMaisHistorico();
+
+                if (dy <= 0) return;
+
+                int totalItens    = layoutManager.getItemCount();
+                int ultimoVisivel = layoutManager.findLastVisibleItemPosition();
+                int itensVisiveis = layoutManager.getChildCount();
+
+                boolean chegouAoFim = (itensVisiveis + ultimoVisivel) >= totalItens - 2;
+                boolean listaFiltradaPequena = totalItens < LIMIAR_PAGINACAO_PROATIVA;
+
+                boolean devePaginar = chegouAoFim || listaFiltradaPequena;
+                if (!devePaginar) return;
+
+                if (ehAtalho) {
+                    if (!viewModel.isUltimaPaginaFuturo()) {
+                        viewModel.carregarMaisFuturo();
+                    }
+                } else {
+                    if (!viewModel.isUltimaPaginaHistorico()) {
+                        viewModel.carregarMaisHistorico();
+                    }
                 }
             }
         });
@@ -429,8 +469,8 @@ public class ContasActivity extends AppCompatActivity {
             }
 
             @Override
-            protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction, int position) {
-                // 2. Lemos o item deslizado diretamente da lista atual do adapter
+            protected void onMovimentoSwiped(@NonNull RecyclerView.ViewHolder viewHolder,
+                                             int direction, int position) {
                 AdapterItemListaMovimentacao item = adapterAgrupado.getCurrentList().get(position);
 
                 if (item.type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
@@ -439,8 +479,9 @@ public class ContasActivity extends AppCompatActivity {
                         confirmarExclusao(m, position);
                     } else {
                         recyclerView.post(() -> adapterAgrupado.notifyItemChanged(position));
-
-                        com.google.android.material.snackbar.Snackbar.make(recyclerView, "Abrindo edição de " + m.getDescricao() + "...", 600).show();
+                        com.google.android.material.snackbar.Snackbar
+                                .make(recyclerView, "Abrindo edição de " + m.getDescricao() + "...", 600)
+                                .show();
                         recyclerView.postDelayed(() -> abrirTelaEdicao(m, true), 600);
                     }
                 } else {
@@ -458,9 +499,7 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void configurarFiltros() {
-        // Agora o clique é no ícone do calendário (começando pela data inicial)
         imgFiltroCalendario.setOnClickListener(v -> abrirDataPicker(true));
-
         imgFiltroCategoria.setOnClickListener(v -> abrirDialogFiltroCategoria());
 
         imgLimparFiltroData.setOnClickListener(v -> {
@@ -468,18 +507,12 @@ public class ContasActivity extends AppCompatActivity {
             editDataFinal.setText("");
             dataInicialFiltro = null;
             dataFinalFiltro = null;
-
             categoriaIdFiltro = null;
-
-            // Esconde o texto do período novamente
             textPeriodoSelecionado.setVisibility(View.GONE);
-
             searchView.setQuery("", false);
             searchView.clearFocus();
-
             chipGroupFiltroTipo.check(R.id.chipTodos);
             viewModel.setFiltroTipo(null);
-
             aplicarFiltros();
             Toast.makeText(this, "Filtros limpos", Toast.LENGTH_SHORT).show();
         });
@@ -495,6 +528,7 @@ public class ContasActivity extends AppCompatActivity {
             }
         });
     }
+
     private void abrirDataPicker(boolean isInicio) {
         Date dataPreSelecionada = isInicio ? dataInicialFiltro : dataFinalFiltro;
         Calendar c = Calendar.getInstance();
@@ -507,8 +541,6 @@ public class ContasActivity extends AppCompatActivity {
                 cal.set(Calendar.MILLISECOND, 0);
                 dataInicialFiltro = cal.getTime();
                 editDataInicial.setText(DateHelper.formatarData(dataInicialFiltro));
-
-                // Abre automaticamente o calendário para escolher a data final
                 Toast.makeText(this, "Selecione a data final", Toast.LENGTH_SHORT).show();
                 abrirDataPicker(false);
             } else {
@@ -516,13 +548,10 @@ public class ContasActivity extends AppCompatActivity {
                 cal.set(Calendar.MILLISECOND, 999);
                 dataFinalFiltro = cal.getTime();
                 editDataFinal.setText(DateHelper.formatarData(dataFinalFiltro));
-
-                // Mostra o período selecionado bonitinho na tela
                 if (dataInicialFiltro != null && dataFinalFiltro != null) {
                     textPeriodoSelecionado.setText("Período: " + DateHelper.formatarData(dataInicialFiltro) + " a " + DateHelper.formatarData(dataFinalFiltro));
                     textPeriodoSelecionado.setVisibility(View.VISIBLE);
                 }
-
                 aplicarFiltros();
             }
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
@@ -531,21 +560,33 @@ public class ContasActivity extends AppCompatActivity {
             picker.getDatePicker().setMaxDate(System.currentTimeMillis());
         }
 
+        // ✅ CORREÇÃO: Criando um título customizado para ter controle total do design!
+        TextView titleView = new TextView(this);
+        titleView.setText(isInicio ? "Data Inicial" : "Data Final");
+
+        // Deixando o container maior e espaçado (Esquerda, Topo, Direita, Baixo)
+        titleView.setPadding(64, 48, 64, 48);
+
+        // Destaque: Fonte maior, Branca e em Negrito
+        titleView.setTextSize(20f);
+        titleView.setTextColor(Color.WHITE);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+
+        // Opcional: Se quiser garantir que o fundo fique combinando com o modo escuro
+        titleView.setBackgroundColor(Color.parseColor("#121212"));
+
+        picker.setCustomTitle(titleView);
+
         picker.show();
     }
 
     private void executarConfirmacao(MovimentacaoModel mov) {
         viewModel.confirmarMovimentacao(mov, new MovimentacaoRepository.Callback() {
-            @Override public void onSucesso(String msg) {
+            @Override
+            public void onSucesso(String msg) {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(ContasActivity.this, "Concluído!", Toast.LENGTH_SHORT).show();
-                // invalidarDados() + fetchDados() via onStart() é o padrão para ações que
-                // mudam o estado do Firestore. Não duplicamos o fetch chamando carregarDados()
-                // aqui, pois a Activity permanece visível — onStart() não será re-chamado.
-                // Portanto o reload explícito abaixo é necessário e correto (não é double-fetch).
-                viewModel.invalidarDados();
-                viewModel.fetchDados(true, null);
-                viewModel.fetchDados(false, null);
+                recarregarDadosAposMutacao();
             }
             @Override public void onErro(String erro) {
                 if (isFinishing() || isDestroyed()) return;
@@ -556,14 +597,11 @@ public class ContasActivity extends AppCompatActivity {
 
     private void executarConfirmacaoEmMassa(MovimentacaoModel movBase) {
         viewModel.confirmarMovimentacaoEmMassa(movBase, new MovimentacaoRepository.Callback() {
-            @Override public void onSucesso(String msg) {
+            @Override
+            public void onSucesso(String msg) {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(ContasActivity.this, msg, Toast.LENGTH_SHORT).show();
-                // Mesmo padrão de executarConfirmacao: Activity continua visível,
-                // reload duplo (historico + futuro) necessário e intencional aqui.
-                viewModel.invalidarDados();
-                viewModel.fetchDados(true, null);
-                viewModel.fetchDados(false, null);
+                recarregarDadosAposMutacao();
             }
             @Override public void onErro(String erro) {
                 if (isFinishing() || isDestroyed()) return;
@@ -634,7 +672,6 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void exibirPopupResumoDia(String tituloDia, List<MovimentacaoModel> movsDoDia) {
-        // Usa o 'this' porque estamos na Activity
         android.app.Dialog dialog = new android.app.Dialog(this);
         dialog.setContentView(R.layout.dialog_resumo_dia);
 
@@ -643,28 +680,24 @@ public class ContasActivity extends AppCompatActivity {
             dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
         }
 
-        TextView txtTitulo = dialog.findViewById(R.id.textTituloDialogResumo);
-        TextView txtQtdReceitas = dialog.findViewById(R.id.textQtdReceitas);
-        TextView txtValorReceitas = dialog.findViewById(R.id.textValorReceitas);
-        TextView txtQtdDespesas = dialog.findViewById(R.id.textQtdDespesas);
-        TextView txtValorDespesas = dialog.findViewById(R.id.textValorDespesas);
-        TextView txtSaldoFinal = dialog.findViewById(R.id.textSaldoDialog);
+        TextView txtTitulo       = dialog.findViewById(R.id.textTituloDialogResumo);
+        TextView txtQtdReceitas  = dialog.findViewById(R.id.textQtdReceitas);
+        TextView txtValorReceitas= dialog.findViewById(R.id.textValorReceitas);
+        TextView txtQtdDespesas  = dialog.findViewById(R.id.textQtdDespesas);
+        TextView txtValorDespesas= dialog.findViewById(R.id.textValorDespesas);
+        TextView txtSaldoFinal   = dialog.findViewById(R.id.textSaldoDialog);
         com.google.android.material.button.MaterialButton btnVoltar = dialog.findViewById(R.id.btnVoltarResumo);
 
         txtTitulo.setText("Resumo: " + tituloDia);
 
-        long totalReceitas = 0;
-        long totalDespesas = 0;
-        int qtdReceitas = 0;
-        int qtdDespesas = 0;
+        long totalReceitas = 0, totalDespesas = 0;
+        int qtdReceitas = 0, qtdDespesas = 0;
 
         for (MovimentacaoModel mov : movsDoDia) {
             if (mov.getTipoEnum() == TipoCategoriaContas.RECEITA) {
-                totalReceitas += mov.getValor();
-                qtdReceitas++;
+                totalReceitas += mov.getValor(); qtdReceitas++;
             } else {
-                totalDespesas += mov.getValor();
-                qtdDespesas++;
+                totalDespesas += mov.getValor(); qtdDespesas++;
             }
         }
 
@@ -673,19 +706,13 @@ public class ContasActivity extends AppCompatActivity {
 
         txtQtdReceitas.setText(qtdReceitas + (qtdReceitas == 1 ? " Receita" : " Receitas"));
         txtValorReceitas.setText("+ " + currencyFormat.format(totalReceitas / 100.0));
-
         txtQtdDespesas.setText(qtdDespesas + (qtdDespesas == 1 ? " Despesa" : " Despesas"));
         txtValorDespesas.setText("- " + currencyFormat.format(totalDespesas / 100.0));
-
         txtSaldoFinal.setText(currencyFormat.format(saldoFinalLong / 100.0));
 
-        if (saldoFinalLong > 0) {
-            txtSaldoFinal.setTextColor(Color.parseColor("#008000"));
-        } else if (saldoFinalLong < 0) {
-            txtSaldoFinal.setTextColor(Color.parseColor("#E53935"));
-        } else {
-            txtSaldoFinal.setTextColor(Color.parseColor("#757575"));
-        }
+        if (saldoFinalLong > 0)      txtSaldoFinal.setTextColor(Color.parseColor("#008000"));
+        else if (saldoFinalLong < 0) txtSaldoFinal.setTextColor(Color.parseColor("#E53935"));
+        else                         txtSaldoFinal.setTextColor(Color.parseColor("#757575"));
 
         btnVoltar.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
@@ -693,63 +720,44 @@ public class ContasActivity extends AppCompatActivity {
 
     private void abrirDialogFiltroCategoria() {
         viewModel.buscarCategoriasParaFiltro(new ContasViewModel.CategoriasFiltroCallback() {
+
             @Override
-            public void onSucesso(List<com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel> listaCategorias) {
+            public void onSucesso(List<ContasCategoriaModel> listaCategorias) {
                 if (listaCategorias.isEmpty()) {
-                    Toast.makeText(ContasActivity.this, "Nenhuma categoria encontrada.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ContasActivity.this,
+                            "Nenhuma categoria encontrada.", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // 1. Instancia o novo Dialog Bonito
                 android.app.Dialog dialog = new android.app.Dialog(ContasActivity.this);
                 dialog.setContentView(R.layout.dialog_selecionar_categoria);
 
                 if (dialog.getWindow() != null) {
                     dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-                    dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+                    dialog.getWindow().setLayout(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
                 }
 
-                // 2. Configura a Lista (RecyclerView)
                 RecyclerView recycler = dialog.findViewById(R.id.recyclerCategoriasDialog);
                 recycler.setLayoutManager(new LinearLayoutManager(ContasActivity.this));
 
-                // Adapter Anônimo enxuto (Boas práticas para listas ultra simples)
-                RecyclerView.Adapter<RecyclerView.ViewHolder> adapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-                    @androidx.annotation.NonNull
-                    @Override
-                    public RecyclerView.ViewHolder onCreateViewHolder(@androidx.annotation.NonNull android.view.ViewGroup parent, int viewType) {
-                        View view = android.view.LayoutInflater.from(parent.getContext())
-                                .inflate(R.layout.adapter_item_dialog_categoria, parent, false);
-                        return new RecyclerView.ViewHolder(view) {};
-                    }
-
-                    @Override
-                    public void onBindViewHolder(@androidx.annotation.NonNull RecyclerView.ViewHolder holder, int position) {
-                        // 1. Agora buscamos o TextView pelo ID dentro do item
-                        TextView tv = holder.itemView.findViewById(R.id.textNomeCategoria);
-                        com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel cat = listaCategorias.get(position);
-
-                        tv.setText(cat.getNome());
-
-                        // 2. Colocamos o evento de clique na linha inteira (itemView) e não só no texto
-                        holder.itemView.setOnClickListener(v -> {
-                            categoriaIdFiltro = cat.getId();
-                            Toast.makeText(ContasActivity.this, "Filtrando: " + cat.getNome(), Toast.LENGTH_SHORT).show();
-                            aplicarFiltros();
-                            dialog.dismiss();
-                        });
-                    }
-
-                    @Override
-                    public int getItemCount() {
-                        return listaCategorias.size();
-                    }
-                };
+                // BUG 6 CORRIGIDO: adapter tipado com DiffUtil e callback via interface.
+                // DialogCategoriaAdapter é estático — sem referência implícita a ContasActivity.
+                // submitList() entrega a lista sem capturá-la por closure.
+                DialogCategoriaAdapter adapter = new DialogCategoriaAdapter(cat -> {
+                    categoriaIdFiltro = cat.getId();
+                    Toast.makeText(ContasActivity.this,
+                            "Filtrando: " + cat.getNome(), Toast.LENGTH_SHORT).show();
+                    aplicarFiltros();
+                    dialog.dismiss();
+                });
 
                 recycler.setAdapter(adapter);
+                adapter.submitList(listaCategorias);
 
-                // 3. Botão cancelar
-                dialog.findViewById(R.id.btnCancelarDialog).setOnClickListener(v -> dialog.dismiss());
+                dialog.findViewById(R.id.btnCancelarDialog)
+                        .setOnClickListener(v -> dialog.dismiss());
 
                 dialog.show();
             }
@@ -759,5 +767,94 @@ public class ContasActivity extends AppCompatActivity {
                 Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void recarregarDadosAposMutacao() {
+        viewModel.invalidarDados();
+        viewModel.fetchDados(ehAtalho, null);
+    }
+
+    private void verificarPaginacaoProativaAposSubmit(int totalFiltrado) {
+        if (totalFiltrado >= LIMIAR_PAGINACAO_PROATIVA) return;
+        if (ehAtalho) {
+            if (!viewModel.isUltimaPaginaFuturo()) viewModel.carregarMaisFuturo();
+        } else {
+            if (!viewModel.isUltimaPaginaHistorico()) viewModel.carregarMaisHistorico();
+        }
+    }
+
+    // =========================================================================
+    // CLASSE INTERNA ESTÁTICA — DialogCategoriaAdapter
+    //
+    // BUG 6 CORRIGIDO:
+    //   ANTES: adapter anônimo capturava ContasActivity.this e listaCategorias
+    //          implicitamente por closure, impedindo GC durante o dialog.
+    //          ViewHolder genérico chamava findViewById() a cada bind.
+    //          Sem DiffUtil — qualquer mudança rebindava toda a lista.
+    //
+    //   DEPOIS:
+    //   - static = sem referência implícita ao outer class (ContasActivity)
+    //   - ListAdapter com DiffUtil = rebind cirúrgico apenas do que mudou
+    //   - CategoriaViewHolder tipado = textNome cacheado, sem findViewById() no bind
+    //   - OnCategoriaClickListener = callback via interface, sem capturar this
+    // =========================================================================
+
+    private static final class DialogCategoriaAdapter
+            extends ListAdapter<ContasCategoriaModel, DialogCategoriaAdapter.CategoriaViewHolder> {
+
+        interface OnCategoriaClickListener {
+            void onCategoriaClick(ContasCategoriaModel categoria);
+        }
+
+        private static final DiffUtil.ItemCallback<ContasCategoriaModel> DIFF_CALLBACK =
+                new DiffUtil.ItemCallback<ContasCategoriaModel>() {
+                    @Override
+                    public boolean areItemsTheSame(@NonNull ContasCategoriaModel oldItem,
+                                                   @NonNull ContasCategoriaModel newItem) {
+                        return Objects.equals(oldItem.getId(), newItem.getId());
+                    }
+
+                    @Override
+                    public boolean areContentsTheSame(@NonNull ContasCategoriaModel oldItem,
+                                                      @NonNull ContasCategoriaModel newItem) {
+                        return Objects.equals(oldItem.getNome(), newItem.getNome());
+                    }
+                };
+
+        @NonNull
+        private final OnCategoriaClickListener clickListener;
+
+        DialogCategoriaAdapter(@NonNull OnCategoriaClickListener clickListener) {
+            super(DIFF_CALLBACK);
+            this.clickListener = clickListener;
+        }
+
+        @NonNull
+        @Override
+        public CategoriaViewHolder onCreateViewHolder(@NonNull android.view.ViewGroup parent, int viewType) {
+            android.view.View view = android.view.LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.adapter_item_dialog_categoria, parent, false);
+            return new CategoriaViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull CategoriaViewHolder holder, int position) {
+            holder.bind(getItem(position), clickListener);
+        }
+
+        static final class CategoriaViewHolder extends RecyclerView.ViewHolder {
+
+            private final TextView textNome;
+
+            CategoriaViewHolder(@NonNull android.view.View itemView) {
+                super(itemView);
+                textNome = itemView.findViewById(R.id.textNomeCategoria);
+            }
+
+            void bind(ContasCategoriaModel categoria, OnCategoriaClickListener listener) {
+                textNome.setText(categoria.getNome());
+                itemView.setOnClickListener(v -> listener.onCategoriaClick(categoria));
+            }
+        }
     }
 }

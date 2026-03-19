@@ -42,6 +42,12 @@ public class HelperExibirDatasMovimentacao {
 
         Date hoje = zerarHora(new Date());
 
+        // ── NOVO: Limite de 1 ano para contas atrasadas (Trava de Segurança) ──
+        Calendar calLimite = Calendar.getInstance();
+        calLimite.setTime(hoje);
+        calLimite.add(Calendar.YEAR, -1);
+        Date limiteUmAno = calLimite.getTime();
+
         // ── 1. Ordena os itens individualmente ────────────────────────────────
         movs.sort((m1, m2) -> {
             if (m1.getData_movimentacao() == null || m2.getData_movimentacao() == null) return 0;
@@ -67,6 +73,9 @@ public class HelperExibirDatasMovimentacao {
 
             // Histórico: ignora movimentações com data futura (maior que hoje)
             if (!ehModoFuturo && dataZerada.after(hoje)) continue;
+
+            // 🔥 NOVO -> Pendentes: ignora lixo muito antigo (mais de 1 ano para trás)
+            if (ehModoFuturo && dataZerada.before(limiteUmAno)) continue;
 
             porDia.putIfAbsent(dataZerada, new ArrayList<>());
             porDia.get(dataZerada).add(m);
