@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="8dp"
@@ -17,17 +18,20 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header colorido do dia -->
         <LinearLayout
+            android:id="@+id/layoutHeaderClicavel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:background="@color/cardDiaHeaderBackground">
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:background="@color/cardDiaHeaderBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
             <TextView
                 android:id="@+id/textDiaTitulo"
@@ -40,17 +44,14 @@
                 android:textSize="14sp"
                 android:textColor="@color/cardDiaTextPrimary" />
 
-            <TextView
-                android:id="@+id/textSaldoDia"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Subtotal: R$ 0,00"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/cardDiaTextSecondary" />
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_info_24"
+                app:tint="@color/cardDiaTextSecondary" />
+
         </LinearLayout>
 
-        <!-- Linha separadora (opcional)  -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

@@ -72,12 +72,14 @@ public class ResumoContasActivity extends AppCompatActivity {
     // Controle de Carregamento para o Observer
     private boolean aguardandoPrimeiroFetch = true;
 
+    // UI Dashboard
+    private TextView textSaudacao; // NOVO
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tela_resumo_contas);
 
-        // Ajuste de insets (Edge-to-Edge)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -89,6 +91,13 @@ public class ResumoContasActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
+        // 👇 NOVO: Observa o nome do usuário vindo do ViewModel
+        viewModel.nomeUsuario.observe(this, nome -> {
+            if (textSaudacao != null) {
+                textSaudacao.setText("Olá, " + nome + "!");
+            }
+        });
+
         // 3. Configurações de UI e Comportamento
         setupSaldoListaObserver();
         viewModel.verificarViradaDeMes(this);
@@ -98,7 +107,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         setupMenuRadial();
         configurarChipsFiltro();
 
-        // Listener para fechar menu radial ao clicar fora
         overlayBackground.setOnClickListener(v -> fecharMenu());
     }
 
@@ -106,6 +114,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         textSaldoGeral = findViewById(R.id.textSaldo);
         imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
         textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
+        textSaudacao = findViewById(R.id.textSaudacao); // NOVO
+        textSaldoGeral = findViewById(R.id.textSaldo);
 
         // 1. ABRIR A TELA -> MOSTRAR "CARREGANDO" (Estado inicial cravado)
         if (textSaldoGeral != null) {

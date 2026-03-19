@@ -169,6 +169,11 @@ public class ResumoParcelasActivity extends AppCompatActivity {
                     public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
                         // Sem swipe de header nesta tela
                     }
+                    @Override
+                    public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
+                        // Como essa tela não tem headers de dia,
+                        // esse clique nunca vai acontecer. Pode ficar vazio!
+                    }
                 }
         );
 

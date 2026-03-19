@@ -88,6 +88,8 @@ public class ContasActivity extends AppCompatActivity {
     ImageView imgEmptyStateContas;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
     private ListenerRegistration listenerResumo;
+    private ImageView imgFiltroCategoria;
+    private String categoriaIdFiltro = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -316,7 +318,8 @@ public class ContasActivity extends AppCompatActivity {
     // --- FILTROS ---
 
     private void aplicarFiltros() {
-        viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro);
+        // Agora passamos a categoriaIdFiltro para o ViewModel
+        viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro, categoriaIdFiltro);
     }
 
     // --- UI SETUP ---
@@ -341,6 +344,7 @@ public class ContasActivity extends AppCompatActivity {
         btnEmptyStateCTA = findViewById(R.id.btnEmptyStateCTA);
         imgEmptyStateContas = findViewById(R.id.imgEmptyStateContas);
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
+        imgFiltroCategoria = findViewById(R.id.imgFiltroCategoria);
 
         if (ehAtalho) {
             imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
@@ -384,7 +388,6 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void configurarRecyclerView() {
-        // 1. Removemos a passagem da lista 'itensAgrupados' no construtor
         adapterAgrupado = new AdapterMovimentacaoLista(this, new AdapterMovimentacaoLista.OnItemActionListener() {
             @Override public void onDeleteClick(MovimentacaoModel m) { confirmarExclusao(m, -1); }
             @Override public void onLongClick(MovimentacaoModel m) {
@@ -392,12 +395,18 @@ public class ContasActivity extends AppCompatActivity {
                         .setPositiveButton("Sim", (dialog, which) -> abrirTelaEdicao(m, true)).setNegativeButton("Cancelar", null).show();
             }
             @Override public void onCheckClick(MovimentacaoModel m) {
-                // Dá a vibradinha tátil (Haptic Feedback)
                 recyclerView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 confirmarPagamentoOuRecebimento(m);
             }
             @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) { confirmarExclusaoDoDia(dataDia, movsDoDia); }
+
+            // 👇 ADICIONE ESSA NOVA LINHA AQUI 👇
+            @Override public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
+                exibirPopupResumoDia(tituloDia, movsDoDia);
+            }
         });
+
+        // ... resto do seu código ...
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
@@ -452,11 +461,15 @@ public class ContasActivity extends AppCompatActivity {
         // Agora o clique é no ícone do calendário (começando pela data inicial)
         imgFiltroCalendario.setOnClickListener(v -> abrirDataPicker(true));
 
+        imgFiltroCategoria.setOnClickListener(v -> abrirDialogFiltroCategoria());
+
         imgLimparFiltroData.setOnClickListener(v -> {
             editDataInicial.setText("");
             editDataFinal.setText("");
             dataInicialFiltro = null;
             dataFinalFiltro = null;
+
+            categoriaIdFiltro = null;
 
             // Esconde o texto do período novamente
             textPeriodoSelecionado.setVisibility(View.GONE);
@@ -617,6 +630,134 @@ public class ContasActivity extends AppCompatActivity {
             if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipTodos)) viewModel.setFiltroTipo(null);
             else if (checkedIds.contains(R.id.chipSoReceitas)) viewModel.setFiltroTipo(TipoCategoriaContas.RECEITA);
             else if (checkedIds.contains(R.id.chipSoDespesas)) viewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
+        });
+    }
+
+    private void exibirPopupResumoDia(String tituloDia, List<MovimentacaoModel> movsDoDia) {
+        // Usa o 'this' porque estamos na Activity
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        dialog.setContentView(R.layout.dialog_resumo_dia);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        TextView txtTitulo = dialog.findViewById(R.id.textTituloDialogResumo);
+        TextView txtQtdReceitas = dialog.findViewById(R.id.textQtdReceitas);
+        TextView txtValorReceitas = dialog.findViewById(R.id.textValorReceitas);
+        TextView txtQtdDespesas = dialog.findViewById(R.id.textQtdDespesas);
+        TextView txtValorDespesas = dialog.findViewById(R.id.textValorDespesas);
+        TextView txtSaldoFinal = dialog.findViewById(R.id.textSaldoDialog);
+        com.google.android.material.button.MaterialButton btnVoltar = dialog.findViewById(R.id.btnVoltarResumo);
+
+        txtTitulo.setText("Resumo: " + tituloDia);
+
+        long totalReceitas = 0;
+        long totalDespesas = 0;
+        int qtdReceitas = 0;
+        int qtdDespesas = 0;
+
+        for (MovimentacaoModel mov : movsDoDia) {
+            if (mov.getTipoEnum() == TipoCategoriaContas.RECEITA) {
+                totalReceitas += mov.getValor();
+                qtdReceitas++;
+            } else {
+                totalDespesas += mov.getValor();
+                qtdDespesas++;
+            }
+        }
+
+        long saldoFinalLong = totalReceitas - totalDespesas;
+        java.text.NumberFormat currencyFormat = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"));
+
+        txtQtdReceitas.setText(qtdReceitas + (qtdReceitas == 1 ? " Receita" : " Receitas"));
+        txtValorReceitas.setText("+ " + currencyFormat.format(totalReceitas / 100.0));
+
+        txtQtdDespesas.setText(qtdDespesas + (qtdDespesas == 1 ? " Despesa" : " Despesas"));
+        txtValorDespesas.setText("- " + currencyFormat.format(totalDespesas / 100.0));
+
+        txtSaldoFinal.setText(currencyFormat.format(saldoFinalLong / 100.0));
+
+        if (saldoFinalLong > 0) {
+            txtSaldoFinal.setTextColor(Color.parseColor("#008000"));
+        } else if (saldoFinalLong < 0) {
+            txtSaldoFinal.setTextColor(Color.parseColor("#E53935"));
+        } else {
+            txtSaldoFinal.setTextColor(Color.parseColor("#757575"));
+        }
+
+        btnVoltar.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void abrirDialogFiltroCategoria() {
+        viewModel.buscarCategoriasParaFiltro(new ContasViewModel.CategoriasFiltroCallback() {
+            @Override
+            public void onSucesso(List<com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel> listaCategorias) {
+                if (listaCategorias.isEmpty()) {
+                    Toast.makeText(ContasActivity.this, "Nenhuma categoria encontrada.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // 1. Instancia o novo Dialog Bonito
+                android.app.Dialog dialog = new android.app.Dialog(ContasActivity.this);
+                dialog.setContentView(R.layout.dialog_selecionar_categoria);
+
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                    dialog.getWindow().setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+                }
+
+                // 2. Configura a Lista (RecyclerView)
+                RecyclerView recycler = dialog.findViewById(R.id.recyclerCategoriasDialog);
+                recycler.setLayoutManager(new LinearLayoutManager(ContasActivity.this));
+
+                // Adapter Anônimo enxuto (Boas práticas para listas ultra simples)
+                RecyclerView.Adapter<RecyclerView.ViewHolder> adapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                    @androidx.annotation.NonNull
+                    @Override
+                    public RecyclerView.ViewHolder onCreateViewHolder(@androidx.annotation.NonNull android.view.ViewGroup parent, int viewType) {
+                        View view = android.view.LayoutInflater.from(parent.getContext())
+                                .inflate(R.layout.adapter_item_dialog_categoria, parent, false);
+                        return new RecyclerView.ViewHolder(view) {};
+                    }
+
+                    @Override
+                    public void onBindViewHolder(@androidx.annotation.NonNull RecyclerView.ViewHolder holder, int position) {
+                        // 1. Agora buscamos o TextView pelo ID dentro do item
+                        TextView tv = holder.itemView.findViewById(R.id.textNomeCategoria);
+                        com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel cat = listaCategorias.get(position);
+
+                        tv.setText(cat.getNome());
+
+                        // 2. Colocamos o evento de clique na linha inteira (itemView) e não só no texto
+                        holder.itemView.setOnClickListener(v -> {
+                            categoriaIdFiltro = cat.getId();
+                            Toast.makeText(ContasActivity.this, "Filtrando: " + cat.getNome(), Toast.LENGTH_SHORT).show();
+                            aplicarFiltros();
+                            dialog.dismiss();
+                        });
+                    }
+
+                    @Override
+                    public int getItemCount() {
+                        return listaCategorias.size();
+                    }
+                };
+
+                recycler.setAdapter(adapter);
+
+                // 3. Botão cancelar
+                dialog.findViewById(R.id.btnCancelarDialog).setOnClickListener(v -> dialog.dismiss());
+
+                dialog.show();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(ContasActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+            }
         });
     }
 }

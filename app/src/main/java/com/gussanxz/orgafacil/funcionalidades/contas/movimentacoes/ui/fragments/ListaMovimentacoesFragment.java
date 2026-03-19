@@ -178,6 +178,11 @@ public class ListaMovimentacoesFragment extends Fragment
                 configurarSwipeDoDashboard();
             }
 
+            boolean listaEstavaVazia = adapter.getCurrentList().isEmpty();
+            if (listaEstavaVazia && !listaProcessada.isEmpty()) {
+                recyclerView.scheduleLayoutAnimation();
+            }
+
             adapter.submitList(listaProcessada);
         };
 
@@ -271,6 +276,80 @@ public class ListaMovimentacoesFragment extends Fragment
                 new ContasDialogHelper.AcaoUnicaCallback() {
                     @Override public void onConfirmar() { executarExclusaoDoDia(movsDoDia); }
                 });
+    }
+
+    /**
+     * Clique simples no header do dia — exibe o resumo financeiro em popup.
+     */
+    @Override
+    public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
+        if (!isAdded()) return;
+        exibirPopupResumoDia(tituloDia, movsDoDia);
+    }
+
+    private void exibirPopupResumoDia(String tituloDia, List<MovimentacaoModel> movsDoDia) {
+        // 1. Cria o Dialog usando o contexto seguro do Fragment
+        android.app.Dialog dialog = new android.app.Dialog(requireContext());
+        dialog.setContentView(R.layout.dialog_resumo_dia);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        // 2. Mapeia os componentes
+        TextView txtTitulo = dialog.findViewById(R.id.textTituloDialogResumo);
+        TextView txtQtdReceitas = dialog.findViewById(R.id.textQtdReceitas);
+        TextView txtValorReceitas = dialog.findViewById(R.id.textValorReceitas);
+        TextView txtQtdDespesas = dialog.findViewById(R.id.textQtdDespesas);
+        TextView txtValorDespesas = dialog.findViewById(R.id.textValorDespesas);
+        TextView txtSaldoFinal = dialog.findViewById(R.id.textSaldoDialog);
+        com.google.android.material.button.MaterialButton btnVoltar = dialog.findViewById(R.id.btnVoltarResumo);
+
+        txtTitulo.setText("Resumo: " + tituloDia);
+
+        // 3. Matemática Financeira Exata (Usando LONG para centavos, sem double)
+        long totalReceitas = 0;
+        long totalDespesas = 0;
+        int qtdReceitas = 0;
+        int qtdDespesas = 0;
+
+        for (MovimentacaoModel mov : movsDoDia) {
+            if (mov.getTipoEnum() == com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas.RECEITA) {
+                totalReceitas += mov.getValor();
+                qtdReceitas++;
+            } else {
+                totalDespesas += mov.getValor();
+                qtdDespesas++;
+            }
+        }
+
+        long saldoFinalLong = totalReceitas - totalDespesas;
+
+        // 4. Formatação para Reais (Dividindo por 100.0 apenas na exibição visual)
+        java.text.NumberFormat currencyFormat = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"));
+
+        txtQtdReceitas.setText(qtdReceitas + (qtdReceitas == 1 ? " Receita" : " Receitas"));
+        txtValorReceitas.setText("+ " + currencyFormat.format(totalReceitas / 100.0));
+
+        txtQtdDespesas.setText(qtdDespesas + (qtdDespesas == 1 ? " Despesa" : " Despesas"));
+        txtValorDespesas.setText("- " + currencyFormat.format(totalDespesas / 100.0));
+
+        txtSaldoFinal.setText(currencyFormat.format(saldoFinalLong / 100.0));
+
+        // Cor do saldo final
+        if (saldoFinalLong > 0) {
+            txtSaldoFinal.setTextColor(android.graphics.Color.parseColor("#008000"));
+        } else if (saldoFinalLong < 0) {
+            txtSaldoFinal.setTextColor(android.graphics.Color.parseColor("#E53935"));
+        } else {
+            txtSaldoFinal.setTextColor(android.graphics.Color.parseColor("#757575"));
+        }
+
+        // 5. Botão de fechar
+        btnVoltar.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     // ── Ações sobre o ViewModel (lógica exclusiva deste Fragment) ─────────────

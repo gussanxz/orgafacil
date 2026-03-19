@@ -42,14 +42,10 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
         void onDeleteClick(MovimentacaoModel movimentacaoModel);
         void onLongClick(MovimentacaoModel movimentacaoModel);
         void onCheckClick(MovimentacaoModel movimentacaoModel);
-
-        /**
-         * Chamado quando o usuário desliza o HEADER do dia para a esquerda.
-         *
-         * @param dataDia    string da data do grupo ("dd/MM/yyyy")
-         * @param movsDoDia  lista de movimentações daquele dia
-         */
         void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia);
+
+        // NOVO: Clique simples no header
+        void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia);
     }
 
     public AdapterMovimentacaoLista(Context context, OnItemActionListener listener) {
@@ -141,34 +137,26 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
     class HeaderViewHolder extends RecyclerView.ViewHolder {
 
         TextView textDiaTitulo;
-        TextView textSaldoDia;
-        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        View layoutHeaderClicavel; // Novo
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
             textDiaTitulo = itemView.findViewById(R.id.textDiaTitulo);
-            textSaldoDia  = itemView.findViewById(R.id.textSaldoDia);
+            layoutHeaderClicavel = itemView.findViewById(R.id.layoutHeaderClicavel); // Novo
         }
 
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
 
-            if (textSaldoDia == null) return;
-
-            // CORREÇÃO: item.saldoDia é long — divisão por 100.0 produz double correto.
-            // Antes havia um cast (int) no Helper que truncava valores > R$ 21.474,83,
-            // causando saldo negativo ou zero silenciosamente na UI.
-            double saldoReais = item.saldoDia / 100.0;
-            textSaldoDia.setText("Saldo: " + fmt.format(saldoReais));
-
-            // Cor do saldo: verde positivo, vermelho negativo, cinza neutro
-            if (item.saldoDia > 0) {
-                textSaldoDia.setTextColor(Color.parseColor("#008000"));
-            } else if (item.saldoDia < 0) {
-                textSaldoDia.setTextColor(Color.parseColor("#B00020"));
-            } else {
-                textSaldoDia.setTextColor(Color.parseColor("#9E9E9E"));
-            }
+            // Adiciona o evento de clique no Header
+            layoutHeaderClicavel.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    // Aproveitamos a função que já existe para pegar as contas do dia
+                    List<MovimentacaoModel> movsDoDia = getMovimentacoesDoDia(position);
+                    listener.onHeaderClick(item.tituloDia, movsDoDia);
+                }
+            });
         }
     }
 

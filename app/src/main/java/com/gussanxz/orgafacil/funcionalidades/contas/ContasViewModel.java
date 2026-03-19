@@ -5,10 +5,14 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.ContasCategoriaModel;
+import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.repository.ContasCategoriaRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasFiltroEngine;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,7 +22,8 @@ public class ContasViewModel extends ViewModel {
 
     // ── Dependências ───────────────────────────────────────────────────────────
     private final MovimentacaoRepository repo;
-    private final ContasFiltroEngine filtroEngine; // Novo motor isolado
+    private final ContasCategoriaRepository categoriaRepo; // NOVO
+    private final ContasFiltroEngine filtroEngine;
 
     // ── LiveData públicos ──────────────────────────────────────────────────────
     private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
@@ -49,6 +54,7 @@ public class ContasViewModel extends ViewModel {
     private Date               lastInicio     = null;
     private Date               lastFim        = null;
     private TipoCategoriaContas lastFiltroTipo = null;
+    private String             lastCategoriaId = null; // NOVO: Guarda o ID da categoria filtrada
 
     private DocumentSnapshot ultimoDocumentoVisivelHistorico = null;
     private boolean          isUltimaPaginaHistorico         = false;
@@ -66,6 +72,7 @@ public class ContasViewModel extends ViewModel {
 
     public ContasViewModel() {
         this.repo = new MovimentacaoRepository();
+        this.categoriaRepo = new ContasCategoriaRepository();
         this.filtroEngine = new ContasFiltroEngine();
     }
 
@@ -81,6 +88,34 @@ public class ContasViewModel extends ViewModel {
     public void confirmarMovimentacaoEmMassa(MovimentacaoModel mov, MovimentacaoRepository.Callback cb) { repo.confirmarMovimentacaoEmMassa(mov, cb); }
     public void excluirEmLote(List<MovimentacaoModel> lista, MovimentacaoRepository.Callback cb) { repo.excluirEmLote(lista, cb); }
     public void zerarEstatisticasMensais(MovimentacaoRepository.Callback cb) { repo.zerarEstatisticasMensais(cb); }
+
+    // ── Busca de Categorias para o Filtro (BOAS PRÁTICAS MVVM) ─────────────────
+
+    public interface CategoriasFiltroCallback {
+        void onSucesso(List<ContasCategoriaModel> categorias);
+        void onErro(String erro);
+    }
+
+    public void buscarCategoriasParaFiltro(CategoriasFiltroCallback callback) {
+        // A responsabilidade de buscar no banco agora fica no ViewModel/Repository
+        FirestoreSchema.contasCategoriasCol()
+                .whereEqualTo("ativa", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<ContasCategoriaModel> lista = new ArrayList<>();
+                    if (snapshot != null) {
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
+                            cat.setId(doc.getId());
+                            lista.add(cat);
+                        }
+                        // Ordena alfabeticamente
+                        lista.sort((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()));
+                    }
+                    callback.onSucesso(lista);
+                })
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    }
 
     // ── Busca e paginação ──────────────────────────────────────────────────────
 
@@ -177,10 +212,12 @@ public class ContasViewModel extends ViewModel {
 
     // ── Filtros — API pública e Integração com a Engine ──────────────────────
 
-    public void aplicarFiltros(String query, Date inicio, Date fim) {
+    // NOVO: Parâmetro categoriaId adicionado
+    public void aplicarFiltros(String query, Date inicio, Date fim, String categoriaId) {
         this.lastQuery = query;
         this.lastInicio = inicio;
         this.lastFim = fim;
+        this.lastCategoriaId = categoriaId;
         agendarFiltro();
     }
 
@@ -195,10 +232,11 @@ public class ContasViewModel extends ViewModel {
     }
 
     private void agendarFiltro() {
+        // O FiltroEngine agora recebe o lastCategoriaId!
         filtroEngine.filtrarAsync(
                 new ArrayList<>(cacheHistorico),
                 new ArrayList<>(cacheFuturo),
-                lastQuery, lastInicio, lastFim, lastFiltroTipo,
+                lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaId, // <- Novo parâmetro aqui
 
                 (resHistorico, resFuturo, saldoHist, saldoFut) -> {
                     _listaHistorico.setValue(resHistorico);

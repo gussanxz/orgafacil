@@ -13,6 +13,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.repository.ResumoFinanceiroRepository;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository; // NOVO IMPORT
 
 import java.util.Calendar;
 import java.util.List;
@@ -21,20 +22,34 @@ public class ResumoGeralViewModel extends ViewModel {
 
     private final ResumoFinanceiroRepository repository;
     private final MovimentacaoRepository movRepository;
+    private final UsuarioRepository usuarioRepository; // NOVO
 
     private final MutableLiveData<ResumoFinanceiroModel> _resumoDados = new MutableLiveData<>();
     public LiveData<ResumoFinanceiroModel> resumoDados = _resumoDados;
 
-    // --- [NOVO] LIVEDATA DE URGÊNCIA ---
     private final MutableLiveData<Integer> _contasUrgentes = new MutableLiveData<>(0);
     public LiveData<Integer> contasUrgentes = _contasUrgentes;
+
+    // --- [NOVO] LIVEDATA PARA O NOME DO USUÁRIO ---
+    private final MutableLiveData<String> _nomeUsuario = new MutableLiveData<>();
+    public LiveData<String> nomeUsuario = _nomeUsuario;
 
     private ListenerRegistration listenerRegistration;
 
     public ResumoGeralViewModel() {
         this.repository = new ResumoFinanceiroRepository();
         this.movRepository = new MovimentacaoRepository();
+        this.usuarioRepository = new UsuarioRepository(); // NOVO
+
         iniciarMonitoramento();
+        buscarNomeUsuario(); // NOVO
+    }
+
+    // --- [NOVO] MÉTODO PARA BUSCAR O NOME ---
+    private void buscarNomeUsuario() {
+        usuarioRepository.obterNomeUsuario(nome -> {
+            _nomeUsuario.setValue(nome);
+        });
     }
 
     private void iniciarMonitoramento() {

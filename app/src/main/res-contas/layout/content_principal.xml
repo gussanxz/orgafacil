@@ -147,6 +147,17 @@
                     app:queryBackground="@android:color/transparent"/>
 
                 <ImageView
+                    android:id="@+id/imgFiltroCategoria"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_list_24"
+                    android:background="@drawable/bg_chip_filtro"
+                    app:tint="#555555"
+                    android:contentDescription="Filtrar por Categoria"/>
+
+                <ImageView
                     android:id="@+id/imgFiltroCalendario"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
@@ -154,8 +165,7 @@
                     android:padding="10dp"
                     android:src="@drawable/ic_calendar_month_24"
                     android:background="@drawable/bg_chip_filtro"
-                    app:tint="#555555"
-                    android:contentDescription="Filtrar por data"/>
+                    app:tint="#555555"/>
 
                 <ImageView
                     android:id="@+id/imgLimparFiltroData"

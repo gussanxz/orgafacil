@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tab_titulo_ultimas_mov">Últimas Movimentações</string>
-    <string name="tab_titulo_contas_pendentes">Próximo do Vencimento</string>
+    <string name="tab_titulo_contas_pendentes">Próx do Vencimento</string>
     <string name="label_despesa_futura">Despesa Futura</string>
     <string name="label_receita_futura">Receita Futura</string>
     <string name="label_nova_despesa">Nova Despesa</string>
