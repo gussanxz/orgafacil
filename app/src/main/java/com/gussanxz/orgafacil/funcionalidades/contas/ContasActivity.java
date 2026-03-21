@@ -38,6 +38,8 @@ import com.gussanxz.orgafacil.funcionalidades.contas.categorias.dados.model.Cont
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasDialogHelper;
+import com.gussanxz.orgafacil.funcionalidades.contas.notificacoes.VencimentoNotificationChannel;
+import com.gussanxz.orgafacil.funcionalidades.contas.notificacoes.VencimentoScheduler;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
@@ -113,6 +115,9 @@ public class ContasActivity extends AppCompatActivity {
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
+        VencimentoNotificationChannel.criar(this);
+        VencimentoScheduler.agendar(this);
+
         resumoRepository = new ResumoFinanceiroRepository();
 
         extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
@@ -137,6 +142,16 @@ public class ContasActivity extends AppCompatActivity {
         );
 
         if (ehAtalho) aplicarRegrasAtalho(extrasAtalho);
+
+        // Se vier da tela de relatórios com filtro de categoria pré-definido,
+        // preenche a busca para mostrar só as movimentações daquela categoria.
+        if (extrasAtalho != null) {
+            String filtroBusca = extrasAtalho.getString("FILTRO_BUSCA_INICIAL");
+            if (filtroBusca != null && !filtroBusca.isEmpty()) {
+                // postDelayed garante que o SearchView já foi medido e está pronto.
+                searchView.post(() -> searchView.setQuery(filtroBusca, true));
+            }
+        }
     }
 
     @Override

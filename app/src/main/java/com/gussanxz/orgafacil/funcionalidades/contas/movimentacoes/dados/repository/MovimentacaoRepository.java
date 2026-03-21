@@ -273,6 +273,11 @@ public class MovimentacaoRepository {
                 ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
                 FieldValue.increment(isReceita ? centavos * fator : -centavos * fator));
 
+        // data_pagamento pode ser nulo em movimentações antigas salvas antes do campo existir.
+        // Para pagamentos (fator=1): usa hoje — a movimentação está sendo confirmada agora.
+        // Para exclusões (fator=-1): usa hoje como fallback seguro, pois o impacto mensal
+        // só importa se for do mês atual; se for de outro mês, isMesmoMesEAno retorna false
+        // e os campos mensais não são alterados — comportamento correto em ambos os casos.
         Date dataPagamentoEfetiva = (mov.getData_pagamento() != null)
                 ? mov.getData_pagamento().toDate()
                 : new Date();

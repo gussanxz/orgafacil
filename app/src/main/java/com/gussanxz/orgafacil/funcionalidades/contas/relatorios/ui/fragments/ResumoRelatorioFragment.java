@@ -30,6 +30,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.dados.model.TopGastoDTO;
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.dados.model.TopGastosAdapter;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 
 import java.text.SimpleDateFormat;
@@ -92,8 +93,13 @@ public class ResumoRelatorioFragment extends Fragment {
         recyclerTopMaioresGastos.setAdapter(topGastosAdapter);
 
         topGastosAdapter.setOnItemClickListener(item -> {
-            Toast.makeText(requireContext(), "Clicou na categoria: " + item.getNomeCategoria(), Toast.LENGTH_SHORT).show();
-            // Aqui você pode fazer o Intent ou Navigation para a tela de detalhes dessa categoria!
+            if (item.isMovimentacaoIndividual() && item.getMovimentacaoModel() != null) {
+                Intent intent = new Intent(requireContext(), EditarMovimentacaoActivity.class);
+                intent.putExtra("movimentacaoSelecionada", item.getMovimentacaoModel());
+                intent.putExtra("DIRETO_PRA_EDICAO", false);
+                intent.putExtra("MODO_APENAS_VISUALIZACAO", true);
+                startActivity(intent);
+            }
         });
 
         View cardInsight = view.findViewById(R.id.cardInsight);
@@ -265,34 +271,37 @@ public class ResumoRelatorioFragment extends Fragment {
     }
 
     private void atualizarListaTop5() {
-        long total = 0;
-        Map<String, Long> mapa;
+        // Filtra as movimentações do tipo ativo (despesa ou receita)
+        TipoCategoriaContas tipoAtivo = exibindoDespesasNoTop5
+                ? TipoCategoriaContas.DESPESA
+                : TipoCategoriaContas.RECEITA;
 
-        if (exibindoDespesasNoTop5) {
-            mapa = agruparPorCategoria(listaDoMesAtual, TipoCategoriaContas.DESPESA);
-            for(Long v : mapa.values()) total += v;
-        } else {
-            mapa = agruparPorCategoria(listaDoMesAtual, TipoCategoriaContas.RECEITA);
-            for(Long v : mapa.values()) total += v;
+        List<MovimentacaoModel> filtradas = new ArrayList<>();
+        for (MovimentacaoModel m : listaDoMesAtual) {
+            if (m.getTipoEnum() == tipoAtivo) filtradas.add(m);
         }
+
+        // Ordena por valor absoluto decrescente — maior gasto/receita primeiro
+        filtradas.sort((a, b) -> Long.compare(Math.abs(b.getValor()), Math.abs(a.getValor())));
+
+        // Calcula total do tipo para percentual relativo
+        long total = 0;
+        for (MovimentacaoModel m : filtradas) total += Math.abs(m.getValor());
 
         List<TopGastoDTO> listaRanking = new ArrayList<>();
-        if (total > 0) {
-            List<Map.Entry<String, Long>> entradas = new ArrayList<>(mapa.entrySet());
-            entradas.sort((o1, o2) -> o2.getValue().compareTo(o1.getValue()));
-
-            int limite = Math.min(entradas.size(), 5);
-            for (int i = 0; i < limite; i++) {
-                String nome = entradas.get(i).getKey();
-                long valor = entradas.get(i).getValue();
-
-                double percentual = ((double) valor / total) * 100.0;
-                listaRanking.add(new TopGastoDTO(nome, valor, percentual, exibindoDespesasNoTop5));
-            }
+        int limite = Math.min(filtradas.size(), 5);
+        for (int i = 0; i < limite; i++) {
+            MovimentacaoModel mov = filtradas.get(i);
+            double percentual = total > 0
+                    ? ((double) Math.abs(mov.getValor()) / total) * 100.0
+                    : 0;
+            listaRanking.add(new TopGastoDTO(mov, percentual, exibindoDespesasNoTop5));
         }
+
         topGastosAdapter.atualizarLista(listaRanking);
 
-        // A MÁGICA ACONTECE AQUI: O gráfico agora é atualizado junto com a lista!
+        // Gráfico de pizza continua agrupado por categoria — não muda
+        Map<String, Long> mapa = agruparPorCategoria(listaDoMesAtual, tipoAtivo);
         atualizarGraficoPizza(mapa);
     }
 

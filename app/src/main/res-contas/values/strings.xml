@@ -6,4 +6,13 @@
     <string name="label_receita_futura">Receita Futura</string>
     <string name="label_nova_despesa">Nova Despesa</string>
     <string name="label_nova_receita">Nova Receita</string>
+
+    <!-- Notificações de vencimento -->
+    <string name="notif_titulo_vencidas">Contas vencidas ⚠️</string>
+    <string name="notif_titulo_em_breve">Vencimento próximo 🔔</string>
+    <string name="notif_msg_vencida_singular">"%1$s" está %2$d dia(s) em atraso.</string>
+    <string name="notif_msg_vencidas_plural">Você tem %1$d conta(s) vencida(s).</string>
+    <string name="notif_msg_em_breve_hoje">"%1$s" vence hoje!</string>
+    <string name="notif_msg_em_breve_singular">"%1$s" vence em %2$d dia(s).</string>
+    <string name="notif_msg_em_breve_plural">%1$d conta(s) vencem nas próximas 48h.</string>
 </resources>

@@ -164,6 +164,27 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
         configurarFabs();
 
         boolean diretoPraEdicao = getIntent().getBooleanExtra("DIRETO_PRA_EDICAO", false);
+
+        // Modo somente visualização — aberto pelo Top 5 de relatórios.
+        // Oculta os FABs e o banner de série para que o usuário veja os
+        // dados mas não possa editar ou navegar para a série neste contexto.
+        boolean apenasVisualizacao = getIntent().getBooleanExtra("MODO_APENAS_VISUALIZACAO", false);
+        if (apenasVisualizacao) {
+            if (fabSuperior != null) fabSuperior.setVisibility(View.GONE);
+            if (fabInferior != null) fabInferior.setVisibility(View.GONE);
+            // Oculta a label solta "Recorrência" e o card inteiro — o card de
+            // recorrência não faz sentido em modo somente visualização.
+            // O bannerVerSerie fica visível para que o usuário possa navegar
+            // para o resumo de parcelas normalmente.
+            View labelRecorrencia = findViewById(R.id.labelRecorrencia);
+            View cardRecorrencia  = findViewById(R.id.cardRecorrencia);
+            if (labelRecorrencia != null) labelRecorrencia.setVisibility(View.GONE);
+            if (cardRecorrencia  != null) cardRecorrencia.setVisibility(View.GONE);
+            // Garante modo visualização — campos desabilitados, sem botão excluir
+            alternarModoEdicao(false);
+            return;
+        }
+
         alternarModoEdicao(diretoPraEdicao);
     }
 

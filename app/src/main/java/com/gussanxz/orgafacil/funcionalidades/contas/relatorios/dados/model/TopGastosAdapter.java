@@ -48,7 +48,14 @@ public class TopGastosAdapter extends RecyclerView.Adapter<TopGastosAdapter.View
         TopGastoDTO item = lista.get(position);
 
         holder.textPosicaoRanking.setText(String.valueOf(position + 1));
-        holder.textNomeCategoria.setText(item.getNomeCategoria());
+
+        // Se for movimentação individual: exibe descrição como título e categoria embaixo.
+        // Se for agrupamento por categoria: exibe nome da categoria como sempre.
+        if (item.isMovimentacaoIndividual() && item.getDescricao() != null) {
+            holder.textNomeCategoria.setText(item.getDescricao());
+        } else {
+            holder.textNomeCategoria.setText(item.getNomeCategoria());
+        }
 
         // Controle de formatação de Porcentagem para evitar exibição de 0,0%
         if (item.getPercentual() > 0 && item.getPercentual() < 0.1) {
