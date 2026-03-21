@@ -123,11 +123,13 @@ public class ContasActivity extends AppCompatActivity {
         configurarChipsFiltro();
         setupObservers();
 
+        // ContasActivity.java — no registerForActivityResult
         launcher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
                         viewModel.invalidarDados();
+                        carregarDados(); // ← ADICIONAR ESTA LINHA
                     }
                 }
         );

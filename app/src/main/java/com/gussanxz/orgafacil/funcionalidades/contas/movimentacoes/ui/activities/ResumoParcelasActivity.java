@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activitie
 
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.ParcelamentoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.CelebracaoManager;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -214,9 +216,36 @@ public class ResumoParcelasActivity extends AppCompatActivity {
      * abaixo da lista, não substituindo o conteúdo.
      */
     private void exibirEmptyStateTodasPagas(ResumoParcelamentoModel resumo) {
-        // Ícone de celebração
+
+        // Recupera a raiz da Activity para que o overlay cubra tudo
+        ViewGroup root = findViewById(R.id.main);
+
+        // Formata o total pago para o subtítulo do card
+        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        String subtitulo  = "Total pago: " + fmt.format(resumo.valorTotalCentavos / 100.0)
+                + " em " + resumo.totalParcelas + " parcelas";
+
+        // Dispara celebração — ao fechar, mostra o banner estático do empty state
+        CelebracaoManager.celebrar(
+                this,
+                root,
+                "Série quitada!",
+                subtitulo,
+                () -> {
+                    // Callback executado APÓS o card de celebração sumir.
+                    // Aqui você pode, por exemplo, mostrar o empty state verde
+                    // que já existia, ou simplesmente não fazer nada.
+                    if (!estaAtiva()) return;
+                    exibirBannerTodasPagas(resumo); // veja método abaixo
+                }
+        );
+    }
+
+    private void exibirBannerTodasPagas(ResumoParcelamentoModel resumo) {
+        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
         emptyStateIcon.setImageResource(R.drawable.ic_check_circle_24);
-        emptyStateIcon.setAlpha(1f);                         // ícone totalmente opaco
+        emptyStateIcon.setAlpha(1f);
         emptyStateIcon.setColorFilter(
                 getResources().getColor(android.R.color.holo_green_dark, getTheme()));
 
@@ -224,23 +253,18 @@ public class ResumoParcelasActivity extends AppCompatActivity {
         emptyStateTitulo.setTextColor(
                 getResources().getColor(android.R.color.holo_green_dark, getTheme()));
 
-        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
         emptyStateDescricao.setText(
-                "Parabéns! Todas as " + resumo.totalParcelas +
-                        " parcelas foram pagas. Total: " +
+                "Parabéns! " + resumo.totalParcelas + " parcelas pagas. Total: " +
                         fmt.format(resumo.valorTotalCentavos / 100.0));
 
-        emptyStateBotaoPrimario.setText("Fechar série");
+        emptyStateBotaoPrimario.setText("Fechar");
         emptyStateBotaoPrimario.setOnClickListener(v -> finish());
-        emptyStateBotaoSecundario.setVisibility(View.GONE);
+        emptyStateBotaoSecundario.setVisibility(android.view.View.GONE);
 
+        // Aparece suavemente logo abaixo da lista
         layoutEmptyState.setAlpha(0f);
-        layoutEmptyState.setVisibility(View.VISIBLE);
-        layoutEmptyState.animate()
-                .alpha(1f)
-                .setDuration(400)
-                .setStartDelay(200)   // pequeno delay: carrega a lista antes de celebrar
-                .start();
+        layoutEmptyState.setVisibility(android.view.View.VISIBLE);
+        layoutEmptyState.animate().alpha(1f).setDuration(400).start();
     }
 
     /** Garante que o empty state está oculto e o conteúdo normal visível. */

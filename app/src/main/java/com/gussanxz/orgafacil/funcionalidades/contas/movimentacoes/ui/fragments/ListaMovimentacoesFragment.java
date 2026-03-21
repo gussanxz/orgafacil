@@ -90,10 +90,12 @@ public class ListaMovimentacoesFragment extends Fragment
         }
         viewModel = new ViewModelProvider(requireActivity()).get(ContasViewModel.class);
 
+        // ListaMovimentacoesFragment.java — no registerForActivityResult
         launcherEdicao = registerForActivityResult(
                 new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == android.app.Activity.RESULT_OK) {
+                        viewModel.invalidarDados();
                         viewModel.fetchDados(true, null);
                         viewModel.fetchDados(false, null);
                     }
@@ -145,11 +147,9 @@ public class ListaMovimentacoesFragment extends Fragment
         });
 
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
-            // ✅ Lendo do ViewModel!
-            if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
-                    && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
             if (lista == null || lista.isEmpty()) {
+                if (Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
                 recyclerView.setVisibility(View.GONE);
                 layoutEmptyState.setVisibility(View.VISIBLE);
                 return;
@@ -158,13 +158,17 @@ public class ListaMovimentacoesFragment extends Fragment
             recyclerView.setVisibility(View.VISIBLE);
             layoutEmptyState.setVisibility(View.GONE);
 
-            // Vitrine: exibe no máximo 10 itens
-            List<MovimentacaoModel> listaResumo = new ArrayList<>();
-            int limite = Math.min(lista.size(), 10);
-            for (int i = 0; i < limite; i++) listaResumo.add(lista.get(i));
+            // FIX: ordenar ANTES de cortar.
+            // Antes o corte de 10 acontecia sobre a lista bruta do ViewModel,
+            // que pode estar em ordem crescente (mais antigos primeiro).
+            // Resultado: as 10 movimentações exibidas eram as mais antigas,
+            // não as mais recentes. Agora ordenamos primeiro e cortamos depois.
+            List<AdapterItemListaMovimentacao> listaOrdenada =
+                    HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(lista, ehModoFuturo);
 
+            int limite = Math.min(listaOrdenada.size(), 10);
             List<AdapterItemListaMovimentacao> listaProcessada =
-                    HelperExibirDatasMovimentacao.agruparPorDiaOrdenar(listaResumo, ehModoFuturo);
+                    new ArrayList<>(listaOrdenada.subList(0, limite));
 
             if (adapter == null) {
                 adapter = new AdapterMovimentacaoLista(getContext(), this);
@@ -202,6 +206,7 @@ public class ListaMovimentacoesFragment extends Fragment
     }
 
     private void recarregarAmbas() {
+        viewModel.invalidarDados();
         viewModel.fetchDados(true, null);
         viewModel.fetchDados(false, null);
     }

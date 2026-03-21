@@ -608,6 +608,16 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
         String horaStr = (campoHora != null) ? campoHora.getText().toString().trim() : "00:00";
 
         Date date = DateHelper.parsearDataHora(dataStr, horaStr);
+
+        if (!isEdicao) {
+            Calendar agora = Calendar.getInstance();
+            Calendar cal   = Calendar.getInstance();
+            cal.setTime(date);
+            cal.set(Calendar.SECOND,      agora.get(Calendar.SECOND));
+            cal.set(Calendar.MILLISECOND, agora.get(Calendar.MILLISECOND));
+            date = cal.getTime();
+        }
+
         mov.setData_movimentacao(new Timestamp(date));
         mov.setPago(switchStatusPago != null && switchStatusPago.isChecked());
 

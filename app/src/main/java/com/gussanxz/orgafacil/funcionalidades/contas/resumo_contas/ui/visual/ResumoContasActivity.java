@@ -33,6 +33,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -74,6 +75,9 @@ public class ResumoContasActivity extends AppCompatActivity {
     // UI Dashboard
     private TextView textSaudacao; // NOVO
 
+    private androidx.activity.result.ActivityResultLauncher<Intent> launcherMovimentacao;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,7 +105,25 @@ public class ResumoContasActivity extends AppCompatActivity {
         setupSaldoListaObserver();
         viewModel.verificarViradaDeMes(this);
 
+        launcherMovimentacao = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    contasViewModel.invalidarDados();
+                    contasViewModel.fetchDados(true, null);
+                    new android.os.Handler(android.os.Looper.getMainLooper())
+                            .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+                }
+        );
+
         setupSlideView();
+
+        contasViewModel.fetchDados(true, null);   // futuro  (aba 0)
+
+        // Delay mínimo para não sobrescrever cacheHistorico com lista vazia
+// enquanto o fetch do futuro ainda está rodando e agendarFiltro() emite
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
         configurarChipsFiltro();
@@ -312,7 +334,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Receita");
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void acessarContasFuturas(View v) {
@@ -327,15 +349,16 @@ public class ResumoContasActivity extends AppCompatActivity {
     public void adicionarDespesa(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Despesa");
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
+
 
     public void adicionarReceitaFutura(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Agendar Receita");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void adicionarDespesaFutura(View v) {
@@ -343,7 +366,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         intent.putExtra("TITULO_TELA", "Agendar Despesa");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void acessarContasActivity(View view) {
@@ -427,6 +450,8 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void setupSlideView() {
         DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
         viewPager.setAdapter(adapter);
+
+        viewPager.setOffscreenPageLimit(1); // mantém aba adjacente viva na memória
 
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
