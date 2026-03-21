@@ -33,6 +33,7 @@ public class ResumoFinanceiroModel implements Serializable {
     public static final String CAMPO_PENDENCIAS_RECEBER = "pendencias.receber";
 
     public static final String CAMPO_ULTIMA_ATUALIZACAO = "ultimaAtualizacao";
+    public static final String CAMPO_DATA_ULTIMO_RESET = "dataUltimoReset";
 
     private Balanco balanco;
     private Inteligencia inteligencia;
@@ -41,6 +42,9 @@ public class ResumoFinanceiroModel implements Serializable {
 
     @ServerTimestamp
     private Timestamp ultimaAtualizacao;
+
+    // NOVO CAMPO
+    private Timestamp dataUltimoReset;
 
     public ResumoFinanceiroModel() {
         this.balanco = new Balanco();
@@ -63,6 +67,9 @@ public class ResumoFinanceiroModel implements Serializable {
 
     public Timestamp getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(Timestamp ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
+
+    public Timestamp getDataUltimoReset() { return dataUltimoReset; }
+    public void setDataUltimoReset(Timestamp dataUltimoReset) { this.dataUltimoReset = dataUltimoReset; }
 
     public static class Balanco implements Serializable {
         private long saldoAtual = 0;

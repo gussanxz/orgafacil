@@ -14,6 +14,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSmartBatch;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -53,7 +54,32 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
+    // Sobrecarga sem filtros — mantida para compatibilidade com chamadas existentes.
     public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                           DadosPaginadosCallback callback) {
+        recuperarHistoricoPaginado(dataReferencia, ultimoDoc, null, null, callback);
+    }
+
+    /**
+     * Versão completa com filtros aplicados diretamente no Firestore.
+     *
+     * @param categoriaId  quando não nulo, restringe ao campo "categoria_id"
+     * @param filtroTipo   quando não nulo, restringe ao campo "tipo" (ex: "RECEITA" ou "DESPESA")
+     *
+     * Filtros de texto permanecem na ContasFiltroEngine (local) pois o Firestore
+     * não suporta full-text search. Estes dois parâmetros usam igualdade exata
+     * em campos indexados — seguros para Firestore sem índices compostos novos.
+     *
+     * Cenários cobertos:
+     *   - sem filtro         → null + null  → comportamento original
+     *   - só categoria       → id + null    → whereEqualTo categoria_id
+     *   - só tipo            → null + tipo  → whereEqualTo tipo
+     *   - categoria + tipo   → id + tipo    → ambos aplicados
+     *   - texto (query)      → sem impacto aqui, filtro local na engine
+     *   - troca de filtro    → ViewModel reseta cursor antes de chamar este método
+     */
+    public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                           String categoriaId, String filtroTipo,
                                            DadosPaginadosCallback callback) {
         com.google.firebase.Timestamp limite = dataReferencia != null
                 ? new com.google.firebase.Timestamp(dataReferencia)
@@ -64,7 +90,11 @@ public class MovimentacaoRepository {
                 .whereLessThanOrEqualTo(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, limite)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
-        if (ultimoDoc != null) q = q.startAfter(ultimoDoc);
+
+        if (categoriaId != null && !categoriaId.isEmpty()) q = q.whereEqualTo("categoria_id", categoriaId);
+        if (filtroTipo  != null && !filtroTipo.isEmpty())  q = q.whereEqualTo("tipo", filtroTipo);
+        if (ultimoDoc   != null)                           q = q.startAfter(ultimoDoc);
+
         q.get()
                 .addOnSuccessListener(s -> {
                     DocumentSnapshot novoUltimo = s.isEmpty() ? null
@@ -74,22 +104,28 @@ public class MovimentacaoRepository {
                 .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 
-    public void recuperarContasFuturas(Date dataReferencia, DadosCallback callback) {
-        FirestoreSchema.contasMovimentacoesCol()
-                .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
-                .orderBy("data_vencimento", Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(s -> callback.onSucesso(processarSnapshots(s)))
-                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
+    // Sobrecarga sem filtros — mantida para compatibilidade com chamadas existentes.
+    public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                               DadosPaginadosCallback callback) {
+        recuperarContasFuturasPaginado(dataReferencia, ultimoDoc, null, null, callback);
     }
 
+    /**
+     * Versão completa com filtros aplicados diretamente no Firestore.
+     * Mesma lógica de recuperarHistoricoPaginado — veja Javadoc acima.
+     */
     public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
+                                               String categoriaId, String filtroTipo,
                                                DadosPaginadosCallback callback) {
         Query q = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
-        if (ultimoDoc != null) q = q.startAfter(ultimoDoc);
+
+        if (categoriaId != null && !categoriaId.isEmpty()) q = q.whereEqualTo("categoria_id", categoriaId);
+        if (filtroTipo  != null && !filtroTipo.isEmpty())  q = q.whereEqualTo("tipo", filtroTipo);
+        if (ultimoDoc   != null)                           q = q.startAfter(ultimoDoc);
+
         q.get()
                 .addOnSuccessListener(s -> {
                     DocumentSnapshot novoUltimo = s.isEmpty() ? null
@@ -594,53 +630,80 @@ public class MovimentacaoRepository {
     }
 
     public void zerarEstatisticasMensais(Callback callback) {
-        FirestoreSchema.contasMovimentacoesCol()
-                .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
-                .get()
-                .addOnSuccessListener(snapPendentes -> {
+        DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
 
-                    long totalPagar = 0, totalReceber = 0;
-                    for (QueryDocumentSnapshot doc : snapPendentes) {
-                        MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
-                        if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) totalReceber++;
-                        else totalPagar++;
+        // ETAPA 2: A Trava de Segurança
+        // Lemos o resumo primeiro para verificar a data do último reset
+        resumoRef.get().addOnSuccessListener(resumoSnap -> {
+            if (resumoSnap.exists()) {
+                Timestamp tsUltimoReset = resumoSnap.getTimestamp(ResumoFinanceiroModel.CAMPO_DATA_ULTIMO_RESET);
+
+                if (tsUltimoReset != null) {
+                    // Usa o utilitário puro que não depende de Firebase
+                    if (DateHelper.isMesmoMesEAno(tsUltimoReset.toDate(), new Date())) {
+                        // Aborta silenciosamente com sucesso, pois o objetivo do mês já está cumprido
+                        callback.onSucesso("As estatísticas mensais já foram zeradas neste mês.");
+                        return;
                     }
+                }
+            }
 
-                    final long finalPagar   = totalPagar;
-                    final long finalReceber = totalReceber;
+            // ETAPA 3: Execução Segura
+            // Se chegou até aqui, é porque a data é nula ou é de um mês anterior. Executamos o reset.
+            FirestoreSchema.contasMovimentacoesCol()
+                    .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
+                    .get()
+                    .addOnSuccessListener(snapPendentes -> {
 
-                    FirestoreSchema.contasCategoriasCol().get()
-                            .addOnSuccessListener(snapCategorias -> {
-                                FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
-                                DocumentReference resumoRef = FirestoreSchema.contasResumoDoc();
+                        long totalPagar = 0, totalReceber = 0;
+                        for (QueryDocumentSnapshot doc : snapPendentes) {
+                            MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                            if (m.getTipoEnum() == TipoCategoriaContas.RECEITA) totalReceber++;
+                            else totalPagar++;
+                        }
 
-                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0);
-                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0);
-                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0);
+                        final long finalPagar   = totalPagar;
+                        final long finalReceber = totalReceber;
 
-                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR,   finalPagar);
-                                batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER, finalReceber);
+                        FirestoreSchema.contasCategoriasCol().get()
+                                .addOnSuccessListener(snapCategorias -> {
+                                    FirestoreSmartBatch batch = new FirestoreSmartBatch(db);
 
-                                for (QueryDocumentSnapshot doc : snapCategorias) {
-                                    batch.update(doc.getReference(),
-                                            ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0);
-                                }
+                                    // Zera o balanço mensal
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_BALANCO_MES, 0L);
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_RECEITAS_MES, 0L);
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DESPESAS_MES, 0L);
 
-                                batch.commit(criarBatchCallback(callback, "Estatísticas do mês zeradas com sucesso!"));
-                            })
-                            .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
+                                    // Atualiza pendências reais
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_PAGAR,   finalPagar);
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_PENDENCIAS_RECEBER, finalReceber);
 
-                })
-                .addOnFailureListener(e -> callback.onErro("Erro ao recontar pendências: " + e.getMessage()));
+                                    // SALVANDO A DATA DE RESET COM O TIMESTAMP DO SERVIDOR DO FIREBASE
+                                    batch.update(resumoRef, ResumoFinanceiroModel.CAMPO_DATA_ULTIMO_RESET, FieldValue.serverTimestamp());
+
+                                    // Zera gastos mensais por categoria
+                                    for (QueryDocumentSnapshot doc : snapCategorias) {
+                                        batch.update(doc.getReference(),
+                                                ContasCategoriaModel.CAMPO_TOTAL_GASTO_MES, 0L);
+                                    }
+
+                                    batch.commit(criarBatchCallback(callback, "Estatísticas do mês zeradas com sucesso!"));
+                                })
+                                .addOnFailureListener(e -> callback.onErro("Erro ao buscar categorias: " + e.getMessage()));
+
+                    })
+                    .addOnFailureListener(e -> callback.onErro("Erro ao recontar pendências: " + e.getMessage()));
+
+        }).addOnFailureListener(e -> callback.onErro("Erro ao verificar o último reset: " + e.getMessage()));
     }
 
     // ── utilitário ───────────────────────────────────────────────────────────
 
+    // Mantido como wrapper privado para não quebrar nenhuma chamada interna.
+    // A lógica foi movida para DateHelper.isMesmoMesEAno() onde pode ser
+    // reutilizada por relatórios e outros módulos sem depender deste repositório.
     private boolean isMesmoMesEAno(Date d1, Date d2) {
-        Calendar c1 = Calendar.getInstance(); c1.setTime(d1);
-        Calendar c2 = Calendar.getInstance(); c2.setTime(d2);
-        return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
-                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH);
+        return DateHelper.isMesmoMesEAno(d1, d2);
     }
 
     /**

@@ -253,21 +253,17 @@ public class ResumoRelatorioFragment extends Fragment {
         else if (saldoAtual < 0) textSaldoResumo.setTextColor(Color.parseColor("#E53935"));
         else textSaldoResumo.setTextColor(Color.parseColor("#757575"));
 
+        // Como nós colocamos a chamada do gráfico lá dentro desse método,
+        // chamar ele aqui já resolve a lista E o gráfico da aba correta de uma vez só!
         atualizarListaTop5();
 
         Map<String, Long> mapaDespesas = agruparPorCategoria(listaDoMesAtual, TipoCategoriaContas.DESPESA);
         gerarInsightsInteligentes(totalReceitas, totalDespesas, mapaDespesas);
 
-        // CORREÇÃO: Chama o gráfico passando apenas o mapa. O gráfico fará a soma de 100% com precisão.
-        if (exibindoDespesasNoTop5) {
-            atualizarGraficoPizza(mapaDespesas);
-        } else {
-            Map<String, Long> mapaReceitas = agruparPorCategoria(listaDoMesAtual, TipoCategoriaContas.RECEITA);
-            atualizarGraficoPizza(mapaReceitas);
-        }
+        // Removemos os IFs e ELSEs que chamavam o atualizarGraficoPizza() daqui
+        // porque agora atualizarListaTop5() faz esse trabalho.
     }
 
-    // 6 e 7. SOLUÇÃO: Preencher o Top 5 baseado na aba selecionada (com %)
     private void atualizarListaTop5() {
         long total = 0;
         Map<String, Long> mapa;
@@ -295,10 +291,17 @@ public class ResumoRelatorioFragment extends Fragment {
             }
         }
         topGastosAdapter.atualizarLista(listaRanking);
+
+        // A MÁGICA ACONTECE AQUI: O gráfico agora é atualizado junto com a lista!
+        atualizarGraficoPizza(mapa);
     }
 
     // 3, 4 e 5. SOLUÇÃO: Exibe todos, Limpa o gráfico e joga Nome + % para a Legenda
+    // 3, 4 e 5. SOLUÇÃO: Exibe todos, Limpa o gráfico e joga Nome + % para a Legenda
     private void atualizarGraficoPizza(Map<String, Long> mapaAtual) {
+
+        // Limpa agressivamente o gráfico antigo da tela antes de desenhar o novo
+        pieChartCategorias.clear();
 
         long somaTotalExata = 0;
         for (Long v : mapaAtual.values()) {
@@ -373,10 +376,20 @@ public class ResumoRelatorioFragment extends Fragment {
             dataSetVazio.setDrawValues(false);
             dataSetVazio.setSelectionShift(0f);
             PieData dataVazio = new PieData(dataSetVazio);
+
+            // Reabilita a legenda caso tenha sido desativada, senão fica sem nada em volta
+            pieChartCategorias.getLegend().setEnabled(true);
+
             pieChartCategorias.setData(dataVazio);
 
             pieChartCategorias.setDrawCenterText(true);
-            pieChartCategorias.setCenterText("Uhuul!\nNenhuma mov.\neste mês 💰");
+            // Mensagem dinâmica: se for receita exibe uma, se despesa exibe outra
+            if (exibindoDespesasNoTop5) {
+                pieChartCategorias.setCenterText("Uhuul!\nNenhuma despesa\neste mês 💰");
+            } else {
+                pieChartCategorias.setCenterText("Poxa!\nNenhuma receita\neste mês 💸");
+            }
+
             pieChartCategorias.setCenterTextSize(14f);
             pieChartCategorias.setCenterTextColor(ContextCompat.getColor(requireContext(), R.color.cor_texto));
 

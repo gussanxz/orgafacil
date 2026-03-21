@@ -16,6 +16,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasFiltroEngine;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,8 +28,17 @@ public class ContasViewModel extends ViewModel {
     private final MovimentacaoRepository repo;
     private final ContasCategoriaRepository categoriaRepo;
     private final ContasFiltroEngine filtroEngine;
+    private final UsuarioRepository usuarioRepo;
 
     // ── LiveData públicos ──────────────────────────────────────────────────────
+
+    // Nome do usuário cacheado — buscado apenas uma vez por ciclo de vida do
+    // ViewModel. Como o ViewModel sobrevive a rotações e navegação entre telas
+    // filhas, o nome só é buscado novamente se o ViewModel for destruído
+    // (ex: processo morto, logout). Isso elimina chamadas repetidas ao Firestore
+    // toda vez que carregarDados() é chamado na Activity.
+    private final MutableLiveData<String> _nomeUsuario = new MutableLiveData<>();
+    public final LiveData<String> nomeUsuario = _nomeUsuario;
     private final MutableLiveData<List<MovimentacaoModel>> _listaHistorico = new MutableLiveData<>();
     public final LiveData<List<MovimentacaoModel>> listaHistorico = _listaHistorico;
 
@@ -57,7 +67,17 @@ public class ContasViewModel extends ViewModel {
     private Date               lastInicio     = null;
     private Date               lastFim        = null;
     private TipoCategoriaContas lastFiltroTipo = null;
-    private String             lastCategoriaId = null; // NOVO: Guarda o ID da categoria filtrada
+    private String             lastCategoriaId = null;
+
+    // Versão String do filtroTipo para passar diretamente ao Firestore.
+    // Mantemos os dois porque lastFiltroTipo é usado pela ContasFiltroEngine (local)
+    // e lastFiltroTipoFirestore é usado nas queries paginadas do repositório.
+    // Sempre sincronizados em setFiltroTipo() — nunca atualize um sem o outro.
+    private String lastFiltroTipoFirestore = null;
+
+    // Intervalo de valor em centavos para o RangeSlider. -1 = sem limite.
+    private long lastValorMinCentavos = -1L;
+    private long lastValorMaxCentavos = -1L;
 
     private DocumentSnapshot ultimoDocumentoVisivelHistorico = null;
     private boolean          isUltimaPaginaHistorico         = false;
@@ -85,6 +105,20 @@ public class ContasViewModel extends ViewModel {
         this.repo = new MovimentacaoRepository();
         this.categoriaRepo = new ContasCategoriaRepository();
         this.filtroEngine = new ContasFiltroEngine();
+        this.usuarioRepo = new UsuarioRepository();
+    }
+
+    // ── Nome do usuário ────────────────────────────────────────────────────────
+
+    /**
+     * Busca o nome do usuário no Firestore apenas se ainda não estiver cacheado.
+     * Chamadas subsequentes (ao voltar de telas filhas, invalidar cache etc.)
+     * retornam imediatamente sem nenhuma operação de rede.
+     * O LiveData nomeUsuario é observado pela Activity uma única vez em setupObservers().
+     */
+    public void carregarNomeUsuario() {
+        if (_nomeUsuario.getValue() != null) return; // já cacheado — sem nova busca
+        usuarioRepo.obterNomeUsuario(nome -> _nomeUsuario.setValue(nome));
     }
 
     // ── Controle de Cache ──────────────────────────────────────────────────────
@@ -129,9 +163,25 @@ public class ContasViewModel extends ViewModel {
 
     public void fetchDados(boolean ehModoFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
         _carregandoPaginacao.setValue(true);
+        iniciarBuscaPaginada(ehModoFuturo, callbackExterno);
+    }
+
+    // ── Reset + busca da primeira página (extrai a lógica duplicada do if/else) ─
+    //
+    // Ambos os ramos de fetchDados() faziam exatamente o mesmo:
+    //   1. Zerar cursor e flag de última página do modo correspondente
+    //   2. Marcar isCarregandoPagina = true
+    //   3. Chamar o método de paginação do repositório (futuro ou histórico)
+    //   4. No onSucesso: atualizar cache, cursor e flag, depois delegar a finalizarCarregamento()
+    //   5. No onErro: delegar a abortarCarregamento()
+    //
+    // A única diferença entre os dois ramos eram os campos acessados (futuro vs histórico)
+    // e o método do repositório chamado. Extrair para cá elimina a duplicação sem alterar
+    // nenhuma lógica — fetchDados() continua com a mesma assinatura pública.
+    private void iniciarBuscaPaginada(boolean isFuturo, MovimentacaoRepository.DadosCallback callbackExterno) {
         Date agora = new Date();
 
-        if (ehModoFuturo) {
+        if (isFuturo) {
             ultimoDocumentoVisivelFuturo = null;
             isUltimaPaginaFuturo = false;
             isCarregandoPagina = true;
@@ -179,25 +229,46 @@ public class ContasViewModel extends ViewModel {
         if (callbackExterno != null) callbackExterno.onErro(erro);
     }
 
+    // ── Reset de cursores ──────────────────────────────────────────────────────
+    //
+    // Chamado sempre que um filtro que afeta a query do Firestore muda
+    // (categoriaId ou filtroTipo). Zera os cursores de ambos os modos para
+    // garantir que a próxima página seja buscada com a query correta.
+    // O cache também é zerado — dados de uma query anterior não são válidos
+    // para a nova query e seriam misturados erroneamente pelo agendarFiltro().
+    private void resetarCursoresPaginacao() {
+        ultimoDocumentoVisivelHistorico = null;
+        isUltimaPaginaHistorico         = false;
+        ultimoDocumentoVisivelFuturo    = null;
+        isUltimaPaginaFuturo            = false;
+        cacheHistorico                  = new ArrayList<>();
+        cacheFuturo                     = new ArrayList<>();
+    }
+
     public void carregarMaisHistorico() {
         if (isCarregandoPagina || isUltimaPaginaHistorico) return;
         isCarregandoPagina = true;
         _carregandoPaginacao.setValue(true);
 
-        repo.recuperarHistoricoPaginado(new Date(), ultimoDocumentoVisivelHistorico, new MovimentacaoRepository.DadosPaginadosCallback() {
-            @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
-                if (novaLista.isEmpty()) isUltimaPaginaHistorico = true;
-                else {
-                    cacheHistorico.addAll(novaLista);
-                    ultimoDocumentoVisivelHistorico = novoUltimoDoc;
-                    if (novaLista.size() < 100) isUltimaPaginaHistorico = true;
-                }
-                isCarregandoPagina = false;
-                _carregandoPaginacao.setValue(false);
-                agendarFiltro();
-            }
-            @Override public void onErro(String erro) { abortarCarregamento(null, erro); }
-        });
+        // Passa os filtros Firestore ativos para que o cursor seja consistente
+        // com a query original. Sem isso, paginar com categoriaId ou filtroTipo
+        // ativos retornaria docs de todas as categorias/tipos a partir do cursor.
+        repo.recuperarHistoricoPaginado(new Date(), ultimoDocumentoVisivelHistorico,
+                lastCategoriaId, lastFiltroTipoFirestore,
+                new MovimentacaoRepository.DadosPaginadosCallback() {
+                    @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
+                        if (novaLista.isEmpty()) isUltimaPaginaHistorico = true;
+                        else {
+                            cacheHistorico.addAll(novaLista);
+                            ultimoDocumentoVisivelHistorico = novoUltimoDoc;
+                            if (novaLista.size() < 100) isUltimaPaginaHistorico = true;
+                        }
+                        isCarregandoPagina = false;
+                        _carregandoPaginacao.setValue(false);
+                        agendarFiltro();
+                    }
+                    @Override public void onErro(String erro) { abortarCarregamento(null, erro); }
+                });
     }
 
     public void carregarMaisFuturo() {
@@ -205,35 +276,66 @@ public class ContasViewModel extends ViewModel {
         isCarregandoPagina = true;
         _carregandoPaginacao.setValue(true);
 
-        repo.recuperarContasFuturasPaginado(new Date(), ultimoDocumentoVisivelFuturo, new MovimentacaoRepository.DadosPaginadosCallback() {
-            @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
-                if (novaLista.isEmpty()) isUltimaPaginaFuturo = true;
-                else {
-                    cacheFuturo.addAll(novaLista);
-                    ultimoDocumentoVisivelFuturo = novoUltimoDoc;
-                    if (novaLista.size() < 100) isUltimaPaginaFuturo = true;
-                }
-                isCarregandoPagina = false;
-                _carregandoPaginacao.setValue(false);
-                agendarFiltro();
-            }
-            @Override public void onErro(String erro) { abortarCarregamento(null, erro); }
-        });
+        repo.recuperarContasFuturasPaginado(new Date(), ultimoDocumentoVisivelFuturo,
+                lastCategoriaId, lastFiltroTipoFirestore,
+                new MovimentacaoRepository.DadosPaginadosCallback() {
+                    @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
+                        if (novaLista.isEmpty()) isUltimaPaginaFuturo = true;
+                        else {
+                            cacheFuturo.addAll(novaLista);
+                            ultimoDocumentoVisivelFuturo = novoUltimoDoc;
+                            if (novaLista.size() < 100) isUltimaPaginaFuturo = true;
+                        }
+                        isCarregandoPagina = false;
+                        _carregandoPaginacao.setValue(false);
+                        agendarFiltro();
+                    }
+                    @Override public void onErro(String erro) { abortarCarregamento(null, erro); }
+                });
     }
 
     // ── Filtros — API pública e Integração com a Engine ──────────────────────
 
     // NOVO: Parâmetro categoriaId adicionado
     public void aplicarFiltros(String query, Date inicio, Date fim, String categoriaId) {
-        this.lastQuery = query;
-        this.lastInicio = inicio;
-        this.lastFim = fim;
+        // Detecta mudança nos filtros que o Firestore consegue aplicar na query.
+        // Quando mudam, o cursor da paginação aponta para uma query diferente —
+        // continuar paginando com ele retornaria documentos errados ou duplicados.
+        // Solução: zerar os cursores e recarregar a primeira página com os novos filtros.
+        //
+        // Filtros que afetam o Firestore: categoriaId (whereEqualTo "categoria_id")
+        // Filtros que NÃO afetam o Firestore: query (texto), inicio, fim — aplicados
+        // localmente pela ContasFiltroEngine, portanto não invalidam o cursor.
+        boolean categoriaIdMudou = !java.util.Objects.equals(this.lastCategoriaId, categoriaId);
+
+        this.lastQuery      = query;
+        this.lastInicio     = inicio;
+        this.lastFim        = fim;
         this.lastCategoriaId = categoriaId;
+
+        if (categoriaIdMudou) {
+            resetarCursoresPaginacao();
+            iniciarBuscaPaginada(abaAtualEhFuturo, null);
+            return; // iniciarBuscaPaginada chama agendarFiltro() via finalizarCarregamento()
+        }
+
         agendarFiltro();
     }
 
     public void setFiltroTipo(TipoCategoriaContas tipo) {
+        // Mesmo raciocínio de aplicarFiltros(): filtroTipo vira whereEqualTo("tipo", ...)
+        // no Firestore — se mudou, o cursor atual é inválido para a nova query.
+        boolean tipoMudou = !java.util.Objects.equals(this.lastFiltroTipo, tipo);
+
         this.lastFiltroTipo = tipo;
+        this.lastFiltroTipoFirestore = (tipo != null) ? tipo.name() : null;
+
+        if (tipoMudou) {
+            resetarCursoresPaginacao();
+            iniciarBuscaPaginada(abaAtualEhFuturo, null);
+            return;
+        }
+
         agendarFiltro();
     }
 
@@ -242,25 +344,27 @@ public class ContasViewModel extends ViewModel {
         _saldoListaAtual.setValue(ehFuturo ? ultimoSaldoFuturoCalculado : ultimoSaldoHistoricoCalculado);
     }
 
+    /**
+     * Define o intervalo de valor para o RangeSlider.
+     * Valores em centavos. Passar -1 em ambos remove o filtro de valor.
+     * Não invalida o cursor do Firestore — filtro aplicado apenas localmente.
+     */
+    public void setFiltroValor(long valorMinCentavos, long valorMaxCentavos) {
+        this.lastValorMinCentavos = valorMinCentavos;
+        this.lastValorMaxCentavos = valorMaxCentavos;
+        agendarFiltro();
+    }
+
     private void agendarFiltro() {
-        // Cancela o disparo anterior se ainda estiver pendente na fila do Handler.
-        // removeCallbacks(null) removeria TODOS os callbacks — passamos a referência
-        // exata de filtroRunnable para cancelar somente o nosso.
         if (filtroRunnable != null) {
             debounceHandler.removeCallbacks(filtroRunnable);
         }
 
-        // Cria uma nova Runnable com os valores de filtro capturados no momento
-        // da chamada. Usar os campos do ViewModel diretamente (lastQuery,
-        // lastInicio etc.) é seguro porque:
-        //   1. agendarFiltro() só é chamado na main thread (via LiveData observers
-        //      e listeners de UI).
-        //   2. filtrarAsync() copia os parâmetros internamente antes de passar
-        //      para o ExecutorService — sem risco de race condition.
         filtroRunnable = () -> filtroEngine.filtrarAsync(
                 new ArrayList<>(cacheHistorico),
                 new ArrayList<>(cacheFuturo),
                 lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaId,
+                lastValorMinCentavos, lastValorMaxCentavos,
 
                 (resHistorico, resFuturo, saldoHist, saldoFut) -> {
                     _listaHistorico.setValue(resHistorico);

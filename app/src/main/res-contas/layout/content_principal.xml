@@ -120,6 +120,8 @@
         android:layout_weight="1"
         android:background="@drawable/header_background"
         android:orientation="vertical"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:paddingTop="16dp">
 
         <LinearLayout
@@ -144,6 +146,7 @@
                     android:theme="@style/ThemeOverlay.AppCompat.Light"
                     android:queryHint="Pesquisar..."
                     app:iconifiedByDefault="false"
+                    app:searchIcon="@drawable/ic_search_24"
                     app:queryBackground="@android:color/transparent"/>
 
                 <ImageView
@@ -190,6 +193,41 @@
                 android:textStyle="bold"
                 android:visibility="gone" />
 
+            <!-- RangeSlider de valor — sempre visível -->
+            <LinearLayout
+                android:id="@+id/layoutFiltroValor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="visible">
+
+                <TextView
+                    android:id="@+id/textLabelFiltroValor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Valor: qualquer"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#4CAF50"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="2dp"/>
+
+                <com.google.android.material.slider.RangeSlider
+                    android:id="@+id/rangeSliderValor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0"
+                    android:valueTo="100000"
+                    app:values="@array/range_slider_defaults"
+                    app:thumbColor="#FF7043"
+                    app:trackColorActive="#FF7043"
+                    app:trackColorInactive="#DDDDDD"
+                    app:haloColor="#33FF7043"
+                    app:labelBehavior="floating"/>
+
+            </LinearLayout>
+
             <EditText android:id="@+id/editDataInicial" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
             <EditText android:id="@+id/editDataFinal" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
 
@@ -197,7 +235,10 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclesMovimentos"
@@ -207,41 +248,49 @@
                 android:paddingBottom="80dp"
                 android:layoutAnimation="@anim/layout_anim_slide_up" />
 
-            <LinearLayout
+            <ScrollView
                 android:id="@+id/layoutEmptyStateContas"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
                 android:visibility="gone"
-                android:padding="32dp">
+                android:fillViewport="true">
 
-                <ImageView
-                    android:id="@+id/imgEmptyStateContas"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:layout_marginBottom="16dp"
-                    android:src="@drawable/ic_receipt_long_28"/>
-
-                <TextView
-                    android:id="@+id/textEmptyStateContas"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Nenhuma movimentação encontrada"
-                    android:textAlignment="center"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="24dp"/>
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:minHeight="200dp"
+                    android:padding="32dp"
+                    android:paddingBottom="24dp">
 
-                <Button
-                    android:id="@+id/btnEmptyStateCTA"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Começar agora"
-                    android:onClick="adicionarDespesa"
-                    android:hapticFeedbackEnabled="true"/>
+                    <ImageView
+                        android:id="@+id/imgEmptyStateContas"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:layout_marginBottom="16dp"
+                        android:src="@drawable/ic_receipt_long_28"/>
 
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/textEmptyStateContas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nenhuma movimentação encontrada"
+                        android:textAlignment="center"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="24dp"/>
+
+                    <Button
+                        android:id="@+id/btnEmptyStateCTA"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Começar agora"
+                        android:onClick="adicionarDespesa"
+                        android:hapticFeedbackEnabled="true"/>
+
+                </LinearLayout>
+            </ScrollView>
         </FrameLayout>
     </LinearLayout>
 

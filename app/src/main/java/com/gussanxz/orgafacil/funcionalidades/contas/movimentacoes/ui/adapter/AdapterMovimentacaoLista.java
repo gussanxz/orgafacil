@@ -10,6 +10,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
@@ -47,10 +48,20 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
         void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia);
     }
 
+    // Quando true, itens pagos são exibidos em cinza (estilo "concluído").
+    // Usado pela ResumoParcelasActivity para destacar parcelas já quitadas.
+    // Na ContasActivity e demais telas permanece false — sem alteração visual.
+    private final boolean modoParcelasResumidas;
+
     public AdapterMovimentacaoLista(Context context, OnItemActionListener listener) {
-        super(new MovimentacaoDiffCallback()); // 2. Passamos o comparador no construtor
-        this.context  = context;
-        this.listener = listener;
+        this(context, listener, false);
+    }
+
+    public AdapterMovimentacaoLista(Context context, OnItemActionListener listener, boolean modoParcelasResumidas) {
+        super(new MovimentacaoDiffCallback());
+        this.context               = context;
+        this.listener              = listener;
+        this.modoParcelasResumidas = modoParcelasResumidas;
     }
 
     public List<AdapterItemListaMovimentacao> getItens() {
@@ -187,6 +198,8 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
         TextView textTitulo, textCategoria, textValor, textData, textHora, textSeparador;
         View viewIndicadorCor;
         ImageButton btnConfirmar;
+        androidx.cardview.widget.CardView cardIconeConta; // Mapeado para estilizar
+        android.widget.ImageView imageIconeConta; // Mapeado para estilizar
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -198,9 +211,17 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
             textSeparador    = itemView.findViewById(R.id.textAdapterSeparador);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
             btnConfirmar     = itemView.findViewById(R.id.btnConfirmarPagamento);
+            cardIconeConta   = itemView.findViewById(R.id.cardIconeConta); // Novo
+            imageIconeConta  = itemView.findViewById(R.id.imageIconeConta); // Novo
         }
 
         void bind(MovimentacaoModel mov) {
+            // Restaura cores ativas padrão (Garante que a reciclagem não aplique cinza onde não deve)
+            textTitulo.setTextColor(ContextCompat.getColor(context, R.color.cor_texto));
+            textCategoria.setTextColor(Color.parseColor("#757575"));
+            textSeparador.setTextColor(Color.parseColor("#BDBDBD"));
+            if (cardIconeConta != null) cardIconeConta.setCardBackgroundColor(Color.parseColor("#E0F2F1"));
+            if (imageIconeConta != null) imageIconeConta.setColorFilter(Color.parseColor("#009688"));
 
             // ── Título e categoria ────────────────────────────────────────────
             textTitulo.setText(mov.getDescricao());
@@ -237,6 +258,9 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                     textHora.setVisibility(View.GONE);
                     textSeparador.setVisibility(View.GONE);
 
+                    // ITEM 6: Adiciona o "Vence em" para pendentes
+                    textData.setText("Vence em " + dateFormat.format(date));
+
                     // Botão de confirmação com animação de feedback tátil
                     if (btnConfirmar != null) {
                         btnConfirmar.setVisibility(View.VISIBLE);
@@ -267,6 +291,21 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                         if (!strPago.equals(strVenc)) {
                             textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
                         }
+                    }
+
+                    // Estilo "Cinza/Inativo" para itens pagos — aplicado apenas quando
+                    // modoParcelasResumidas=true (ResumoParcelasActivity).
+                    // Em ContasActivity e demais telas, pagos mantêm cores normais.
+                    if (modoParcelasResumidas) {
+                        textTitulo.setTextColor(Color.parseColor("#9E9E9E"));
+                        textCategoria.setTextColor(Color.parseColor("#BDBDBD"));
+                        viewIndicadorCor.setBackgroundColor(Color.parseColor("#9E9E9E"));
+                        textValor.setTextColor(Color.parseColor("#9E9E9E"));
+                        textData.setTextColor(Color.parseColor("#9E9E9E"));
+                        textHora.setTextColor(Color.parseColor("#9E9E9E"));
+                        textSeparador.setTextColor(Color.parseColor("#9E9E9E"));
+                        if (cardIconeConta != null) cardIconeConta.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
+                        if (imageIconeConta != null) imageIconeConta.setColorFilter(Color.parseColor("#9E9E9E"));
                     }
                 }
             }

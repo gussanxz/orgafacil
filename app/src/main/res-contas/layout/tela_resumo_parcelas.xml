@@ -1,22 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    tela_resumo_parcelas.xml — versão atualizada com empty state.
-
-    ÚNICA MUDANÇA em relação ao original:
-      1. O <include> do layout_empty_state_parcelas foi adicionado
-         DENTRO do LinearLayout principal do NestedScrollView,
-         logo depois do recyclerParcelas.
-      2. Nada mais foi alterado.
--->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary">
+    android:background="@color/colorPrimary"
+    tools:context=".funcionalidades.contas.movimentacoes.ui.activities.ResumoParcelasActivity">
 
-    <!-- HEADER -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
@@ -35,25 +27,24 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_arrow_back_48" />
+            app:srcCompat="@drawable/ic_arrow_back_48"
+            app:tint="@color/white" />
 
         <TextView
             android:id="@+id/textViewHeader"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:gravity="center"
-            android:text="Série de Parcelas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Detalhes da Série"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/fabVoltar"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CONTEÚDO -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="0dp"
@@ -70,7 +61,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- CARD DE RESUMO -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResumo"
                 android:layout_width="match_parent"
@@ -80,162 +70,202 @@
                 app:cardElevation="2dp"
                 app:strokeWidth="0dp">
 
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:padding="16dp">
 
                     <TextView
                         android:id="@+id/textTitulo"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Carregando..."
-                        android:textSize="16sp"
-                        android:textStyle="bold"
+                        android:gravity="center"
                         android:textColor="@color/cor_texto"
-                        android:layout_marginBottom="4dp" />
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:text="Freelance: Design de Logo" />
+
+                    <FrameLayout
+                        android:id="@+id/progressParcelasCircularContainer"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/textTitulo">
+
+                        <ProgressBar
+                            android:id="@+id/progressParcelasCircular"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:indeterminate="false"
+                            android:max="100"
+                            android:progress="20"
+                            android:progressDrawable="@drawable/circular_progress_bar"
+                            tools:progress="20" />
+
+                        <TextView
+                            android:id="@+id/textProgressoCentral"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            tools:text="1/5" />
+                    </FrameLayout>
 
                     <TextView
-                        android:id="@+id/textProgresso"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="0/0 parcelas pagas"
-                        android:textSize="13sp"
-                        android:textColor="#777777"
-                        android:layout_marginBottom="6dp" />
-
-                    <ProgressBar
-                        android:id="@+id/progressParcelas"
-                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:max="100"
-                        android:progress="0"
-                        android:progressTint="@color/colorPrimary"
-                        android:progressBackgroundTint="#E0E0E0"
-                        android:layout_marginBottom="12dp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:background="@drawable/bg_chip_filtro"
-                            android:padding="10dp"
-                            android:layout_marginEnd="6dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="✓ Pago"
-                                android:textSize="11sp"
-                                android:textColor="#43A047"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/textValorPago"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 0,00"
-                                android:textSize="15sp"
-                                android:textStyle="bold"
-                                android:textColor="#222222" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:background="@drawable/bg_chip_filtro"
-                            android:padding="10dp"
-                            android:layout_marginStart="6dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="⏳ Restante"
-                                android:textSize="11sp"
-                                android:textColor="#FB8C00"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/textValorRestante"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 0,00"
-                                android:textSize="15sp"
-                                android:textStyle="bold"
-                                android:textColor="#222222" />
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/textProximaData"
-                        style="@style/Widget.MaterialComponents.Chip.Entry"
+                        android:id="@+id/textProgressoDescricao"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Calculando..."
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/cor_texto"
                         android:textSize="12sp"
-                        app:chipBackgroundColor="#FFF3E0"
-                        android:textColor="#E65100"
-                        app:chipIcon="@drawable/ic_calendar_month_24"
-                        app:chipIconTint="#E65100"
-                        app:chipIconSize="16dp"
-                        app:closeIconVisible="false"
-                        app:chipStrokeWidth="0dp" />
+                        app:layout_constraintEnd_toEndOf="@+id/progressParcelasCircularContainer"
+                        app:layout_constraintStart_toStartOf="@+id/progressParcelasCircularContainer"
+                        app:layout_constraintTop_toBottomOf="@+id/progressParcelasCircularContainer"
+                        tools:text="Pagas: 1 de 5 parcelas" />
 
-                </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/boxPago"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_summary_box_green"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        app:layout_constraintEnd_toStartOf="@+id/boxRestante"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/textProgressoDescricao">
+
+                        <android.widget.ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginBottom="4dp"
+                            android:src="@drawable/ic_check_circle_24"
+                            app:tint="@color/chip_pago_text" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pago"
+                            android:textColor="@color/chip_pago_text"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/textValorPago"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 100,00" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/boxRestante"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_summary_box_orange"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/boxPago"
+                        app:layout_constraintTop_toBottomOf="@+id/textProgressoDescricao">
+
+                        <android.widget.ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginBottom="4dp"
+                            android:src="@drawable/ic_hourglass_empty_24"
+                            app:tint="@color/chip_pendente_text" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Restante"
+                            android:textColor="@color/chip_pendente_text"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/textValorRestante"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 400,00" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/textProximaDataContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_chip_vencimento"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/boxPago">
+
+                        <android.widget.ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_calendar_month_24"
+                            app:tint="@color/colorAccentDespesa" />
+
+                        <TextView
+                            android:id="@+id/textProximaData"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/colorAccentDespesa"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            tools:text="Próximo vencimento: 26 de Março de 2026" />
+                    </LinearLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- CABEÇALHO DA LISTA -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <include layout="@layout/layout_filtro_parcelas" />
+
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="12dp"
+                android:layout_marginTop="8dp"
+                android:text="Cronograma de Pagamentos"
+                android:textColor="@color/cor_texto"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Todas as parcelas"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#555555" />
-
-            </LinearLayout>
-
-            <!-- LISTA DE PARCELAS -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerParcelas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
 
-            <!--
-                ══════════════════════════════════════════════════
-                EMPTY STATE — adicionado aqui, após a lista.
-                A visibilidade é gerenciada pela Activity:
-                  • GONE   → fluxo normal com parcelas pendentes
-                  • VISIBLE → sem parcelas / todas pagas / erro
-                ══════════════════════════════════════════════════
-            -->
             <include layout="@layout/layout_empty_state_parcelas" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- LOADING -->
     <ProgressBar
         android:id="@+id/progressBarLoading"
         android:layout_width="wrap_content"

@@ -105,4 +105,17 @@ public class DateHelper {
         c.set(Calendar.MILLISECOND, 999);
         return c.getTime();
     }
+
+    /**
+     * Retorna true se as duas datas pertencem ao mesmo mês e ano.
+     * Utilitário puro sem dependências de Firebase — usado por
+     * MovimentacaoRepository para calcular impactos mensais e
+     * disponível para relatórios e outros módulos.
+     */
+    public static boolean isMesmoMesEAno(Date d1, Date d2) {
+        Calendar c1 = Calendar.getInstance(); c1.setTime(d1);
+        Calendar c2 = Calendar.getInstance(); c2.setTime(d2);
+        return c1.get(Calendar.YEAR)  == c2.get(Calendar.YEAR)
+                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH);
+    }
 }

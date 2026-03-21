@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Valores iniciais do RangeSlider de filtro por valor.
+        Representa o intervalo completo: R$ 0,00 a R$ 1.000,00.
+        O valueFrom/valueTo do slider está em reais (float); a Activity
+        converte para centavos (long) antes de passar ao ViewModel.
+        Ajuste valueTo no XML do slider conforme o teto real do seu usuário.
+    -->
+    <array name="range_slider_defaults">
+        <item>0</item>
+        <item>100000</item>
+    </array>
+</resources>

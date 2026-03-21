@@ -42,6 +42,28 @@ public class ContasFiltroEngine {
                              TipoCategoriaContas filtroTipo,
                              String filtroCategoriaId,
                              FiltroCallback callback) {
+        filtrarAsync(cacheHistorico, cacheFuturo, query, inicio, fim,
+                filtroTipo, filtroCategoriaId, -1L, -1L, callback);
+    }
+
+    /**
+     * Versão completa com filtro de intervalo de valor.
+     *
+     * @param valorMinCentavos  valor mínimo em centavos, inclusivo. -1 = sem limite inferior.
+     * @param valorMaxCentavos  valor máximo em centavos, inclusivo. -1 = sem limite superior.
+     *
+     * Busca por texto (query) também verifica o valor formatado do item —
+     * ex: "150" encontra movimentações de R$ 150,00, R$ 1.500,00 e R$ 15,00.
+     * A normalização remove "R$", espaços e pontos de milhar antes de comparar,
+     * então "1.500", "1500" e "1500,00" encontram o mesmo item.
+     */
+    public void filtrarAsync(List<MovimentacaoModel> cacheHistorico,
+                             List<MovimentacaoModel> cacheFuturo,
+                             String query, Date inicio, Date fim,
+                             TipoCategoriaContas filtroTipo,
+                             String filtroCategoriaId,
+                             long valorMinCentavos, long valorMaxCentavos,
+                             FiltroCallback callback) {
 
         final String queryFinal = (query != null) ? query : "";
 
@@ -60,23 +82,19 @@ public class ContasFiltroEngine {
 
         ultimaTarefaFiltro = filtroExecutor.submit(() -> {
             try {
-                // Checagem antes de começar — pode já estar obsoleta se
-                // múltiplos filtros foram enfileirados muito rapidamente.
                 if (estaObsoleta(minhaGeracao)) return;
 
-                // filtrarListaGenerica agora recebe minhaGeracao e verifica
-                // internamente a cada iteração — interrompendo o loop cedo
-                // em vez de esperar terminar para só então descartar o resultado.
                 List<MovimentacaoModel> resHistorico = filtrarListaGenerica(
                         cacheHistorico, queryFinal, inicio, fim,
-                        false, filtroTipo, filtroCategoriaId, minhaGeracao);
+                        false, filtroTipo, filtroCategoriaId,
+                        valorMinCentavos, valorMaxCentavos, minhaGeracao);
 
-                // null = esta geração foi cancelada durante o loop
                 if (resHistorico == null || estaObsoleta(minhaGeracao)) return;
 
                 List<MovimentacaoModel> resFuturo = filtrarListaGenerica(
                         cacheFuturo, queryFinal, inicio, fim,
-                        true, filtroTipo, filtroCategoriaId, minhaGeracao);
+                        true, filtroTipo, filtroCategoriaId,
+                        valorMinCentavos, valorMaxCentavos, minhaGeracao);
 
                 if (resFuturo == null || estaObsoleta(minhaGeracao)) return;
 
@@ -129,10 +147,15 @@ public class ContasFiltroEngine {
             boolean isModoFuturo,
             TipoCategoriaContas filtroTipo,
             String filtroCategoriaId,
+            long valorMinCentavos, long valorMaxCentavos,
             long minhaGeracao) throws InterruptedException {
 
         List<MovimentacaoModel> filtrados = new ArrayList<>();
         String q = query.toLowerCase(Locale.getDefault()).trim();
+
+        // Normaliza a query para busca por valor: remove "r$", espaços e pontos
+        // de milhar. "R$ 1.500,00" → "1500,00", "1.500" → "1500", "150" → "150".
+        String qValor = q.replaceAll("r\\$", "").replaceAll("\\.", "").trim();
 
         Date inicio = (inicioOrig != null && fimOrig != null && inicioOrig.after(fimOrig))
                 ? fimOrig : inicioOrig;
@@ -144,12 +167,11 @@ public class ContasFiltroEngine {
         final Date fimMaximizado  = (fim != null)
                 ? DateHelper.maximizarParaFimDia(fim) : null;
 
+        final boolean temFiltroMin = (valorMinCentavos >= 0);
+        final boolean temFiltroMax = (valorMaxCentavos >= 0);
+
         for (MovimentacaoModel m : origem) {
 
-            // CORREÇÃO C: checagem a cada item do loop.
-            // Se uma nova geração começou enquanto iterávamos, paramos imediatamente
-            // e retornamos null para sinalizar cancelamento ao chamador.
-            // Checamos também o flag de interrupção da thread (set pelo cancel(true)).
             if (estaObsoleta(minhaGeracao)) return null;
             if (Thread.interrupted()) throw new InterruptedException();
 
@@ -160,6 +182,11 @@ public class ContasFiltroEngine {
 
             if (filtroCategoriaId != null
                     && !filtroCategoriaId.equals(m.getCategoria_id())) continue;
+
+            // ── Filtro de intervalo de valor (RangeSlider) ───────────────────
+            long valorAbs = Math.abs(m.getValor());
+            if (temFiltroMin && valorAbs < valorMinCentavos) continue;
+            if (temFiltroMax && valorAbs > valorMaxCentavos) continue;
 
             if (m.getData_movimentacao() != null) {
                 Date dM = m.getData_movimentacao().toDate();
@@ -173,7 +200,17 @@ public class ContasFiltroEngine {
                         ? m.getDescricao().toLowerCase(Locale.getDefault()) : "";
                 String categoria = m.getCategoria_nome() != null
                         ? m.getCategoria_nome().toLowerCase(Locale.getDefault()) : "";
-                if (!descricao.contains(q) && !categoria.contains(q)) continue;
+
+                // ── Busca por valor ──────────────────────────────────────────
+                // Formata o valor como "1500,00" e compara com qValor normalizado.
+                // Mantém a vírgula no valor formatado para que "150" sem vírgula
+                // funcione como prefixo parcial — encontra "150,00" e "1500,xx".
+                long centavos = Math.abs(m.getValor());
+                String valorStr = String.format(Locale.getDefault(),
+                        "%d,%02d", centavos / 100, centavos % 100);
+
+                if (!descricao.contains(q) && !categoria.contains(q)
+                        && !valorStr.contains(qValor)) continue;
             }
 
             filtrados.add(m);

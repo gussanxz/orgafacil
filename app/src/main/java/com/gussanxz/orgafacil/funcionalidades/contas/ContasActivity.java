@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.slider.RangeSlider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
@@ -38,7 +39,6 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasDialogHelper;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
-import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
@@ -75,6 +75,9 @@ public class ContasActivity extends AppCompatActivity {
     private ImageView imgLimparFiltroData, imgFiltroCalendario;
     private Button btnNovaDespesa, btnNovaReceita;
     private ProgressBar progressBarPaginacao;
+    private com.google.android.material.slider.RangeSlider rangeSliderValor;
+    private android.widget.LinearLayout layoutFiltroValor;
+    private android.widget.TextView textLabelFiltroValor;
 
     private final List<AdapterItemListaMovimentacao> itensAgrupados = new ArrayList<>();
     private AdapterMovimentacaoLista adapterAgrupado;
@@ -82,7 +85,6 @@ public class ContasActivity extends AppCompatActivity {
 
     private ContasViewModel viewModel;
     private ResumoFinanceiroRepository resumoRepository;
-    private UsuarioRepository usuarioRepository;
 
     private ActivityResultLauncher<Intent> launcher;
 
@@ -112,7 +114,6 @@ public class ContasActivity extends AppCompatActivity {
         if (FirebaseAuth.getInstance().getCurrentUser() == null) { finish(); return; }
 
         resumoRepository = new ResumoFinanceiroRepository();
-        usuarioRepository = new UsuarioRepository();
 
         extrasAtalho = (getIntent() != null) ? getIntent().getExtras() : null;
         ehAtalho = (extrasAtalho != null) && extrasAtalho.getBoolean("EH_ATALHO", false);
@@ -122,6 +123,7 @@ public class ContasActivity extends AppCompatActivity {
         configurarFiltros();
         configurarChipsFiltro();
         setupObservers();
+        viewModel.carregarNomeUsuario(); // busca uma vez; cache no ViewModel para chamadas futuras
 
         // ContasActivity.java — no registerForActivityResult
         launcher = registerForActivityResult(
@@ -162,6 +164,12 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
+        // Nome do usuário: observado uma vez, atualiza a saudação quando o
+        // ViewModel retornar o valor do cache ou do Firestore.
+        viewModel.nomeUsuario.observe(this, nome -> {
+            if (nome != null) textoSaudacao.setText("Olá, " + nome + "!");
+        });
+
         viewModel.carregandoPaginacao.observe(this, isCarregando -> {
             if (isCarregando) {
                 progressBarPaginacao.setVisibility(View.VISIBLE);
@@ -239,8 +247,6 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void carregarDados() {
-        usuarioRepository.obterNomeUsuario(nome -> textoSaudacao.setText("Olá, " + nome + "!"));
-
         if (!ehAtalho && dataInicialFiltro == null && searchView.getQuery().length() == 0) {
             registrarListenerResumo();
         } else {
@@ -349,6 +355,56 @@ public class ContasActivity extends AppCompatActivity {
         viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro, categoriaIdFiltro);
     }
 
+    // Lê os thumbs do RangeSlider, converte para centavos e passa ao ViewModel.
+    // Separa a atualização do label em atualizarLabelFiltroValor() para que o
+    // reset do limpar possa forçar o label sem depender de fromUser=true.
+    private void aplicarFiltroValorDoSlider() {
+        if (rangeSliderValor == null) return;
+        java.util.List<Float> values = rangeSliderValor.getValues();
+        long minCentavos = Math.round(values.get(0) * 100);
+        long maxCentavos = Math.round(values.get(1) * 100);
+
+        boolean semFiltroMin = (minCentavos <= 0);
+        boolean semFiltroMax = (maxCentavos >= Math.round(rangeSliderValor.getValueTo() * 100));
+
+        viewModel.setFiltroValor(
+                semFiltroMin ? -1L : minCentavos,
+                semFiltroMax ? -1L : maxCentavos);
+
+        atualizarLabelFiltroValor(
+                semFiltroMin ? -1L : minCentavos,
+                semFiltroMax ? -1L : maxCentavos);
+    }
+
+    // Atualiza apenas o textLabelFiltroValor.
+    // Recebe centavos (-1 = sem limite) e compõe o texto para todos os cenários:
+    //   -1 / -1        → "Valor: qualquer"
+    //   X  / -1        → "Valor: a partir de R$ X"
+    //   -1 / Y         → "Valor: até R$ Y"
+    //   X  / Y         → "Valor: R$ X → R$ Y"
+    private void atualizarLabelFiltroValor(long minCentavos, long maxCentavos) {
+        if (textLabelFiltroValor == null) return;
+        boolean semMin = (minCentavos < 0);
+        boolean semMax = (maxCentavos < 0);
+        if (semMin && semMax) {
+            textLabelFiltroValor.setText("Valor: qualquer");
+        } else if (!semMin && semMax) {
+            textLabelFiltroValor.setText("Valor: a partir de "
+                    + MoedaHelper.formatarCentavosParaBRL(minCentavos));
+        } else if (semMin) {
+            textLabelFiltroValor.setText("Valor: até "
+                    + MoedaHelper.formatarCentavosParaBRL(maxCentavos));
+        } else {
+            textLabelFiltroValor.setText("Valor: "
+                    + MoedaHelper.formatarCentavosParaBRL(minCentavos)
+                    + " a "
+                    + MoedaHelper.formatarCentavosParaBRL(maxCentavos));
+        }
+        // Sempre que o label de valor muda, reconstrói o textPeriodoSelecionado
+        // para que o fragmento de valor fique sincronizado com data e categoria.
+        atualizarVisualFiltroCategoria(obterNomeCategoriaAtiva());
+    }
+
     // --- UI SETUP ---
 
     private void inicializarComponentes() {
@@ -372,6 +428,9 @@ public class ContasActivity extends AppCompatActivity {
         imgEmptyStateContas = findViewById(R.id.imgEmptyStateContas);
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
         imgFiltroCategoria = findViewById(R.id.imgFiltroCategoria);
+        layoutFiltroValor = findViewById(R.id.layoutFiltroValor);
+        textLabelFiltroValor = findViewById(R.id.textLabelFiltroValor);
+        rangeSliderValor = findViewById(R.id.rangeSliderValor);
 
         if (ehAtalho) {
             imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
@@ -434,9 +493,12 @@ public class ContasActivity extends AppCompatActivity {
                         android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                 confirmarPagamentoOuRecebimento(m);
             }
-            @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {
-                confirmarExclusaoDoDia(dataDia, movsDoDia);
-            }
+            // onHeaderSwipeDelete não é implementado aqui porque o adapter nunca
+            // chama listener.onHeaderSwipeDelete() — o evento de swipe no header
+            // é disparado exclusivamente pelo SwipeCallback.onSwiped() abaixo,
+            // que invoca o seu próprio onHeaderSwipeDelete() sobrescrito.
+            // A implementação duplicada que existia aqui era código morto.
+            @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) {}
             @Override public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
                 exibirPopupResumoDia(tituloDia, movsDoDia);
             }
@@ -462,6 +524,8 @@ public class ContasActivity extends AppCompatActivity {
 
                 boolean devePaginar = chegouAoFim || listaFiltradaPequena;
                 if (!devePaginar) return;
+
+                if (Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
                 if (ehAtalho) {
                     if (!viewModel.isUltimaPaginaFuturo()) {
@@ -515,23 +579,38 @@ public class ContasActivity extends AppCompatActivity {
         imgFiltroCalendario.setOnClickListener(v -> abrirDataPicker(true));
         imgFiltroCategoria.setOnClickListener(v -> abrirDialogFiltroCategoria());
 
+        // ── Filtro de valor (RangeSlider) — sempre visível ───────────────────
+        if (rangeSliderValor != null) {
+            // Aplica o filtro imediatamente ao iniciar com o range completo
+            aplicarFiltroValorDoSlider();
+            rangeSliderValor.addOnChangeListener((slider, value, fromUser) -> {
+                if (fromUser) aplicarFiltroValorDoSlider();
+            });
+        }
+
         imgLimparFiltroData.setOnClickListener(v -> {
             editDataInicial.setText("");
             editDataFinal.setText("");
             dataInicialFiltro = null;
             dataFinalFiltro = null;
             categoriaIdFiltro = null;
-            // FIX: zera o nome junto com o ID para que atualizarVisualFiltroCategoria()
-            // reconstrua o label corretamente e não use um nome obsoleto.
             categoriaNomeFiltro = null;
-            textPeriodoSelecionado.setVisibility(View.GONE);
             searchView.setQuery("", false);
             searchView.clearFocus();
             chipGroupFiltroTipo.check(R.id.chipTodos);
             viewModel.setFiltroTipo(null);
-            // Reseta o visual do ícone de categoria junto com os demais filtros.
-            // null sinaliza "sem filtro ativo" — ícone volta à cor neutra.
-            atualizarVisualFiltroCategoria(null);
+            // Reseta o RangeSlider ao range completo (painel permanece visível).
+            // setValues() com fromUser=false não dispara o listener — por isso
+            // chamamos atualizarLabelFiltroValor() explicitamente logo depois.
+            if (rangeSliderValor != null) {
+                rangeSliderValor.setValues(
+                        rangeSliderValor.getValueFrom(),
+                        rangeSliderValor.getValueTo());
+            }
+            viewModel.setFiltroValor(-1L, -1L);
+            // Ordem importa: label de valor primeiro, depois o composto de período
+            // (atualizarLabelFiltroValor chama atualizarVisualFiltroCategoria internamente).
+            atualizarLabelFiltroValor(-1L, -1L);
             aplicarFiltros();
             Toast.makeText(this, "Filtros limpos", Toast.LENGTH_SHORT).show();
         });
@@ -578,7 +657,23 @@ public class ContasActivity extends AppCompatActivity {
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
         if (!ehAtalho) {
-            picker.getDatePicker().setMaxDate(System.currentTimeMillis());
+            // Data final nunca pode ultrapassar hoje.
+            // Se estivermos no picker de data inicial e já houver uma data final
+            // definida, limitamos o máximo à data final para evitar inversão.
+            if (!isInicio && dataFinalFiltro != null) {
+                picker.getDatePicker().setMaxDate(dataFinalFiltro.getTime());
+            } else {
+                picker.getDatePicker().setMaxDate(System.currentTimeMillis());
+            }
+        }
+
+        // Picker de data final: bloqueia datas anteriores à data inicial já escolhida.
+        // Picker de data inicial: bloqueia datas posteriores à data final já escolhida
+        // (somente se ela existir), complementando a restrição de setMaxDate acima.
+        if (!isInicio && dataInicialFiltro != null) {
+            picker.getDatePicker().setMinDate(dataInicialFiltro.getTime());
+        } else if (isInicio && dataFinalFiltro != null) {
+            picker.getDatePicker().setMaxDate(dataFinalFiltro.getTime());
         }
 
         TextView titleView = new TextView(this);
@@ -715,13 +810,12 @@ public class ContasActivity extends AppCompatActivity {
         }
 
         long saldoFinalLong = totalReceitas - totalDespesas;
-        java.text.NumberFormat currencyFormat = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"));
 
         txtQtdReceitas.setText(qtdReceitas + (qtdReceitas == 1 ? " Receita" : " Receitas"));
-        txtValorReceitas.setText("+ " + currencyFormat.format(totalReceitas / 100.0));
+        txtValorReceitas.setText("+ " + MoedaHelper.formatarCentavosParaBRL(totalReceitas));
         txtQtdDespesas.setText(qtdDespesas + (qtdDespesas == 1 ? " Despesa" : " Despesas"));
-        txtValorDespesas.setText("- " + currencyFormat.format(totalDespesas / 100.0));
-        txtSaldoFinal.setText(currencyFormat.format(saldoFinalLong / 100.0));
+        txtValorDespesas.setText("- " + MoedaHelper.formatarCentavosParaBRL(totalDespesas));
+        txtSaldoFinal.setText(MoedaHelper.formatarCentavosParaBRL(saldoFinalLong));
 
         if (saldoFinalLong > 0)      txtSaldoFinal.setTextColor(Color.parseColor("#008000"));
         else if (saldoFinalLong < 0) txtSaldoFinal.setTextColor(Color.parseColor("#E53935"));
@@ -791,11 +885,22 @@ public class ContasActivity extends AppCompatActivity {
     }
 
     private void verificarPaginacaoProativaAposSubmit(int totalFiltrado) {
+        // 1. Trava de Rede: Se já estiver carregando, aborta imediatamente para evitar loop de concorrência.
+        if (Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
+
+        // 2. Trava de Exaustão (Banco de Dados): Se a nuvem avisou que acabou, não importa o tamanho da lista.
+        if (ehAtalho && viewModel.isUltimaPaginaFuturo()) return;
+        if (!ehAtalho && viewModel.isUltimaPaginaHistorico()) return;
+
+        // 3. Trava de Limiar da UI (Sua proteção original mantida):
+        // Se já temos itens suficientes na tela para dar scroll, não precisamos ser proativos agora.
         if (totalFiltrado >= LIMIAR_PAGINACAO_PROATIVA) return;
+
+        // 4. Execução Limpa: Se sobreviveu a todas as travas, é 100% seguro buscar mais.
         if (ehAtalho) {
-            if (!viewModel.isUltimaPaginaFuturo()) viewModel.carregarMaisFuturo();
+            viewModel.carregarMaisFuturo();
         } else {
-            if (!viewModel.isUltimaPaginaHistorico()) viewModel.carregarMaisHistorico();
+            viewModel.carregarMaisHistorico();
         }
     }
 
@@ -836,16 +941,9 @@ public class ContasActivity extends AppCompatActivity {
         if (imgFiltroCategoria == null) return;
 
         if (nomeCategoria != null && !nomeCategoria.isEmpty()) {
-            // Filtro ativo: tint laranja — mesma cor já usada em btnEmptyStateCTA
-            // no modo histórico para manter consistência visual.
             imgFiltroCategoria.setImageTintList(
                     ColorStateList.valueOf(Color.parseColor("#FF7043")));
         } else {
-            // FIX bug 1: cor neutra explícita. setImageTintList(null) não
-            // restaura o drawable à cor original — aplica ausência de tint,
-            // que renderiza como cinza no Material Design. A cor abaixo é
-            // equivalente visual ao estado original do ícone antes de qualquer
-            // tint ter sido aplicado, e funciona em modo claro e escuro.
             int corNeutra = androidx.core.content.ContextCompat.getColor(
                     this, android.R.color.darker_gray);
             imgFiltroCategoria.setImageTintList(
@@ -854,28 +952,26 @@ public class ContasActivity extends AppCompatActivity {
 
         if (textPeriodoSelecionado == null) return;
 
-        boolean temData = (dataInicialFiltro != null && dataFinalFiltro != null);
+        boolean temData      = (dataInicialFiltro != null && dataFinalFiltro != null);
         boolean temCategoria = (nomeCategoria != null && !nomeCategoria.isEmpty());
 
+        // O valor já é exibido no textLabelFiltroValor (grudado no slider),
+        // não precisa ser duplicado aqui no textPeriodoSelecionado.
         if (!temData && !temCategoria) {
-            // FIX bug 3: GONE garante que o RecyclerView não fica empurrado
-            // para baixo por um label sem conteúdo real.
             textPeriodoSelecionado.setVisibility(View.GONE);
             textPeriodoSelecionado.setText("");
             return;
         }
 
-        // FIX bug 2: monta o texto apenas com as partes que existem.
-        // Sem prefixos como "Período:" — só os valores relevantes separados
-        // por "→" (intervalo de datas) e "•" (separador data/categoria).
+        // Monta o texto composto com as partes ativas, separadas por "•".
+        // Usa " a " em vez de "→" para garantir renderização correta em todos os dispositivos.
         StringBuilder sb = new StringBuilder();
 
         if (temData) {
             sb.append(DateHelper.formatarData(dataInicialFiltro))
-                    .append(" → ")
+                    .append(" a ")
                     .append(DateHelper.formatarData(dataFinalFiltro));
         }
-
         if (temCategoria) {
             if (sb.length() > 0) sb.append("  •  ");
             sb.append(nomeCategoria);
