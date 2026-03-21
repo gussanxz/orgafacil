@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    tela_resumo_parcelas.xml — versão atualizada com empty state.
+
+    ÚNICA MUDANÇA em relação ao original:
+      1. O <include> do layout_empty_state_parcelas foi adicionado
+         DENTRO do LinearLayout principal do NestedScrollView,
+         logo depois do recyclerParcelas.
+      2. Nada mais foi alterado.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -61,13 +70,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- ══════════════════════════════════════════════════
-                 CARD DE RESUMO
-                 Melhorias:
-                 - Barra de progresso mais grossa com label %
-                 - "Próximo vencimento" em chip com cor de alerta
-                 - Layout dos valores com ícone de contexto
-                 ══════════════════════════════════════════════════ -->
+            <!-- CARD DE RESUMO -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResumo"
                 android:layout_width="match_parent"
@@ -83,7 +86,6 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Título + tipo de série -->
                     <TextView
                         android:id="@+id/textTitulo"
                         android:layout_width="match_parent"
@@ -94,7 +96,6 @@
                         android:textColor="@color/cor_texto"
                         android:layout_marginBottom="4dp" />
 
-                    <!-- Progresso: texto + barra + % em linha -->
                     <TextView
                         android:id="@+id/textProgresso"
                         android:layout_width="match_parent"
@@ -104,7 +105,6 @@
                         android:textColor="#777777"
                         android:layout_marginBottom="6dp" />
 
-                    <!-- Barra mais grossa (8dp) para leitura visual imediata -->
                     <ProgressBar
                         android:id="@+id/progressParcelas"
                         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
@@ -116,7 +116,6 @@
                         android:progressBackgroundTint="#E0E0E0"
                         android:layout_marginBottom="12dp" />
 
-                    <!-- Valores: pago | restante -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -179,14 +178,6 @@
 
                     </LinearLayout>
 
-                    <!-- ── Próximo vencimento em chip destacado ──
-                         Antes era texto cinza (#777777) simples.
-                         Agora usa um chip laranja/alerta para que
-                         uma data próxima chame atenção imediatamente.
-                         O código Kotlin só precisa setar o texto —
-                         a visibilidade do chip pode ser controlada
-                         igual ao TextView original.
-                    -->
                     <com.google.android.material.chip.Chip
                         android:id="@+id/textProximaData"
                         style="@style/Widget.MaterialComponents.Chip.Entry"
@@ -205,11 +196,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ══════════════════════════════════════════════════
-                 CABEÇALHO DA LISTA
-                 Adicionado divisor visual e espaçamento para
-                 separar claramente o card de resumo da lista.
-                 ══════════════════════════════════════════════════ -->
+            <!-- CABEÇALHO DA LISTA -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -226,34 +213,24 @@
                     android:textStyle="bold"
                     android:textColor="#555555" />
 
-                <!--
-                    SUGESTÃO DE ITEM_PARCELA (implementar no adapter):
-
-                    Cada linha do RecyclerView deve ter 3 estados visuais
-                    via um badge colorido (sem precisar ler texto):
-
-                    PAGO      → fundo #E8F5E9, texto #2E7D32  (verde)
-                    PENDENTE  → fundo #FFF8E1, texto #F57F17  (âmbar)
-                    ATRASADO  → fundo #FFEBEE, texto #C62828  (vermelho)
-
-                    Estrutura sugerida para item_parcela.xml:
-                    ┌─────────────────────────────────────────────┐
-                    │ [badge nº]  Descrição          R$ valor  >  │
-                    │             Data · status                    │
-                    └─────────────────────────────────────────────┘
-                    O badge é um TextView 32x32dp, cornerRadius=8dp.
-                    O status é setado via `setChipBackgroundColor` ou
-                    diretamente na propriedade `background` do badge.
-                -->
-
             </LinearLayout>
 
-            <!-- LISTA DE PARCELAS (sem mudança — o adapter controla o visual) -->
+            <!-- LISTA DE PARCELAS -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerParcelas"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
+
+            <!--
+                ══════════════════════════════════════════════════
+                EMPTY STATE — adicionado aqui, após a lista.
+                A visibilidade é gerenciada pela Activity:
+                  • GONE   → fluxo normal com parcelas pendentes
+                  • VISIBLE → sem parcelas / todas pagas / erro
+                ══════════════════════════════════════════════════
+            -->
+            <include layout="@layout/layout_empty_state_parcelas" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

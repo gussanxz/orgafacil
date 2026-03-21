@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/header_background"
+    android:background="@color/cor_background"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,29 +13,89 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/btnMesAnterior"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back_24"
+                app:tint="@color/cor_texto"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <LinearLayout
+                android:id="@+id/containerMesFiltro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_rounded_dark"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:layout_marginHorizontal="16dp"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/textMesAtualFiltro"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mar./26"
+                    android:textColor="@color/cor_texto"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_arrow_down_24"
+                    app:tint="@color/cor_texto"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnMesProximo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_forward_24"
+                app:tint="@color/cor_texto"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardInsight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#FFF3E0"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            app:cardBackgroundColor="#F4F5EB"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="12dp"
+                android:padding="16dp"
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:id="@+id/imageInsightIcone"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:src="@drawable/ic_label_24"
                     app:tint="#F57C00"
-                    android:layout_marginEnd="12dp"/>
+                    android:layout_marginEnd="16dp"/>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -44,6 +104,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/textInsightTitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Insight do Mês"
@@ -55,10 +116,10 @@
                         android:id="@+id/textInsightMensagem"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Você gastou R$ 210 em Restaurantes. Isso é 2x mais que no mês passado!"
+                        android:text="..."
                         android:textColor="#424242"
                         android:textSize="14sp"
-                        android:layout_marginTop="2dp"/>
+                        android:layout_marginTop="4dp"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -67,10 +128,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/cor_background"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
+            app:cardElevation="2dp"
             app:strokeWidth="0dp">
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -89,13 +150,13 @@
                         android:layout_height="wrap_content"
                         android:text="Receitas"
                         android:textSize="12sp"
-                        android:textColor="@color/cor_texto" />
+                        android:textColor="?android:attr/textColorSecondary" />
                     <TextView
                         android:id="@+id/textTotalReceitas"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="R$ 0,00"
-                        android:textColor="#43A047"
+                        android:textColor="#4CAF50"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
@@ -104,8 +165,8 @@
                 <View
                     android:layout_width="1dp"
                     android:layout_height="match_parent"
-                    android:background="#E0E0E0"
-                    android:layout_marginHorizontal="4dp"/>
+                    android:background="#33888888"
+                    android:layout_marginHorizontal="8dp"/>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -118,7 +179,7 @@
                         android:layout_height="wrap_content"
                         android:text="Despesas"
                         android:textSize="12sp"
-                        android:textColor="@color/cor_texto" />
+                        android:textColor="?android:attr/textColorSecondary" />
                     <TextView
                         android:id="@+id/textTotalDespesas"
                         android:layout_width="wrap_content"
@@ -133,8 +194,8 @@
                 <View
                     android:layout_width="1dp"
                     android:layout_height="match_parent"
-                    android:background="#E0E0E0"
-                    android:layout_marginHorizontal="4dp"/>
+                    android:background="#33888888"
+                    android:layout_marginHorizontal="8dp"/>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -147,18 +208,17 @@
                         android:layout_height="wrap_content"
                         android:text="Saldo"
                         android:textSize="12sp"
-                        android:textColor="@color/cor_texto" />
+                        android:textColor="?android:attr/textColorSecondary" />
                     <TextView
                         android:id="@+id/textSaldoResumo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="R$ 0,00"
-                        android:textColor="#222222"
+                        android:textColor="#4CAF50"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -166,16 +226,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Distribuição de Gastos"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="@color/cor_texto"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="12dp"
             android:paddingHorizontal="4dp" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:layout_marginBottom="24dp"
+            android:layout_height="320dp" android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/cor_background"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp">
@@ -184,32 +244,69 @@
                 android:id="@+id/pieChartCategorias"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="16dp" />
-        </com.google.android.material.card.MaterialCardView>
-        <TextView
+                android:layout_margin="8dp"
+                android:layout_marginBottom="24dp" /> </com.google.android.material.card.MaterialCardView>
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Top 5 Maiores Gastos"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/cor_texto"
-            android:layout_marginBottom="8dp"
-            android:paddingHorizontal="4dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp"
+            android:paddingHorizontal="4dp">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerTopMaioresGastos"
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Top 5 Maiores"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto" />
+
+            <TextView
+                android:id="@+id/btnAbaDespesas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Despesas"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:background="@drawable/bg_rounded_dark" />
+
+            <TextView
+                android:id="@+id/btnAbaReceitas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receitas"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:overScrollMode="never"
             android:layout_marginBottom="24dp"
-            tools:itemCount="3"/>
+            app:cardBackgroundColor="@color/cor_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="24dp"/>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerTopMaioresGastos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:padding="16dp"
+                tools:itemCount="3"/>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

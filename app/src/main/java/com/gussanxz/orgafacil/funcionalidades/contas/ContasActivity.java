@@ -47,6 +47,7 @@ import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.util_helper.DateHelper;
+import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterMovimentacaoLista;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
@@ -93,6 +94,12 @@ public class ContasActivity extends AppCompatActivity {
     private ListenerRegistration listenerResumo;
     private ImageView imgFiltroCategoria;
     private String categoriaIdFiltro = null;
+
+    // Guarda o nome da categoria selecionada para reconstruir o label
+    // sem precisar resolver o ID a cada chamada. Declarado junto com
+    // categoriaIdFiltro pois os dois sempre andam juntos.
+    private String categoriaNomeFiltro = null;
+
     private static final int LIMIAR_PAGINACAO_PROATIVA = 50;
 
     @Override
@@ -131,6 +138,11 @@ public class ContasActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        // FIX: zera ultimoSaldoCarregado a cada onStart() para que o listener
+        // do Firestore possa atualizar o saldo quando a Activity volta ao foco.
+        // Sem isso o guard "ultimoSaldoCarregado != null" bloqueava o listener
+        // permanentemente após o primeiro carregamento.
+        ultimoSaldoCarregado = null;
         if (viewModel.isDadosInvalidados()) carregarDados();
     }
 
@@ -152,7 +164,6 @@ public class ContasActivity extends AppCompatActivity {
             if (isCarregando) {
                 progressBarPaginacao.setVisibility(View.VISIBLE);
 
-                // ✅ Lendo do ViewModel!
                 if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())) {
                     textoSaldo.setText("--");
                     textoSaldo.setTextColor(Color.WHITE);
@@ -164,7 +175,6 @@ public class ContasActivity extends AppCompatActivity {
         });
 
         Observer<List<MovimentacaoModel>> observerUI = lista -> {
-            // ✅ Lendo do ViewModel!
             if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
                     && Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) return;
 
@@ -204,7 +214,7 @@ public class ContasActivity extends AppCompatActivity {
             ultimoSaldoCarregado = saldoCentavos;
 
             double saldoDouble = saldoCentavos / 100.0;
-            String valorFormatado = String.format(Locale.getDefault(), "R$ %.2f", saldoDouble);
+            String valorFormatado = MoedaHelper.formatarCentavosParaBRL(saldoCentavos);
 
             int corSaldo = saldoCentavos > 0 ? Color.parseColor("#4CAF50") :
                     (saldoCentavos < 0 ? Color.parseColor("#F44336") : Color.WHITE);
@@ -246,15 +256,12 @@ public class ContasActivity extends AppCompatActivity {
                     @Override
                     public void onUpdate(ResumoFinanceiroModel resumo) {
                         if (resumo != null && resumo.getBalanco() != null) {
-
-                            // ✅ CORREÇÃO: Lendo o isPrimeiroCarregamento direto do ViewModel!
                             if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
                                     || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())
                                     || ultimoSaldoCarregado != null) return;
 
                             long saldoCentavos = resumo.getBalanco().getSaldoAtual();
-                            textoSaldo.setText(String.format(
-                                    Locale.getDefault(), "R$ %.2f", saldoCentavos / 100.0));
+                            textoSaldo.setText(MoedaHelper.formatarCentavosParaBRL(saldoCentavos));
                         }
                     }
 
@@ -367,6 +374,9 @@ public class ContasActivity extends AppCompatActivity {
         if (ehAtalho) {
             imgEmptyStateContas.setImageResource(R.drawable.ic_event_available_24);
             textEmptyStateContas.setText("Tudo em dia. Nenhuma conta pendente 🎉");
+            // FIX bug 4: em modo atalho a mensagem é "tudo em dia" — não faz
+            // sentido exibir o botão de adicionar movimentação nesse contexto.
+            btnEmptyStateCTA.setVisibility(View.GONE);
             btnEmptyStateCTA.setText("COMEÇAR MEU PLANEJAMENTO");
             btnEmptyStateCTA.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#26A69A")));
         } else {
@@ -374,6 +384,7 @@ public class ContasActivity extends AppCompatActivity {
             textEmptyStateContas.setText("Você ainda não registrou movimentações.");
             btnEmptyStateCTA.setText("ADICIONAR MINHA PRIMEIRA MOVIMENTAÇÃO");
             btnEmptyStateCTA.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF7043")));
+            // No modo histórico o botão permanece VISIBLE (padrão do XML)
         }
 
         btnEmptyStateCTA.setOnClickListener(v -> {
@@ -508,11 +519,17 @@ public class ContasActivity extends AppCompatActivity {
             dataInicialFiltro = null;
             dataFinalFiltro = null;
             categoriaIdFiltro = null;
+            // FIX: zera o nome junto com o ID para que atualizarVisualFiltroCategoria()
+            // reconstrua o label corretamente e não use um nome obsoleto.
+            categoriaNomeFiltro = null;
             textPeriodoSelecionado.setVisibility(View.GONE);
             searchView.setQuery("", false);
             searchView.clearFocus();
             chipGroupFiltroTipo.check(R.id.chipTodos);
             viewModel.setFiltroTipo(null);
+            // Reseta o visual do ícone de categoria junto com os demais filtros.
+            // null sinaliza "sem filtro ativo" — ícone volta à cor neutra.
+            atualizarVisualFiltroCategoria(null);
             aplicarFiltros();
             Toast.makeText(this, "Filtros limpos", Toast.LENGTH_SHORT).show();
         });
@@ -548,10 +565,12 @@ public class ContasActivity extends AppCompatActivity {
                 cal.set(Calendar.MILLISECOND, 999);
                 dataFinalFiltro = cal.getTime();
                 editDataFinal.setText(DateHelper.formatarData(dataFinalFiltro));
-                if (dataInicialFiltro != null && dataFinalFiltro != null) {
-                    textPeriodoSelecionado.setText("Período: " + DateHelper.formatarData(dataInicialFiltro) + " a " + DateHelper.formatarData(dataFinalFiltro));
-                    textPeriodoSelecionado.setVisibility(View.VISIBLE);
-                }
+
+                // Reconstrói o label com intervalo + categoria (se ativa).
+                // Delega para atualizarVisualFiltroCategoria() que sabe compor
+                // os dois filtros sem sobrescrever um com o outro.
+                atualizarVisualFiltroCategoria(obterNomeCategoriaAtiva());
+
                 aplicarFiltros();
             }
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
@@ -560,23 +579,15 @@ public class ContasActivity extends AppCompatActivity {
             picker.getDatePicker().setMaxDate(System.currentTimeMillis());
         }
 
-        // ✅ CORREÇÃO: Criando um título customizado para ter controle total do design!
         TextView titleView = new TextView(this);
         titleView.setText(isInicio ? "Data Inicial" : "Data Final");
-
-        // Deixando o container maior e espaçado (Esquerda, Topo, Direita, Baixo)
         titleView.setPadding(64, 48, 64, 48);
-
-        // Destaque: Fonte maior, Branca e em Negrito
         titleView.setTextSize(20f);
         titleView.setTextColor(Color.WHITE);
         titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-
-        // Opcional: Se quiser garantir que o fundo fique combinando com o modo escuro
         titleView.setBackgroundColor(Color.parseColor("#121212"));
 
         picker.setCustomTitle(titleView);
-
         picker.show();
     }
 
@@ -742,11 +753,14 @@ public class ContasActivity extends AppCompatActivity {
                 RecyclerView recycler = dialog.findViewById(R.id.recyclerCategoriasDialog);
                 recycler.setLayoutManager(new LinearLayoutManager(ContasActivity.this));
 
-                // BUG 6 CORRIGIDO: adapter tipado com DiffUtil e callback via interface.
-                // DialogCategoriaAdapter é estático — sem referência implícita a ContasActivity.
-                // submitList() entrega a lista sem capturá-la por closure.
                 DialogCategoriaAdapter adapter = new DialogCategoriaAdapter(cat -> {
                     categoriaIdFiltro = cat.getId();
+                    // Guarda o nome para que atualizarVisualFiltroCategoria() e
+                    // obterNomeCategoriaAtiva() possam reconstruir o label sem
+                    // nova query — o nome já está disponível aqui no clique.
+                    categoriaNomeFiltro = cat.getNome();
+                    // Atualiza ícone (tint laranja) e label com o nome da categoria.
+                    atualizarVisualFiltroCategoria(cat.getNome());
                     Toast.makeText(ContasActivity.this,
                             "Filtrando: " + cat.getNome(), Toast.LENGTH_SHORT).show();
                     aplicarFiltros();
@@ -781,6 +795,92 @@ public class ContasActivity extends AppCompatActivity {
         } else {
             if (!viewModel.isUltimaPaginaHistorico()) viewModel.carregarMaisHistorico();
         }
+    }
+
+    // ── Auxiliar: nome da categoria ativa para reconstrução do label ──────────
+    //
+    // Retorna categoriaNomeFiltro se há filtro de categoria ativo, null caso
+    // contrário. Usado por abrirDataPicker() para compor o label sem fazer
+    // nova query ao Firestore — o nome já foi salvo no momento do clique.
+    private String obterNomeCategoriaAtiva() {
+        return (categoriaIdFiltro != null) ? categoriaNomeFiltro : null;
+    }
+
+    // ── Visual do filtro de categoria ────────────────────────────────────────
+    //
+    // Sincroniza três elementos visuais: tint do ícone, visibilidade e texto
+    // do label textPeriodoSelecionado.
+    //
+    // Regras:
+    //   - Filtro ativo   → ícone com tint laranja + label visível
+    //   - Filtro inativo → ícone com tint neutro explícito + label some se
+    //                      não há filtro de data ativo também
+    //
+    // O label é sempre reconstruído do zero — nunca lê getText() para
+    // concatenar. Isso evita acumulação de texto em chamadas consecutivas
+    // e garante que o conteúdo reflete exatamente o estado atual.
+    //
+    // FIX bug 1: setImageTintList(null) não restaura a cor original — deixa
+    // o drawable sem tint e ele renderiza cinza. Usamos uma cor neutra
+    // explícita via ContextCompat para restaurar corretamente.
+    //
+    // FIX bug 2: label reconstruído do zero, sem prefixos desnecessários.
+    //   Formato: "dd/MM/yyyy → dd/MM/yyyy  •  NomeCategoria"
+    //   Cada parte só aparece se existir — sem "Período:" ou outros prefixos.
+    //
+    // FIX bug 3: label fica GONE quando não há conteúdo real, evitando que
+    // o RecyclerView fique deslocado para baixo por um label vazio/visível.
+    private void atualizarVisualFiltroCategoria(String nomeCategoria) {
+        if (imgFiltroCategoria == null) return;
+
+        if (nomeCategoria != null && !nomeCategoria.isEmpty()) {
+            // Filtro ativo: tint laranja — mesma cor já usada em btnEmptyStateCTA
+            // no modo histórico para manter consistência visual.
+            imgFiltroCategoria.setImageTintList(
+                    ColorStateList.valueOf(Color.parseColor("#FF7043")));
+        } else {
+            // FIX bug 1: cor neutra explícita. setImageTintList(null) não
+            // restaura o drawable à cor original — aplica ausência de tint,
+            // que renderiza como cinza no Material Design. A cor abaixo é
+            // equivalente visual ao estado original do ícone antes de qualquer
+            // tint ter sido aplicado, e funciona em modo claro e escuro.
+            int corNeutra = androidx.core.content.ContextCompat.getColor(
+                    this, android.R.color.darker_gray);
+            imgFiltroCategoria.setImageTintList(
+                    ColorStateList.valueOf(corNeutra));
+        }
+
+        if (textPeriodoSelecionado == null) return;
+
+        boolean temData = (dataInicialFiltro != null && dataFinalFiltro != null);
+        boolean temCategoria = (nomeCategoria != null && !nomeCategoria.isEmpty());
+
+        if (!temData && !temCategoria) {
+            // FIX bug 3: GONE garante que o RecyclerView não fica empurrado
+            // para baixo por um label sem conteúdo real.
+            textPeriodoSelecionado.setVisibility(View.GONE);
+            textPeriodoSelecionado.setText("");
+            return;
+        }
+
+        // FIX bug 2: monta o texto apenas com as partes que existem.
+        // Sem prefixos como "Período:" — só os valores relevantes separados
+        // por "→" (intervalo de datas) e "•" (separador data/categoria).
+        StringBuilder sb = new StringBuilder();
+
+        if (temData) {
+            sb.append(DateHelper.formatarData(dataInicialFiltro))
+                    .append(" → ")
+                    .append(DateHelper.formatarData(dataFinalFiltro));
+        }
+
+        if (temCategoria) {
+            if (sb.length() > 0) sb.append("  •  ");
+            sb.append(nomeCategoria);
+        }
+
+        textPeriodoSelecionado.setText(sb.toString());
+        textPeriodoSelecionado.setVisibility(View.VISIBLE);
     }
 
     // =========================================================================

@@ -281,25 +281,34 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                 divisorRecorrencia.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
             if (textResumoRecorrencia != null) {
-                textResumoRecorrencia.setText(
-                        isChecked ? "Ativado — configure abaixo" : "Desativado"
-                );
+                textResumoRecorrencia.setText(isChecked ? "Ativado — configure abaixo" : "Desativado");
             }
         });
 
-        if (chipGroupTipoRecorrencia != null) {
-            chipGroupTipoRecorrencia.setOnCheckedStateChangeListener(
-                    (group, checkedIds) -> atualizarResumoRecorrencia()
-            );
+        // MÁGICA DA UI PROGRESSIVA
+        ChipGroup chipGroupTipo = findViewById(R.id.chipGroupTipoRecorrencia);
+        if (chipGroupTipo != null) {
+            chipGroupTipo.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                // Mostra/Esconde o sub-painel quando clica em Personalizado
+                boolean isPersonalizado = checkedIds.contains(R.id.chipPersonalizado);
+                View painelPersonalizado = findViewById(R.id.painelPersonalizado);
+                if (painelPersonalizado != null) {
+                    painelPersonalizado.setVisibility(isPersonalizado ? View.VISIBLE : View.GONE);
+                }
+                atualizarResumoRecorrencia();
+            });
+        }
+
+        ChipGroup chipGroupSub = findViewById(R.id.chipGroupIntervaloPersonalizado);
+        if (chipGroupSub != null) {
+            chipGroupSub.setOnCheckedStateChangeListener((group, checkedIds) -> atualizarResumoRecorrencia());
         }
 
         if (editQtdMeses != null) {
-            editQtdMeses.addTextChangedListener(new TextWatcher() {
+            editQtdMeses.addTextChangedListener(new android.text.TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-                @Override public void afterTextChanged(Editable s) {
-                    atualizarResumoRecorrencia();
-                }
+                @Override public void afterTextChanged(android.text.Editable s) { atualizarResumoRecorrencia(); }
             });
         }
     }
@@ -309,28 +318,32 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
      * Exemplo: "Parcelado · 6x", "Mensal · 12x", "Semanal".
      */
     protected void atualizarResumoRecorrencia() {
-        if (textResumoRecorrencia == null) return;
-        if (checkboxRepetir == null || !checkboxRepetir.isChecked()) return;
-        if (chipGroupTipoRecorrencia == null) return;
+        if (textResumoRecorrencia == null || checkboxRepetir == null || !checkboxRepetir.isChecked()) return;
 
-        String tipo;
-        List<Integer> ids = chipGroupTipoRecorrencia.getCheckedChipIds();
-        if (ids.isEmpty()) {
-            tipo = "—";
-        } else {
+        ChipGroup chipGroupTipo = findViewById(R.id.chipGroupTipoRecorrencia);
+        if (chipGroupTipo == null) return;
+
+        String tipo = "—";
+        List<Integer> ids = chipGroupTipo.getCheckedChipIds();
+
+        if (!ids.isEmpty()) {
             int chipId = ids.get(0);
-            if      (chipId == R.id.chipParcelado)  tipo = "Parcelado";
-            else if (chipId == R.id.chipSemanal)    tipo = "Semanal";
+            if      (chipId == R.id.chipSemanal)    tipo = "Semanal";
             else if (chipId == R.id.chipQuinzenal)  tipo = "Quinzenal";
             else if (chipId == R.id.chipMensal)     tipo = "Mensal";
-            else if (chipId == R.id.chipCadaXDias)  tipo = "A cada X dias";
-            else if (chipId == R.id.chipCadaXMeses) tipo = "A cada X meses";
-            else                                    tipo = "—";
+            else if (chipId == R.id.chipPersonalizado) {
+                // Se clicou em personalizado, lê qual dos botões de baixo está ativo!
+                ChipGroup subGroup = findViewById(R.id.chipGroupIntervaloPersonalizado);
+                if (subGroup != null && !subGroup.getCheckedChipIds().isEmpty()) {
+                    int subId = subGroup.getCheckedChipIds().get(0);
+                    if (subId == R.id.chipCadaXDias) tipo = "A cada X dias";
+                    else if (subId == R.id.chipCadaXMeses) tipo = "A cada X meses";
+                }
+            }
         }
 
         String qtdTexto = (editQtdMeses != null && editQtdMeses.getText() != null)
-                ? editQtdMeses.getText().toString().trim()
-                : "";
+                ? editQtdMeses.getText().toString().trim() : "";
 
         String resumo = qtdTexto.isEmpty() ? tipo : tipo + " · " + qtdTexto + "x";
         textResumoRecorrencia.setText(resumo);

@@ -5,12 +5,13 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary">
+    android:background="@color/cor_background">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="70dp"
+        android:background="@color/colorPrimary"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -26,12 +27,12 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_arrow_back_48" />
+            app:srcCompat="@drawable/ic_arrow_back_24" />
 
         <TextView
             android:id="@+id/textViewHeader"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Exportar Relatório"
             android:textColor="@color/white"
@@ -39,16 +40,15 @@
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/fabVoltar"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@drawable/header_background"
+        android:fillViewport="true"
         app:layout_constraintBottom_toTopOf="@id/layoutBotaoExportar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -75,7 +75,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:singleSelection="true"
-                app:selectionRequired="true"
+                app:selectionRequired="false"
                 app:chipSpacingHorizontal="8dp"
                 android:layout_marginBottom="12dp">
 
@@ -98,9 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     style="@style/Widget.MaterialComponents.Chip.Filter"
-                    android:text="Mês atual"
-                    android:checked="true"/>
-
+                    android:text="Mês atual" />
             </com.google.android.material.chip.ChipGroup>
 
             <LinearLayout
@@ -119,6 +117,7 @@
                     android:focusable="false"
                     android:clickable="true"
                     android:gravity="center"
+                    android:padding="12dp"
                     android:background="@drawable/bg_chip_filtro"
                     android:textSize="14sp"
                     android:textColor="#222222"
@@ -128,8 +127,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="até"
-                    android:layout_marginHorizontal="8dp"
-                    android:textColor="#888888"/>
+                    android:layout_marginHorizontal="12dp"
+                    android:textColor="?android:attr/textColorSecondary"/>
 
                 <EditText
                     android:id="@+id/editDataFinal"
@@ -140,154 +139,268 @@
                     android:focusable="false"
                     android:clickable="true"
                     android:gravity="center"
+                    android:padding="12dp"
                     android:background="@drawable/bg_chip_filtro"
                     android:textSize="14sp"
                     android:textColor="#222222"
                     android:textColorHint="#888888" />
+
+                <ImageView
+                    android:id="@+id/btnLimparDatas"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="8dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF"
+                    android:background="@drawable/bg_chip_clear"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"
+                    android:contentDescription="Limpar datas" />
             </LinearLayout>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardResumo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:baselineAligned="false"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Receitas"
-                            android:textSize="12sp"
-                            android:textColor="@color/cor_texto" />
-                        <TextView
-                            android:id="@+id/textTotalReceitas"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$ 0,00"
-                            android:textColor="#43A047"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp"/>
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="#E0E0E0"
-                        android:layout_marginHorizontal="4dp"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Despesas"
-                            android:textSize="12sp"
-                            android:textColor="@color/cor_texto" />
-                        <TextView
-                            android:id="@+id/textTotalDespesas"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$ 0,00"
-                            android:textColor="#E53935"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp"/>
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="match_parent"
-                        android:background="#E0E0E0"
-                        android:layout_marginHorizontal="4dp"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Saldo"
-                            android:textSize="12sp"
-                            android:textColor="@color/cor_texto" />
-                        <TextView
-                            android:id="@+id/textSaldoRelatorio"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$ 0,00"
-                            android:textColor="#222222"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp"/>
-                    </LinearLayout>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Prévia do Extrato"
+                android:text="Formatos"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/cor_texto"
                 android:layout_marginBottom="8dp"
                 android:paddingHorizontal="4dp" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerPrevia"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="3" />
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:weightSum="2">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFormatoPdf"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardBackgroundColor="#252A40"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+                        <ImageView
+                            android:id="@+id/iconFormatoPdf"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/ic_description_24"
+                            app:tint="#B8472C"
+                            android:layout_marginBottom="8dp"/>
+                        <TextView
+                            android:id="@+id/textFormatoPdf"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PDF"
+                            android:textStyle="bold"
+                            android:textColor="#9E9E9E"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFormatoCsv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardBackgroundColor="#252A40"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp">
+                        <ImageView
+                            android:id="@+id/iconFormatoCsv"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/ic_list_24"
+                            app:tint="#43A44E"
+                            android:layout_marginBottom="8dp"/>
+                        <TextView
+                            android:id="@+id/textFormatoCsv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CSV"
+                            android:textStyle="bold"
+                            android:textColor="#9E9E9E"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layoutEmptyStateRelatorio"
+                android:id="@+id/layoutResumoPrevia"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone"
-                android:padding="32dp">
+                android:visibility="gone">
 
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:layout_marginBottom="16dp"
-                    android:src="@drawable/ic_receipt_long_28"
-                    app:tint="#BDBDBD"/>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardResumo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardBackgroundColor="#252A40"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Receitas"
+                                android:textSize="12sp"
+                                android:textColor="?android:attr/textColorSecondary" />
+                            <TextView
+                                android:id="@+id/textTotalReceitas"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="#4CAF50"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:background="#33888888"
+                            android:layout_marginHorizontal="8dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Despesas"
+                                android:textSize="12sp"
+                                android:textColor="?android:attr/textColorSecondary" />
+                            <TextView
+                                android:id="@+id/textTotalDespesas"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="#E53935"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:background="#33888888"
+                            android:layout_marginHorizontal="8dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Saldo"
+                                android:textSize="12sp"
+                                android:textColor="?android:attr/textColorSecondary" />
+                            <TextView
+                                android:id="@+id/textSaldoRelatorio"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="#4CAF50"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Nenhum dado neste período"
-                    android:textAlignment="center"
-                    android:textColor="#9E9E9E"
-                    android:textSize="16sp"/>
-            </LinearLayout>
+                    android:text="Prévia do Extrato"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cor_texto"
+                    android:layout_marginBottom="12dp"
+                    android:paddingHorizontal="4dp" />
 
+                <LinearLayout
+                    android:id="@+id/layoutEmptyStateRelatorio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="gone"
+                    android:padding="32dp">
+
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:layout_marginBottom="16dp"
+                        android:src="@drawable/ic_receipt_long_28"
+                        app:tint="?android:attr/textColorSecondary"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nenhuma transação no período"
+                        android:textAlignment="center"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="16sp"/>
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerPrevia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:layout_marginBottom="16dp"
+                    tools:itemCount="3" />
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
@@ -313,10 +426,10 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGerarPdf"
+            android:id="@+id/btnGerarRelatorio"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="GERAR PDF"
+            android:text="GERAR RELATÓRIO"
             android:textSize="16sp"
             android:textStyle="bold"
             app:icon="@drawable/ic_receipt_long_28"

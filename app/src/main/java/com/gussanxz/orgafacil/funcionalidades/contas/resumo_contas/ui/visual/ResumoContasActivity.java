@@ -43,7 +43,6 @@ public class ResumoContasActivity extends AppCompatActivity {
     // ViewModel e Dados
     private ResumoGeralViewModel viewModel;
     private ContasViewModel contasViewModel;
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
     // UI Dashboard
     private TextView textSaldoGeral;
@@ -172,29 +171,20 @@ public class ResumoContasActivity extends AppCompatActivity {
         });
     }
 
+    // ✅ COMO DEVE FICAR O MÉTODO INTEIRO:
     private void desenharSaldoNaTela(long saldoCentavos) {
-        double saldoDouble = saldoCentavos / 100.0;
+        // 1. O Helper já resolve pontos de milhar, vírgula de centavos e o sinal de negativo!
+        String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper.formatarCentavosParaBRL(saldoCentavos);
 
-        // 1. Formatamos APENAS o número puro no padrão brasileiro (ex: 500,00 ou 1.500,00)
-        java.text.NumberFormat numberFormat = java.text.NumberFormat.getNumberInstance(new java.util.Locale("pt", "BR"));
-        numberFormat.setMinimumFractionDigits(2);
-        numberFormat.setMaximumFractionDigits(2);
-
-        String numeroPuro = numberFormat.format(Math.abs(saldoDouble));
-
-        String valorFormatado;
         int corSaldo;
 
-        // 2. Montamos a string cirurgicamente do jeito que você quer: "R$ -{VALOR}"
+        // 2. Definimos apenas as cores
         if (saldoCentavos > 0) {
             corSaldo = Color.parseColor("#4CAF50");
-            valorFormatado = "R$ " + numeroPuro;
         } else if (saldoCentavos < 0) {
             corSaldo = Color.parseColor("#E53935");
-            valorFormatado = "R$ -" + numeroPuro; // <- O sinal fica exatamente onde você pediu
         } else {
             corSaldo = Color.WHITE;
-            valorFormatado = "R$ " + numeroPuro;
         }
 
         if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.VISIBLE);

@@ -1,5 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.contas;
 
+import android.os.Handler;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -70,6 +72,11 @@ public class ContasViewModel extends ViewModel {
     private boolean abaAtualEhFuturo              = false;
     private final MutableLiveData<Boolean> _isPrimeiroCarregamento = new MutableLiveData<>(true);
     public final LiveData<Boolean> isPrimeiroCarregamento = _isPrimeiroCarregamento;
+
+    private final Handler debounceHandler = new Handler(android.os.Looper.getMainLooper());
+    private Runnable filtroRunnable = null;
+    private static final long DEBOUNCE_MS = 200L;
+
 
 
     // ── Construtor ─────────────────────────────────────────────────────────────
@@ -236,11 +243,24 @@ public class ContasViewModel extends ViewModel {
     }
 
     private void agendarFiltro() {
-        // O FiltroEngine agora recebe o lastCategoriaId!
-        filtroEngine.filtrarAsync(
+        // Cancela o disparo anterior se ainda estiver pendente na fila do Handler.
+        // removeCallbacks(null) removeria TODOS os callbacks — passamos a referência
+        // exata de filtroRunnable para cancelar somente o nosso.
+        if (filtroRunnable != null) {
+            debounceHandler.removeCallbacks(filtroRunnable);
+        }
+
+        // Cria uma nova Runnable com os valores de filtro capturados no momento
+        // da chamada. Usar os campos do ViewModel diretamente (lastQuery,
+        // lastInicio etc.) é seguro porque:
+        //   1. agendarFiltro() só é chamado na main thread (via LiveData observers
+        //      e listeners de UI).
+        //   2. filtrarAsync() copia os parâmetros internamente antes de passar
+        //      para o ExecutorService — sem risco de race condition.
+        filtroRunnable = () -> filtroEngine.filtrarAsync(
                 new ArrayList<>(cacheHistorico),
                 new ArrayList<>(cacheFuturo),
-                lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaId, // <- Novo parâmetro aqui
+                lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaId,
 
                 (resHistorico, resFuturo, saldoHist, saldoFut) -> {
                     _listaHistorico.setValue(resHistorico);
@@ -251,9 +271,14 @@ public class ContasViewModel extends ViewModel {
                     ultimoSaldoHistoricoCalculado = saldoHist;
                     ultimoSaldoFuturoCalculado = saldoFut;
 
-                    _saldoListaAtual.setValue(abaAtualEhFuturo ? ultimoSaldoFuturoCalculado : ultimoSaldoHistoricoCalculado);
+                    _saldoListaAtual.setValue(
+                            abaAtualEhFuturo
+                                    ? ultimoSaldoFuturoCalculado
+                                    : ultimoSaldoHistoricoCalculado);
                 }
         );
+
+        debounceHandler.postDelayed(filtroRunnable, DEBOUNCE_MS);
     }
 
     // ── Ciclo de vida ──────────────────────────────────────────────────────────
@@ -261,7 +286,16 @@ public class ContasViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        filtroEngine.encerrar(); // Limpa as threads quando o ViewModel for destruído
+
+        // Cancela qualquer disparo de filtro pendente no Handler antes de
+        // encerrar a engine. Sem isso, filtroRunnable poderia executar após
+        // onCleared() e tentar usar filtroEngine já encerrada.
+        if (filtroRunnable != null) {
+            debounceHandler.removeCallbacks(filtroRunnable);
+            filtroRunnable = null;
+        }
+
+        filtroEngine.encerrar(); // existia antes — mantido intacto
     }
 
 

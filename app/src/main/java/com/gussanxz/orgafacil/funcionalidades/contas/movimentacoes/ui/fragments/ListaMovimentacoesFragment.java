@@ -128,12 +128,6 @@ public class ListaMovimentacoesFragment extends Fragment
         carregarDados();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        carregarDados();
-    }
-
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private void setupObservers() {

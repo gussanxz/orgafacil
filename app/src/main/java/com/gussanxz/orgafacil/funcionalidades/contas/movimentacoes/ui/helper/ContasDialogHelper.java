@@ -17,6 +17,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.M
 
 import java.util.List;
 
+
 /**
  * ContasDialogHelper
  *
@@ -187,25 +188,70 @@ public class ContasDialogHelper {
     public static void confirmarPagamentoOuRecebimento(Context context,
                                                        MovimentacaoModel mov,
                                                        AcaoMultiplaCallback callback) {
-        String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
 
-        if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
-            new AlertDialog.Builder(context)
-                    .setTitle("Confirmar " + acao)
-                    .setMessage("Deseja confirmar apenas '" + mov.getDescricao()
-                            + "' ou também antecipar todas as parcelas seguintes?")
-                    .setPositiveButton("Apenas esta",       (d, w) -> callback.onApenasEsta())
-                    .setNeutralButton("Esta e seguintes",   (d, w) -> callback.onEstaESeguintes())
-                    .setNegativeButton("Cancelar", null)
-                    .show();
-        } else {
-            new AlertDialog.Builder(context)
-                    .setTitle("Confirmar " + acao)
-                    .setMessage("Deseja confirmar que '" + mov.getDescricao() + "' foi concluído?")
-                    .setPositiveButton("Confirmar", (d, w) -> callback.onApenasEsta())
-                    .setNegativeButton("Cancelar", null)
-                    .show();
+        View view = LayoutInflater.from(context).inflate(R.layout.dialog_confirmar_pagamento, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
+
+        TextView textTitulo       = view.findViewById(R.id.textTituloDialog);
+        TextView textMensagem     = view.findViewById(R.id.textMensagemDialog);
+        Button btnCancelar        = view.findViewById(R.id.btnCancelarDialog);
+        Button btnConfirmarApenas = view.findViewById(R.id.btnConfirmarDialog);
+        Button btnEstaESeguintes  = view.findViewById(R.id.btnEstaESeguintes);
+
+        String acao = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "pagamento" : "recebimento";
+        String status = (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) ? "paga" : "recebida";
+
+        // 3. Regra de Negócio: É série ou conta simples?
+        if (mov.getTotal_parcelas() > 1 && mov.getParcela_atual() < mov.getTotal_parcelas()) {
+
+            int parcelaAtual  = mov.getParcela_atual();
+            int totalParcelas = mov.getTotal_parcelas();
+            int qtdSeguintes  = totalParcelas - parcelaAtual;
+
+            textTitulo.setText("Lançamento Repetido");
+
+            // Texto mais humano e explicativo
+            String mensagem = "A conta \"" + mov.getDescricao() + "\" faz parte de uma série.\n\n"
+                    + "Você deseja confirmar apenas a parcela atual (" + parcelaAtual + "/" + totalParcelas + ") "
+                    + "ou quer antecipar todas as " + qtdSeguintes + " próximas parcelas?";
+
+            textMensagem.setText(mensagem);
+
+            // Botões curtos para não quebrarem o layout
+            btnConfirmarApenas.setText("Apenas esta");
+            btnEstaESeguintes.setText("Esta e as próximas (" + qtdSeguintes + ")");
+            btnEstaESeguintes.setVisibility(View.VISIBLE);
+
+            btnEstaESeguintes.setOnClickListener(v -> {
+                dialog.dismiss();
+                callback.onEstaESeguintes();
+            });
+
+        } else {
+            // Movimentação simples (sem parcelas)
+            textTitulo.setText("Confirmar " + acao + "?");
+            textMensagem.setText("Deseja marcar a conta \"" + mov.getDescricao() + "\" como " + status + "?");
+
+            btnConfirmarApenas.setText("Confirmar");
+            btnEstaESeguintes.setVisibility(View.GONE);
+        }
+
+        // 4. Ações padrão
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmarApenas.setOnClickListener(v -> {
+            dialog.dismiss();
+            callback.onApenasEsta();
+        });
+
+        dialog.show();
     }
 
     // ── Menu de nova movimentação ─────────────────────────────────────────────

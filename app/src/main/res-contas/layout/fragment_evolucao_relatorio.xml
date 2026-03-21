@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/header_background"
+    android:background="@color/cor_background"
     android:fillViewport="true">
 
     <LinearLayout
@@ -12,21 +12,62 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Evolução: Receitas vs Despesas"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/cor_texto"
-            android:layout_marginBottom="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Evolução:\nReceitas vs Despesas"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupFiltroMeses"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:chipSpacingHorizontal="8dp">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip3m"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:text="3m" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip6m"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:checked="true"
+                    android:text="6m" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip12m"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:text="12m" />
+            </com.google.android.material.chip.ChipGroup>
+        </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="300dp"
+            android:layout_height="320dp"
             android:layout_marginBottom="24dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            app:cardBackgroundColor="@color/cor_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
 
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/lineChartEvolucao"
@@ -39,17 +80,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Comparativo de Gastos por Mês"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="@color/cor_texto"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="12dp" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="250dp"
+            android:layout_height="280dp"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            app:cardBackgroundColor="@color/cor_background"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartComparativo"

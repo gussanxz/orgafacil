@@ -8,7 +8,6 @@
     android:background="@color/colorPrimaryProventos"
     tools:context=".funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity">
 
-    <!-- HEADER -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
@@ -24,7 +23,9 @@
             android:layout_marginStart="8dp"
             android:clickable="true"
             android:onClick="retornarPrincipal"
-            app:backgroundTint="#33FFFFFF"
+            app:backgroundTint="@color/colorPrimaryProventos"
+            app:tint="@color/white"
+            app:elevation="4dp"
             app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/textViewHeader"
@@ -52,24 +53,25 @@
             android:layout_marginEnd="8dp"
             android:clickable="true"
             android:onClick="salvarProventos"
-            app:backgroundTint="#33FFFFFF"
+            app:backgroundTint="@color/colorPrimaryProventos"
+            app:tint="@color/white"
+            app:elevation="4dp"
             app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/textViewHeader"
             app:srcCompat="@drawable/ic_confirmar_branco_48" />
 
-        <!-- HERO VALOR -->
         <LinearLayout
             android:id="@+id/heroValor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="32dp"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textViewHeader">
@@ -78,10 +80,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Valor da receita"
-                android:textColor="@android:color/white"
-                android:alpha="0.75"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:alpha="0.9"
+                android:layout_marginBottom="6dp" />
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editValor"
@@ -91,21 +94,15 @@
                 android:gravity="center"
                 android:hint="R$ 0,00"
                 android:inputType="numberDecimal"
-                android:textColor="@android:color/white"
-                android:textColorHint="#80FFFFFF"
-                android:textSize="36sp"
+                android:textColor="@color/white"
+                android:textColorHint="#99FFFFFF"
+                android:textSize="40sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ══════════════════════════════════════════════════════
-         BARRA INFERIOR FIXA
-         FIX 1: @color/white (cor do projeto) — mesmo valor
-         usado pelo @drawable/header_background como fundo
-         do card branco do scroll.
-    ═══════════════════════════════════════════════════════ -->
     <LinearLayout
         android:id="@+id/barraInferior"
         android:layout_width="0dp"
@@ -121,7 +118,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Botão excluir: gone por padrão, VISIBLE no modo edição via código -->
         <ImageButton
             android:id="@+id/btnExcluir"
             android:layout_width="56dp"
@@ -152,7 +148,6 @@
 
     </LinearLayout>
 
-    <!-- CONTEÚDO SCROLLÁVEL — bottom ancorado no TOP da barraInferior -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/content"
         android:layout_width="0dp"
@@ -168,38 +163,14 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="24dp"
+            android:paddingBottom="32dp">
 
-            <!-- DESCRIÇÃO -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/textInputDescricao"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:startIconDrawable="@drawable/ic_description_24">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editDescricao"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Descrição da receita"
-                    android:paddingStart="44dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- BANNER SÉRIE (gone por padrão) -->
             <LinearLayout
                 android:id="@+id/bannerVerSerie"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginHorizontal="16dp"
                 android:background="#1A2E7D32"
                 android:clickable="true"
                 android:focusable="true"
@@ -209,7 +180,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textInputDescricao">
+                app:layout_constraintTop_toTopOf="parent">
 
                 <ImageView
                     android:layout_width="18dp"
@@ -229,14 +200,12 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- VALOR legado (gone) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputValor"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="8dp"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -252,18 +221,36 @@
                     android:text="0.00" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- CATEGORIA -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputDescricao"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textInputValor"
+                app:startIconDrawable="@drawable/ic_description_24">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editDescricao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Descrição da receita"
+                    android:paddingStart="44dp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputCategoria"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textInputValor"
-                app:startIconDrawable="@drawable/ic_label_24">
+                app:layout_constraintTop_toBottomOf="@+id/textInputDescricao"
+                app:startIconDrawable="@drawable/ic_label_24"
+                app:endIconDrawable="@drawable/ic_arrow_back_48"
+                app:endIconTint="#AAAAAA">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editCategoria"
@@ -275,82 +262,152 @@
                     android:paddingStart="44dp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- DATA -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/textInputData"
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/labelDataHora"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:paddingLeft="16dp"
-                android:paddingRight="4dp"
-                app:layout_constraintEnd_toStartOf="@id/textInputHora"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:text="Data e Hora"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
-                app:startIconDrawable="@drawable/ic_calendar_month_24">
+                app:layout_constraintTop_toBottomOf="@+id/textInputCategoria" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editData"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Selecione uma data"
-                    android:clickable="true"
-                    android:focusable="false"
-                    android:inputType="none"
-                    android:paddingStart="44dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- HORA -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/textInputHora"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:paddingLeft="4dp"
-                android:paddingRight="16dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/textInputData"
-                app:layout_constraintTop_toBottomOf="@+id/textInputCategoria"
-                app:startIconDrawable="@drawable/ic_relogio_24">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editHora"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="false"
-                    android:inputType="none"
-                    android:paddingStart="44dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- STATUS PAGO -->
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchStatusPago"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:paddingLeft="32dp"
-                android:paddingRight="16dp"
-                android:showText="true"
-                android:text="Status: OK"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textInputData" />
-
-            <!-- CARD DE RECORRÊNCIA -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardRecorrencia"
+            <LinearLayout
+                android:id="@+id/linhaDataHora"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="8dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/labelDataHora">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/textInputData"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    app:startIconDrawable="@drawable/ic_calendar_month_24">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editData"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:paddingStart="44dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/textInputHora"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:startIconDrawable="@drawable/ic_relogio_24">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editHora"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:paddingStart="44dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/labelInfoAdicionais"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:text="Pagamento"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/linhaDataHora" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStatusPago"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/cor_background"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="#E0E0E0"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/switchStatusPago">
+                app:layout_constraintTop_toBottomOf="@+id/labelInfoAdicionais">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="14dp">
+
+                    <ImageView
+                        android:id="@+id/iconeStatusPago"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_relogio_24"
+                        android:layout_marginEnd="12dp"
+                        app:tint="@color/colorAccentProventos" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchStatusPago"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:showText="true"
+                        android:text="Status: OK"
+                        android:textColor="@color/cor_texto"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/labelRecorrencia"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:text="Recorrência"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/cardStatusPago" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRecorrencia"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                app:cardBackgroundColor="@color/cor_background"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E0E0E0"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/labelRecorrencia">
 
                 <LinearLayout
                     android:id="@+id/layoutRecorrencia"
@@ -394,9 +451,7 @@
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/checkboxRepetir"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="" />
-
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <View
@@ -414,7 +469,7 @@
                         android:visibility="gone"
                         android:paddingHorizontal="16dp"
                         android:paddingBottom="20dp"
-                        android:paddingTop="16dp">
+                        android:paddingTop="12dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -435,14 +490,6 @@
                             app:chipSpacingVertical="6dp">
 
                             <com.google.android.material.chip.Chip
-                                android:id="@+id/chipParcelado"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:checked="true"
-                                android:text="Parcelar" />
-
-                            <com.google.android.material.chip.Chip
                                 android:id="@+id/chipSemanal"
                                 style="@style/Widget.MaterialComponents.Chip.Choice"
                                 android:layout_width="wrap_content"
@@ -461,23 +508,84 @@
                                 style="@style/Widget.MaterialComponents.Chip.Choice"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:checked="true"
                                 android:text="Mensal" />
 
                             <com.google.android.material.chip.Chip
-                                android:id="@+id/chipCadaXDias"
+                                android:id="@+id/chipPersonalizado"
                                 style="@style/Widget.MaterialComponents.Chip.Choice"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="A cada X dias" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipCadaXMeses"
-                                style="@style/Widget.MaterialComponents.Chip.Choice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="A cada X meses" />
+                                android:text="Personalizado" />
 
                         </com.google.android.material.chip.ChipGroup>
+
+                        <LinearLayout
+                            android:id="@+id/painelPersonalizado"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            android:layout_marginTop="12dp">
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:background="#F0F0F0"
+                                android:layout_marginBottom="12dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tipo de intervalo"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/cor_texto"
+                                android:layout_marginBottom="10dp" />
+
+                            <com.google.android.material.chip.ChipGroup
+                                android:id="@+id/chipGroupIntervaloPersonalizado"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:singleSelection="true"
+                                app:selectionRequired="true"
+                                app:chipSpacingHorizontal="6dp">
+
+                                <com.google.android.material.chip.Chip
+                                    android:id="@+id/chipCadaXMeses"
+                                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:checked="true"
+                                    android:text="A cada X meses" />
+
+                                <com.google.android.material.chip.Chip
+                                    android:id="@+id/chipCadaXDias"
+                                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="A cada X dias" />
+
+                            </com.google.android.material.chip.ChipGroup>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/textInputIntervalo"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:layout_marginBottom="8dp"
+                                app:startIconDrawable="@drawable/ic_calendar_month_24">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/editIntervalo"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="Intervalo numérico (ex: 3)"
+                                    android:inputType="number"
+                                    android:maxLength="3" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                        </LinearLayout>
 
                         <View
                             android:layout_width="match_parent"
@@ -485,32 +593,6 @@
                             android:background="#F0F0F0"
                             android:layout_marginTop="14dp"
                             android:layout_marginBottom="14dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Configuração"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/cor_texto"
-                            android:layout_marginBottom="10dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/textInputIntervalo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="8dp"
-                            android:visibility="gone"
-                            app:startIconDrawable="@drawable/ic_calendar_month_24">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/editIntervalo"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:hint="Intervalo (ex: 3)"
-                                android:inputType="number"
-                                android:maxLength="3" />
-                        </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/textInputMeses"

@@ -17,6 +17,7 @@ import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioReposito
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class ResumoGeralViewModel extends ViewModel {
 
@@ -104,27 +105,64 @@ public class ResumoGeralViewModel extends ViewModel {
      *   estatísticas daquele mês, mas nunca zeramos duas vezes.
      */
     public void verificarViradaDeMes(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences("OrgaFacilPrefs", Context.MODE_PRIVATE);
-        int mesSalvo = prefs.getInt("mes_ultimo_acesso", -1);
-        int mesAtual = Calendar.getInstance().get(Calendar.MONTH);
+        SharedPreferences prefs = context.getSharedPreferences(
+                "OrgaFacilPrefs", Context.MODE_PRIVATE);
 
-        if (mesSalvo == -1) {
-            // Primeiro acesso: registra o mês atual sem zerar nada
-            prefs.edit().putInt("mes_ultimo_acesso", mesAtual).apply();
+        // Formato yyyyMM — inclui o ano para evitar falso-positivo quando o
+        // usuário não abre o app por 12+ meses e o mês coincide com o salvo.
+        // Ex: março/2024 = "202403", março/2025 = "202503" — sempre diferentes.
+        Calendar agora = Calendar.getInstance();
+        String periodoAtual = String.format(
+                Locale.getDefault(), "%04d%02d",
+                agora.get(Calendar.YEAR),
+                agora.get(Calendar.MONTH) + 1); // MONTH é 0-based — +1 para ficar legível
+
+        // Migração: versões anteriores gravavam um int com putInt().
+        // getString() numa chave do tipo int lança ClassCastException no Android —
+        // não retorna null nem o fallback. O try/catch captura isso e trata como
+        // "primeiro acesso após update": reseta uma vez e estabiliza.
+        String periodoSalvo;
+        try {
+            periodoSalvo = prefs.getString("mes_ultimo_acesso", "");
+        } catch (ClassCastException e) {
+            // Chave existia como int (versão anterior do app).
+            // Sobrescreve com o novo formato String e reseta as estatísticas,
+            // pois não sabemos há quanto tempo o usuário não abre o app.
+            prefs.edit().putString("mes_ultimo_acesso", periodoAtual).apply();
+            Log.i("ResumoGeralViewModel",
+                    "Migração mes_ultimo_acesso: int → String. Zerando estatísticas.");
+            zerarEstatisticasComLog(periodoAtual);
             return;
         }
 
-        if (mesSalvo == mesAtual) {
-            // Mesmo mês — nada a fazer
+        if (periodoSalvo.isEmpty()) {
+            // Primeiro acesso absoluto (prefs vazias) — registra sem zerar.
+            prefs.edit().putString("mes_ultimo_acesso", periodoAtual).apply();
             return;
         }
 
-        // Mês virou: atualiza a prefs ANTES do callback assíncrono para
-        // evitar que outra entrada no app dispare um segundo reset.
-        prefs.edit().putInt("mes_ultimo_acesso", mesAtual).apply();
+        if (periodoSalvo.equals(periodoAtual)) {
+            // Mesmo mês e mesmo ano — nada a fazer.
+            return;
+        }
 
-        Log.i("ResumoGeralViewModel", "Virada de Mês detectada: " + mesSalvo + " → " + mesAtual + ". Zerando estatísticas...");
+        // Período diferente: mês ou ano mudou. Atualiza ANTES do callback
+        // assíncrono pelo mesmo motivo documentado na versão anterior — evita
+        // que uma segunda entrada no app no mesmo ciclo dispare reset duplo.
+        prefs.edit().putString("mes_ultimo_acesso", periodoAtual).apply();
 
+        Log.i("ResumoGeralViewModel",
+                "Virada detectada: " + periodoSalvo + " → " + periodoAtual
+                        + ". Zerando estatísticas...");
+
+        zerarEstatisticasComLog(periodoAtual);
+    }
+
+    // Método auxiliar privado — extrai a chamada ao repository com o log de
+// resultado para que verificarViradaDeMes() não repita o mesmo bloco
+// em dois lugares (virada normal + migração).
+// Não substitui nem remove nenhum método existente.
+    private void zerarEstatisticasComLog(String periodoAtual) {
         movRepository.zerarEstatisticasMensais(new MovimentacaoRepository.Callback() {
             @Override
             public void onSucesso(String msg) {
@@ -135,10 +173,11 @@ public class ResumoGeralViewModel extends ViewModel {
             public void onErro(String erro) {
                 Log.e("ResumoGeralViewModel", "Falha ao zerar mês: " + erro);
                 // Não reverte a prefs: preferimos não zerar duas vezes
-                // a correr o risco de um loop de reset em falhas de rede.
+                // a correr o risco de loop de reset em falhas de rede.
             }
         });
     }
+
 
     @Override
     protected void onCleared() {

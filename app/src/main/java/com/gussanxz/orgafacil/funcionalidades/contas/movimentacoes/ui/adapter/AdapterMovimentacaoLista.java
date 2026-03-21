@@ -35,7 +35,6 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
     private final Context context;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO, new Locale("pt", "BR"));
     private final SimpleDateFormat hourFormat = new SimpleDateFormat(DateHelper.FORMATO_HORA, new Locale("pt", "BR"));
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final OnItemActionListener listener;
 
     public interface OnItemActionListener {
@@ -120,13 +119,32 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
     }
 
     public List<MovimentacaoModel> getMovimentacoesDoDia(int headerPosition) {
+        // Guard contra NO_POSITION (-1): pode ocorrer quando getAdapterPosition()
+        // é chamado durante animações de remoção/inserção do RecyclerView.
+        // Sem esse guard, o loop começaria em índice 0 e retornaria os movimentos
+        // do primeiro dia da lista — comportamento silenciosamente incorreto.
+        if (headerPosition == RecyclerView.NO_POSITION) {
+            return new ArrayList<>();
+        }
+
         List<MovimentacaoModel> lista = new ArrayList<>();
         int next = headerPosition + 1;
-        while (next < getCurrentList().size()
-                && getItem(next).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
-            lista.add(getItem(next).movimentacaoModel);
+        int total = getCurrentList().size();
+
+        // A invariante da lista garante que após um TYPE_HEADER vêm apenas
+        // TYPE_MOVIMENTO do mesmo dia, até o próximo TYPE_HEADER ou o fim.
+        // O break encerra o loop assim que encontra o próximo header —
+        // evitando percorrer o restante da lista (O(n) → O(k), onde k é
+        // o número de movimentos do dia, tipicamente 1–10).
+        while (next < total) {
+            AdapterItemListaMovimentacao item = getItem(next);
+            if (item.type == AdapterItemListaMovimentacao.TYPE_HEADER) {
+                break; // próximo grupo — para imediatamente
+            }
+            lista.add(item.movimentacaoModel);
             next++;
         }
+
         return lista;
     }
 
@@ -191,15 +209,15 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                     : mov.getCategoria_nome());
 
             // ── Valor com sinal e cor ─────────────────────────────────────────
-            // getValor() é long → divisão por 100.0 sempre em double, sem truncamento
-            double valorReais = mov.getValor() / 100.0;
+            String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper.formatarCentavosParaBRL(mov.getValor());
 
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
-                textValor.setText("- " + currencyFormat.format(valorReais));
+                // Usamos o replace só para tirar o "R$" nativo e colocar o nosso "- R$" visual
+                textValor.setText("- " + valorFormatado);
                 textValor.setTextColor(Color.parseColor("#E53935"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#E53935"));
             } else {
-                textValor.setText("+ " + currencyFormat.format(valorReais));
+                textValor.setText("+ " + valorFormatado);
                 textValor.setTextColor(Color.parseColor("#00D39E"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }

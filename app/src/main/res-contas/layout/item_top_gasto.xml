@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="8dp"
-    android:paddingVertical="10dp">
+    android:paddingVertical="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,10 +17,10 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:background="@drawable/bg_btn_excluir_circular"
-            android:backgroundTint="#F5F5F5"
+            android:backgroundTint="#1A888888"
             android:gravity="center"
             android:text="1"
-            android:textColor="#757575"
+            android:textColor="@color/cor_texto"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -31,7 +31,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:text="Alimentação"
-            android:textColor="#212121"
+            android:textColor="@color/cor_texto"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -39,15 +39,17 @@
             android:id="@+id/textPercentual"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="12dp"
             android:text="35%"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp" />
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/textValorGasto"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="75dp"
+            android:gravity="end"
             android:text="R$ 0,00"
             android:textColor="#E53935"
             android:textSize="14sp"
@@ -58,12 +60,12 @@
         android:id="@+id/progressPesoGasto"
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="match_parent"
-        android:layout_height="4dp"
+        android:layout_height="6dp"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="8dp"
         android:max="100"
         android:progress="35"
         android:progressTint="#E53935"
-        android:progressBackgroundTint="#EEEEEE" />
+        android:progressBackgroundTint="#33888888" />
 
 </LinearLayout>

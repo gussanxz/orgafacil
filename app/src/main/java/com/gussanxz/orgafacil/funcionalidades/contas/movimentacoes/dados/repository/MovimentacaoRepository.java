@@ -237,8 +237,11 @@ public class MovimentacaoRepository {
                 ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
                 FieldValue.increment(isReceita ? centavos * fator : -centavos * fator));
 
-        if (mov.getData_pagamento() != null &&
-                isMesmoMesEAno(mov.getData_pagamento().toDate(), new Date())) {
+        Date dataPagamentoEfetiva = (mov.getData_pagamento() != null)
+                ? mov.getData_pagamento().toDate()
+                : new Date();
+
+        if (isMesmoMesEAno(dataPagamentoEfetiva, new Date())) {
 
             long delta = (isReceita ? centavos : -centavos) * fator;
 
