@@ -15,16 +15,17 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Meta de Gastos (Orçamento)"
-            android:textSize="14sp"
+            android:text="Metas e Orçamentos"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/cor_texto"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="12dp" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#2E3A45"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
@@ -34,38 +35,48 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <RelativeLayout
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/iconMetaStatus"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/checkbox_on_background"
+                        app:tint="#A5D6A7" />
 
                     <TextView
                         android:id="@+id/textMetaStatus"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="65% consumido"
-                        android:textColor="#212121"
-                        android:textStyle="bold" />
+                        android:layout_weight="1"
+                        android:text="Progresso Saudável!"
+                        android:textColor="#A5D6A7"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
 
                     <LinearLayout
                         android:id="@+id/layoutEditarMeta"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal"
                         android:background="?attr/selectableItemBackground"
-                        android:padding="4dp"
                         android:clickable="true"
                         android:focusable="true">
 
                         <TextView
-                            android:id="@+id/textMetaRestante"
+                            android:id="@+id/textMetaTotalCard"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="R$ 700 restantes"
-                            android:textColor="#757575"
-                            android:textSize="12sp"
-                            android:layout_marginEnd="4dp"/>
+                            android:text="R$ 250,00"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="8dp"/>
 
                         <ImageView
                             android:layout_width="16dp"
@@ -73,33 +84,142 @@
                             android:src="@drawable/ic_lapis_editar_24"
                             app:tint="#BDBDBD" />
                     </LinearLayout>
-                </RelativeLayout>
-
-                <ProgressBar
-                    android:id="@+id/progressMetaMensal"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="12dp"
-                    android:layout_marginTop="12dp"
-                    android:progress="65"
-                    android:progressTint="#2196F3" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/textMetaProjecao"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Nesse ritmo, você gastará R$ 2.200 até o fim do mês."
-                    android:textSize="12sp"
-                    android:textColor="#F57C00"
-                    android:textStyle="italic" />
+                    android:layout_marginTop="4dp"
+                    android:text="Projeção: R$ 197,16 (dentro da meta)"
+                    android:textColor="#BDBDBD"
+                    android:textSize="12sp" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/layoutProgressoContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:id="@+id/layoutBarraSegmentada"
+                        android:layout_width="0dp"
+                        android:layout_height="10dp"
+                        android:orientation="horizontal"
+                        android:weightSum="100"
+                        android:background="@drawable/bg_barra_segmentada"
+                        android:clipToOutline="true"
+                        app:layout_constraintTop_toBottomOf="@+id/textPercentualMarcador"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginTop="4dp">
+
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="60" android:background="#A5D6A7" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="20" android:background="#FFE082" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="20" android:background="#EF9A9A" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textPercentualMarcador"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="@+id/viewMarcador"
+                        app:layout_constraintEnd_toEndOf="@+id/viewMarcador" />
+
+                    <TextView
+                        android:id="@+id/textLabelTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total"
+                        android:textColor="#BDBDBD"
+                        android:textSize="12sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/layoutBarraSegmentada" />
+
+                    <View
+                        android:id="@+id/viewMarcador"
+                        android:layout_width="3dp"
+                        android:layout_height="18dp"
+                        android:background="#FFFFFF"
+                        app:layout_constraintTop_toTopOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintBottom_toBottomOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintStart_toStartOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintEnd_toEndOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintHorizontal_bias="0.0" /> </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <TextView
+                        android:id="@+id/textGastoAtual"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Gasto Atual: R$ 0,00"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#A5D6A7"/>
+
+                    <TextView
+                        android:id="@+id/textMetaRestante"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="Restante: R$ 0,00"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#BDBDBD"/>
+                </LinearLayout>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Gastos por Dia do Mês"
+            android:text="Gastos por dia no mês"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/cor_texto"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/textDetalheGastoDia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Toque em um ponto do gráfico para ver os detalhes"
+            android:textSize="12sp"
+            android:textColor="#BDBDBD"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#2E3A45"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lineChartEvolucao"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Posso Comprar? (Simulador)"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/cor_texto"
@@ -107,16 +227,50 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="300dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
-            <com.github.mikephil.charting.charts.BarChart
-                android:id="@+id/barChartDias"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="8dp" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Digite o valor do gasto para simular:"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="8dp"
+                    android:textColor="#757575" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/editSimuladorGasto"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="R$ 0,00"
+                        android:inputType="numberDecimal"
+                        android:background="@drawable/bg_edittext_simulador"
+                        android:padding="12dp"/>
+
+                    <Button
+                        android:id="@+id/btnSimular"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Simular"
+                        android:layout_marginStart="8dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                </LinearLayout>
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>

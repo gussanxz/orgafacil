@@ -40,8 +40,15 @@ public class PlanejamentoRelatorioFragment extends Fragment {
 
     private ProgressBar progressMetaMensal;
     private TextView textMetaStatus, textMetaRestante, textMetaProjecao;
-    private BarChart barChartDias;
+    private com.github.mikephil.charting.charts.LineChart lineChartEvolucao;
+    private TextView textGastoAtual;
+    private TextView textMetaTotalCard;
     private MovimentacaoRepository repository;
+    private View viewMarcador;
+    private TextView textPercentualMarcador;
+    private androidx.constraintlayout.widget.ConstraintLayout layoutProgressoContainer;
+    private android.widget.ImageView iconMetaStatus;
+    private TextView textDetalheGastoDia;
 
     @Nullable
     @Override
@@ -55,11 +62,17 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        progressMetaMensal = view.findViewById(R.id.progressMetaMensal);
+        viewMarcador             = view.findViewById(R.id.viewMarcador);
+        textPercentualMarcador   = view.findViewById(R.id.textPercentualMarcador);
+        layoutProgressoContainer = view.findViewById(R.id.layoutProgressoContainer);
+        iconMetaStatus           = view.findViewById(R.id.iconMetaStatus);
         textMetaStatus     = view.findViewById(R.id.textMetaStatus);
         textMetaRestante   = view.findViewById(R.id.textMetaRestante);
         textMetaProjecao   = view.findViewById(R.id.textMetaProjecao);
-        barChartDias       = view.findViewById(R.id.barChartDias);
+        lineChartEvolucao = view.findViewById(R.id.lineChartEvolucao);
+        textGastoAtual    = view.findViewById(R.id.textGastoAtual);
+        textMetaTotalCard = view.findViewById(R.id.textMetaTotalCard);
+        textDetalheGastoDia = view.findViewById(R.id.textDetalheGastoDia); // <--- ADICIONE ESTA LINHA
 
         view.findViewById(R.id.layoutEditarMeta).setOnClickListener(v -> abrirDialogEdicaoMeta());
 
@@ -94,10 +107,11 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     }
 
     private void processarPlanejamento(List<MovimentacaoModel> lista,
-                                       int diaAtual, int totalDiasMes) {
+                                        int diaAtual, int totalDiasMes) {
         long gastoTotalCentavos = 0;
         Map<Integer, Long> gastosPorDia = new HashMap<>();
 
+        // 1. Mantemos sua lógica intacta de varredura e agrupamento por dia
         for (MovimentacaoModel mov : lista) {
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 gastoTotalCentavos += mov.getValor();
@@ -126,40 +140,58 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             percentual = 100;
         }
 
-        // BUG 7 CORRIGIDO: setProgress chamado apenas uma vez
-        progressMetaMensal.setProgress(Math.min(percentual, 100));
+        // Como removemos o ProgressBar antigo do XML, comentamos para não dar Crash:
+        // progressMetaMensal.setProgress(Math.min(percentual, 100));
 
         int corStatus;
         String mensagemGamificada;
 
-        if (percentual < 50) {
-            corStatus = Color.parseColor("#43A047");
-            mensagemGamificada = "😎 Tudo sob controle!";
+        if (percentual < 60) {
+            corStatus = Color.parseColor("#A5D6A7"); // Verde suave do design
+            mensagemGamificada = "Progresso Saudável!";
         } else if (percentual <= 80) {
-            corStatus = Color.parseColor("#F57C00");
-            mensagemGamificada = "⚠️ Atenção, chegando no limite!";
+            corStatus = Color.parseColor("#FFE082"); // Amarelo suave
+            mensagemGamificada = "Atenção, chegando no limite!";
         } else {
-            corStatus = Color.parseColor("#E53935");
-            mensagemGamificada = "🛑 Alerta vermelho! Pise no freio.";
+            corStatus = Color.parseColor("#EF9A9A"); // Vermelho suave
+            mensagemGamificada = "Alerta vermelho! Pise no freio.";
         }
 
-        progressMetaMensal.setProgressTintList(
-                android.content.res.ColorStateList.valueOf(corStatus));
-
-        textMetaStatus.setText(percentual + "% consumido\n" + mensagemGamificada);
+        textMetaStatus.setText(mensagemGamificada);
         textMetaStatus.setTextColor(corStatus);
+
+        if (iconMetaStatus != null) {
+            iconMetaStatus.setColorFilter(corStatus);
+        }
+
+        // --- A MÁGICA DA BARRA SEGMENTADA (MOVER O MARCADOR) ---
+        if (textPercentualMarcador != null) {
+            textPercentualMarcador.setText(percentual + "%");
+        }
+
+        if (layoutProgressoContainer != null && viewMarcador != null) {
+            // Calcula a posição (bias) de 0.0 até 1.0
+            float bias = percentual / 100f;
+            if (bias > 1f) bias = 1f; // Trava no final se passar de 100%
+            if (bias < 0f) bias = 0f;
+
+            // Move a linha branca (marcador) pelo ConstraintLayout dinamicamente
+            androidx.constraintlayout.widget.ConstraintSet set = new androidx.constraintlayout.widget.ConstraintSet();
+            set.clone(layoutProgressoContainer);
+            set.setHorizontalBias(R.id.viewMarcador, bias);
+            set.applyTo(layoutProgressoContainer);
+        }
 
         long restante = metaCentavos - gastoTotalCentavos;
         if (restante >= 0) {
-            textMetaRestante.setText(
-                    MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante))
-                            + " restantes");
-            textMetaRestante.setTextColor(Color.parseColor("#757575"));
+            textMetaRestante.setText("Restante: " +
+                    MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante)));
+            textMetaRestante.setTextColor(Color.parseColor("#BDBDBD")); // Cinza claro do design
         } else {
             textMetaRestante.setText("Estourou em " +
                     MoedaHelper.formatarParaBRL(
                             MoedaHelper.centavosParaDouble(Math.abs(restante))));
-            textMetaRestante.setTextColor(Color.parseColor("#E53935"));
+            textMetaRestante.setTextColor(Color.parseColor("#EF9A9A")); // Vermelho do design
         }
 
         long mediaDiaria  = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
@@ -169,50 +201,92 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                 + " até o fim do mês.");
 
         if (projecaoFinal > metaCentavos) {
-            textMetaProjecao.setTextColor(Color.parseColor("#E53935"));
+            textMetaProjecao.setTextColor(Color.parseColor("#EF9A9A"));
             textMetaProjecao.setTypeface(null, android.graphics.Typeface.BOLD);
         } else {
-            textMetaProjecao.setTextColor(Color.parseColor("#F57C00"));
+            textMetaProjecao.setTextColor(Color.parseColor("#BDBDBD"));
             textMetaProjecao.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
 
-        List<BarEntry> entries = new ArrayList<>();
-        for (int i = 1; i <= totalDiasMes; i++) {
-            float valor = (float) MoedaHelper.centavosParaDouble(
-                    gastosPorDia.getOrDefault(i, 0L));
-            entries.add(new BarEntry(i, valor));
+        // --- INÍCIO DA INTEGRAÇÃO COM O NOVO LAYOUT ---
+
+        // 2. Atualizamos os novos campos de texto do Header
+        if(textMetaTotalCard != null) {
+            textMetaTotalCard.setText(MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(metaCentavos)));
+        }
+        if(textGastoAtual != null) {
+            textGastoAtual.setText("Gasto Atual: " + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(gastoTotalCentavos)));
         }
 
-        configurarGraficoDiario(entries, diaAtual, metaCentavos, totalDiasMes);
+        // 3. Substituímos o BarEntry pelo Entry do LineChart e aplicamos a soma cumulativa em centavos
+        List<com.github.mikephil.charting.data.Entry> entries = new ArrayList<>();
+        long somaCumulativaCentavos = 0;
+
+        for (int i = 1; i <= totalDiasMes; i++) {
+            // Soma o gasto do dia ao total acumulado até aquele dia
+            somaCumulativaCentavos += gastosPorDia.getOrDefault(i, 0L);
+            float valorEmReais = (float) MoedaHelper.centavosParaDouble(somaCumulativaCentavos);
+
+            // Só plota a linha até o dia atual, para não desenhar uma linha reta até o dia 31
+            if (i <= diaAtual) {
+                entries.add(new com.github.mikephil.charting.data.Entry(i, valorEmReais));
+            }
+        }
+
+        // 4. Chamamos o novo método de configuração do gráfico de linha
+        configurarGraficoCumulativo(entries, diaAtual, metaCentavos, totalDiasMes);
     }
 
-    private void configurarGraficoDiario(List<BarEntry> entries, int diaAtual,
-                                         long metaCentavos, int totalDiasMes) {
-        // PONTO 2: cor_texto via ContextCompat para visibilidade em temas claro/escuro
-        int corTexto = ContextCompat.getColor(requireContext(), R.color.cor_texto);
+    private void configurarGraficoCumulativo(List<com.github.mikephil.charting.data.Entry> entries, int diaAtual,
+                                             long metaCentavos, int totalDiasMes) {
+        // Cores adaptadas para o modo escuro da imagem
+        int corTexto = Color.parseColor("#BDBDBD"); // Cinza claro para os eixos
+        int corLinha = Color.parseColor("#A5D6A7"); // Verde suave
 
-        BarDataSet dataSet = new BarDataSet(entries, "Gastos Diários");
-        dataSet.setColor(Color.parseColor("#1E88E5"));
-        dataSet.setHighLightColor(Color.parseColor("#FB8C00"));
+        com.github.mikephil.charting.data.LineDataSet dataSet = new com.github.mikephil.charting.data.LineDataSet(entries, "Evolução de Gastos");
+        dataSet.setColor(corLinha);
+        dataSet.setLineWidth(2.5f);
+        dataSet.setCircleColor(Color.parseColor("#FFFFFF")); // Pontos brancos
+        dataSet.setCircleRadius(4f);
         dataSet.setDrawValues(false);
+        dataSet.setMode(com.github.mikephil.charting.data.LineDataSet.Mode.CUBIC_BEZIER); // Curva suave
+        dataSet.setDrawFilled(true); // Preenchimento abaixo da linha
+        dataSet.setFillColor(corLinha);
+        dataSet.setFillAlpha(40);
 
-        BarData data = new BarData(dataSet);
-        data.setBarWidth(0.7f);
-        barChartDias.setData(data);
+        // --- ESTILO DO CLIQUE (HIGHLIGHT) IGUAL A IMAGEM ---
+        dataSet.setDrawHighlightIndicators(true); // Permite a linha de mira
+        dataSet.setDrawHorizontalHighlightIndicator(false); // Remove a linha horizontal
+        dataSet.setHighLightColor(Color.parseColor("#80FFFFFF")); // Linha vertical branca semi-transparente
+        dataSet.setHighlightLineWidth(1.5f);
 
-        // Eixo X: apenas 7 labels para não poluir
-        XAxis xAxis = barChartDias.getXAxis();
+        com.github.mikephil.charting.data.LineData data = new com.github.mikephil.charting.data.LineData(dataSet);
+        lineChartEvolucao.setData(data);
+
+        // Eixo X
+        XAxis xAxis = lineChartEvolucao.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setLabelCount(7, true);
-        xAxis.setGranularity(1f);
-        xAxis.setTextColor(corTexto);          // PONTO 2
-        xAxis.setTextSize(11f);
-        xAxis.setDrawGridLines(false);
-        xAxis.setAxisMinimum(0.5f);
-        xAxis.setAxisMaximum(totalDiasMes + 0.5f);
+        xAxis.setLabelCount(7, false); // Mude de 'true' para 'false'. O 'true' forçava a quebra decimal no zoom!
 
-        // Eixo Y com formatação BRL e cor_texto
-        YAxis yAxisLeft = barChartDias.getAxisLeft();
+        // As duas linhas mágicas que resolvem o bug do zoom:
+        xAxis.setGranularity(1f);
+        xAxis.setGranularityEnabled(true); // Trava o zoom para pular de 1 em 1 no mínimo
+
+        // Força o texto a ser desenhado como Inteiro, cortando qualquer ".0" ou ".5"
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return String.valueOf((int) value);
+            }
+        });
+
+        xAxis.setTextColor(corTexto);
+        xAxis.setDrawGridLines(false); // Sem grade no fundo, visual mais limpo
+        xAxis.setAxisMinimum(1f);
+        xAxis.setAxisMaximum(totalDiasMes);
+
+        // Eixo Y
+        YAxis yAxisLeft = lineChartEvolucao.getAxisLeft();
         yAxisLeft.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
@@ -220,37 +294,51 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                 return String.format(Locale.getDefault(), "R$%.0f", value);
             }
         });
-        yAxisLeft.setTextColor(corTexto);      // PONTO 2
-        yAxisLeft.setTextSize(11f);
-        yAxisLeft.setGridColor(Color.parseColor("#EEEEEE"));
-        barChartDias.getAxisRight().setEnabled(false);
+        yAxisLeft.setTextColor(corTexto);
+        yAxisLeft.setGridColor(Color.parseColor("#33FFFFFF")); // Grade muito sutil e clara
+        lineChartEvolucao.getAxisRight().setEnabled(false);
 
-        // Linha de meta diária tracejada
+        // Linha de Meta Total
         if (metaCentavos > 0) {
-            float metaDiariaReais = (float) MoedaHelper.centavosParaDouble(
-                    metaCentavos / totalDiasMes);
-            LimitLine linhaMeta = new LimitLine(metaDiariaReais, "Meta/dia");
-            linhaMeta.setLineColor(Color.parseColor("#E53935"));
+            float metaTotalReais = (float) MoedaHelper.centavosParaDouble(metaCentavos);
+            LimitLine linhaMeta = new LimitLine(metaTotalReais, "Meta");
+            linhaMeta.setLineColor(Color.parseColor("#FFFFFF"));
             linhaMeta.setLineWidth(1.5f);
-            linhaMeta.setTextColor(Color.parseColor("#E53935"));
-            linhaMeta.setTextSize(10f);
-            linhaMeta.enableDashedLine(10f, 5f, 0f);
+            linhaMeta.setTextColor(Color.parseColor("#FFFFFF"));
+            linhaMeta.enableDashedLine(10f, 10f, 0f);
             yAxisLeft.removeAllLimitLines();
             yAxisLeft.addLimitLine(linhaMeta);
-            yAxisLeft.setDrawLimitLinesBehindData(true);
         }
 
-        // Destaca o dia atual
-        if (diaAtual >= 1 && diaAtual <= entries.size()) {
-            barChartDias.highlightValue(diaAtual, 0, false);
-        }
+        lineChartEvolucao.getDescription().setEnabled(false);
+        lineChartEvolucao.getLegend().setEnabled(false);
 
-        barChartDias.getDescription().setEnabled(false);
-        barChartDias.getLegend().setEnabled(false);
-        barChartDias.setFitBars(true);
-        barChartDias.setExtraBottomOffset(8f);
-        barChartDias.animateY(900);
-        barChartDias.invalidate();
+        // --- OUVINTE DE CLIQUES PARA ATUALIZAR O TEXTO ---
+        lineChartEvolucao.setOnChartValueSelectedListener(new com.github.mikephil.charting.listener.OnChartValueSelectedListener() {
+            @Override
+            public void onValueSelected(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight h) {
+                if(textDetalheGastoDia != null) {
+                    int dia = (int) e.getX();
+                    float valorEmReais = e.getY();
+                    textDetalheGastoDia.setText("Dia " + dia + ": Gasto acumulado de " +
+                            MoedaHelper.formatarParaBRL((double) valorEmReais));
+                    textDetalheGastoDia.setTextColor(Color.parseColor("#FFFFFF")); // Fica branco quando selecionado
+                    textDetalheGastoDia.setTypeface(null, android.graphics.Typeface.BOLD);
+                }
+            }
+
+            @Override
+            public void onNothingSelected() {
+                if(textDetalheGastoDia != null) {
+                    textDetalheGastoDia.setText("Toque em um ponto do gráfico para ver os detalhes");
+                    textDetalheGastoDia.setTextColor(Color.parseColor("#BDBDBD"));
+                    textDetalheGastoDia.setTypeface(null, android.graphics.Typeface.NORMAL);
+                }
+            }
+        });
+
+        lineChartEvolucao.animateX(800);
+        lineChartEvolucao.invalidate();
     }
 
     private void abrirDialogEdicaoMeta() {
