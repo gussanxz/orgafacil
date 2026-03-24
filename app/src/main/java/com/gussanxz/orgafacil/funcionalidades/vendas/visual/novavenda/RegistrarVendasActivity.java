@@ -52,6 +52,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private TextView txtCobrarTotal;
     private LinearLayout btnCobrar;
     private LinearLayout layoutResumoSacola;
+    private ImageButton btnHistoricoVendas;
 
     private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -72,6 +73,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         configurarRvCategorias();
         configurarRvProdutos();
         configurarBotaoCobrar();
+        configurarAcoesHeader();
         configurarResumoSacola();
         atualizarResumoSacola();
     }
@@ -86,6 +88,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         txtSacolaSubtotal = findViewById(R.id.txtSacolaSubtotal);
         txtCobrarTotal = findViewById(R.id.txtCobrarTotal);
         btnCobrar = findViewById(R.id.btnCobrar);
+        btnHistoricoVendas = findViewById(R.id.btnHistoricoVendas);
     }
 
     private void configurarRvCategorias() {
@@ -268,6 +271,16 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         return total;
     }
+
+    private void configurarAcoesHeader() {
+        if (btnHistoricoVendas != null) {
+            btnHistoricoVendas.setOnClickListener(v -> {
+                Intent intent = new Intent(RegistrarVendasActivity.this, com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HistoricoVendasActivity.class);
+                startActivity(intent);
+            });
+        }
+    }
+
     private void configurarResumoSacola() {
         if (layoutResumoSacola == null) return;
 

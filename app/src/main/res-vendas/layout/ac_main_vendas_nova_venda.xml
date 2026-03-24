@@ -12,7 +12,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:gravity="center"
         android:padding="16dp">
 
@@ -24,6 +24,14 @@
             android:textColor="@android:color/white"
             android:textSize="24sp"
             android:textStyle="bold" />
+        <ImageButton
+            android:id="@+id/btnHistoricoVendas"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Histórico de vendas"
+            android:src="@drawable/ic_receipt_long_28"
+            app:tint="#333333" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
