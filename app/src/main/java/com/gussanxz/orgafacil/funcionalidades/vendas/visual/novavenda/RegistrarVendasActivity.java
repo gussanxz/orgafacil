@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -135,14 +136,16 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 return;
             }
 
-            Toast.makeText(
-                    RegistrarVendasActivity.this,
-                    "Próximo passo: fluxo de cobrança.",
-                    Toast.LENGTH_SHORT
-            ).show();
+            abrirResumoFechamentoVenda();
         });
     }
-
+    private void abrirResumoFechamentoVenda() {
+        Intent intent = new Intent(this, FechamentoVendaActivity.class);
+        intent.putExtra("itensSacola", new ArrayList<>(sacolaMap.values()));
+        intent.putExtra("quantidadeTotal", getQuantidadeTotalSacola());
+        intent.putExtra("valorTotal", getValorTotalSacola());
+        startActivity(intent);
+    }
     private void carregarDadosFakes() {
         listaCategorias.clear();
         listaCategorias.add(criarCategoriaExemplo("Todos", 0));

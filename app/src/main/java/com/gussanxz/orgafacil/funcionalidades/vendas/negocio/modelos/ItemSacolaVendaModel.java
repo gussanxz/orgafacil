@@ -1,6 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
 
-public class ItemSacolaVendaModel {
+public class ItemSacolaVendaModel implements java.io.Serializable {
 
     private final String chave;
     private final String itemId;

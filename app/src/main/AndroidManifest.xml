@@ -70,6 +70,7 @@
 
         <activity android:name=".funcionalidades.vendas.ResumoVendasActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity" />
         <activity android:name=".funcionalidades.vendas.visual.listas.ListaPagamentosActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity" android:exported="false" />
