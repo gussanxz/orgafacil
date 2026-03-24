@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -15,7 +16,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -47,6 +51,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private int quantidadeTotal = 0;
     private double valorTotal = 0.0;
 
+    private VendaRepository vendaRepository;
+    private boolean salvandoVenda = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +65,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        vendaRepository = new VendaRepository();
 
         inicializarComponentes();
         configurarRecyclerView();
@@ -88,7 +97,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     private void configurarAcoes() {
         if (btnVoltarFechamento != null) {
-            btnVoltarFechamento.setOnClickListener(v -> finish());
+            btnVoltarFechamento.setOnClickListener(v -> {
+                if (!salvandoVenda) {
+                    finish();
+                }
+            });
         }
 
         if (cardPagamentoPix != null) {
@@ -135,6 +148,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     }
 
     private void selecionarFormaPagamento(String formaPagamento) {
+        if (salvandoVenda) return;
+
         formaPagamentoSelecionada = formaPagamento;
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
@@ -166,12 +181,16 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private void atualizarBotaoFinalizar() {
         if (btnFinalizarVenda == null) return;
 
-        boolean habilitado = !listaItens.isEmpty() && formaPagamentoSelecionada != null;
+        boolean habilitado = !listaItens.isEmpty() && formaPagamentoSelecionada != null && !salvandoVenda;
         btnFinalizarVenda.setEnabled(habilitado);
         btnFinalizarVenda.setAlpha(habilitado ? 1f : 0.5f);
     }
 
     private void finalizarVenda() {
+        if (salvandoVenda) {
+            return;
+        }
+
         if (listaItens.isEmpty()) {
             Toast.makeText(this, "Nenhum item encontrado na venda.", Toast.LENGTH_SHORT).show();
             return;
@@ -182,12 +201,61 @@ public class FechamentoVendaActivity extends AppCompatActivity {
             return;
         }
 
-        Toast.makeText(
-                this,
-                "Venda finalizada com sucesso via " + formaPagamentoSelecionada + ".",
-                Toast.LENGTH_LONG
-        ).show();
+        salvandoVenda = true;
+        atualizarBotaoFinalizar();
 
-        finish();
+        VendaModel venda = montarVendaParaSalvar();
+
+        vendaRepository.salvar(venda, new VendaRepository.Callback() {
+            @Override
+            public void onSucesso(String vendaId) {
+                salvandoVenda = false;
+                atualizarBotaoFinalizar();
+
+                Toast.makeText(
+                        FechamentoVendaActivity.this,
+                        "Venda finalizada com sucesso.",
+                        Toast.LENGTH_LONG
+                ).show();
+
+                Intent intent = new Intent(FechamentoVendaActivity.this, RegistrarVendasActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                salvandoVenda = false;
+                atualizarBotaoFinalizar();
+
+                Toast.makeText(
+                        FechamentoVendaActivity.this,
+                        "Erro ao salvar venda: " + erro,
+                        Toast.LENGTH_LONG
+                ).show();
+            }
+        });
+    }
+
+    private VendaModel montarVendaParaSalvar() {
+        VendaModel venda = new VendaModel();
+        venda.setDataHoraMillis(System.currentTimeMillis());
+        venda.setFormaPagamento(formaPagamentoSelecionada);
+        venda.setQuantidadeTotal(quantidadeTotal);
+        venda.setValorTotal(valorTotal);
+        venda.setStatus(VendaModel.STATUS_FINALIZADA);
+        venda.setItens(converterItensParaVenda(listaItens));
+        return venda;
+    }
+
+    private List<ItemVendaRegistradaModel> converterItensParaVenda(List<ItemSacolaVendaModel> itensSacola) {
+        List<ItemVendaRegistradaModel> itensVenda = new ArrayList<>();
+
+        for (ItemSacolaVendaModel itemSacola : itensSacola) {
+            itensVenda.add(new ItemVendaRegistradaModel(itemSacola));
+        }
+
+        return itensVenda;
     }
 }
