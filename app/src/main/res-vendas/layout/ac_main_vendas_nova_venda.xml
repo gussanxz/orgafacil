@@ -138,11 +138,14 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layoutResumoSacola"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/fundo_arredondado"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"

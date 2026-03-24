@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,6 +16,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
@@ -47,6 +50,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private TextView txtSacolaSubtotal;
     private TextView txtCobrarTotal;
     private LinearLayout btnCobrar;
+    private LinearLayout layoutResumoSacola;
 
     private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -67,6 +71,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         configurarRvCategorias();
         configurarRvProdutos();
         configurarBotaoCobrar();
+        configurarResumoSacola();
         atualizarResumoSacola();
     }
 
@@ -235,6 +240,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             btnCobrar.setEnabled(habilitado);
             btnCobrar.setAlpha(habilitado ? 1f : 0.5f);
         }
+        if (layoutResumoSacola != null) {
+            boolean possuiItens = quantidadeTotal > 0;
+            layoutResumoSacola.setAlpha(possuiItens ? 1f : 0.75f);
+        }
     }
 
     private int getQuantidadeTotalSacola() {
@@ -255,5 +264,142 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         }
 
         return total;
+    }
+    private void configurarResumoSacola() {
+        if (layoutResumoSacola == null) return;
+
+        layoutResumoSacola.setOnClickListener(v -> {
+            if (sacolaMap.isEmpty()) {
+                Toast.makeText(
+                        RegistrarVendasActivity.this,
+                        "A sacola está vazia.",
+                        Toast.LENGTH_SHORT
+                ).show();
+                return;
+            }
+
+            abrirBottomSheetSacola();
+        });
+    }
+    private void abrirBottomSheetSacola() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_sacola_nova_venda, null);
+        dialog.setContentView(view);
+
+        RecyclerView rvItensSacola = view.findViewById(R.id.rvItensSacola);
+        TextView txtQtdItensSacola = view.findViewById(R.id.txtQtdItensSacola);
+        TextView txtTotalSacolaBottom = view.findViewById(R.id.txtTotalSacolaBottom);
+        TextView txtEstadoVazioSacola = view.findViewById(R.id.txtEstadoVazioSacola);
+        ImageButton btnFecharSacola = view.findViewById(R.id.btnFecharSacola);
+
+        rvItensSacola.setLayoutManager(new LinearLayoutManager(this));
+
+        AdapterSacolaNovaVenda adapterSacola = new AdapterSacolaNovaVenda(
+                getItensSacolaEmLista(),
+                new AdapterSacolaNovaVenda.OnSacolaActionListener() {
+                    @Override
+                    public void onSomar(ItemSacolaVendaModel item) {
+                        ItemSacolaVendaModel itemMap = sacolaMap.get(item.getChave());
+                        if (itemMap != null) {
+                            itemMap.incrementarQuantidade();
+                            atualizarBottomSheetSacola(
+                                    adapterSacola,
+                                    rvItensSacola,
+                                    txtQtdItensSacola,
+                                    txtTotalSacolaBottom,
+                                    txtEstadoVazioSacola
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onSubtrair(ItemSacolaVendaModel item) {
+                        ItemSacolaVendaModel itemMap = sacolaMap.get(item.getChave());
+                        if (itemMap != null) {
+                            itemMap.decrementarQuantidade();
+
+                            if (itemMap.getQuantidade() <= 0) {
+                                sacolaMap.remove(item.getChave());
+                            }
+
+                            atualizarBottomSheetSacola(
+                                    adapterSacola,
+                                    rvItensSacola,
+                                    txtQtdItensSacola,
+                                    txtTotalSacolaBottom,
+                                    txtEstadoVazioSacola
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onRemover(ItemSacolaVendaModel item) {
+                        sacolaMap.remove(item.getChave());
+
+                        atualizarBottomSheetSacola(
+                                adapterSacola,
+                                rvItensSacola,
+                                txtQtdItensSacola,
+                                txtTotalSacolaBottom,
+                                txtEstadoVazioSacola
+                        );
+
+                        if (sacolaMap.isEmpty()) {
+                            dialog.dismiss();
+                        }
+                    }
+                }
+        );
+
+        rvItensSacola.setAdapter(adapterSacola);
+
+        if (btnFecharSacola != null) {
+            btnFecharSacola.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        atualizarBottomSheetSacola(
+                adapterSacola,
+                rvItensSacola,
+                txtQtdItensSacola,
+                txtTotalSacolaBottom,
+                txtEstadoVazioSacola
+        );
+
+        dialog.show();
+    }
+
+    private void atualizarBottomSheetSacola(
+            AdapterSacolaNovaVenda adapterSacola,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItensSacola,
+            TextView txtTotalSacolaBottom,
+            TextView txtEstadoVazioSacola
+    ) {
+        List<ItemSacolaVendaModel> itens = getItensSacolaEmLista();
+
+        adapterSacola.atualizarLista(itens);
+
+        if (txtQtdItensSacola != null) {
+            int quantidade = getQuantidadeTotalSacola();
+            txtQtdItensSacola.setText(
+                    quantidade + (quantidade == 1 ? " item" : " itens")
+            );
+        }
+
+        if (txtTotalSacolaBottom != null) {
+            txtTotalSacolaBottom.setText(formatadorMoeda.format(getValorTotalSacola()));
+        }
+
+        if (txtEstadoVazioSacola != null) {
+            boolean vazio = itens.isEmpty();
+            txtEstadoVazioSacola.setVisibility(vazio ? View.VISIBLE : View.GONE);
+            rvItensSacola.setVisibility(vazio ? View.GONE : View.VISIBLE);
+        }
+
+        atualizarResumoSacola();
+    }
+
+    private List<ItemSacolaVendaModel> getItensSacolaEmLista() {
+        return new ArrayList<>(sacolaMap.values());
     }
 }

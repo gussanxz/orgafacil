@@ -26,6 +26,12 @@ public class ItemSacolaVendaModel {
         quantidade++;
     }
 
+    public void decrementarQuantidade() {
+        if (quantidade > 0) {
+            quantidade--;
+        }
+    }
+
     public String getChave() {
         return chave;
     }
