@@ -1,11 +1,9 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,18 +16,17 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 public class RegistrarVendasActivity extends AppCompatActivity {
@@ -40,26 +37,19 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private RecyclerView rvGradeProdutos;
     private AdapterFiltroPorPSNovaVenda adapterProdutos;
-    private final List<ItemVendaModel> listaCompletaProdutos = new ArrayList<>();
-    private final List<ItemVendaModel> listaFiltradaProdutos = new ArrayList<>();
-
-    private final List<ProdutoModel> cacheProdutos = new ArrayList<>();
-    private final List<ServicoModel> cacheServicos = new ArrayList<>();
+    private List<ItemVendaModel> listaCompletaProdutos = new ArrayList<>();
+    private List<ItemVendaModel> listaFiltradaProdutos = new ArrayList<>();
 
     private EditText etBuscarProduto;
 
-    private View layoutEstadoVazio;
-    private ImageView imgEstadoVazio;
-    private TextView txtTituloEstadoVazio;
-    private TextView txtDescricaoEstadoVazio;
+    private TextView txtSacolaQuantidade;
+    private TextView txtSacolaTitulo;
+    private TextView txtSacolaSubtotal;
+    private TextView txtCobrarTotal;
+    private LinearLayout btnCobrar;
 
-    private ProdutoRepository produtoRepository;
-    private ServicoRepository servicoRepository;
-    private ListenerRegistration listenerProdutos;
-    private ListenerRegistration listenerServicos;
-
-    private String filtroAtual = "Todos";
-    private String termoBuscaAtual = "";
+    private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
+    private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,35 +63,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             return insets;
         });
 
-        produtoRepository = new ProdutoRepository();
-        servicoRepository = new ServicoRepository();
-
         inicializarComponentes();
         configurarRvCategorias();
         configurarRvProdutos();
-        configurarBusca();
-        atualizarEstadoVazio();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        carregarCatalogoAtivo();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if (listenerProdutos != null) {
-            listenerProdutos.remove();
-            listenerProdutos = null;
-        }
-
-        if (listenerServicos != null) {
-            listenerServicos.remove();
-            listenerServicos = null;
-        }
+        configurarBotaoCobrar();
+        atualizarResumoSacola();
     }
 
     private void inicializarComponentes() {
@@ -109,228 +75,185 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
         etBuscarProduto = findViewById(R.id.etBuscarProduto);
 
-        layoutEstadoVazio = findViewById(R.id.layoutEstadoVazio);
-        imgEstadoVazio = findViewById(R.id.imgEstadoVazio);
-        txtTituloEstadoVazio = findViewById(R.id.txtTituloEstadoVazio);
-        txtDescricaoEstadoVazio = findViewById(R.id.txtDescricaoEstadoVazio);
+        txtSacolaQuantidade = findViewById(R.id.txtSacolaQuantidade);
+        txtSacolaTitulo = findViewById(R.id.txtSacolaTitulo);
+        txtSacolaSubtotal = findViewById(R.id.txtSacolaSubtotal);
+        txtCobrarTotal = findViewById(R.id.txtCobrarTotal);
+        btnCobrar = findViewById(R.id.btnCobrar);
     }
 
     private void configurarRvCategorias() {
-        rvCategorias.setLayoutManager(
-                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        );
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        rvCategorias.setLayoutManager(layoutManager);
 
-        carregarCategoriasFixas();
+        carregarDadosFakes();
 
-        adapterFiltro = new AdapterFiltroCategoriasNovaVenda(
-                listaCategorias,
-                this,
-                (categoria, position) -> {
-                    filtroAtual = categoria.getNome();
-                    aplicarFiltros();
-                }
-        );
+        adapterFiltro = new AdapterFiltroCategoriasNovaVenda(listaCategorias, this,
+                new AdapterFiltroCategoriasNovaVenda.OnCategoriaSelectedListener() {
+                    @Override
+                    public void onCategoriaSelected(Categoria categoria, int position) {
+                        filtrarProdutosPorCategoria(categoria.getNome());
+                    }
+                });
 
         rvCategorias.setAdapter(adapterFiltro);
     }
 
     private void configurarRvProdutos() {
+        carregarDadosProdutosExemplo();
+
         GridLayoutManager gridManager = new GridLayoutManager(this, 3);
         rvGradeProdutos.setLayoutManager(gridManager);
         rvGradeProdutos.setNestedScrollingEnabled(false);
 
-        adapterProdutos = new AdapterFiltroPorPSNovaVenda(
-                listaFiltradaProdutos,
-                item -> Toast.makeText(
-                        RegistrarVendasActivity.this,
-                        "Add: " + item.getNome(),
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        adapterProdutos = new AdapterFiltroPorPSNovaVenda(listaFiltradaProdutos,
+                new AdapterFiltroPorPSNovaVenda.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(ItemVendaModel item) {
+                        adicionarItemNaSacola(item);
+                    }
+                });
 
         rvGradeProdutos.setAdapter(adapterProdutos);
     }
 
-    private void configurarBusca() {
-        if (etBuscarProduto == null) return;
+    private void configurarBotaoCobrar() {
+        if (btnCobrar == null) return;
 
-        etBuscarProduto.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // sem ação
+        btnCobrar.setOnClickListener(v -> {
+            if (sacolaMap.isEmpty()) {
+                Toast.makeText(
+                        RegistrarVendasActivity.this,
+                        "Adicione ao menos um item para continuar.",
+                        Toast.LENGTH_SHORT
+                ).show();
+                return;
             }
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                termoBuscaAtual = s != null ? s.toString().trim() : "";
-                aplicarFiltros();
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // sem ação
-            }
+            Toast.makeText(
+                    RegistrarVendasActivity.this,
+                    "Próximo passo: fluxo de cobrança.",
+                    Toast.LENGTH_SHORT
+            ).show();
         });
     }
 
-    private void carregarCategoriasFixas() {
+    private void carregarDadosFakes() {
         listaCategorias.clear();
-        listaCategorias.add(criarCategoriaFiltro("todos", "Todos", 7));
-        listaCategorias.add(criarCategoriaFiltro("produtos", "Produtos", 0));
-        listaCategorias.add(criarCategoriaFiltro("servicos", "Serviços", 7));
+        listaCategorias.add(criarCategoriaExemplo("Todos", 0));
+        listaCategorias.add(criarCategoriaExemplo("Produtos", 1));
+        listaCategorias.add(criarCategoriaExemplo("Serviços", 7));
+        listaCategorias.add(criarCategoriaExemplo("Bebidas", 3));
+        listaCategorias.add(criarCategoriaExemplo("Lanches", 2));
     }
 
-    private Categoria criarCategoriaFiltro(String id, String nome, int indexIcone) {
-        Categoria categoria = new Categoria();
-        categoria.setId(id != null ? id : UUID.randomUUID().toString());
-        categoria.setNome(nome);
-        categoria.setDescricao(nome);
-        categoria.setIndexIcone(indexIcone);
-        categoria.setAtiva(true);
-        return categoria;
+    private Categoria criarCategoriaExemplo(String nome, int indexIcone) {
+        Categoria c = new Categoria();
+        c.setId(UUID.randomUUID().toString());
+        c.setNome(nome);
+        c.setDescricao("Categoria: " + nome);
+        c.setIndexIcone(indexIcone);
+        c.setAtiva(true);
+        return c;
     }
 
-    private void carregarCatalogoAtivo() {
-        listenerProdutos = produtoRepository.listarTempoReal(new ProdutoRepository.ListaCallback() {
-            @Override
-            public void onNovosDados(List<ProdutoModel> lista) {
-                cacheProdutos.clear();
-
-                for (ProdutoModel produto : lista) {
-                    if (produto != null && produto.isStatusAtivo()) {
-                        cacheProdutos.add(produto);
-                    }
-                }
-
-                atualizarCatalogoUnificado();
-            }
-
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(
-                        RegistrarVendasActivity.this,
-                        "Erro ao carregar produtos: " + erro,
-                        Toast.LENGTH_SHORT
-                ).show();
-            }
-        });
-
-        listenerServicos = servicoRepository.listarTempoReal(new ServicoRepository.ListaCallback() {
-            @Override
-            public void onNovosDados(List<ServicoModel> lista) {
-                cacheServicos.clear();
-
-                for (ServicoModel servico : lista) {
-                    if (servico != null && servico.isStatusAtivo()) {
-                        cacheServicos.add(servico);
-                    }
-                }
-
-                atualizarCatalogoUnificado();
-            }
-
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(
-                        RegistrarVendasActivity.this,
-                        "Erro ao carregar serviços: " + erro,
-                        Toast.LENGTH_SHORT
-                ).show();
-            }
-        });
+    private void carregarDadosProdutosExemplo() {
+        listaCompletaProdutos = new ArrayList<>();
+        listaFiltradaProdutos = new ArrayList<>(listaCompletaProdutos);
     }
 
-    private void atualizarCatalogoUnificado() {
-        listaCompletaProdutos.clear();
-        listaCompletaProdutos.addAll(cacheProdutos);
-        listaCompletaProdutos.addAll(cacheServicos);
-        aplicarFiltros();
-    }
-
-    private void aplicarFiltros() {
+    private void filtrarProdutosPorCategoria(String nomeCategoria) {
         listaFiltradaProdutos.clear();
 
-        for (ItemVendaModel item : listaCompletaProdutos) {
-            if (!passaNoFiltroTipo(item)) {
-                continue;
+        if (nomeCategoria.equalsIgnoreCase("Todos")) {
+            listaFiltradaProdutos.addAll(listaCompletaProdutos);
+        } else if (nomeCategoria.equalsIgnoreCase("Produtos")) {
+            for (ItemVendaModel item : listaCompletaProdutos) {
+                if (item.getTipo() == ItemVendaModel.TIPO_PRODUTO) {
+                    listaFiltradaProdutos.add(item);
+                }
             }
-
-            if (!passaNoFiltroBusca(item, termoBuscaAtual)) {
-                continue;
+        } else if (nomeCategoria.equalsIgnoreCase("Serviços")) {
+            for (ItemVendaModel item : listaCompletaProdutos) {
+                if (item.getTipo() == ItemVendaModel.TIPO_SERVICO) {
+                    listaFiltradaProdutos.add(item);
+                }
             }
-
-            listaFiltradaProdutos.add(item);
+        } else {
+            Toast.makeText(this, "Filtro: " + nomeCategoria, Toast.LENGTH_SHORT).show();
+            listaFiltradaProdutos.addAll(listaCompletaProdutos);
         }
 
-        if (adapterProdutos != null) {
-            adapterProdutos.atualizarLista(listaFiltradaProdutos);
-        }
-
-        atualizarEstadoVazio();
+        adapterProdutos.atualizarLista(listaFiltradaProdutos);
     }
 
-    private boolean passaNoFiltroTipo(ItemVendaModel item) {
-        if ("Produtos".equalsIgnoreCase(filtroAtual)) {
-            return item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
+    private void adicionarItemNaSacola(ItemVendaModel item) {
+        String chave = ItemSacolaVendaModel.gerarChave(item);
+        ItemSacolaVendaModel itemSacola = sacolaMap.get(chave);
+
+        if (itemSacola == null) {
+            sacolaMap.put(chave, new ItemSacolaVendaModel(item));
+        } else {
+            itemSacola.incrementarQuantidade();
         }
 
-        if ("Serviços".equalsIgnoreCase(filtroAtual)) {
-            return item.getTipo() == ItemVendaModel.TIPO_SERVICO;
-        }
+        atualizarResumoSacola();
 
-        return true;
+        Toast.makeText(
+                this,
+                item.getNome() + " adicionado à sacola",
+                Toast.LENGTH_SHORT
+        ).show();
     }
 
-    private boolean passaNoFiltroBusca(ItemVendaModel item, String termoBusca) {
-        if (termoBusca == null || termoBusca.trim().isEmpty()) {
-            return true;
+    private void atualizarResumoSacola() {
+        int quantidadeTotal = getQuantidadeTotalSacola();
+        double valorTotal = getValorTotalSacola();
+
+        if (txtSacolaQuantidade != null) {
+            txtSacolaQuantidade.setText(String.valueOf(quantidadeTotal));
         }
 
-        String termoNormalizado = termoBusca.trim().toLowerCase(Locale.ROOT);
-        String nome = item.getNome() != null ? item.getNome().toLowerCase(Locale.ROOT) : "";
-        String descricao = item.getDescricao() != null ? item.getDescricao().toLowerCase(Locale.ROOT) : "";
+        if (txtSacolaTitulo != null) {
+            txtSacolaTitulo.setText(
+                    quantidadeTotal == 0
+                            ? "Sacola vazia"
+                            : quantidadeTotal + (quantidadeTotal == 1 ? " item na sacola" : " itens na sacola")
+            );
+        }
 
-        return nome.contains(termoNormalizado) || descricao.contains(termoNormalizado);
+        if (txtSacolaSubtotal != null) {
+            txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal));
+        }
+
+        if (txtCobrarTotal != null) {
+            txtCobrarTotal.setText(formatadorMoeda.format(valorTotal));
+        }
+
+        if (btnCobrar != null) {
+            boolean habilitado = quantidadeTotal > 0;
+            btnCobrar.setEnabled(habilitado);
+            btnCobrar.setAlpha(habilitado ? 1f : 0.5f);
+        }
     }
 
-    private void atualizarEstadoVazio() {
-        if (layoutEstadoVazio == null || rvGradeProdutos == null) {
-            return;
+    private int getQuantidadeTotalSacola() {
+        int total = 0;
+
+        for (ItemSacolaVendaModel item : sacolaMap.values()) {
+            total += item.getQuantidade();
         }
 
-        boolean catalogoVazio = listaCompletaProdutos.isEmpty();
-        boolean listaFiltradaVazia = listaFiltradaProdutos.isEmpty();
+        return total;
+    }
 
-        if (!listaFiltradaVazia) {
-            layoutEstadoVazio.setVisibility(View.GONE);
-            rvGradeProdutos.setVisibility(View.VISIBLE);
-            return;
-        }
+    private double getValorTotalSacola() {
+        double total = 0.0;
 
-        layoutEstadoVazio.setVisibility(View.VISIBLE);
-        rvGradeProdutos.setVisibility(View.GONE);
-
-        if (catalogoVazio) {
-            if (imgEstadoVazio != null) {
-                imgEstadoVazio.setImageResource(R.drawable.ic_inventory_2_28);
-            }
-            if (txtTituloEstadoVazio != null) {
-                txtTituloEstadoVazio.setText("Nenhum item disponível");
-            }
-            if (txtDescricaoEstadoVazio != null) {
-                txtDescricaoEstadoVazio.setText("Cadastre produtos ou serviços ativos para começar uma nova venda.");
-            }
-            return;
+        for (ItemSacolaVendaModel item : sacolaMap.values()) {
+            total += item.getSubtotal();
         }
 
-        if (imgEstadoVazio != null) {
-            imgEstadoVazio.setImageResource(R.drawable.ic_search_24);
-        }
-        if (txtTituloEstadoVazio != null) {
-            txtTituloEstadoVazio.setText("Nenhum resultado encontrado");
-        }
-        if (txtDescricaoEstadoVazio != null) {
-            txtDescricaoEstadoVazio.setText("Tente ajustar a busca ou alterar o filtro selecionado.");
-        }
+        return total;
     }
 }

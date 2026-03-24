@@ -164,6 +164,7 @@
                             android:gravity="center_vertical">
 
                             <TextView
+                                android:id="@+id/txtSacolaQuantidade"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginEnd="8dp"
@@ -174,6 +175,7 @@
                                 android:textStyle="bold"
                                 android:textSize="14sp"/>
                             <TextView
+                                android:id="@+id/txtSacolaTitulo"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Sacola vazia"
@@ -182,6 +184,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/txtSacolaSubtotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="R$ 0,00"
@@ -210,6 +213,7 @@
                             android:textSize="12sp"
                             android:textStyle="bold"/>
                         <TextView
+                            android:id="@+id/txtCobrarTotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="R$ 0,00"
