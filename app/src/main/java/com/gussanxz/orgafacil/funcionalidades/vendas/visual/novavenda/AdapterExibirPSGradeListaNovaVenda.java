@@ -14,25 +14,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * ADAPTER: AdapterExibirProdutoServicoNovaVenda
- *
- * RESPONSABILIDADE:
- * Gerenciar a exibição de itens (Produtos e Serviços) na tela de vendas,
- * permitindo a troca dinâmica de layout (Lista ou Grade).
- *  *
- * * O QUE ELA FAZ:
- * 1. Suporte Multi-Layout: Alterna entre 'item_venda_lista' (horizontal) e 'item_venda_grade' (quadrado).
- * 2. Identificação Visual: Diferencia Produtos (Laranja) de Serviços (Azul) através de cores e tags.
- * 3. Formatação Financeira: Converte valores numéricos para o padrão de moeda brasileiro (R$).
- * 4. Centralização de Estilo: Usa o metodo 'aplicarEstiloVisual' para garantir que a identidade
- * visual seja idêntica em ambos os modos de exibição.
- */
 public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int TYPE_LISTA = 1;
@@ -52,10 +40,9 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         this.listener = listener;
     }
 
-    // Chamado pela Activity quando o toggle muda
     public void setModoGrade(boolean ativarGrade) {
         this.isGridMode = ativarGrade;
-        notifyDataSetChanged(); // Força o RecyclerView a redesenhar tudo
+        notifyDataSetChanged();
     }
 
     public void atualizarLista(List<ItemVendaModel> novaLista) {
@@ -75,11 +62,9 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         LayoutInflater inflater = LayoutInflater.from(context);
 
         if (viewType == TYPE_GRADE) {
-            // Importante: Layout de Grade (Quadrado)
             View view = inflater.inflate(R.layout.item_venda_grade, parent, false);
             return new GradeViewHolder(view);
         } else {
-            // Importante: Layout de Lista (Horizontal)
             View view = inflater.inflate(R.layout.item_venda_lista, parent, false);
             return new ListaViewHolder(view);
         }
@@ -102,58 +87,92 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         return listaItens != null ? listaItens.size() : 0;
     }
 
-    // --- LÓGICA CENTRALIZADA DE VISUAL (O SEGREDO DA ORGANIZAÇÃO) ---
-    private void aplicarEstiloVisual(boolean isProduto, TextView txtTag, ImageView imgIcone, CardView cardIcone) {
+    private void aplicarEstiloVisual(
+            ItemVendaModel item,
+            TextView txtTag,
+            TextView txtStatus,
+            ImageView imgIcone,
+            CardView cardIcone,
+            View rootView
+    ) {
+        boolean isProduto = item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
+        boolean isAtivo = isItemAtivo(item);
 
-            int corDestaque; // Cor do Texto e da Tinta do Ícone
-            int corFundoElements = Color.WHITE; // Fundo Branco (fixo)
+        int corDestaque;
+        int corFundoElements = Color.WHITE;
+        int backgroundRes;
+        String textoTag;
 
-            // Ícone FIXO de Câmera (Placeholder da futura foto)
-            int iconeRes = R.drawable.ic_camera_alt_120;
+        if (isProduto) {
+            corDestaque = Color.parseColor("#EF6C00");
+            textoTag = "PRODUTO";
+            backgroundRes = R.drawable.bg_tag_produto;
+        } else {
+            corDestaque = Color.parseColor("#1565C0");
+            textoTag = "SERVIÇO";
+            backgroundRes = R.drawable.bg_tag_servico;
+        }
 
-            String textoTag;
-            int backgroundRes;
+        txtTag.setText(textoTag);
+        txtTag.setTextColor(corDestaque);
+        txtTag.setBackgroundResource(backgroundRes);
 
-            if (isProduto) {
-                // === PRODUTO: Laranja ===
-                corDestaque = Color.parseColor("#EF6C00");
-                textoTag = "PRODUTO";
-                backgroundRes = R.drawable.bg_tag_produto;
-            } else {
-                // === SERVIÇO: Azul Escuro ===
-                corDestaque = Color.parseColor("#1565C0");
-                textoTag = "SERVIÇO";
-                backgroundRes = R.drawable.bg_tag_servico;
-            }
+        if (txtTag.getBackground() != null) {
+            androidx.core.graphics.drawable.DrawableCompat.setTint(
+                    txtTag.getBackground(),
+                    corFundoElements
+            );
+        }
 
-            // 1. Configura a Tag (Texto)
-            txtTag.setText(textoTag);
-            txtTag.setTextColor(corDestaque);
-            txtTag.setBackgroundResource(backgroundRes);
+        txtStatus.setText(isAtivo ? "ATIVO" : "INATIVO");
+        txtStatus.setBackgroundResource(isAtivo ? R.drawable.bg_status_ativo : R.drawable.bg_status_inativo);
 
-            // Garante que o fundo da tag (shape) fique branco
-            if (txtTag.getBackground() != null) {
-                androidx.core.graphics.drawable.DrawableCompat.setTint(
-                        txtTag.getBackground(),
-                        corFundoElements
-                );
-            }
+        imgIcone.setImageResource(getIconeDoItem(item));
+        imgIcone.setColorFilter(corDestaque);
 
-            // 2. Configura o Ícone (Câmera Fixa)
-            imgIcone.setImageResource(iconeRes);
+        cardIcone.setCardBackgroundColor(corFundoElements);
 
-            // AQUI ESTÁ O TRUQUE:
-            // Pintamos a câmera com a cor da categoria (Laranja ou Azul).
-            // Se quiser a câmera cinza (neutra), mude 'corDestaque' para Color.GRAY abaixo.
-            imgIcone.setColorFilter(corDestaque);
-
-            // 3. Configura o Fundo do Card do Ícone (Branco)
-            cardIcone.setCardBackgroundColor(corFundoElements);
+        rootView.setAlpha(isAtivo ? 1f : 0.55f);
     }
 
-    // --- VIEWHOLDER: GRADE ---
+    private boolean isItemAtivo(ItemVendaModel item) {
+        if (item instanceof ProdutoModel) {
+            return ((ProdutoModel) item).isStatusAtivo();
+        }
+        if (item instanceof ServicoModel) {
+            return ((ServicoModel) item).isStatusAtivo();
+        }
+        return true;
+    }
+
+    private int getIconeDoItem(ItemVendaModel item) {
+        if (item instanceof ProdutoModel) {
+            return getIconeProdutoPorIndex(((ProdutoModel) item).getIconeIndex());
+        }
+
+        return R.drawable.ic_paid_28;
+    }
+
+    private int getIconeProdutoPorIndex(int index) {
+        switch (index) {
+            case 0: return R.drawable.ic_categorias_mercado_24;
+            case 1: return R.drawable.ic_categorias_roupas_24;
+            case 2: return R.drawable.ic_categorias_comida_24;
+            case 3: return R.drawable.ic_categorias_bebidas_24;
+            case 4: return R.drawable.ic_categorias_eletronicos_24;
+            case 5: return R.drawable.ic_categorias_spa_24;
+            case 6: return R.drawable.ic_categorias_fitness_24;
+            case 7: return R.drawable.ic_categorias_geral_24;
+            case 8: return R.drawable.ic_categorias_ferramentas_24;
+            case 9: return R.drawable.ic_categorias_papelaria_24;
+            case 10: return R.drawable.ic_categorias_casa_24;
+            case 11: return R.drawable.ic_categorias_brinquedos_24;
+            default: return R.drawable.ic_categorias_geral_24;
+        }
+    }
+
     class GradeViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textPreco, textTipoTag;
+        TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
         ImageView imageIcone;
         CardView cardIcone;
 
@@ -163,6 +182,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             textDescricao = itemView.findViewById(R.id.textDescricaoItem);
             textPreco = itemView.findViewById(R.id.textPrecoItem);
             textTipoTag = itemView.findViewById(R.id.textTipoTag);
+            textStatusItem = itemView.findViewById(R.id.textStatusItem);
             imageIcone = itemView.findViewById(R.id.imageIcone);
             cardIcone = itemView.findViewById(R.id.cardIcone);
         }
@@ -174,15 +194,19 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
 
             // Usa o método centralizado
             aplicarEstiloVisual(
-                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO,
-                    textTipoTag, imageIcone, cardIcone
+                    item,
+                    textTipoTag,
+                    textStatusItem,
+                    imageIcone,
+                    cardIcone,
+                    itemView
             );
         }
     }
 
     // --- VIEWHOLDER: LISTA ---
     class ListaViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textPreco, textTipoTag;
+        TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
         ImageView imageIcone;
         CardView cardIcone;
 
@@ -192,6 +216,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             textDescricao = itemView.findViewById(R.id.textDescricaoItem);
             textPreco = itemView.findViewById(R.id.textPrecoItem);
             textTipoTag = itemView.findViewById(R.id.textTipoTag);
+            textStatusItem = itemView.findViewById(R.id.textStatusItem);
             imageIcone = itemView.findViewById(R.id.imageIcone);
             cardIcone = itemView.findViewById(R.id.cardIcone);
         }
@@ -203,8 +228,12 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
 
             // Usa o método centralizado
             aplicarEstiloVisual(
-                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO,
-                    textTipoTag, imageIcone, cardIcone
+                    item,
+                    textTipoTag,
+                    textStatusItem,
+                    imageIcone,
+                    cardIcone,
+                    itemView
             );
         }
     }

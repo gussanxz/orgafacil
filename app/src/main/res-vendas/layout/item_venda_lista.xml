@@ -49,21 +49,41 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
-        <TextView
-            android:id="@+id/textTipoTag"
+        <LinearLayout
+            android:id="@+id/layoutBadgesDireita"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="PRODUTO"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="#757575"
-            android:background="@drawable/bg_tag_produto"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textPrecoItem" />
+            app:layout_constraintTop_toBottomOf="@id/textPrecoItem">
+
+            <TextView
+                android:id="@+id/textStatusItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_status_ativo"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="STATUS"
+                android:textColor="#2E7D32"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textTipoTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PRODUTO"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#757575"
+                android:background="@drawable/bg_tag_produto"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/textNomeItem"
             android:layout_width="0dp"
@@ -93,7 +113,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/textTipoTag"
+            app:layout_constraintEnd_toStartOf="@id/layoutBadgesDireita"
             app:layout_constraintStart_toEndOf="@id/cardIcone"
             app:layout_constraintTop_toBottomOf="@id/textNomeItem" />
 

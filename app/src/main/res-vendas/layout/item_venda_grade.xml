@@ -2,7 +2,6 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
@@ -20,20 +19,6 @@
         android:padding="12dp">
 
         <TextView
-            android:id="@+id/textTipoTag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_tag_produto"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="PRODUTO"
-            android:textColor="#757575"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
             android:id="@+id/textPrecoItem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -42,27 +27,61 @@
             android:textSize="13sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/textTipoTag"
-            app:layout_constraintBottom_toBottomOf="@id/textTipoTag"/>
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/layoutBadgesTopo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/textStatusItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_status_ativo"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="ATIVO"
+                android:textColor="#2E7D32"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textTipoTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_tag_produto"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="PRODUTO"
+                android:textColor="#757575"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardIcone"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             app:cardBackgroundColor="#F5F5F5"
             app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textTipoTag">
+            app:layout_constraintTop_toBottomOf="@id/layoutBadgesTopo">
 
             <ImageView
                 android:id="@+id/imageIcone"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_camera_alt_120"
+                android:src="@drawable/ic_categorias_geral_24"
                 app:tint="#616161" />
         </androidx.cardview.widget.CardView>
 
