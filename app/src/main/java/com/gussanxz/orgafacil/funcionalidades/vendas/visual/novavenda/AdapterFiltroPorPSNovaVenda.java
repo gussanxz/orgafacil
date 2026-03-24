@@ -1,8 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -11,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -42,15 +45,13 @@ import java.util.Locale;
 // CORREÇÃO 1: Ajustado o tipo do Adapter para usar o VendaViewHolder específico
 public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFiltroPorPSNovaVenda.VendaViewHolder> {
 
+        private static final int TIPO_PRODUTO = 1;
+        private static final int TIPO_SERVICO = 2;
+
         private List<ItemVendaModel> listaItens;
         private final OnItemClickListener listener;
         private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-        // Constantes para identificar o tipo
-        private static final int TIPO_PRODUTO = 1;
-        private static final int TIPO_SERVICO = 2;
-
-        // Interface de clique
         public interface OnItemClickListener {
                 void onItemClick(ItemVendaModel item);
         }
@@ -69,9 +70,9 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         @Override
         public int getItemViewType(int position) {
-                // Usa o tipo definido na sua Model ItemVenda
-                // Certifique-se que ItemVenda.TIPO_PRODUTO existe e é público na sua Model
-                return listaItens.get(position).getTipo() == ItemVendaModel.TIPO_PRODUTO ? TIPO_PRODUTO : TIPO_SERVICO;
+                return listaItens.get(position).getTipo() == ItemVendaModel.TIPO_PRODUTO
+                        ? TIPO_PRODUTO
+                        : TIPO_SERVICO;
         }
 
         @NonNull
@@ -93,8 +94,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         @Override
         public void onBindViewHolder(@NonNull VendaViewHolder holder, int position) {
-                ItemVendaModel item = listaItens.get(position);
-                holder.bind(item);
+                holder.bind(listaItens.get(position));
         }
 
         @Override
@@ -104,25 +104,29 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         // ViewHolder Interno
         public class VendaViewHolder extends RecyclerView.ViewHolder {
-                TextView textNome, textPreco;
+                TextView textNome;
+                TextView textPreco;
+                TextView textStatus;
                 ImageView imgIcone;
+                ImageButton btnExcluirProduto;
 
                 public VendaViewHolder(@NonNull View itemView) {
                         super(itemView);
 
                         // Tenta achar os IDs para Produto
                         textNome = itemView.findViewById(R.id.textNomeProduto);
-                        textPreco = itemView.findViewById(R.id.textDescProduto);
-                        imgIcone = itemView.findViewById(R.id.imgIcone); // Certifique-se que adicionou esse ID no XML
-
-                        // Fallback: Se não achou os IDs de produto, tenta achar os de Serviço
-                        // (Isso permite usar XMLs com IDs diferentes se necessário)
                         if (textNome == null) {
                                 textNome = itemView.findViewById(R.id.textNomeServico);
                         }
+
+                        textPreco = itemView.findViewById(R.id.textDescProduto);
                         if (textPreco == null) {
                                 textPreco = itemView.findViewById(R.id.textDescServico);
                         }
+
+                        textStatus = itemView.findViewById(R.id.textStatus);
+                        imgIcone = itemView.findViewById(R.id.imgIcone);
+                        btnExcluirProduto = itemView.findViewById(R.id.btnExcluirProduto);
                 }
 
                 void bind(ItemVendaModel item) {
@@ -134,8 +138,45 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                                 textPreco.setText(formatadorMoeda.format(item.getPreco()));
                         }
 
-                        // Configura o clique
+                        if (textStatus != null) {
+                                textStatus.setText("ATIVO");
+                                textStatus.setTextColor(Color.parseColor("#2E7D32"));
+                        }
+
+                        if (btnExcluirProduto != null) {
+                                btnExcluirProduto.setVisibility(View.GONE);
+                        }
+
+                        if (imgIcone != null) {
+                                if (item instanceof ProdutoModel) {
+                                        ProdutoModel produto = (ProdutoModel) item;
+                                        imgIcone.setImageResource(getIconeProdutoPorIndex(produto.getIconeIndex()));
+                                        imgIcone.setColorFilter(Color.parseColor("#EF6C00"));
+                                } else {
+                                        imgIcone.setImageResource(R.drawable.ic_paid_28);
+                                        imgIcone.setColorFilter(Color.parseColor("#1565C0"));
+                                }
+                        }
+
                         itemView.setOnClickListener(v -> listener.onItemClick(item));
+                }
+        }
+
+        private int getIconeProdutoPorIndex(int index) {
+                switch (index) {
+                        case 0: return R.drawable.ic_categorias_mercado_24;
+                        case 1: return R.drawable.ic_categorias_roupas_24;
+                        case 2: return R.drawable.ic_categorias_comida_24;
+                        case 3: return R.drawable.ic_categorias_bebidas_24;
+                        case 4: return R.drawable.ic_categorias_eletronicos_24;
+                        case 5: return R.drawable.ic_categorias_spa_24;
+                        case 6: return R.drawable.ic_categorias_fitness_24;
+                        case 7: return R.drawable.ic_categorias_geral_24;
+                        case 8: return R.drawable.ic_categorias_ferramentas_24;
+                        case 9: return R.drawable.ic_categorias_papelaria_24;
+                        case 10: return R.drawable.ic_categorias_casa_24;
+                        case 11: return R.drawable.ic_categorias_brinquedos_24;
+                        default: return R.drawable.ic_categorias_geral_24;
                 }
         }
 }

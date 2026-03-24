@@ -12,9 +12,14 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,13 +30,23 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     // Componentes de Categorias
     private RecyclerView rvCategorias;
     private AdapterFiltroCategoriasNovaVenda adapterFiltro;
-    private List<Categoria> listaCategorias = new ArrayList<>();
+    private final List<Categoria> listaCategorias = new ArrayList<>();
 
     // Componentes de Produtos (NOVO)
     private RecyclerView rvGradeProdutos;
     private AdapterFiltroPorPSNovaVenda adapterProdutos;
-    private List<ItemVendaModel> listaCompletaProdutos = new ArrayList<>();
-    private List<ItemVendaModel> listaFiltradaProdutos = new ArrayList<>();
+    private final List<ItemVendaModel> listaCompletaProdutos = new ArrayList<>();
+    private final List<ItemVendaModel> listaFiltradaProdutos = new ArrayList<>();
+
+    private final List<ProdutoModel> cacheProdutos = new ArrayList<>();
+    private final List<ServicoModel> cacheServicos = new ArrayList<>();
+
+    private ProdutoRepository produtoRepository;
+    private ServicoRepository servicoRepository;
+    private ListenerRegistration listenerProdutos;
+    private ListenerRegistration listenerServicos;
+
+    private String filtroAtual = "Todos";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +61,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             return insets;
         });
 
+        produtoRepository = new ProdutoRepository();
+        servicoRepository = new ServicoRepository();
+
         inicializarComponentes();
 
         // 1. Configura Categorias (Barra horizontal)
@@ -53,6 +71,27 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         // 2. Configura Produtos (Grade principal)
         configurarRvProdutos();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        carregarCatalogoAtivo();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (listenerProdutos != null) {
+            listenerProdutos.remove();
+            listenerProdutos = null;
+        }
+
+        if (listenerServicos != null) {
+            listenerServicos.remove();
+            listenerServicos = null;
+        }
     }
 
     private void inicializarComponentes() {
@@ -63,116 +102,137 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     // --- MÉTODOS DE CATEGORIA ---
     private void configurarRvCategorias() {
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        rvCategorias.setLayoutManager(layoutManager);
+        rvCategorias.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        );
 
-        carregarDadosFakes();
+        carregarCategoriasFixas();
 
-        adapterFiltro = new AdapterFiltroCategoriasNovaVenda(listaCategorias, this, new AdapterFiltroCategoriasNovaVenda.OnCategoriaSelectedListener() {
-            @Override
-            public void onCategoriaSelected(Categoria categoria, int position) {
-                // Ao clicar na categoria, filtra a grade de baixo
-                filtrarProdutosPorCategoria(categoria.getNome());
-            }
-        });
+        adapterFiltro = new AdapterFiltroCategoriasNovaVenda(
+                listaCategorias,
+                this,
+                (categoria, position) -> {
+                    filtroAtual = categoria.getNome();
+                    aplicarFiltroAtual();
+                }
+        );
 
         rvCategorias.setAdapter(adapterFiltro);
     }
 
-    private void carregarDadosFakes() {
-        listaCategorias.clear();
-        // Nomes ajustados para bater com a lógica de filtro
-        listaCategorias.add(criarCategoriaExemplo("Todos", 0));
-        listaCategorias.add(criarCategoriaExemplo("Produtos", 1));
-        listaCategorias.add(criarCategoriaExemplo("Serviços", 7));
-        listaCategorias.add(criarCategoriaExemplo("Bebidas", 3));
-        listaCategorias.add(criarCategoriaExemplo("Lanches", 2));
-    }
-
-    private Categoria criarCategoriaExemplo(String nome, int indexIcone) {
-        Categoria c = new Categoria();
-        c.setId(UUID.randomUUID().toString());
-        c.setNome(nome);
-        c.setDescricao("Categoria: " + nome);
-        c.setIndexIcone(indexIcone);
-        c.setAtiva(true);
-        return c;
-    }
-
-    // --- MÉTODOS DE PRODUTOS (NOVO) ---
-
     private void configurarRvProdutos() {
-        // 1. Carregar dados de exemplo
-        carregarDadosProdutosExemplo();
-
-        // 2. Configurar Layout Manager (Grade 3 colunas)
         GridLayoutManager gridManager = new GridLayoutManager(this, 3);
         rvGradeProdutos.setLayoutManager(gridManager);
         // Importante: Desativar o scroll interno do RecyclerView para ele rolar junto com a tela inteira
         rvGradeProdutos.setNestedScrollingEnabled(false);
 
-        // 3. Instanciar o novo Adapter
-        adapterProdutos = new AdapterFiltroPorPSNovaVenda(listaFiltradaProdutos, new AdapterFiltroPorPSNovaVenda.OnItemClickListener() {
-            @Override
-            public void onItemClick(ItemVendaModel item) {
-                // Ação ao clicar no produto (Adicionar ao carrinho futuramente)
-                Toast.makeText(RegistrarVendasActivity.this, "Add: " + item.getNome(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        adapterProdutos = new AdapterFiltroPorPSNovaVenda(
+                listaFiltradaProdutos,
+                item -> Toast.makeText(
+                        RegistrarVendasActivity.this,
+                        "Add: " + item.getNome(),
+                        Toast.LENGTH_SHORT
+                ).show()
+        );
 
-        // 4. Ligar Adapter
         rvGradeProdutos.setAdapter(adapterProdutos);
     }
 
-    private void carregarDadosProdutosExemplo() {
-        listaCompletaProdutos = new ArrayList<>();
-
-        // Usando o construtor da sua classe ItemVenda:
-        // (int id, String nome, String descricao, double preco, int tipo)
-
-        /* Produtos
-        listaCompletaProdutos.add(new ItemVenda(1, "Coca Cola 2L", "Gelada", 12.00, ItemVenda.TIPO_PRODUTO));
-        listaCompletaProdutos.add(new ItemVenda(2, "Pastel", "Carne/Queijo", 8.50, ItemVenda.TIPO_PRODUTO));
-        listaCompletaProdutos.add(new ItemVenda(3, "Água 500ml", "Sem gás", 3.00, ItemVenda.TIPO_PRODUTO));
-        listaCompletaProdutos.add(new ItemVenda(4, "Coxinha", "Frango", 6.00, ItemVenda.TIPO_PRODUTO));
-
-        // Serviços
-        listaCompletaProdutos.add(new ItemVenda(5, "Mão de Obra", "Instalação", 150.00, ItemVenda.TIPO_SERVICO));
-        listaCompletaProdutos.add(new ItemVenda(6, "Formatação", "PC/Note", 100.00, ItemVenda.TIPO_SERVICO));
-        listaCompletaProdutos.add(new ItemVenda(7, "Visita", "Técnica", 50.00, ItemVenda.TIPO_SERVICO));
-
-        // Inicializa a lista filtrada com TUDO
-        listaFiltradaProdutos = new ArrayList<>(listaCompletaProdutos);*/
+    private void carregarCategoriasFixas() {
+        listaCategorias.clear();
+        listaCategorias.add(criarCategoriaFiltro("todos", "Todos", 7));
+        listaCategorias.add(criarCategoriaFiltro("produtos", "Produtos", 0));
+        listaCategorias.add(criarCategoriaFiltro("servicos", "Serviços", 7));
     }
 
-    private void filtrarProdutosPorCategoria(String nomeCategoria) {
+    private Categoria criarCategoriaFiltro(String id, String nome, int indexIcone) {
+        Categoria categoria = new Categoria();
+        categoria.setId(id != null ? id : UUID.randomUUID().toString());
+        categoria.setNome(nome);
+        categoria.setDescricao(nome);
+        categoria.setIndexIcone(indexIcone);
+        categoria.setAtiva(true);
+        return categoria;
+    }
+
+    private void carregarCatalogoAtivo() {
+        listenerProdutos = produtoRepository.listarTempoReal(new ProdutoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<ProdutoModel> lista) {
+                cacheProdutos.clear();
+
+                for (ProdutoModel produto : lista) {
+                    if (produto != null && produto.isStatusAtivo()) {
+                        cacheProdutos.add(produto);
+                    }
+                }
+
+                atualizarCatalogoUnificado();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(
+                        RegistrarVendasActivity.this,
+                        "Erro ao carregar produtos: " + erro,
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
+
+        listenerServicos = servicoRepository.listarTempoReal(new ServicoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<ServicoModel> lista) {
+                cacheServicos.clear();
+
+                for (ServicoModel servico : lista) {
+                    if (servico != null && servico.isStatusAtivo()) {
+                        cacheServicos.add(servico);
+                    }
+                }
+
+                atualizarCatalogoUnificado();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(
+                        RegistrarVendasActivity.this,
+                        "Erro ao carregar serviços: " + erro,
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
+    }
+
+    private void atualizarCatalogoUnificado() {
+        listaCompletaProdutos.clear();
+        listaCompletaProdutos.addAll(cacheProdutos);
+        listaCompletaProdutos.addAll(cacheServicos);
+        aplicarFiltroAtual();
+    }
+
+    private void aplicarFiltroAtual() {
         listaFiltradaProdutos.clear();
 
-        if (nomeCategoria.equalsIgnoreCase("Todos")) {
-            listaFiltradaProdutos.addAll(listaCompletaProdutos);
-        }
-        else if (nomeCategoria.equalsIgnoreCase("Produtos")) {
+        if ("Produtos".equalsIgnoreCase(filtroAtual)) {
             for (ItemVendaModel item : listaCompletaProdutos) {
                 if (item.getTipo() == ItemVendaModel.TIPO_PRODUTO) {
                     listaFiltradaProdutos.add(item);
                 }
             }
-        }
-        else if (nomeCategoria.equalsIgnoreCase("Serviços")) {
+        } else if ("Serviços".equalsIgnoreCase(filtroAtual)) {
             for (ItemVendaModel item : listaCompletaProdutos) {
                 if (item.getTipo() == ItemVendaModel.TIPO_SERVICO) {
                     listaFiltradaProdutos.add(item);
                 }
             }
-        }
-        else {
-            // Caso seja outra categoria (ex: Bebidas), por enquanto mostra tudo
-            // (ou você implementa lógica de ID de categoria no futuro)
-            Toast.makeText(this, "Filtro: " + nomeCategoria, Toast.LENGTH_SHORT).show();
+        } else {
             listaFiltradaProdutos.addAll(listaCompletaProdutos);
         }
 
-        // Atualiza a grade
-        adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        if (adapterProdutos != null) {
+            adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        }
     }
 }
