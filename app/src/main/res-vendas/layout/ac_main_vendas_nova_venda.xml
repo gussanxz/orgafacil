@@ -257,6 +257,46 @@
                 android:requiresFadingEdge="horizontal"
                 android:fadingEdgeLength="30dp"/>
 
+            <LinearLayout
+                android:id="@+id/layoutEstadoVazio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="32dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/imgEstadoVazio"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_inventory_2_28"
+                    app:tint="#9E9E9E" />
+
+                <TextView
+                    android:id="@+id/txtTituloEstadoVazio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Nenhum item disponível"
+                    android:textColor="#333333"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtDescricaoEstadoVazio"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Cadastre produtos ou serviços ativos para começar uma nova venda."
+                    android:textColor="#757575"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvGradeProdutos"
                 android:layout_width="match_parent"

@@ -3,7 +3,10 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -45,6 +48,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private EditText etBuscarProduto;
 
+    private View layoutEstadoVazio;
+    private ImageView imgEstadoVazio;
+    private TextView txtTituloEstadoVazio;
+    private TextView txtDescricaoEstadoVazio;
+
     private ProdutoRepository produtoRepository;
     private ServicoRepository servicoRepository;
     private ListenerRegistration listenerProdutos;
@@ -72,6 +80,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         configurarRvCategorias();
         configurarRvProdutos();
         configurarBusca();
+        atualizarEstadoVazio();
     }
 
     @Override
@@ -99,6 +108,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvCategorias = findViewById(R.id.rvCategorias);
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
         etBuscarProduto = findViewById(R.id.etBuscarProduto);
+
+        layoutEstadoVazio = findViewById(R.id.layoutEstadoVazio);
+        imgEstadoVazio = findViewById(R.id.imgEstadoVazio);
+        txtTituloEstadoVazio = findViewById(R.id.txtTituloEstadoVazio);
+        txtDescricaoEstadoVazio = findViewById(R.id.txtDescricaoEstadoVazio);
     }
 
     private void configurarRvCategorias() {
@@ -251,6 +265,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (adapterProdutos != null) {
             adapterProdutos.atualizarLista(listaFiltradaProdutos);
         }
+
+        atualizarEstadoVazio();
     }
 
     private boolean passaNoFiltroTipo(ItemVendaModel item) {
@@ -275,5 +291,46 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         String descricao = item.getDescricao() != null ? item.getDescricao().toLowerCase(Locale.ROOT) : "";
 
         return nome.contains(termoNormalizado) || descricao.contains(termoNormalizado);
+    }
+
+    private void atualizarEstadoVazio() {
+        if (layoutEstadoVazio == null || rvGradeProdutos == null) {
+            return;
+        }
+
+        boolean catalogoVazio = listaCompletaProdutos.isEmpty();
+        boolean listaFiltradaVazia = listaFiltradaProdutos.isEmpty();
+
+        if (!listaFiltradaVazia) {
+            layoutEstadoVazio.setVisibility(View.GONE);
+            rvGradeProdutos.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        layoutEstadoVazio.setVisibility(View.VISIBLE);
+        rvGradeProdutos.setVisibility(View.GONE);
+
+        if (catalogoVazio) {
+            if (imgEstadoVazio != null) {
+                imgEstadoVazio.setImageResource(R.drawable.ic_inventory_2_28);
+            }
+            if (txtTituloEstadoVazio != null) {
+                txtTituloEstadoVazio.setText("Nenhum item disponível");
+            }
+            if (txtDescricaoEstadoVazio != null) {
+                txtDescricaoEstadoVazio.setText("Cadastre produtos ou serviços ativos para começar uma nova venda.");
+            }
+            return;
+        }
+
+        if (imgEstadoVazio != null) {
+            imgEstadoVazio.setImageResource(R.drawable.ic_search_24);
+        }
+        if (txtTituloEstadoVazio != null) {
+            txtTituloEstadoVazio.setText("Nenhum resultado encontrado");
+        }
+        if (txtDescricaoEstadoVazio != null) {
+            txtDescricaoEstadoVazio.setText("Tente ajustar a busca ou alterar o filtro selecionado.");
+        }
     }
 }
