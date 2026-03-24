@@ -1,6 +1,9 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -23,16 +26,15 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoMode
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class RegistrarVendasActivity extends AppCompatActivity {
 
-    // Componentes de Categorias
     private RecyclerView rvCategorias;
     private AdapterFiltroCategoriasNovaVenda adapterFiltro;
     private final List<Categoria> listaCategorias = new ArrayList<>();
 
-    // Componentes de Produtos (NOVO)
     private RecyclerView rvGradeProdutos;
     private AdapterFiltroPorPSNovaVenda adapterProdutos;
     private final List<ItemVendaModel> listaCompletaProdutos = new ArrayList<>();
@@ -41,12 +43,15 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private final List<ProdutoModel> cacheProdutos = new ArrayList<>();
     private final List<ServicoModel> cacheServicos = new ArrayList<>();
 
+    private EditText etBuscarProduto;
+
     private ProdutoRepository produtoRepository;
     private ServicoRepository servicoRepository;
     private ListenerRegistration listenerProdutos;
     private ListenerRegistration listenerServicos;
 
     private String filtroAtual = "Todos";
+    private String termoBuscaAtual = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +59,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.ac_main_vendas_nova_venda);
 
-        // Configuração de Padding
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.novaVenda), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -65,12 +69,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         servicoRepository = new ServicoRepository();
 
         inicializarComponentes();
-
-        // 1. Configura Categorias (Barra horizontal)
         configurarRvCategorias();
-
-        // 2. Configura Produtos (Grade principal)
         configurarRvProdutos();
+        configurarBusca();
     }
 
     @Override
@@ -96,11 +97,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private void inicializarComponentes() {
         rvCategorias = findViewById(R.id.rvCategorias);
-        // Certifique-se que o ID no XML é este mesmo
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
+        etBuscarProduto = findViewById(R.id.etBuscarProduto);
     }
 
-    // --- MÉTODOS DE CATEGORIA ---
     private void configurarRvCategorias() {
         rvCategorias.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -113,7 +113,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 this,
                 (categoria, position) -> {
                     filtroAtual = categoria.getNome();
-                    aplicarFiltroAtual();
+                    aplicarFiltros();
                 }
         );
 
@@ -123,7 +123,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private void configurarRvProdutos() {
         GridLayoutManager gridManager = new GridLayoutManager(this, 3);
         rvGradeProdutos.setLayoutManager(gridManager);
-        // Importante: Desativar o scroll interno do RecyclerView para ele rolar junto com a tela inteira
         rvGradeProdutos.setNestedScrollingEnabled(false);
 
         adapterProdutos = new AdapterFiltroPorPSNovaVenda(
@@ -136,6 +135,28 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         );
 
         rvGradeProdutos.setAdapter(adapterProdutos);
+    }
+
+    private void configurarBusca() {
+        if (etBuscarProduto == null) return;
+
+        etBuscarProduto.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // sem ação
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                termoBuscaAtual = s != null ? s.toString().trim() : "";
+                aplicarFiltros();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // sem ação
+            }
+        });
     }
 
     private void carregarCategoriasFixas() {
@@ -209,30 +230,50 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         listaCompletaProdutos.clear();
         listaCompletaProdutos.addAll(cacheProdutos);
         listaCompletaProdutos.addAll(cacheServicos);
-        aplicarFiltroAtual();
+        aplicarFiltros();
     }
 
-    private void aplicarFiltroAtual() {
+    private void aplicarFiltros() {
         listaFiltradaProdutos.clear();
 
-        if ("Produtos".equalsIgnoreCase(filtroAtual)) {
-            for (ItemVendaModel item : listaCompletaProdutos) {
-                if (item.getTipo() == ItemVendaModel.TIPO_PRODUTO) {
-                    listaFiltradaProdutos.add(item);
-                }
+        for (ItemVendaModel item : listaCompletaProdutos) {
+            if (!passaNoFiltroTipo(item)) {
+                continue;
             }
-        } else if ("Serviços".equalsIgnoreCase(filtroAtual)) {
-            for (ItemVendaModel item : listaCompletaProdutos) {
-                if (item.getTipo() == ItemVendaModel.TIPO_SERVICO) {
-                    listaFiltradaProdutos.add(item);
-                }
+
+            if (!passaNoFiltroBusca(item, termoBuscaAtual)) {
+                continue;
             }
-        } else {
-            listaFiltradaProdutos.addAll(listaCompletaProdutos);
+
+            listaFiltradaProdutos.add(item);
         }
 
         if (adapterProdutos != null) {
             adapterProdutos.atualizarLista(listaFiltradaProdutos);
         }
+    }
+
+    private boolean passaNoFiltroTipo(ItemVendaModel item) {
+        if ("Produtos".equalsIgnoreCase(filtroAtual)) {
+            return item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
+        }
+
+        if ("Serviços".equalsIgnoreCase(filtroAtual)) {
+            return item.getTipo() == ItemVendaModel.TIPO_SERVICO;
+        }
+
+        return true;
+    }
+
+    private boolean passaNoFiltroBusca(ItemVendaModel item, String termoBusca) {
+        if (termoBusca == null || termoBusca.trim().isEmpty()) {
+            return true;
+        }
+
+        String termoNormalizado = termoBusca.trim().toLowerCase(Locale.ROOT);
+        String nome = item.getNome() != null ? item.getNome().toLowerCase(Locale.ROOT) : "";
+        String descricao = item.getDescricao() != null ? item.getDescricao().toLowerCase(Locale.ROOT) : "";
+
+        return nome.contains(termoNormalizado) || descricao.contains(termoNormalizado);
     }
 }
