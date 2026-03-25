@@ -229,6 +229,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="#2E3A45"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
@@ -238,19 +239,11 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Digite o valor do gasto para simular:"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="8dp"
-                    android:textColor="#757575" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_marginBottom="12dp">
 
                     <EditText
                         android:id="@+id/editSimuladorGasto"
@@ -269,6 +262,132 @@
                         android:text="Simular"
                         android:layout_marginStart="8dp"
                         style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                </LinearLayout>
+
+                <!-- Parcelas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <CheckBox
+                        android:id="@+id/checkParcelar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Parcelar (sem juros)"
+                        android:textColor="#BDBDBD"
+                        android:textSize="13sp"
+                        android:buttonTint="#A5D6A7"/>
+
+                    <EditText
+                        android:id="@+id/editNumeroParcelas"
+                        android:layout_width="64dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:hint="3x"
+                        android:inputType="number"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_edittext_simulador"
+                        android:padding="8dp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+
+                <!-- Resultados dos 3 cenários -->
+                <LinearLayout
+                    android:id="@+id/layoutResultadoSimulador"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Cenário 1: Choque de realidade -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_posso_comprar_verde"/>
+
+                    <TextView
+                        android:id="@+id/textCenario1Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#A5D6A7"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario1Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
+                    <!-- Cenário 2: Parcelamento -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_posso_comprar_amarelo"/>
+
+                    <TextView
+                        android:id="@+id/textCenario2Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#FFE082"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario2Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
+                    <!-- Cenário 3: Adiamento inteligente -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_posso_comprar_azul"/>
+
+                    <TextView
+                        android:id="@+id/textCenario3Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#82B4E8"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario3Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

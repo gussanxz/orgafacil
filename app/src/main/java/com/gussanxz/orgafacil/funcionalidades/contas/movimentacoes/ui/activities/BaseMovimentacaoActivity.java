@@ -34,6 +34,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
+import com.gussanxz.orgafacil.util_helper.AppLogger;
 import com.gussanxz.orgafacil.util_helper.DateHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.RecorrenciaFormHelper;
@@ -493,7 +494,7 @@ public abstract class BaseMovimentacaoActivity extends AppCompatActivity {
                                     Toast.LENGTH_SHORT).show();
                         }
                     } catch (NumberFormatException e) {
-                        Log.e(TAG, "Erro ao processar máscara de moeda");
+                        AppLogger.e(TAG, "Erro ao processar máscara de moeda");
                     }
                 } else {
                     valorCentavosAtual = 0;

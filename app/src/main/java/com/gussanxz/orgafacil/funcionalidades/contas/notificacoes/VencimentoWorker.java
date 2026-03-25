@@ -14,6 +14,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.util_helper.AppLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,14 +68,14 @@ public class VencimentoWorker extends Worker {
                     });
         } catch (Exception e) {
             // requireUid() lançou — usuário deslogou entre a checagem e a query
-            Log.e(TAG, "Erro ao montar query: " + e.getMessage());
+            AppLogger.e(TAG, "Erro ao montar query: " + e.getMessage());
             return Result.success();
         }
 
         // 3. Aguardar (Worker roda em thread background — latch é seguro aqui)
         try {
             if (!latch.await(TIMEOUT_SEGUNDOS, TimeUnit.SECONDS)) {
-                Log.w(TAG, "Timeout — RETRY agendado.");
+                AppLogger.w(TAG, "Timeout — RETRY agendado.");
                 return Result.retry();
             }
         } catch (InterruptedException e) {
@@ -83,7 +84,7 @@ public class VencimentoWorker extends Worker {
         }
 
         if (erroRef.get() != null) {
-            Log.e(TAG, "Erro Firestore: " + erroRef.get().getMessage());
+            AppLogger.e(TAG, "Erro Firestore: " + erroRef.get().getMessage());
             return Result.retry();
         }
 

@@ -48,6 +48,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.main.MainActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.util_helper.AppLogger;
 import com.gussanxz.orgafacil.util_helper.DateHelper;
 import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
@@ -290,7 +291,7 @@ public class ContasActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(String erro) {
-                        Log.e(TAG, "Erro no resumo: " + erro);
+                        AppLogger.e(TAG, "Erro no resumo: " + erro);
                     }
                 });
     }

@@ -17,6 +17,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
+import com.gussanxz.orgafacil.util_helper.AppLogger;
 import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.util.Date;
@@ -397,7 +398,7 @@ public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
         } catch (Exception e) {
             acaoEmAndamento = false;
-            Log.e(TAG, "Erro ao montar movimentação para edição", e);
+            AppLogger.e(TAG, "Erro ao montar movimentação para edição", e);
             Toast.makeText(this, "Erro inesperado: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }

@@ -14,6 +14,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.reposit
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.modelos.ResumoFinanceiroModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.dados.repository.ResumoFinanceiroRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.UsuarioRepository; // NOVO IMPORT
+import com.gussanxz.orgafacil.util_helper.AppLogger;
 
 import java.util.Calendar;
 import java.util.List;
@@ -62,7 +63,7 @@ public class ResumoGeralViewModel extends ViewModel {
 
             @Override
             public void onError(String erro) {
-                Log.e("ResumoGeralViewModel", "Erro ao escutar resumo: " + erro);
+                AppLogger.e("ResumoGeralViewModel", "Erro ao escutar resumo: " + erro);
             }
         });
     }
@@ -171,7 +172,7 @@ public class ResumoGeralViewModel extends ViewModel {
 
             @Override
             public void onErro(String erro) {
-                Log.e("ResumoGeralViewModel", "Falha ao zerar mês: " + erro);
+                AppLogger.e("ResumoGeralViewModel", "Falha ao zerar mês: " + erro);
                 // Não reverte a prefs: preferimos não zerar duas vezes
                 // a correr o risco de loop de reset em falhas de rede.
             }
