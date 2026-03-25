@@ -462,4 +462,12 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private List<ItemSacolaVendaModel> getItensSacolaEmLista() {
         return new ArrayList<>(sacolaMap.values());
     }
+
+    //Evitar memory leak
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (listenerProdutos != null) listenerProdutos.remove();
+        if (listenerServicos != null) listenerServicos.remove();
+    }
 }
