@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 import androidx.annotation.NonNull;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
@@ -12,10 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VendaRepository {
-
-    private static final String COLECAO = "vendas";
-
-    private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
     public interface Callback {
         void onSucesso(String vendaId);
@@ -31,13 +28,13 @@ public class VendaRepository {
         String vendaId = venda.getId();
 
         if (vendaId == null || vendaId.trim().isEmpty()) {
-            vendaId = firestore.collection(COLECAO).document().getId();
+            vendaId = FirestoreSchema.vendasVendasCol().document().getId();
             venda.setId(vendaId);
         }
 
         final String vendaIdFinal = vendaId;
 
-        firestore.collection(COLECAO)
+        FirestoreSchema.vendasVendasCol()
                 .document(vendaIdFinal)
                 .set(venda, SetOptions.merge())
                 .addOnSuccessListener(unused -> callback.onSucesso(vendaIdFinal))
@@ -47,30 +44,35 @@ public class VendaRepository {
     }
 
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
-        return firestore.collection(COLECAO)
-                .orderBy("dataHoraMillis", Query.Direction.DESCENDING)
-                .addSnapshotListener((snapshot, error) -> {
-                    if (error != null) {
-                        callback.onErro(error.getMessage() != null
-                                ? error.getMessage()
-                                : "Erro ao listar vendas.");
-                        return;
-                    }
+        try {
+            return FirestoreSchema.vendasVendasCol()
+                    .orderBy("dataHoraMillis", Query.Direction.DESCENDING)
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (error != null) {
+                            callback.onErro(error.getMessage() != null
+                                    ? error.getMessage()
+                                    : "Erro ao listar vendas.");
+                            return;
+                        }
 
-                    List<VendaModel> lista = new ArrayList<>();
+                        List<VendaModel> lista = new ArrayList<>();
 
-                    if (snapshot != null) {
-                        lista = snapshot.toObjects(VendaModel.class);
+                        if (snapshot != null) {
+                            lista = snapshot.toObjects(VendaModel.class);
 
-                        for (int i = 0; i < lista.size(); i++) {
-                            VendaModel venda = lista.get(i);
-                            if (venda != null && (venda.getId() == null || venda.getId().trim().isEmpty())) {
-                                venda.setId(snapshot.getDocuments().get(i).getId());
+                            for (int i = 0; i < lista.size(); i++) {
+                                VendaModel venda = lista.get(i);
+                                if (venda != null && (venda.getId() == null || venda.getId().trim().isEmpty())) {
+                                    venda.setId(snapshot.getDocuments().get(i).getId());
+                                }
                             }
                         }
-                    }
 
-                    callback.onNovosDados(lista);
-                });
+                        callback.onNovosDados(lista);
+                    });
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+            return null;
+        }
     }
 }
