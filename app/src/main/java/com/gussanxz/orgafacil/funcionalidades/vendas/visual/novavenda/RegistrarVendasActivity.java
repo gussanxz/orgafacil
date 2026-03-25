@@ -376,7 +376,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         }
 
         atualizarBottomSheetSacola(
-                adapterSacola,
+                adapterSacolaRef[0],
                 rvItensSacola,
                 txtQtdItensSacola,
                 txtTotalSacolaBottom,
