@@ -114,7 +114,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 new AdapterFiltroCategoriasNovaVenda.OnCategoriaSelectedListener() {
                     @Override
                     public void onCategoriaSelected(Categoria categoria, int position) {
-                        filtrarProdutosPorCategoria(categoria.getNome());
+                        filtrarProdutosPorCategoria(categoria);
                     }
                 });
 
