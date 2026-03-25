@@ -310,7 +310,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         rvItensSacola.setLayoutManager(new LinearLayoutManager(this));
 
-        AdapterSacolaNovaVenda adapterSacola = new AdapterSacolaNovaVenda(
+        final AdapterSacolaNovaVenda[] adapterSacolaRef = new AdapterSacolaNovaVenda[1];
+
+        adapterSacolaRef[0] = new AdapterSacolaNovaVenda(
                 getItensSacolaEmLista(),
                 new AdapterSacolaNovaVenda.OnSacolaActionListener() {
                     @Override
@@ -319,7 +321,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                         if (itemMap != null) {
                             itemMap.incrementarQuantidade();
                             atualizarBottomSheetSacola(
-                                    adapterSacola,
+                                    adapterSacolaRef[0],
                                     rvItensSacola,
                                     txtQtdItensSacola,
                                     txtTotalSacolaBottom,
@@ -339,7 +341,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                             }
 
                             atualizarBottomSheetSacola(
-                                    adapterSacola,
+                                    adapterSacolaRef[0],
                                     rvItensSacola,
                                     txtQtdItensSacola,
                                     txtTotalSacolaBottom,
@@ -353,7 +355,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                         sacolaMap.remove(item.getChave());
 
                         atualizarBottomSheetSacola(
-                                adapterSacola,
+                                adapterSacolaRef[0],
                                 rvItensSacola,
                                 txtQtdItensSacola,
                                 txtTotalSacolaBottom,
@@ -367,7 +369,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 }
         );
 
-        rvItensSacola.setAdapter(adapterSacola);
+        rvItensSacola.setAdapter(adapterSacolaRef[0]);
 
         if (btnFecharSacola != null) {
             btnFecharSacola.setOnClickListener(v -> dialog.dismiss());
