@@ -19,11 +19,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -56,6 +61,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private final ProdutoRepository produtoRepository = new ProdutoRepository();
+    private final ServicoRepository servicoRepository = new ServicoRepository();
+    private ListenerRegistration listenerProdutos;
+    private ListenerRegistration listenerServicos;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,7 +119,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     }
 
     private void configurarRvProdutos() {
-        carregarDadosProdutosExemplo();
+        carregarProdutosEServicos();
 
         GridLayoutManager gridManager = new GridLayoutManager(this, 3);
         rvGradeProdutos.setLayoutManager(gridManager);
@@ -168,9 +178,41 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         return c;
     }
 
-    private void carregarDadosProdutosExemplo() {
-        listaCompletaProdutos = new ArrayList<>();
-        listaFiltradaProdutos = new ArrayList<>(listaCompletaProdutos);
+    private void carregarProdutosEServicos() {
+        listenerProdutos = produtoRepository.listarTempoReal(new ProdutoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<ProdutoModel> lista) {
+                // Remove os produtos antigos e insere os novos
+                listaCompletaProdutos.removeIf(i -> i.getTipo() == ItemVendaModel.TIPO_PRODUTO);
+                listaCompletaProdutos.addAll(lista);
+                aplicarFiltroAtual();
+            }
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(RegistrarVendasActivity.this, "Erro ao carregar produtos: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        listenerServicos = servicoRepository.listarTempoReal(new ServicoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<ServicoModel> lista) {
+                listaCompletaProdutos.removeIf(i -> i.getTipo() == ItemVendaModel.TIPO_SERVICO);
+                listaCompletaProdutos.addAll(lista);
+                aplicarFiltroAtual();
+            }
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(RegistrarVendasActivity.this, "Erro ao carregar serviços: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void aplicarFiltroAtual() {
+        listaFiltradaProdutos.clear();
+        listaFiltradaProdutos.addAll(listaCompletaProdutos);
+        if (adapterProdutos != null) {
+            adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        }
     }
 
     private void filtrarProdutosPorCategoria(String nomeCategoria) {
