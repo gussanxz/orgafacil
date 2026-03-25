@@ -23,6 +23,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
@@ -65,6 +66,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private final ServicoRepository servicoRepository = new ServicoRepository();
     private ListenerRegistration listenerProdutos;
     private ListenerRegistration listenerServicos;
+    private final CategoriaCatalogoRepository categoriaRepository = new CategoriaCatalogoRepository();
+    private ListenerRegistration listenerCategorias;
 
 
     @Override
@@ -105,7 +108,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rvCategorias.setLayoutManager(layoutManager);
 
-        carregarDadosFakes();
+        carregarCategorias();
 
         adapterFiltro = new AdapterFiltroCategoriasNovaVenda(listaCategorias, this,
                 new AdapterFiltroCategoriasNovaVenda.OnCategoriaSelectedListener() {
@@ -159,13 +162,32 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         intent.putExtra("valorTotal", getValorTotalSacola());
         startActivity(intent);
     }
-    private void carregarDadosFakes() {
-        listaCategorias.clear();
-        listaCategorias.add(criarCategoriaExemplo("Todos", 0));
-        listaCategorias.add(criarCategoriaExemplo("Produtos", 1));
-        listaCategorias.add(criarCategoriaExemplo("Serviços", 7));
-        listaCategorias.add(criarCategoriaExemplo("Bebidas", 3));
-        listaCategorias.add(criarCategoriaExemplo("Lanches", 2));
+    private void carregarCategorias() {
+        listenerCategorias = categoriaRepository.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<Categoria> lista) {
+                listaCategorias.clear();
+
+                // "Todos" é sempre o primeiro item fixo
+                Categoria todos = new Categoria();
+                todos.setId("todos");
+                todos.setNome("Todos");
+                todos.setAtiva(true);
+                listaCategorias.add(todos);
+
+                listaCategorias.addAll(lista);
+
+                if (adapterFiltro != null) {
+                    adapterFiltro.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(RegistrarVendasActivity.this,
+                        "Erro ao carregar categorias: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private Categoria criarCategoriaExemplo(String nome, int indexIcone) {
@@ -215,26 +237,22 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         }
     }
 
-    private void filtrarProdutosPorCategoria(String nomeCategoria) {
+    private void filtrarProdutosPorCategoria(Categoria categoria) {
         listaFiltradaProdutos.clear();
 
-        if (nomeCategoria.equalsIgnoreCase("Todos")) {
+        if ("todos".equals(categoria.getId())) {
             listaFiltradaProdutos.addAll(listaCompletaProdutos);
-        } else if (nomeCategoria.equalsIgnoreCase("Produtos")) {
-            for (ItemVendaModel item : listaCompletaProdutos) {
-                if (item.getTipo() == ItemVendaModel.TIPO_PRODUTO) {
-                    listaFiltradaProdutos.add(item);
-                }
-            }
-        } else if (nomeCategoria.equalsIgnoreCase("Serviços")) {
-            for (ItemVendaModel item : listaCompletaProdutos) {
-                if (item.getTipo() == ItemVendaModel.TIPO_SERVICO) {
-                    listaFiltradaProdutos.add(item);
-                }
-            }
         } else {
-            Toast.makeText(this, "Filtro: " + nomeCategoria, Toast.LENGTH_SHORT).show();
-            listaFiltradaProdutos.addAll(listaCompletaProdutos);
+            for (ItemVendaModel item : listaCompletaProdutos) {
+                String catId = (item instanceof ProdutoModel)
+                        ? ((ProdutoModel) item).getCategoriaId()
+                        : (item instanceof ServicoModel)
+                        ? ((ServicoModel) item).getCategoriaId()
+                        : null;
+                if (categoria.getId().equals(catId)) {
+                    listaFiltradaProdutos.add(item);
+                }
+            }
         }
 
         adapterProdutos.atualizarLista(listaFiltradaProdutos);
@@ -467,6 +485,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (listenerCategorias != null) listenerCategorias.remove();
         if (listenerProdutos != null) listenerProdutos.remove();
         if (listenerServicos != null) listenerServicos.remove();
     }
