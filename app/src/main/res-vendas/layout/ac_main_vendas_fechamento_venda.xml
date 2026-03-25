@@ -21,7 +21,7 @@
             android:layout_height="40dp"
             android:background="@android:color/transparent"
             android:contentDescription="Voltar"
-            android:src="@drawable/ic_arrow_back_24"
+            android:src="@drawable/ic_arrow_back_48"
             android:tint="#333333" />
 
         <TextView

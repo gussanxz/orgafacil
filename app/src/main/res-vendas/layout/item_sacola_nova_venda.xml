@@ -62,7 +62,7 @@
                 android:layout_height="40dp"
                 android:background="@android:color/transparent"
                 android:contentDescription="Remover item"
-                android:src="@drawable/ic_delete_24"
+                android:src="@drawable/ic_lixeira_excluir_24"
                 android:tint="#D32F2F" />
         </LinearLayout>
 
