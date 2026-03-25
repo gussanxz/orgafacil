@@ -231,7 +231,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private void aplicarFiltroAtual() {
         listaFiltradaProdutos.clear();
-        listaFiltradaProdutos.addAll(listaCompletaProdutos);
+        for (ItemVendaModel item : listaCompletaProdutos) {
+            boolean ativo = (item instanceof ProdutoModel && ((ProdutoModel) item).isStatusAtivo())
+                    || (item instanceof ServicoModel && ((ServicoModel) item).isStatusAtivo());
+            if (ativo) listaFiltradaProdutos.add(item);
+        }
         if (adapterProdutos != null) {
             adapterProdutos.atualizarLista(listaFiltradaProdutos);
         }
