@@ -28,17 +28,19 @@ public class VendaRepository {
     }
 
     public void salvar(@NonNull VendaModel venda, @NonNull Callback callback) {
-        String id = venda.getId();
+        String vendaId = venda.getId();
 
-        if (id == null || id.trim().isEmpty()) {
-            id = firestore.collection(COLECAO).document().getId();
-            venda.setId(id);
+        if (vendaId == null || vendaId.trim().isEmpty()) {
+            vendaId = firestore.collection(COLECAO).document().getId();
+            venda.setId(vendaId);
         }
 
+        final String vendaIdFinal = vendaId;
+
         firestore.collection(COLECAO)
-                .document(id)
+                .document(vendaIdFinal)
                 .set(venda, SetOptions.merge())
-                .addOnSuccessListener(unused -> callback.onSucesso(id))
+                .addOnSuccessListener(unused -> callback.onSucesso(vendaIdFinal))
                 .addOnFailureListener(e -> callback.onErro(
                         e.getMessage() != null ? e.getMessage() : "Erro ao salvar venda."
                 ));
