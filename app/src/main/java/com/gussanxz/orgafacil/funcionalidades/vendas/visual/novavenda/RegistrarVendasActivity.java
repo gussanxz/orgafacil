@@ -95,7 +95,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvCategorias = findViewById(R.id.rvCategorias);
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
         etBuscarProduto = findViewById(R.id.etBuscarProduto);
-
+        layoutResumoSacola = findViewById(R.id.layoutResumoSacola);
         txtSacolaQuantidade = findViewById(R.id.txtSacolaQuantidade);
         txtSacolaTitulo = findViewById(R.id.txtSacolaTitulo);
         txtSacolaSubtotal = findViewById(R.id.txtSacolaSubtotal);
