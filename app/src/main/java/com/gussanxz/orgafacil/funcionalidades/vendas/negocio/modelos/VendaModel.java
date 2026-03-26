@@ -13,6 +13,8 @@ public class VendaModel implements Serializable {
     private String formaPagamento;
     private int quantidadeTotal;
     private double valorTotal;
+    private double acrescimo = 0.0;
+    private double desconto = 0.0;
     private String status;
     private List<ItemVendaRegistradaModel> itens = new ArrayList<>();
 
@@ -74,4 +76,11 @@ public class VendaModel implements Serializable {
     public void setItens(List<ItemVendaRegistradaModel> itens) {
         this.itens = itens;
     }
+
+    public double getAcrescimo() { return acrescimo; }
+    public void setAcrescimo(double acrescimo) { this.acrescimo = acrescimo; }
+
+    public double getDesconto() { return desconto; }
+    public void setDesconto(double desconto) { this.desconto = desconto; }
+
 }

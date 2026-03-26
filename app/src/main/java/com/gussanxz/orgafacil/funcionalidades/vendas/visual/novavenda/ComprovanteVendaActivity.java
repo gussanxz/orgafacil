@@ -1,0 +1,187 @@
+package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+public class ComprovanteVendaActivity extends AppCompatActivity {
+
+    private TextView txtNumeroVenda;
+    private TextView txtDataVenda;
+    private TextView txtFormaPagamento;
+    private RecyclerView rvItensComprovante;
+    private TextView txtQtdTotalItens;
+    private TextView txtSubtotal;
+    private TextView txtAcrescimo;
+    private TextView txtDesconto;
+    private TextView txtValorTotal;
+    private LinearLayout rowAcrescimo;
+    private LinearLayout rowDesconto;
+    private LinearLayout btnFecharComprovante;
+
+    private AdapterItensComprovante adapter;
+    private final List<ItemVendaRegistradaModel> listaItens = new ArrayList<>();
+    private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", new Locale("pt", "BR"));
+
+    private VendaRepository vendaRepository;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.ac_main_vendas_comprovante);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootComprovante), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        vendaRepository = new VendaRepository();
+
+        inicializarComponentes();
+        configurarRecyclerView();
+        configurarAcoes();
+
+        String vendaId = getIntent().getStringExtra("vendaId");
+        if (vendaId != null) {
+            carregarVenda(vendaId);
+        } else {
+            Toast.makeText(this, "Erro: venda não encontrada.", Toast.LENGTH_LONG).show();
+            finish();
+        }
+    }
+
+    private void inicializarComponentes() {
+        txtNumeroVenda      = findViewById(R.id.txtNumeroVenda);
+        txtDataVenda        = findViewById(R.id.txtDataVenda);
+        txtFormaPagamento   = findViewById(R.id.txtFormaPagamentoComprovante);
+        rvItensComprovante  = findViewById(R.id.rvItensComprovante);
+        txtQtdTotalItens    = findViewById(R.id.txtQtdTotalItensComprovante);
+        txtSubtotal         = findViewById(R.id.txtSubtotalComprovante);
+        txtAcrescimo        = findViewById(R.id.txtAcrescimoComprovante);
+        txtDesconto         = findViewById(R.id.txtDescontoComprovante);
+        txtValorTotal       = findViewById(R.id.txtValorTotalComprovante);
+        rowAcrescimo        = findViewById(R.id.rowAcrescimo);
+        rowDesconto         = findViewById(R.id.rowDesconto);
+        btnFecharComprovante = findViewById(R.id.btnFecharComprovante);
+    }
+
+    private void configurarRecyclerView() {
+        rvItensComprovante.setLayoutManager(new LinearLayoutManager(this));
+        rvItensComprovante.setNestedScrollingEnabled(false);
+        adapter = new AdapterItensComprovante(listaItens);
+        rvItensComprovante.setAdapter(adapter);
+    }
+
+    private void configurarAcoes() {
+        if (btnFecharComprovante != null) {
+            btnFecharComprovante.setOnClickListener(v -> voltarParaNovaVenda());
+        }
+    }
+
+    private void carregarVenda(String vendaId) {
+        // Busca a venda uma única vez pelo ID via listener — cancela logo após receber
+        final boolean[] recebido = {false};
+
+        vendaRepository.listarTempoReal(new VendaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<VendaModel> lista) {
+                if (recebido[0]) return;
+
+                for (VendaModel venda : lista) {
+                    if (vendaId.equals(venda.getId())) {
+                        recebido[0] = true;
+                        preencherComprovante(venda);
+                        return;
+                    }
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(ComprovanteVendaActivity.this,
+                        "Erro ao carregar venda: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void preencherComprovante(VendaModel venda) {
+        // Número da venda — usa os 8 primeiros caracteres do ID
+        String numeroVenda = venda.getId() != null && venda.getId().length() >= 8
+                ? venda.getId().substring(0, 8).toUpperCase()
+                : venda.getId();
+        txtNumeroVenda.setText("Venda #" + numeroVenda);
+
+        // Data
+        txtDataVenda.setText(formatadorData.format(new Date(venda.getDataHoraMillis())));
+
+        // Forma de pagamento
+        txtFormaPagamento.setText(venda.getFormaPagamento() != null
+                ? venda.getFormaPagamento() : "—");
+
+        // Itens
+        listaItens.clear();
+        if (venda.getItens() != null) {
+            listaItens.addAll(venda.getItens());
+        }
+        adapter.notifyDataSetChanged();
+
+        // Totalizadores
+        txtQtdTotalItens.setText(venda.getQuantidadeTotal() + " " +
+                (venda.getQuantidadeTotal() == 1 ? "item" : "itens"));
+
+        double subtotal = venda.getValorTotal()
+                - venda.getAcrescimo()
+                + venda.getDesconto();
+        txtSubtotal.setText(formatadorMoeda.format(subtotal));
+        txtValorTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
+
+        // Acréscimo — só exibe a linha se for > 0
+        if (venda.getAcrescimo() > 0) {
+            rowAcrescimo.setVisibility(View.VISIBLE);
+            txtAcrescimo.setText("+ " + formatadorMoeda.format(venda.getAcrescimo()));
+        } else {
+            rowAcrescimo.setVisibility(View.GONE);
+        }
+
+        // Desconto — só exibe a linha se for > 0
+        if (venda.getDesconto() > 0) {
+            rowDesconto.setVisibility(View.VISIBLE);
+            txtDesconto.setText("- " + formatadorMoeda.format(venda.getDesconto()));
+        } else {
+            rowDesconto.setVisibility(View.GONE);
+        }
+    }
+
+    private void voltarParaNovaVenda() {
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
+    }
+}

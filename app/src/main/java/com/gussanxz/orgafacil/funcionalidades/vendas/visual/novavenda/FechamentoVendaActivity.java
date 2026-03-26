@@ -211,17 +211,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
             public void onSucesso(String vendaId) {
                 salvandoVenda = false;
                 atualizarBotaoFinalizar();
-
-                Toast.makeText(
-                        FechamentoVendaActivity.this,
-                        "Venda finalizada com sucesso.",
-                        Toast.LENGTH_LONG
-                ).show();
-
-                Intent intent = new Intent(FechamentoVendaActivity.this, RegistrarVendasActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
+                abrirComprovante(vendaId);
             }
 
             @Override
@@ -236,6 +226,14 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                 ).show();
             }
         });
+    }
+
+    private void abrirComprovante(String vendaId) {
+        Intent intent = new Intent(this, ComprovanteVendaActivity.class);
+        intent.putExtra("vendaId", vendaId);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+        finish();
     }
 
     private VendaModel montarVendaParaSalvar() {
