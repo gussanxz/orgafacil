@@ -5,11 +5,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VendaModel implements Serializable {
-
+    // Status
+    public static final String STATUS_EM_ABERTO  = "EM_ABERTO";
     public static final String STATUS_FINALIZADA = "FINALIZADA";
+    public static final String STATUS_CANCELADA  = "CANCELADA";
+
+    // Forma de pagamento
+    public static final String PAGAMENTO_PIX     = "PIX";
+    public static final String PAGAMENTO_DINHEIRO = "Dinheiro";
+    public static final String PAGAMENTO_CREDITO  = "Crédito";
+    public static final String PAGAMENTO_DEBITO   = "Débito";
 
     private String id;
-    private long dataHoraMillis;
+    private int numeroVenda;
+    private long dataHoraAberturaMillis;
+    private long dataHoraFechamentoMillis;
     private String formaPagamento;
     private int quantidadeTotal;
     private double valorTotal;
@@ -29,12 +39,28 @@ public class VendaModel implements Serializable {
         this.id = id;
     }
 
-    public long getDataHoraMillis() {
-        return dataHoraMillis;
+    public long getDataHoraFechamentoMillis() {
+        return dataHoraFechamentoMillis;
     }
 
-    public void setDataHoraMillis(long dataHoraMillis) {
-        this.dataHoraMillis = dataHoraMillis;
+    public void setDataHoraFechamentoMillis(long dataHoraFechamentoMillis) {
+        this.dataHoraFechamentoMillis = dataHoraFechamentoMillis;
+    }
+
+    public long getDataHoraAberturaMillis() {
+        return dataHoraAberturaMillis;
+    }
+
+    public void setDataHoraAberturaMillis(long dataHoraAberturaMillis) {
+        this.dataHoraAberturaMillis = dataHoraAberturaMillis;
+    }
+
+    public int getNumeroVenda() {
+        return numeroVenda;
+    }
+
+    public void setNumeroVenda(int numeroVenda) {
+        this.numeroVenda = numeroVenda;
     }
 
     public String getFormaPagamento() {

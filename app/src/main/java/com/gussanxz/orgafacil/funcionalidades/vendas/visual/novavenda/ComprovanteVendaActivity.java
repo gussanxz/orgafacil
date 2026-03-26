@@ -132,13 +132,16 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
 
     private void preencherComprovante(VendaModel venda) {
         // Número da venda — usa os 8 primeiros caracteres do ID
-        String numeroVenda = venda.getId() != null && venda.getId().length() >= 8
-                ? venda.getId().substring(0, 8).toUpperCase()
-                : venda.getId();
+        String numeroVenda = venda.getNumeroVenda() > 0
+                ? String.format(Locale.ROOT, "%07d", venda.getNumeroVenda())
+                : "---";
         txtNumeroVenda.setText("Venda #" + numeroVenda);
 
         // Data
-        txtDataVenda.setText(formatadorData.format(new Date(venda.getDataHoraMillis())));
+        long dataExibir = venda.getDataHoraFechamentoMillis() > 0
+                ? venda.getDataHoraFechamentoMillis()
+                : venda.getDataHoraAberturaMillis();
+        txtDataVenda.setText(formatadorData.format(new Date(dataExibir)));
 
         // Forma de pagamento
         txtFormaPagamento.setText(venda.getFormaPagamento() != null
@@ -156,8 +159,8 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                 (venda.getQuantidadeTotal() == 1 ? "item" : "itens"));
 
         double subtotal = venda.getValorTotal()
-                - venda.getAcrescimo()
-                + venda.getDesconto();
+                + venda.getAcrescimo()
+                - venda.getDesconto();
         txtSubtotal.setText(formatadorMoeda.format(subtotal));
         txtValorTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
 

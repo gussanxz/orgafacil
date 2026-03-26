@@ -70,12 +70,15 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
         }
 
         void bind(VendaModel venda) {
-            String idCurto = venda.getId() != null && venda.getId().length() > 8
-                    ? venda.getId().substring(0, 8).toUpperCase(Locale.ROOT)
-                    : (venda.getId() != null ? venda.getId().toUpperCase(Locale.ROOT) : "---");
+            String numero = venda.getNumeroVenda() > 0
+                    ? String.format(Locale.ROOT, "%07d", venda.getNumeroVenda())
+                    : "---";
+            txtVendaId.setText("Venda #" + numero);
 
-            txtVendaId.setText("Venda #" + idCurto);
-            txtVendaData.setText(formatarData(venda.getDataHoraMillis()));
+            long dataExibir = venda.getDataHoraFechamentoMillis() > 0
+                    ? venda.getDataHoraFechamentoMillis()
+                    : venda.getDataHoraAberturaMillis();
+            txtVendaData.setText(formatarData(dataExibir));
             txtVendaPagamento.setText("Pagamento: " + valorOuPadrao(venda.getFormaPagamento(), "-"));
             txtVendaQuantidade.setText(
                     venda.getQuantidadeTotal() + (venda.getQuantidadeTotal() == 1 ? " item" : " itens")

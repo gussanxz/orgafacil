@@ -27,18 +27,14 @@ import java.util.List;
 import java.util.Locale;
 
 public class FechamentoVendaActivity extends AppCompatActivity {
-
-    private static final String PAGAMENTO_PIX = "PIX";
-    private static final String PAGAMENTO_CARTAO = "Cartão";
-    private static final String PAGAMENTO_DINHEIRO = "Dinheiro";
-
     private ImageButton btnVoltarFechamento;
     private TextView txtQuantidadeResumo;
     private TextView txtTotalResumo;
     private RecyclerView rvResumoItens;
 
     private LinearLayout cardPagamentoPix;
-    private LinearLayout cardPagamentoCartao;
+    private LinearLayout cardPagamentoDebito;
+    private LinearLayout cardPagamentoCredito;
     private LinearLayout cardPagamentoDinheiro;
     private TextView txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
@@ -83,8 +79,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         rvResumoItens = findViewById(R.id.rvResumoItens);
 
         cardPagamentoPix = findViewById(R.id.cardPagamentoPix);
-        cardPagamentoCartao = findViewById(R.id.cardPagamentoCartao);
         cardPagamentoDinheiro = findViewById(R.id.cardPagamentoDinheiro);
+        cardPagamentoDebito = findViewById(R.id.cardPagamentoDebito);
+        cardPagamentoCredito = findViewById(R.id.cardPagamentoCredito);
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
         btnFinalizarVenda = findViewById(R.id.btnFinalizarVenda);
     }
@@ -105,15 +102,19 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         }
 
         if (cardPagamentoPix != null) {
-            cardPagamentoPix.setOnClickListener(v -> selecionarFormaPagamento(PAGAMENTO_PIX));
-        }
-
-        if (cardPagamentoCartao != null) {
-            cardPagamentoCartao.setOnClickListener(v -> selecionarFormaPagamento(PAGAMENTO_CARTAO));
+            cardPagamentoPix.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_PIX));
         }
 
         if (cardPagamentoDinheiro != null) {
-            cardPagamentoDinheiro.setOnClickListener(v -> selecionarFormaPagamento(PAGAMENTO_DINHEIRO));
+            cardPagamentoDinheiro.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DINHEIRO));
+        }
+
+        if (cardPagamentoDebito != null) {
+            cardPagamentoDebito.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DEBITO));
+        }
+
+        if (cardPagamentoCredito != null) {
+            cardPagamentoCredito.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_CREDITO));
         }
 
         if (btnFinalizarVenda != null) {
@@ -156,9 +157,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     }
 
     private void atualizarEstadoPagamento() {
-        atualizarCardPagamento(cardPagamentoPix, PAGAMENTO_PIX.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoCartao, PAGAMENTO_CARTAO.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoDinheiro, PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoPix, VendaModel.PAGAMENTO_PIX.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoDinheiro, VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoDebito, VendaModel.PAGAMENTO_DEBITO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoCredito, VendaModel.PAGAMENTO_CREDITO.equals(formaPagamentoSelecionada));
 
         if (txtFormaPagamentoSelecionada != null) {
             txtFormaPagamentoSelecionada.setText(
@@ -238,7 +240,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     private VendaModel montarVendaParaSalvar() {
         VendaModel venda = new VendaModel();
-        venda.setDataHoraMillis(System.currentTimeMillis());
+        long agora = System.currentTimeMillis();
+        venda.setDataHoraAberturaMillis(agora);
+        venda.setDataHoraFechamentoMillis(agora);
         venda.setFormaPagamento(formaPagamentoSelecionada);
         venda.setQuantidadeTotal(quantidadeTotal);
         venda.setValorTotal(valorTotal);

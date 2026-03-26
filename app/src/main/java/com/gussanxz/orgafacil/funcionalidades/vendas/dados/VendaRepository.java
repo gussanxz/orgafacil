@@ -46,7 +46,7 @@ public class VendaRepository {
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         try {
             return FirestoreSchema.vendasVendasCol()
-                    .orderBy("dataHoraMillis", Query.Direction.DESCENDING)
+                    .orderBy("dataHoraAberturaMillis", Query.Direction.DESCENDING)
                     .addSnapshotListener((snapshot, error) -> {
                         if (error != null) {
                             callback.onErro(error.getMessage() != null
