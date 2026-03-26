@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
+    android:background="@color/cor_fundo_header_resumo_contas"
     android:orientation="vertical">
 
     <LinearLayout
@@ -129,7 +129,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="12dp"
+            android:backgroundTint="@color/cor_fundo_inferior_resumo_contas">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -246,7 +247,8 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:paddingBottom="80dp"
-                android:layoutAnimation="@anim/layout_anim_slide_up" />
+                android:layoutAnimation="@anim/layout_anim_slide_up"
+                android:backgroundTint="@color/cor_fundo_inferior_resumo_contas"/>
 
             <ScrollView
                 android:id="@+id/layoutEmptyStateContas"

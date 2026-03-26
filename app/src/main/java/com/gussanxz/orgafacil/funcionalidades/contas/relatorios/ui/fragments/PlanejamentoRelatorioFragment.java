@@ -2,7 +2,10 @@ package com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.fragments;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,16 +17,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
@@ -41,8 +39,10 @@ import java.util.Map;
 
 public class PlanejamentoRelatorioFragment extends Fragment {
 
+    private static final String TAG = "SimuladorDebug";
+
     // -------------------------------------------------------------------------
-    // Campos existentes (não removidos)
+    // Campos existentes
     // -------------------------------------------------------------------------
     private ProgressBar progressMetaMensal;
     private TextView textMetaStatus, textMetaRestante, textMetaProjecao;
@@ -57,7 +57,7 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     private TextView textDetalheGastoDia;
 
     // -------------------------------------------------------------------------
-    // Novos campos — Simulador "Posso Comprar?"
+    // Campos — Simulador "Posso Comprar?"
     // -------------------------------------------------------------------------
     private EditText editSimuladorGasto;
     private EditText editNumeroParcelas;
@@ -73,15 +73,14 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     private TextView textCenario3Titulo;
     private TextView textCenario3Corpo;
 
+    // Flag de formatação do TextWatcher
+    private boolean isFormattingSimulador = false;
+
     // -------------------------------------------------------------------------
-    // Estado compartilhado entre carregamento e simulador
+    // Estado compartilhado — começa em -1 para detectar "ainda não carregou"
     // -------------------------------------------------------------------------
-    /**
-     * Mantido como campo da classe para que executarSimulador() possa acessar
-     * o gasto atual sem uma nova consulta ao repositório.
-     */
-    private long gastoTotalCentavos = 0;
-    private int diasRestantesNoMes  = 1; // padrão seguro para evitar divisão por zero
+    private long gastoTotalCentavos = -1;
+    private int diasRestantesNoMes  = 1;
 
     // -------------------------------------------------------------------------
     // Ciclo de vida
@@ -99,7 +98,6 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // --- Bind: campos originais ---
         viewMarcador             = view.findViewById(R.id.viewMarcador);
         textPercentualMarcador   = view.findViewById(R.id.textPercentualMarcador);
         layoutProgressoContainer = view.findViewById(R.id.layoutProgressoContainer);
@@ -112,7 +110,6 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         textMetaTotalCard        = view.findViewById(R.id.textMetaTotalCard);
         textDetalheGastoDia      = view.findViewById(R.id.textDetalheGastoDia);
 
-        // --- Bind: simulador ---
         editSimuladorGasto       = view.findViewById(R.id.editSimuladorGasto);
         editNumeroParcelas       = view.findViewById(R.id.editNumeroParcelas);
         checkParcelar            = view.findViewById(R.id.checkParcelar);
@@ -127,36 +124,64 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         textCenario3Titulo       = view.findViewById(R.id.textCenario3Titulo);
         textCenario3Corpo        = view.findViewById(R.id.textCenario3Corpo);
 
-        // --- Listeners ---
         view.findViewById(R.id.layoutEditarMeta)
                 .setOnClickListener(v -> abrirDialogEdicaoMeta());
+
+        // TextWatcher — formatação de moeda estilo centavos crescentes
+        if (editSimuladorGasto != null) {
+            editSimuladorGasto.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (isFormattingSimulador) return;
+                    isFormattingSimulador = true;
+
+                    String digits = s.toString().replaceAll("[^\\d]", "");
+                    if (digits.length() > 11) digits = digits.substring(digits.length() - 11);
+
+                    long centavos = 0;
+                    try { centavos = Long.parseLong(digits); } catch (NumberFormatException ignored) {}
+
+                    String formatted = String.format(Locale.getDefault(), "%,.2f", centavos / 100.0);
+                    editSimuladorGasto.setText(formatted);
+                    editSimuladorGasto.setSelection(formatted.length());
+
+                    isFormattingSimulador = false;
+                }
+            });
+        }
 
         if (checkParcelar != null) {
             checkParcelar.setOnCheckedChangeListener((btn, isChecked) -> {
                 if (editNumeroParcelas != null) {
                     editNumeroParcelas.setVisibility(isChecked ? View.VISIBLE : View.GONE);
-                    if (!isChecked) {
-                        // Limpa o campo ao desmarcar para não confundir próximo uso
-                        editNumeroParcelas.setText("");
-                    }
+                    if (!isChecked) editNumeroParcelas.setText("");
                 }
-                // Re-simula automaticamente ao alternar o checkbox, se já há valor
                 executarSimuladorSeSePossivel();
             });
         }
 
         View btnSimular = view.findViewById(R.id.btnSimular);
         if (btnSimular != null) {
-            btnSimular.setOnClickListener(v -> executarSimulador());
+            btnSimular.setOnClickListener(v -> {
+                v.bringToFront();
+                executarSimulador();
+            });
         }
 
-        // --- Repositório e dados ---
+        if (layoutResultadoSimulador != null) {
+            layoutResultadoSimulador.setClickable(false);
+            layoutResultadoSimulador.setFocusable(false);
+        }
+
         repository = new MovimentacaoRepository();
         carregarDadosPlanejamento();
     }
 
     // -------------------------------------------------------------------------
-    // Carregamento de dados (código original preservado)
+    // Carregamento de dados
     // -------------------------------------------------------------------------
 
     private void carregarDadosPlanejamento() {
@@ -165,8 +190,15 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         int diaAtual     = cal.get(Calendar.DAY_OF_MONTH);
         int totalDiasMes = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        // Atualiza diasRestantesNoMes para o simulador usar sem nova consulta
         diasRestantesNoMes = Math.max(totalDiasMes - diaAtual + 1, 1);
+
+        // Marca como "carregando" — o simulador vai bloquear se tentar antes do callback
+        gastoTotalCentavos = -1;
+
+        Log.d(TAG, "carregarDadosPlanejamento()"
+                + " diaAtual=" + diaAtual
+                + " totalDiasMes=" + totalDiasMes
+                + " diasRestantes=" + diasRestantesNoMes);
 
         cal.set(Calendar.DAY_OF_MONTH, 1);
         Date inicioMes = cal.getTime();
@@ -176,12 +208,29 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                     @Override
                     public void onSucesso(List<MovimentacaoModel> lista) {
                         if (!isAdded()) return;
+
+                        // LOG 1 — Quantos registros chegaram?
+                        Log.d(TAG, "onSucesso() — movimentações recebidas: " + lista.size());
+
+                        int contDespesas = 0;
+                        for (MovimentacaoModel mov : lista) {
+                            if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
+                                contDespesas++;
+                                Log.d(TAG, "  DESPESA"
+                                        + " id=" + mov.getId()
+                                        + " valor=" + mov.getValor() + " centavos"
+                                        + " data=" + mov.getData_movimentacao());
+                            }
+                        }
+                        Log.d(TAG, "onSucesso() — total de despesas: " + contDespesas);
+
                         processarPlanejamento(lista, diaAtual, totalDiasMes);
                     }
 
                     @Override
                     public void onErro(String erro) {
                         if (!isAdded()) return;
+                        Log.e(TAG, "onErro() — " + erro);
                         Toast.makeText(requireContext(),
                                 "Erro ao carregar planejamento: " + erro,
                                 Toast.LENGTH_LONG).show();
@@ -191,11 +240,9 @@ public class PlanejamentoRelatorioFragment extends Fragment {
 
     private void processarPlanejamento(List<MovimentacaoModel> lista,
                                        int diaAtual, int totalDiasMes) {
-        // Reseta o campo da classe antes de somar
         gastoTotalCentavos = 0;
         Map<Integer, Long> gastosPorDia = new HashMap<>();
 
-        // 1. Mantemos sua lógica intacta de varredura e agrupamento por dia
         for (MovimentacaoModel mov : lista) {
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
                 gastoTotalCentavos += mov.getValor();
@@ -206,14 +253,12 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                         int dia = c.get(Calendar.DAY_OF_MONTH);
                         gastosPorDia.put(dia, gastosPorDia.getOrDefault(dia, 0L) + mov.getValor());
                     } catch (Exception e) {
-                        // Data corrompida: ignora o agrupamento por dia deste item
-                        // mas mantém o valor no total geral
+                        Log.w(TAG, "Data corrompida, ignorando agrupamento por dia.");
                     }
                 }
             }
         }
 
-        // BUG 8 CORRIGIDO: getContext() em vez de requireActivity()
         android.content.Context ctx = getContext();
         if (ctx == null) return;
 
@@ -221,7 +266,16 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                         "OrgaFacilPrefs", android.content.Context.MODE_PRIVATE)
                 .getLong("meta_mensal", 300000L);
 
-        // Blindagem contra divisão por zero
+        // LOG 2 — Estado final que o simulador vai consumir
+        Log.d(TAG, "processarPlanejamento()"
+                + "\n  gastoTotal=" + gastoTotalCentavos + " centavos"
+                + " (" + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(gastoTotalCentavos)) + ")"
+                + "\n  meta=" + metaCentavos + " centavos"
+                + " (" + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(metaCentavos)) + ")"
+                + "\n  diasRestantes=" + diasRestantesNoMes
+                + "\n  restante=" + MoedaHelper.formatarParaBRL(
+                MoedaHelper.centavosParaDouble(metaCentavos - gastoTotalCentavos)));
+
         int percentual = 0;
         if (metaCentavos > 0) {
             percentual = (int) ((gastoTotalCentavos * 100) / metaCentavos);
@@ -229,42 +283,27 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             percentual = 100;
         }
 
-        // Como removemos o ProgressBar antigo do XML, comentamos para não dar Crash:
-        // progressMetaMensal.setProgress(Math.min(percentual, 100));
-
         int corStatus;
         String mensagemGamificada;
 
         if (percentual < 60) {
-            corStatus = Color.parseColor("#A5D6A7"); // Verde suave do design
+            corStatus = Color.parseColor("#A5D6A7");
             mensagemGamificada = "Progresso Saudável!";
         } else if (percentual <= 80) {
-            corStatus = Color.parseColor("#FFE082"); // Amarelo suave
+            corStatus = Color.parseColor("#FFE082");
             mensagemGamificada = "Atenção, chegando no limite!";
         } else {
-            corStatus = Color.parseColor("#EF9A9A"); // Vermelho suave
+            corStatus = Color.parseColor("#EF9A9A");
             mensagemGamificada = "Alerta vermelho! Pise no freio.";
         }
 
         textMetaStatus.setText(mensagemGamificada);
         textMetaStatus.setTextColor(corStatus);
-
-        if (iconMetaStatus != null) {
-            iconMetaStatus.setColorFilter(corStatus);
-        }
-
-        // --- A MÁGICA DA BARRA SEGMENTADA (MOVER O MARCADOR) ---
-        if (textPercentualMarcador != null) {
-            textPercentualMarcador.setText(percentual + "%");
-        }
+        if (iconMetaStatus != null) iconMetaStatus.setColorFilter(corStatus);
+        if (textPercentualMarcador != null) textPercentualMarcador.setText(percentual + "%");
 
         if (layoutProgressoContainer != null && viewMarcador != null) {
-            // Calcula a posição (bias) de 0.0 até 1.0
-            float bias = percentual / 100f;
-            if (bias > 1f) bias = 1f; // Trava no final se passar de 100%
-            if (bias < 0f) bias = 0f;
-
-            // Move a linha branca (marcador) pelo ConstraintLayout dinamicamente
+            float bias = Math.min(Math.max(percentual / 100f, 0f), 1f);
             androidx.constraintlayout.widget.ConstraintSet set =
                     new androidx.constraintlayout.widget.ConstraintSet();
             set.clone(layoutProgressoContainer);
@@ -276,15 +315,15 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         if (restante >= 0) {
             textMetaRestante.setText("Restante: " +
                     MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(restante)));
-            textMetaRestante.setTextColor(Color.parseColor("#BDBDBD")); // Cinza claro do design
+            textMetaRestante.setTextColor(Color.parseColor("#BDBDBD"));
         } else {
             textMetaRestante.setText("Estourou em " +
                     MoedaHelper.formatarParaBRL(
                             MoedaHelper.centavosParaDouble(Math.abs(restante))));
-            textMetaRestante.setTextColor(Color.parseColor("#EF9A9A")); // Vermelho do design
+            textMetaRestante.setTextColor(Color.parseColor("#EF9A9A"));
         }
 
-        long mediaDiaria  = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
+        long mediaDiaria   = diaAtual > 0 ? gastoTotalCentavos / diaAtual : 0;
         long projecaoFinal = mediaDiaria * totalDiasMes;
         textMetaProjecao.setText("Projeção: "
                 + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(projecaoFinal))
@@ -298,94 +337,72 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             textMetaProjecao.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
 
-        // --- INÍCIO DA INTEGRAÇÃO COM O NOVO LAYOUT ---
-
-        // 2. Atualizamos os novos campos de texto do Header
-        if (textMetaTotalCard != null) {
+        if (textMetaTotalCard != null)
             textMetaTotalCard.setText(
                     MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(metaCentavos)));
-        }
-        if (textGastoAtual != null) {
+        if (textGastoAtual != null)
             textGastoAtual.setText("Gasto Atual: " +
                     MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(gastoTotalCentavos)));
-        }
 
-        // 3. Substituímos o BarEntry pelo Entry do LineChart e aplicamos a soma cumulativa em centavos
         List<com.github.mikephil.charting.data.Entry> entries = new ArrayList<>();
         long somaCumulativaCentavos = 0;
-
         for (int i = 1; i <= totalDiasMes; i++) {
-            // Soma o gasto do dia ao total acumulado até aquele dia
             somaCumulativaCentavos += gastosPorDia.getOrDefault(i, 0L);
             float valorEmReais = (float) MoedaHelper.centavosParaDouble(somaCumulativaCentavos);
-
-            // Só plota a linha até o dia atual, para não desenhar uma linha reta até o dia 31
-            if (i <= diaAtual) {
+            if (i <= diaAtual)
                 entries.add(new com.github.mikephil.charting.data.Entry(i, valorEmReais));
-            }
         }
 
-        // 4. Chamamos o novo método de configuração do gráfico de linha
         configurarGraficoCumulativo(entries, diaAtual, metaCentavos, totalDiasMes);
     }
 
     // -------------------------------------------------------------------------
-    // Gráfico (código original preservado)
+    // Gráfico
     // -------------------------------------------------------------------------
 
     private void configurarGraficoCumulativo(
             List<com.github.mikephil.charting.data.Entry> entries,
             int diaAtual, long metaCentavos, int totalDiasMes) {
 
-        // Cores adaptadas para o modo escuro da imagem
-        int corTexto = Color.parseColor("#BDBDBD"); // Cinza claro para os eixos
-        int corLinha = Color.parseColor("#A5D6A7"); // Verde suave
+        int corTexto = Color.parseColor("#BDBDBD");
+        int corLinha = Color.parseColor("#A5D6A7");
 
         com.github.mikephil.charting.data.LineDataSet dataSet =
                 new com.github.mikephil.charting.data.LineDataSet(entries, "Evolução de Gastos");
         dataSet.setColor(corLinha);
         dataSet.setLineWidth(2.5f);
-        dataSet.setCircleColor(Color.parseColor("#FFFFFF")); // Pontos brancos
+        dataSet.setCircleColor(Color.parseColor("#FFFFFF"));
         dataSet.setCircleRadius(4f);
         dataSet.setDrawValues(false);
-        dataSet.setMode(com.github.mikephil.charting.data.LineDataSet.Mode.CUBIC_BEZIER); // Curva suave
-        dataSet.setDrawFilled(true); // Preenchimento abaixo da linha
+        dataSet.setMode(com.github.mikephil.charting.data.LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setDrawFilled(true);
         dataSet.setFillColor(corLinha);
         dataSet.setFillAlpha(40);
-
-        // --- ESTILO DO CLIQUE (HIGHLIGHT) IGUAL A IMAGEM ---
-        dataSet.setDrawHighlightIndicators(true); // Permite a linha de mira
-        dataSet.setDrawHorizontalHighlightIndicator(false); // Remove a linha horizontal
-        dataSet.setHighLightColor(Color.parseColor("#80FFFFFF")); // Linha vertical branca semi-transparente
+        dataSet.setDrawHighlightIndicators(true);
+        dataSet.setDrawHorizontalHighlightIndicator(false);
+        dataSet.setHighLightColor(Color.parseColor("#80FFFFFF"));
         dataSet.setHighlightLineWidth(1.5f);
 
         com.github.mikephil.charting.data.LineData data =
                 new com.github.mikephil.charting.data.LineData(dataSet);
         lineChartEvolucao.setData(data);
 
-        // Eixo X
         XAxis xAxis = lineChartEvolucao.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setLabelCount(7, false); // Mude de 'true' para 'false'. O 'true' forçava a quebra decimal no zoom!
-
-        // As duas linhas mágicas que resolvem o bug do zoom:
+        xAxis.setLabelCount(7, false);
         xAxis.setGranularity(1f);
-        xAxis.setGranularityEnabled(true); // Trava o zoom para pular de 1 em 1 no mínimo
-
-        // Força o texto a ser desenhado como Inteiro, cortando qualquer ".0" ou ".5"
+        xAxis.setGranularityEnabled(true);
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
                 return String.valueOf((int) value);
             }
         });
-
         xAxis.setTextColor(corTexto);
-        xAxis.setDrawGridLines(false); // Sem grade no fundo, visual mais limpo
+        xAxis.setDrawGridLines(false);
         xAxis.setAxisMinimum(1f);
         xAxis.setAxisMaximum(totalDiasMes);
 
-        // Eixo Y
         YAxis yAxisLeft = lineChartEvolucao.getAxisLeft();
         yAxisLeft.setValueFormatter(new ValueFormatter() {
             @Override
@@ -396,10 +413,9 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             }
         });
         yAxisLeft.setTextColor(corTexto);
-        yAxisLeft.setGridColor(Color.parseColor("#33FFFFFF")); // Grade muito sutil e clara
+        yAxisLeft.setGridColor(Color.parseColor("#33FFFFFF"));
         lineChartEvolucao.getAxisRight().setEnabled(false);
 
-        // Linha de Meta Total
         if (metaCentavos > 0) {
             float metaTotalReais = (float) MoedaHelper.centavosParaDouble(metaCentavos);
             LimitLine linhaMeta = new LimitLine(metaTotalReais, "Meta");
@@ -414,7 +430,6 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         lineChartEvolucao.getDescription().setEnabled(false);
         lineChartEvolucao.getLegend().setEnabled(false);
 
-        // --- OUVINTE DE CLIQUES PARA ATUALIZAR O TEXTO ---
         lineChartEvolucao.setOnChartValueSelectedListener(
                 new com.github.mikephil.charting.listener.OnChartValueSelectedListener() {
                     @Override
@@ -424,7 +439,7 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                         if (textDetalheGastoDia != null) {
                             int dia = (int) e.getX();
                             float valorEmReais = e.getY();
-                            textDetalheGastoDia.setText("Dia " + dia + ": Gasto acumulado de " +
+                            textDetalheGastoDia.setText("Dia " + dia + ": acumulado de " +
                                     MoedaHelper.formatarParaBRL((double) valorEmReais));
                             textDetalheGastoDia.setTextColor(Color.parseColor("#FFFFFF"));
                             textDetalheGastoDia.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -434,8 +449,7 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                     @Override
                     public void onNothingSelected() {
                         if (textDetalheGastoDia != null) {
-                            textDetalheGastoDia.setText(
-                                    "Toque em um ponto do gráfico para ver os detalhes");
+                            textDetalheGastoDia.setText("Toque em um ponto para ver o detalhe");
                             textDetalheGastoDia.setTextColor(Color.parseColor("#BDBDBD"));
                             textDetalheGastoDia.setTypeface(null, android.graphics.Typeface.NORMAL);
                         }
@@ -447,47 +461,36 @@ public class PlanejamentoRelatorioFragment extends Fragment {
     }
 
     // -------------------------------------------------------------------------
-    // Simulador "Posso Comprar?" — três cenários com cobertura total de erros
+    // Simulador "Posso Comprar?"
     // -------------------------------------------------------------------------
 
-    /**
-     * Executa o simulador apenas se houver um valor digitado.
-     * Usado para re-simular automaticamente quando o checkbox muda.
-     */
     private void executarSimuladorSeSePossivel() {
         if (editSimuladorGasto == null) return;
         String texto = editSimuladorGasto.getText().toString().trim();
-        if (!TextUtils.isEmpty(texto)) {
-            executarSimulador();
-        }
+        if (!TextUtils.isEmpty(texto)) executarSimulador();
     }
 
-    /**
-     * Ponto de entrada do simulador. Valida todos os inputs antes de calcular.
-     *
-     * Cenários de erro cobertos:
-     *  - Fragment desanexado (getContext() == null)
-     *  - Campo de valor vazio ou somente espaços
-     *  - Valor não-numérico (letras, símbolos, overflow de double)
-     *  - Valor zero ou negativo
-     *  - Valor absurdamente alto (> 1 bilhão) — protege contra overflow nos cálculos
-     *  - Parcelas marcadas mas campo em branco
-     *  - Parcelas com valor não-numérico
-     *  - Parcelas < 2 quando "parcelar" está marcado
-     *  - Parcelas > 360 (limite razoável de 30 anos)
-     *  - Meta mensal zerada no SharedPreferences
-     *  - gastoTotalCentavos ainda não carregado (Fragment recém-criado)
-     *  - diasRestantesNoMes = 0 (último dia do mês)
-     */
     private void executarSimulador() {
         android.content.Context ctx = getContext();
-        if (ctx == null) return; // Fragment desanexado
+        if (ctx == null) return;
 
-        // --- 1. Valida o campo de valor ---
+        // GUARD — dados ainda não chegaram do repositório
+        if (gastoTotalCentavos == -1) {
+            mostrarErroSimulador("Aguarde, os dados ainda estão carregando...");
+            Log.w(TAG, "executarSimulador() chamado antes de processarPlanejamento() terminar.");
+            return;
+        }
+
+        resetarCenarios();
+
         if (editSimuladorGasto == null) return;
-        String valorStr = editSimuladorGasto.getText().toString().trim().replace(",", ".");
 
-        if (TextUtils.isEmpty(valorStr)) {
+        // O campo vem formatado ("1.500,00") — normaliza para parseDouble
+        String valorStr = editSimuladorGasto.getText().toString().trim()
+                .replace(".", "")
+                .replace(",", ".");
+
+        if (TextUtils.isEmpty(valorStr) || valorStr.equals(".")) {
             mostrarErroSimulador("Digite o valor da compra antes de simular.");
             return;
         }
@@ -496,56 +499,43 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         try {
             valorCompra = Double.parseDouble(valorStr);
         } catch (NumberFormatException e) {
-            mostrarErroSimulador("Valor inválido. Use apenas números (ex: 150.00).");
+            mostrarErroSimulador("Valor inválido. Use apenas números.");
             return;
         }
 
-        if (Double.isNaN(valorCompra) || Double.isInfinite(valorCompra)) {
-            mostrarErroSimulador("Valor inválido. Tente novamente.");
-            return;
-        }
-
-        if (valorCompra <= 0) {
+        if (Double.isNaN(valorCompra) || Double.isInfinite(valorCompra) || valorCompra <= 0) {
             mostrarErroSimulador("O valor da compra deve ser maior que zero.");
             return;
         }
 
-        // Proteção contra overflow: mais de 1 bilhão de reais não faz sentido no contexto
         if (valorCompra > 1_000_000_000.0) {
             mostrarErroSimulador("Valor muito alto. Verifique o número digitado.");
             return;
         }
 
-        // --- 2. Valida parcelas ---
         boolean parcelar = checkParcelar != null && checkParcelar.isChecked();
         int numeroParcelas = 1;
 
         if (parcelar) {
             if (editNumeroParcelas == null) {
-                // View não encontrada — falha silenciosa, trata como à vista
                 parcelar = false;
             } else {
                 String parcStr = editNumeroParcelas.getText().toString().trim();
-
                 if (TextUtils.isEmpty(parcStr)) {
                     mostrarErroSimulador("Informe o número de parcelas.");
                     return;
                 }
-
                 try {
                     numeroParcelas = Integer.parseInt(parcStr);
                 } catch (NumberFormatException e) {
-                    mostrarErroSimulador("Número de parcelas inválido. Use apenas dígitos.");
+                    mostrarErroSimulador("Número de parcelas inválido.");
                     return;
                 }
-
                 if (numeroParcelas < 2) {
                     mostrarErroSimulador("Parcelamento requer mínimo de 2 parcelas.");
                     editNumeroParcelas.setText("2");
                     numeroParcelas = 2;
-                    // Não retorna: continua com 2 parcelas como correção automática
                 }
-
                 if (numeroParcelas > 360) {
                     mostrarErroSimulador("Número de parcelas muito alto (máximo: 360).");
                     return;
@@ -553,7 +543,6 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             }
         }
 
-        // --- 3. Lê a meta mensal do SharedPreferences ---
         long metaCentavos;
         try {
             metaCentavos = ctx.getSharedPreferences("OrgaFacilPrefs",
@@ -564,108 +553,103 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             return;
         }
 
-        // Meta zerada não faz sentido para o simulador
         if (metaCentavos <= 0) {
             mostrarErroSimulador("Defina uma meta mensal antes de simular.");
             return;
         }
 
-        // --- 4. Calcula valores base com proteção contra divisão por zero ---
-        double restante   = MoedaHelper.centavosParaDouble(metaCentavos - gastoTotalCentavos);
-        int diasRest      = Math.max(diasRestantesNoMes, 1); // nunca divide por zero
-        double limiteDiario = restante / diasRest;
-
-        double valorMes     = valorCompra / numeroParcelas;
-        double restanteApos = restante - valorMes;
+        double restante         = MoedaHelper.centavosParaDouble(metaCentavos - gastoTotalCentavos);
+        int diasRest            = Math.max(diasRestantesNoMes, 1);
+        double limiteDiario     = restante / diasRest;
+        double valorMes         = valorCompra / numeroParcelas;
+        double restanteApos     = restante - valorMes;
         double limiteDiarioApos = restanteApos / diasRest;
 
-        // --- 5. Exibe os cenários ---
-        if (layoutResultadoSimulador != null) {
+        // LOG 3 — Tudo que o simulador está usando para calcular os cenários
+        Log.d(TAG, "executarSimulador()"
+                + "\n  valorCompra=" + valorCompra
+                + "\n  numeroParcelas=" + numeroParcelas
+                + "\n  valorMes=" + valorMes
+                + "\n  gastoTotalCentavos=" + gastoTotalCentavos
+                + " (" + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(gastoTotalCentavos)) + ")"
+                + "\n  metaCentavos=" + metaCentavos
+                + " (" + MoedaHelper.formatarParaBRL(MoedaHelper.centavosParaDouble(metaCentavos)) + ")"
+                + "\n  restante=" + restante
+                + "\n  diasRest=" + diasRest
+                + "\n  limiteDiario=" + limiteDiario
+                + "\n  restanteApos=" + restanteApos
+                + "\n  limiteDiarioApos=" + limiteDiarioApos);
+
+        if (layoutResultadoSimulador != null)
             layoutResultadoSimulador.setVisibility(View.VISIBLE);
-        }
 
         exibirCenario1(valorMes, valorCompra, limiteDiario, limiteDiarioApos,
                 restante, restanteApos, parcelar);
-
         exibirCenario2(valorCompra, valorMes, numeroParcelas, parcelar);
-
         exibirCenario3(valorMes, restanteApos, limiteDiario);
     }
 
-    /**
-     * Cenário 1 — Choque de Realidade: impacto no limite diário.
-     *
-     * Exibido sempre. Cor muda conforme o saldo pós-compra:
-     *  - Verde: compra dentro do orçamento e limite diário confortável (> R$5)
-     *  - Amarelo: dentro do orçamento mas limite diário muito baixo (≤ R$5)
-     *  - Vermelho: orçamento estourado pela parcela deste mês
-     */
+    private void resetarCenarios() {
+        if (layoutCenario1 != null) {
+            layoutCenario1.setVisibility(View.GONE);
+            if (textCenario1Titulo != null) textCenario1Titulo.setText("");
+            if (textCenario1Corpo  != null) textCenario1Corpo.setText("");
+        }
+        if (layoutCenario2 != null) {
+            layoutCenario2.setVisibility(View.GONE);
+            if (textCenario2Titulo != null) textCenario2Titulo.setText("");
+            if (textCenario2Corpo  != null) textCenario2Corpo.setText("");
+        }
+        if (layoutCenario3 != null) {
+            layoutCenario3.setVisibility(View.GONE);
+            if (textCenario3Titulo != null) textCenario3Titulo.setText("");
+            if (textCenario3Corpo  != null) textCenario3Corpo.setText("");
+        }
+    }
+
     private void exibirCenario1(double valorMes, double valorCompra,
                                 double limiteDiario, double limiteDiarioApos,
-                                double restante, double restanteApos,
-                                boolean parcelar) {
+                                double restante, double restanteApos, boolean parcelar) {
         if (layoutCenario1 == null || textCenario1Titulo == null || textCenario1Corpo == null)
             return;
 
         layoutCenario1.setVisibility(View.VISIBLE);
-
-        String infoParcela = parcelar
-                ? " (parcela de " + MoedaHelper.formatarParaBRL(valorMes) + ")"
+        String tagParcela = parcelar
+                ? " (parcela: " + MoedaHelper.formatarParaBRL(valorMes) + "/mês)"
                 : "";
 
         if (restanteApos >= 0) {
-            // Decide se é situação confortável ou de atenção
-            boolean limiteBaixo = limiteDiarioApos <= 5.0;
-
-            textCenario1Titulo.setText("Cenário 1 — Impacto no limite diário");
-
-            if (!limiteBaixo) {
-                // Verde: tudo certo
+            boolean apertado = limiteDiarioApos <= 5.0;
+            if (!apertado) {
+                textCenario1Titulo.setText("✅ Cabe no orçamento");
                 textCenario1Titulo.setTextColor(Color.parseColor("#A5D6A7"));
                 layoutCenario1.setBackgroundResource(R.drawable.bg_posso_comprar_verde);
                 textCenario1Corpo.setText(
-                        "Seu limite diário atual é "
-                                + MoedaHelper.formatarParaBRL(limiteDiario) + "/dia. "
-                                + "Se você comprar isso" + infoParcela
-                                + ", seu limite cairá para "
-                                + MoedaHelper.formatarParaBRL(limiteDiarioApos)
-                                + "/dia até o final do mês. Ainda há espaço!"
-                );
+                        "Seu limite diário cai de "
+                                + MoedaHelper.formatarParaBRL(limiteDiario)
+                                + " para " + MoedaHelper.formatarParaBRL(limiteDiarioApos)
+                                + "/dia" + tagParcela + ". Você ainda tem espaço.");
             } else {
-                // Amarelo: cabe, mas fica apertado
+                textCenario1Titulo.setText("⚠️ Cabe, mas vai apertar");
                 textCenario1Titulo.setTextColor(Color.parseColor("#FFE082"));
                 layoutCenario1.setBackgroundResource(R.drawable.bg_posso_comprar_amarelo);
                 textCenario1Corpo.setText(
-                        "Seu limite diário atual é "
-                                + MoedaHelper.formatarParaBRL(limiteDiario) + "/dia. "
-                                + "Se você comprar isso" + infoParcela
-                                + ", seu limite diário cairá para apenas "
+                        "Seu limite diário cai para apenas "
                                 + MoedaHelper.formatarParaBRL(Math.max(limiteDiarioApos, 0))
-                                + "/dia. Vai ficar bem apertado até o fim do mês."
-                );
+                                + "/dia" + tagParcela + ". Vai ficar bem justo até o fim do mês.");
             }
-
         } else {
-            // Vermelho: estoura já neste mês
-            textCenario1Titulo.setText("Cenário 1 — Orçamento insuficiente");
+            textCenario1Titulo.setText("🚫 Orçamento insuficiente");
             textCenario1Titulo.setTextColor(Color.parseColor("#EF9A9A"));
             layoutCenario1.setBackgroundResource(R.drawable.bg_posso_comprar_vermelho);
             textCenario1Corpo.setText(
-                    "Seu orçamento restante é "
-                            + MoedaHelper.formatarParaBRL(restante) + ". "
-                            + "Esta compra" + infoParcela
-                            + " ultrapassa o disponível em "
-                            + MoedaHelper.formatarParaBRL(Math.abs(restanteApos)) + "."
-            );
+                    "Seu saldo restante é "
+                            + MoedaHelper.formatarParaBRL(restante)
+                            + tagParcela + ". A compra estoura em "
+                            + MoedaHelper.formatarParaBRL(Math.abs(restanteApos)) + ".");
         }
     }
 
-    /**
-     * Cenário 2 — O Parcelamento "Sem Juros": o falso alívio.
-     *
-     * Só exibido quando "parcelar" está marcado com ≥ 2 parcelas.
-     * Mostra o comprometimento dos meses futuros.
-     */
     private void exibirCenario2(double valorCompra, double valorMes,
                                 int numeroParcelas, boolean parcelar) {
         if (layoutCenario2 == null || textCenario2Titulo == null || textCenario2Corpo == null)
@@ -682,30 +666,15 @@ public class PlanejamentoRelatorioFragment extends Fragment {
         int parcelasFuturas = numeroParcelas - 1;
         String sufixoMeses  = parcelasFuturas == 1 ? "mês" : "meses";
 
-        textCenario2Titulo.setText("Cenário 2 — O parcelamento sem juros");
+        textCenario2Titulo.setText("💳 Atenção ao parcelamento");
         textCenario2Titulo.setTextColor(Color.parseColor("#FFE082"));
         textCenario2Corpo.setText(
-                "Parcelar divide o custo, mas não zera o preço. "
-                        + "Você pagará " + MoedaHelper.formatarParaBRL(valorMes)
-                        + " neste mês e comprometerá "
-                        + MoedaHelper.formatarParaBRL(valorMes) + "/mês nos próximos "
-                        + parcelasFuturas + " " + sufixoMeses + ". "
-                        + "No total são "
-                        + MoedaHelper.formatarParaBRL(valorCompra)
-                        + " saindo do seu bolso — parcelar não é desconto."
-        );
+                MoedaHelper.formatarParaBRL(valorMes) + "/mês por " + numeroParcelas
+                        + "x = " + MoedaHelper.formatarParaBRL(valorCompra) + " no total. "
+                        + "Você compromete os próximos " + parcelasFuturas + " " + sufixoMeses
+                        + ". Parcelar não é desconto.");
     }
 
-    /**
-     * Cenário 3 — Adiamento Inteligente: plano de ação quando o orçamento estoura.
-     *
-     * Só exibido quando a compra (ou sua parcela deste mês) estoura o saldo restante.
-     * Calcula quantos dias o usuário precisa "guardar" o limite diário para conseguir comprar.
-     *
-     * Casos especiais cobertos:
-     *  - limiteDiario = 0 (meta já totalmente gasta): orienta a revisar a meta
-     *  - diasEspera > diasRestantesNoMes: a compra não cabe mais neste mês de forma alguma
-     */
     private void exibirCenario3(double valorMes, double restanteApos, double limiteDiario) {
         if (layoutCenario3 == null || textCenario3Titulo == null || textCenario3Corpo == null)
             return;
@@ -717,48 +686,31 @@ public class PlanejamentoRelatorioFragment extends Fragment {
 
         layoutCenario3.setVisibility(View.VISIBLE);
         layoutCenario3.setBackgroundResource(R.drawable.bg_posso_comprar_azul);
-
-        textCenario3Titulo.setText("Cenário 3 — Adiamento inteligente");
+        textCenario3Titulo.setText("💡 Como chegar lá");
         textCenario3Titulo.setTextColor(Color.parseColor("#82B4E8"));
 
         double falta = Math.abs(restanteApos);
-
         String plano;
+
         if (limiteDiario <= 0) {
-            // Limite diário zerado ou negativo: meta já consumida
-            plano = "Seu limite diário já está esgotado. "
-                    + "Considere revisar sua meta ou adiar a compra para o próximo mês.";
+            plano = "Seu limite diário já está esgotado. Revise a meta ou adie para o próximo mês.";
         } else {
             int diasEspera = (int) Math.ceil(falta / limiteDiario);
             if (diasEspera >= diasRestantesNoMes) {
-                // Mesmo economizando tudo, não dá para comprar este mês
-                plano = "Esta compra não cabe neste mês. "
-                        + "Se você guardar todo o seu limite diário, precisaria de "
-                        + diasEspera + " dias — mas só restam " + diasRestantesNoMes + ". "
-                        + "Planeje para o próximo mês!";
+                plano = "Mesmo guardando tudo, precisaria de " + diasEspera
+                        + " dias — só restam " + diasRestantesNoMes + ". Planeje para o próximo mês.";
             } else {
-                String sufixoDias = diasEspera == 1 ? "dia" : "dias";
-                plano = "Se você guardar seu limite diário por "
-                        + diasEspera + " " + sufixoDias
-                        + ", poderá comprar isso sem quebrar o orçamento!";
+                String sufixo = diasEspera == 1 ? "dia" : "dias";
+                plano = "Guarde seu limite diário por " + diasEspera + " " + sufixo
+                        + " e a compra estará dentro do orçamento.";
             }
         }
 
         textCenario3Corpo.setText(
-                "Esta compra estoura sua meta em "
-                        + MoedaHelper.formatarParaBRL(falta) + ". "
-                        + "Alternativa: " + plano
-        );
+                "Faltam " + MoedaHelper.formatarParaBRL(falta) + " para fechar a conta. " + plano);
     }
 
-    /**
-     * Exibe uma mensagem de erro no lugar dos cenários e oculta os painéis de resultado.
-     * Garante que o usuário veja o feedback sem um Toast que some rapidamente.
-     *
-     * Também usa Toast como fallback caso as views do simulador não estejam disponíveis.
-     */
     private void mostrarErroSimulador(String mensagem) {
-        // Tenta exibir inline primeiro
         boolean exibidoInline = false;
 
         if (layoutResultadoSimulador != null
@@ -769,7 +721,6 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             layoutResultadoSimulador.setVisibility(View.VISIBLE);
             layoutCenario1.setVisibility(View.VISIBLE);
             layoutCenario1.setBackgroundResource(R.drawable.bg_posso_comprar_vermelho);
-
             textCenario1Titulo.setText("Atenção");
             textCenario1Titulo.setTextColor(Color.parseColor("#EF9A9A"));
             textCenario1Corpo.setText(mensagem);
@@ -780,17 +731,14 @@ public class PlanejamentoRelatorioFragment extends Fragment {
             exibidoInline = true;
         }
 
-        // Toast como fallback (ou complemento para erros críticos)
         if (!exibidoInline) {
             android.content.Context ctx = getContext();
-            if (ctx != null) {
-                Toast.makeText(ctx, mensagem, Toast.LENGTH_LONG).show();
-            }
+            if (ctx != null) Toast.makeText(ctx, mensagem, Toast.LENGTH_LONG).show();
         }
     }
 
     // -------------------------------------------------------------------------
-    // Dialog de edição de meta (código original preservado)
+    // Dialog de edição de meta
     // -------------------------------------------------------------------------
 
     private void abrirDialogEdicaoMeta() {
@@ -813,21 +761,16 @@ public class PlanejamentoRelatorioFragment extends Fragment {
 
                             if (valorDouble <= 0) {
                                 Toast.makeText(getContext(),
-                                        "A meta deve ser maior que zero.",
-                                        Toast.LENGTH_SHORT).show();
+                                        "A meta deve ser maior que zero.", Toast.LENGTH_SHORT).show();
                                 return;
                             }
-
                             if (valorDouble > 1_000_000_000.0) {
                                 Toast.makeText(getContext(),
-                                        "Valor muito alto. Verifique o número.",
-                                        Toast.LENGTH_SHORT).show();
+                                        "Valor muito alto. Verifique o número.", Toast.LENGTH_SHORT).show();
                                 return;
                             }
 
                             long valorEmCentavos = (long) (valorDouble * 100);
-
-                            // BUG 8 CORRIGIDO: getContext() em vez de requireActivity()
                             android.content.Context ctx = getContext();
                             if (ctx == null) return;
 
@@ -836,6 +779,9 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                                     .edit()
                                     .putLong("meta_mensal", valorEmCentavos)
                                     .apply();
+
+                            Log.d(TAG, "Meta salva: " + valorEmCentavos + " centavos ("
+                                    + MoedaHelper.formatarParaBRL(valorDouble) + ")");
 
                             carregarDadosPlanejamento();
 
@@ -846,8 +792,7 @@ public class PlanejamentoRelatorioFragment extends Fragment {
                         }
                     } else {
                         Toast.makeText(getContext(),
-                                "Digite um valor para a meta.",
-                                Toast.LENGTH_SHORT).show();
+                                "Digite um valor para a meta.", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("Cancelar", null)

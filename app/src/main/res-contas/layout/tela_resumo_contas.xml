@@ -6,7 +6,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
+    android:background="@color/cor_fundo_header_resumo_contas"
     tools:context=".funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity">
 
     <LinearLayout
@@ -211,7 +211,7 @@
         app:backgroundTint="@color/cor_background"
         app:contentInsetStart="0dp"
         app:contentInsetEnd="0dp"
-        android:backgroundTint="@color/colorPrimary">
+        android:backgroundTint="@color/cor_fundo_header_resumo_contas">
 
         <LinearLayout
             android:id="@+id/linear_footer_container"
@@ -239,7 +239,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CONTAS PENDENTES"
-                    android:textColor="#000000"
+                    android:textColor="@color/cor_texto_abas_footer_resumo_contas"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -263,7 +263,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MOVIMENTAÇÕES"
-                    android:textColor="#000000"
+                    android:textColor="@color/cor_texto_abas_footer_resumo_contas"
                     android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<!-- Cores modo claro utilizadas no modulo intro -->
+
+    <color name="cor_fundo_home">#F4EEE9</color>
+    <color name="cor_icones_home">#1D4DB1</color>
+
+    <color name="cor_texto_home">#99000000</color>
+
+    <color name="cor_barra_status">#1D3557</color>
+    <color name="cor_botoes_navegacao">#1D3557</color>
+</resources>

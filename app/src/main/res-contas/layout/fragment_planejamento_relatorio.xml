@@ -25,7 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="#2E3A45"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
@@ -205,7 +205,7 @@
             android:layout_width="match_parent"
             android:layout_height="250dp"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="#2E3A45"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
@@ -229,7 +229,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#2E3A45"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp">
 
@@ -252,7 +252,7 @@
                         android:layout_weight="1"
                         android:hint="R$ 0,00"
                         android:inputType="numberDecimal"
-                        android:background="@drawable/bg_edittext_simulador"
+                        android:background="@color/cor_background"
                         android:padding="12dp"/>
 
                     <Button
@@ -261,6 +261,7 @@
                         android:layout_height="wrap_content"
                         android:text="Simular"
                         android:layout_marginStart="8dp"
+                        android:background="@color/black"
                         style="@style/Widget.MaterialComponents.Button.TextButton"/>
                 </LinearLayout>
 

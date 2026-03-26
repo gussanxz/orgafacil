@@ -12,4 +12,10 @@
 
     <color name="chip_atrasado_bg">#FFEBEE</color>
     <color name="chip_atrasado_text">#C62828</color>
+
+    <color name="cor_fundo_cards">#3B5B6E</color> <!-- cor dos cards de relatorios -->
+    <color name="cor_fundo_inferior_resumo_contas">#293141</color>
+    <color name="cor_fundo_header_resumo_contas">#293141</color>
+
+    <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
 </resources>
