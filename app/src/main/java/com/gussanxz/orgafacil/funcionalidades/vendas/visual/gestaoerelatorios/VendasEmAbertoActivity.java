@@ -23,6 +23,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaV
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,12 +99,10 @@ public class VendasEmAbertoActivity extends AppCompatActivity {
     }
 
     private void abrirEdicao(VendaModel venda) {
-        Intent intent = new Intent(this, FechamentoVendaActivity.class);
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
         intent.putExtra("itensSacola", new ArrayList<>(
                 converterItensRegistradosParaSacola(venda.getItens())));
-        intent.putExtra("quantidadeTotal", venda.getQuantidadeTotal());
-        intent.putExtra("valorTotal", venda.getValorTotal());
-        intent.putExtra("vendaId", venda.getId()); // ← chave para o FechamentoVendaActivity saber que é edição
+        intent.putExtra("vendaId", venda.getId());
         startActivity(intent);
     }
 

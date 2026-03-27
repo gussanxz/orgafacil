@@ -69,7 +69,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private ListenerRegistration listenerServicos;
     private final CategoriaCatalogoRepository categoriaRepository = new CategoriaCatalogoRepository();
     private ListenerRegistration listenerCategorias;
-
+    private String vendaIdEdicao = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +90,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         configurarAcoesHeader();
         configurarResumoSacola();
         atualizarResumoSacola();
+        restaurarSacolaSeEdicao();
     }
 
     private void inicializarComponentes() {
@@ -170,8 +171,12 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         intent.putExtra("itensSacola", new ArrayList<>(sacolaMap.values()));
         intent.putExtra("quantidadeTotal", getQuantidadeTotalSacola());
         intent.putExtra("valorTotal", getValorTotalSacola());
+        if (vendaIdEdicao != null) {
+            intent.putExtra("vendaId", vendaIdEdicao); // garante que FechamentoVenda atualize, não crie nova
+        }
         startActivity(intent);
     }
+
     private void carregarCategorias() {
         listenerCategorias = categoriaRepository.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
             @Override
@@ -507,6 +512,20 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         if (adapterProdutos != null) {
             adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        }
+    }
+    @SuppressWarnings("unchecked")
+    private void restaurarSacolaSeEdicao() {
+        vendaIdEdicao = getIntent().getStringExtra("vendaId");
+        ArrayList<ItemSacolaVendaModel> itensRecebidos =
+                (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
+
+        if (itensRecebidos != null && !itensRecebidos.isEmpty()) {
+            sacolaMap.clear();
+            for (ItemSacolaVendaModel item : itensRecebidos) {
+                sacolaMap.put(item.getChave(), item);
+            }
+            atualizarResumoSacola();
         }
     }
 }
