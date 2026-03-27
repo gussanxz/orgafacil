@@ -9,6 +9,17 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     private final double precoUnitario;
     private int quantidade;
 
+    // Construtor 1: para adicionar item novo na sacola (vem da interface ItemVendaModel)
+    public ItemSacolaVendaModel(ItemVendaModel item) {
+        this.chave = item.getTipo() + "_" + (item.getId() != null ? item.getId() : item.getNome());
+        this.itemId = item.getId();
+        this.nome = item.getNome();
+        this.tipo = item.getTipo();
+        this.precoUnitario = item.getPreco();
+        this.quantidade = 1;
+    }
+
+    // Construtor 2: para restaurar sacola a partir de uma venda já registrada
     public ItemSacolaVendaModel(ItemVendaRegistradaModel item) {
         this.chave = item.getTipo() + "_" + item.getItemId();
         this.itemId = item.getItemId();
