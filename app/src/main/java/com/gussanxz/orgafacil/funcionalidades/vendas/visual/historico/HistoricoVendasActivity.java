@@ -87,8 +87,14 @@ public class HistoricoVendasActivity extends AppCompatActivity {
 
     private void configurarRecyclerView() {
         rvHistoricoVendas.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AdapterHistoricoVendas(listaVendas);
+        adapter = new AdapterHistoricoVendas(listaVendas, venda ->
+                abrirComprovante(venda.getId()));
         rvHistoricoVendas.setAdapter(adapter);
+    }
+    private void abrirComprovante(String vendaId) {
+        Intent intent = new Intent(this, ComprovanteVendaActivity.class);
+        intent.putExtra("vendaId", vendaId);
+        startActivity(intent);
     }
 
     private void configurarAcoes() {

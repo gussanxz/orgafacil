@@ -23,8 +23,15 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
 
-    public AdapterHistoricoVendas(List<VendaModel> listaVendas) {
+    private final OnVendaClickListener listener;
+
+    public AdapterHistoricoVendas(List<VendaModel> listaVendas, OnVendaClickListener listener) {
         this.listaVendas = listaVendas;
+        this.listener = listener;
+    }
+
+    public interface OnVendaClickListener {
+        void onVendaClick(VendaModel venda);
     }
 
     public void atualizarLista(List<VendaModel> novaLista) {
@@ -101,6 +108,10 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
                     break;
             }
             txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onVendaClick(venda);
+            });
         }
 
         private String formatarData(long dataHoraMillis) {

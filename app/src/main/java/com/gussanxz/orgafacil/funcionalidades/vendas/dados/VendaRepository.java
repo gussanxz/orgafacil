@@ -189,4 +189,56 @@ public class VendaRepository {
         }
         return lista;
     }
+
+    public void buscarPorId(@NonNull String vendaId, @NonNull Callback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .document(vendaId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            callback.onSucesso(vendaId);
+                        } else {
+                            callback.onErro("Venda não encontrada.");
+                        }
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar venda."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    // Novo callback que retorna o objeto VendaModel completo
+    public interface VendaCallback {
+        void onVenda(VendaModel venda);
+        void onErro(String erro);
+    }
+
+    public void buscarVendaPorId(@NonNull String vendaId, @NonNull VendaCallback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .document(vendaId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            VendaModel venda = doc.toObject(VendaModel.class);
+                            if (venda != null) {
+                                venda.setId(doc.getId());
+                                callback.onVenda(venda);
+                            } else {
+                                callback.onErro("Erro ao converter venda.");
+                            }
+                        } else {
+                            callback.onErro("Venda não encontrada.");
+                        }
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar venda."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
 }

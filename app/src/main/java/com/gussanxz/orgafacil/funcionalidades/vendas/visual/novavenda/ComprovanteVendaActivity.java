@@ -105,27 +105,17 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     }
 
     private void carregarVenda(String vendaId) {
-        // Busca a venda uma única vez pelo ID via listener — cancela logo após receber
-        final boolean[] recebido = {false};
-
-        vendaRepository.listarTempoReal(new VendaRepository.ListaCallback() {
+        vendaRepository.buscarVendaPorId(vendaId, new VendaRepository.VendaCallback() {
             @Override
-            public void onNovosDados(List<VendaModel> lista) {
-                if (recebido[0]) return;
-
-                for (VendaModel venda : lista) {
-                    if (vendaId.equals(venda.getId())) {
-                        recebido[0] = true;
-                        preencherComprovante(venda);
-                        return;
-                    }
-                }
+            public void onVenda(VendaModel venda) {
+                preencherComprovante(venda);
             }
 
             @Override
             public void onErro(String erro) {
                 Toast.makeText(ComprovanteVendaActivity.this,
                         "Erro ao carregar venda: " + erro, Toast.LENGTH_LONG).show();
+                finish();
             }
         });
     }
