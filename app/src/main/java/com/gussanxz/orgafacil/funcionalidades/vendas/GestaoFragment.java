@@ -12,7 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HistoricoVendasActivity;
 
 public class GestaoFragment extends Fragment {
 
@@ -31,7 +31,7 @@ public class GestaoFragment extends Fragment {
         View cardVendas = view.findViewById(R.id.cardVendas);
         if (cardVendas != null) {
             cardVendas.setOnClickListener(v -> {
-                startActivity(new Intent(requireContext(), VendasEmAbertoActivity.class));
+                startActivity(new Intent(requireContext(), HistoricoVendasActivity.class));
             });
         }
 
