@@ -2,6 +2,8 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -10,6 +12,7 @@ import com.google.firebase.firestore.SetOptions;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class VendaRepository {
@@ -24,24 +27,92 @@ public class VendaRepository {
         void onErro(String erro);
     }
 
-    public void salvar(@NonNull VendaModel venda, @NonNull Callback callback) {
-        String vendaId = venda.getId();
-
-        if (vendaId == null || vendaId.trim().isEmpty()) {
-            vendaId = FirestoreSchema.vendasVendasCol().document().getId();
-            venda.setId(vendaId);
-        }
-
-        final String vendaIdFinal = vendaId;
-
-        FirestoreSchema.vendasVendasCol()
-                .document(vendaIdFinal)
-                .set(venda, SetOptions.merge())
-                .addOnSuccessListener(unused -> callback.onSucesso(vendaIdFinal))
-                .addOnFailureListener(e -> callback.onErro(
-                        e.getMessage() != null ? e.getMessage() : "Erro ao salvar venda."
-                ));
+    private interface NumeroCallback {
+        void onNumero(int numero);
+        void onErro(String erro);
     }
+
+    // -----------------------------------------------------------
+    // SALVAR
+    // -----------------------------------------------------------
+
+    public void salvar(@NonNull VendaModel venda, @NonNull Callback callback) {
+        boolean isNova = venda.getId() == null || venda.getId().trim().isEmpty();
+
+        if (isNova) {
+            // Venda nova: gera número sequencial antes de salvar
+            gerarProximoNumero(new NumeroCallback() {
+                @Override
+                public void onNumero(int numero) {
+                    venda.setNumeroVenda(numero);
+                    String vendaId = FirestoreSchema.vendasVendasCol().document().getId();
+                    venda.setId(vendaId);
+                    salvarNoFirestore(venda, callback);
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    callback.onErro(erro);
+                }
+            });
+        } else {
+            // Atualização de venda existente — mantém o número que já tem
+            salvarNoFirestore(venda, callback);
+        }
+    }
+
+    private void salvarNoFirestore(@NonNull VendaModel venda, @NonNull Callback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .document(venda.getId())
+                    .set(venda, SetOptions.merge())
+                    .addOnSuccessListener(unused -> callback.onSucesso(venda.getId()))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao salvar venda."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    // -----------------------------------------------------------
+    // NUMERAÇÃO SEQUENCIAL
+    // -----------------------------------------------------------
+
+    private void gerarProximoNumero(@NonNull NumeroCallback callback) {
+        try {
+            // Contador em: vendas/resumo_geral/config/sequencia → { ultimoNumero: N }
+            DocumentReference contadorRef = FirestoreSchema.vendasResumoDoc()
+                    .collection("config")
+                    .document("sequencia");
+
+            FirestoreSchema.vendasResumoDoc()
+                    .getFirestore()
+                    .runTransaction(transaction -> {
+                        DocumentSnapshot snap = transaction.get(contadorRef);
+                        long proximo = 1;
+                        if (snap.exists() && snap.getLong("ultimoNumero") != null) {
+                            proximo = snap.getLong("ultimoNumero") + 1;
+                        }
+                        transaction.set(
+                                contadorRef,
+                                Collections.singletonMap("ultimoNumero", proximo),
+                                SetOptions.merge()
+                        );
+                        return proximo;
+                    })
+                    .addOnSuccessListener(numero -> callback.onNumero((int)(long) numero))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao gerar número da venda."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    // -----------------------------------------------------------
+    // LISTAGENS
+    // -----------------------------------------------------------
 
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         try {
@@ -50,25 +121,10 @@ public class VendaRepository {
                     .addSnapshotListener((snapshot, error) -> {
                         if (error != null) {
                             callback.onErro(error.getMessage() != null
-                                    ? error.getMessage()
-                                    : "Erro ao listar vendas.");
+                                    ? error.getMessage() : "Erro ao listar vendas.");
                             return;
                         }
-
-                        List<VendaModel> lista = new ArrayList<>();
-
-                        if (snapshot != null) {
-                            lista = snapshot.toObjects(VendaModel.class);
-
-                            for (int i = 0; i < lista.size(); i++) {
-                                VendaModel venda = lista.get(i);
-                                if (venda != null && (venda.getId() == null || venda.getId().trim().isEmpty())) {
-                                    venda.setId(snapshot.getDocuments().get(i).getId());
-                                }
-                            }
-                        }
-
-                        callback.onNovosDados(lista);
+                        callback.onNovosDados(extrairLista(snapshot));
                     });
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
@@ -84,31 +140,20 @@ public class VendaRepository {
                     .addSnapshotListener((snapshot, error) -> {
                         if (error != null) {
                             callback.onErro(error.getMessage() != null
-                                    ? error.getMessage()
-                                    : "Erro ao listar vendas em aberto.");
+                                    ? error.getMessage() : "Erro ao listar vendas em aberto.");
                             return;
                         }
-
-                        List<VendaModel> lista = new ArrayList<>();
-
-                        if (snapshot != null) {
-                            lista = snapshot.toObjects(VendaModel.class);
-
-                            for (int i = 0; i < lista.size(); i++) {
-                                VendaModel venda = lista.get(i);
-                                if (venda != null && (venda.getId() == null || venda.getId().trim().isEmpty())) {
-                                    venda.setId(snapshot.getDocuments().get(i).getId());
-                                }
-                            }
-                        }
-
-                        callback.onNovosDados(lista);
+                        callback.onNovosDados(extrairLista(snapshot));
                     });
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
             return null;
         }
     }
+
+    // -----------------------------------------------------------
+    // ATUALIZAR STATUS
+    // -----------------------------------------------------------
 
     public void atualizarStatus(@NonNull String vendaId,
                                 @NonNull String novoStatus,
@@ -124,5 +169,24 @@ public class VendaRepository {
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }
+    }
+
+    // -----------------------------------------------------------
+    // HELPER PRIVADO
+    // -----------------------------------------------------------
+
+    private List<VendaModel> extrairLista(
+            com.google.firebase.firestore.QuerySnapshot snapshot) {
+        List<VendaModel> lista = new ArrayList<>();
+        if (snapshot == null) return lista;
+
+        lista = snapshot.toObjects(VendaModel.class);
+        for (int i = 0; i < lista.size(); i++) {
+            VendaModel v = lista.get(i);
+            if (v != null && (v.getId() == null || v.getId().trim().isEmpty())) {
+                v.setId(snapshot.getDocuments().get(i).getId());
+            }
+        }
+        return lista;
     }
 }
