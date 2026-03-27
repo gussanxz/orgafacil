@@ -47,7 +47,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private String formaPagamentoSelecionada = null;
     private int quantidadeTotal = 0;
     private double valorTotal = 0.0;
-
+    private String vendaIdEdicao = null;
     private VendaRepository vendaRepository;
     private boolean salvandoVenda = false;
 
@@ -132,6 +132,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
 
+        vendaIdEdicao = getIntent().getStringExtra("vendaId");
         quantidadeTotal = getIntent().getIntExtra("quantidadeTotal", 0);
         valorTotal = getIntent().getDoubleExtra("valorTotal", 0.0);
 
@@ -251,6 +252,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     private VendaModel montarVendaParaSalvar() {
         VendaModel venda = new VendaModel();
+        if (vendaIdEdicao != null) {
+            venda.setId(vendaIdEdicao); // VendaRepository.salvar() detecta ID preenchido e atualiza
+        }
         long agora = System.currentTimeMillis();
         venda.setDataHoraAberturaMillis(agora);
         venda.setDataHoraFechamentoMillis(agora);
@@ -284,8 +288,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         atualizarBotaoFinalizar();
 
         VendaModel venda = new VendaModel();
+        if (vendaIdEdicao != null) {
+            venda.setId(vendaIdEdicao);
+        }
         venda.setDataHoraAberturaMillis(System.currentTimeMillis());
-        venda.setDataHoraFechamentoMillis(0); // 0 = ainda não fechada
+        venda.setDataHoraFechamentoMillis(0);
         venda.setFormaPagamento(null);
         venda.setQuantidadeTotal(quantidadeTotal);
         venda.setValorTotal(valorTotal);

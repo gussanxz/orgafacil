@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -18,7 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +83,41 @@ public class VendasEmAbertoActivity extends AppCompatActivity {
 
     private void configurarRecyclerView() {
         rvVendasEmAberto.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AdapterVendasEmAberto(listaVendas, venda -> confirmarCancelamento(venda));
+        adapter = new AdapterVendasEmAberto(listaVendas, new AdapterVendasEmAberto.OnVendaActionListener() {
+            @Override
+            public void onEditar(VendaModel venda) {
+                abrirEdicao(venda);
+            }
+
+            @Override
+            public void onCancelar(VendaModel venda) {
+                confirmarCancelamento(venda);
+            }
+        });
         rvVendasEmAberto.setAdapter(adapter);
+    }
+
+    private void abrirEdicao(VendaModel venda) {
+        Intent intent = new Intent(this, FechamentoVendaActivity.class);
+        intent.putExtra("itensSacola", new ArrayList<>(
+                converterItensRegistradosParaSacola(venda.getItens())));
+        intent.putExtra("quantidadeTotal", venda.getQuantidadeTotal());
+        intent.putExtra("valorTotal", venda.getValorTotal());
+        intent.putExtra("vendaId", venda.getId()); // ← chave para o FechamentoVendaActivity saber que é edição
+        startActivity(intent);
+    }
+
+    private List<ItemSacolaVendaModel> converterItensRegistradosParaSacola(
+            List<ItemVendaRegistradaModel> itens) {
+        // ItemVendaRegistradaModel → ItemSacolaVendaModel
+        // precisa de um construtor auxiliar — ver abaixo
+        List<ItemSacolaVendaModel> sacola = new ArrayList<>();
+        if (itens != null) {
+            for (ItemVendaRegistradaModel item : itens) {
+                sacola.add(new ItemSacolaVendaModel(item));
+            }
+        }
+        return sacola;
     }
 
     private void configurarAcoes() {

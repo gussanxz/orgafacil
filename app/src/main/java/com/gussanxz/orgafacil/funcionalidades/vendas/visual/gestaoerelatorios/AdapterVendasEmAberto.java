@@ -20,6 +20,7 @@ import java.util.Locale;
 public class AdapterVendasEmAberto extends RecyclerView.Adapter<AdapterVendasEmAberto.ViewHolder> {
 
     public interface OnVendaActionListener {
+        void onEditar(VendaModel venda);
         void onCancelar(VendaModel venda);
     }
 
@@ -74,6 +75,10 @@ public class AdapterVendasEmAberto extends RecyclerView.Adapter<AdapterVendasEmA
         }
 
         void bind(VendaModel venda) {
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onEditar(venda);
+            });
+
             String numero = venda.getNumeroVenda() > 0
                     ? String.format(Locale.ROOT, "%07d", venda.getNumeroVenda())
                     : "---";

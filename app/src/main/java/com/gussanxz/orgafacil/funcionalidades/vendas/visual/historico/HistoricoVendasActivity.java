@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -18,6 +19,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
 
 import java.util.ArrayList;
 import java.util.List;

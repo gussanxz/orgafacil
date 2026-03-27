@@ -9,13 +9,13 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     private final double precoUnitario;
     private int quantidade;
 
-    public ItemSacolaVendaModel(ItemVendaModel item) {
-        this.chave = gerarChave(item);
-        this.itemId = item.getId();
+    public ItemSacolaVendaModel(ItemVendaRegistradaModel item) {
+        this.chave = item.getTipo() + "_" + item.getItemId();
+        this.itemId = item.getItemId();
         this.nome = item.getNome();
         this.tipo = item.getTipo();
-        this.precoUnitario = item.getPreco();
-        this.quantidade = 1;
+        this.precoUnitario = item.getPrecoUnitario();
+        this.quantidade = item.getQuantidade();
     }
 
     public static String gerarChave(ItemVendaModel item) {
