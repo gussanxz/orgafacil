@@ -9,6 +9,7 @@ public class ProdutoModel implements ItemVendaModel {
     private double preco;
     private boolean statusAtivo = true;
     private int iconeIndex = 7;
+    private int tipo = ItemVendaModel.TIPO_PRODUTO;
 
     public ProdutoModel() {}
 
@@ -45,6 +46,7 @@ public class ProdutoModel implements ItemVendaModel {
 
     @Override
     public int getTipo() { return ItemVendaModel.TIPO_PRODUTO; }
+    public void setTipo(int tipo) {}
 
     // --- GETTERS E SETTERS PADRÃO ---
     public void setId(String id) { this.id = id; }
