@@ -33,6 +33,11 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private AdapterHistoricoVendas adapter;
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
+    private TextView chipTodas;
+    private TextView chipFinalizadas;
+    private TextView chipCanceladas;
+    private final List<VendaModel> listaCompleta = new ArrayList<>();
+    private String filtroAtivo = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +80,9 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         rvHistoricoVendas = findViewById(R.id.rvHistoricoVendas);
         layoutEstadoVazioHistorico = findViewById(R.id.layoutEstadoVazioHistorico);
         txtQuantidadeVendas = findViewById(R.id.txtQuantidadeVendas);
+        chipTodas       = findViewById(R.id.chipTodas);
+        chipFinalizadas = findViewById(R.id.chipFinalizadas);
+        chipCanceladas  = findViewById(R.id.chipCanceladas);
     }
 
     private void configurarRecyclerView() {
@@ -87,19 +95,20 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         if (btnVoltarHistorico != null) {
             btnVoltarHistorico.setOnClickListener(v -> finish());
         }
+        if (chipTodas != null) chipTodas.setOnClickListener(v -> aplicarFiltro(null));
+        if (chipFinalizadas != null) chipFinalizadas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_FINALIZADA));
+        if (chipCanceladas != null)  chipCanceladas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_CANCELADA));
+
+        atualizarEstiloChips();
     }
 
     private void carregarHistorico() {
         listenerRegistration = vendaRepository.listarTempoReal(new VendaRepository.ListaCallback() {
             @Override
             public void onNovosDados(List<VendaModel> lista) {
-                listaVendas.clear();
-                if (lista != null) {
-                    listaVendas.addAll(lista);
-                }
-
-                adapter.atualizarLista(listaVendas);
-                atualizarEstadoTela();
+                listaCompleta.clear();
+                if (lista != null) listaCompleta.addAll(lista);
+                aplicarFiltro(filtroAtivo);
             }
 
             @Override
@@ -131,5 +140,44 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                             : listaVendas.size() + (listaVendas.size() == 1 ? " venda" : " vendas")
             );
         }
+    }
+
+    private void aplicarFiltro(String status) {
+        filtroAtivo = status;
+
+        listaVendas.clear();
+        if (status == null) {
+            // "Todas" — exclui apenas EM_ABERTO (essas ficam na tela de Vendas em Aberto)
+            for (VendaModel v : listaCompleta) {
+                if (!VendaModel.STATUS_EM_ABERTO.equals(v.getStatus())) {
+                    listaVendas.add(v);
+                }
+            }
+        } else {
+            for (VendaModel v : listaCompleta) {
+                if (status.equals(v.getStatus())) {
+                    listaVendas.add(v);
+                }
+            }
+        }
+
+        adapter.atualizarLista(listaVendas);
+        atualizarEstadoTela();
+        atualizarEstiloChips();
+    }
+
+    private void atualizarEstiloChips() {
+        atualizarEstiloChip(chipTodas,       filtroAtivo == null);
+        atualizarEstiloChip(chipFinalizadas, VendaModel.STATUS_FINALIZADA.equals(filtroAtivo));
+        atualizarEstiloChip(chipCanceladas,  VendaModel.STATUS_CANCELADA.equals(filtroAtivo));
+    }
+
+    private void atualizarEstiloChip(TextView chip, boolean selecionado) {
+        if (chip == null) return;
+        chip.setBackgroundTintList(getColorStateList(
+                selecionado ? R.color.colorPrimary : android.R.color.white));
+        chip.setTextColor(selecionado
+                ? android.graphics.Color.WHITE
+                : android.graphics.Color.parseColor("#757575"));
     }
 }

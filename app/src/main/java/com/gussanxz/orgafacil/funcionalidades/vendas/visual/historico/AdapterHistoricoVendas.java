@@ -83,7 +83,23 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
             txtVendaQuantidade.setText(
                     venda.getQuantidadeTotal() + (venda.getQuantidadeTotal() == 1 ? " item" : " itens")
             );
-            txtVendaStatus.setText(valorOuPadrao(venda.getStatus(), "FINALIZADA"));
+            String status = valorOuPadrao(venda.getStatus(), VendaModel.STATUS_FINALIZADA);
+            txtVendaStatus.setText(status);
+
+            switch (status) {
+                case VendaModel.STATUS_FINALIZADA:
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#2E7D32")); // verde
+                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+                    break;
+                case VendaModel.STATUS_CANCELADA:
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#C62828")); // vermelho
+                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+                    break;
+                default:
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#E65100")); // laranja
+                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+                    break;
+            }
             txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
         }
 
