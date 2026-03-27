@@ -242,11 +242,33 @@
                 android:nestedScrollingEnabled="false" />
 
             <LinearLayout
-                android:id="@+id/btnFinalizarVenda"
+                android:id="@+id/btnSalvarEmAberto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="20dp"
+                android:background="@drawable/fundo_arredondado"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingVertical="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SALVAR EM ABERTO"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnFinalizarVenda"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/fundo_botao_azul"
                 android:clickable="true"
                 android:focusable="true"

@@ -38,6 +38,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private LinearLayout cardPagamentoDinheiro;
     private TextView txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
+    private LinearLayout btnSalvarEmAberto;
 
     private AdapterResumoFechamentoVenda adapter;
     private final List<ItemSacolaVendaModel> listaItens = new ArrayList<>();
@@ -77,13 +78,13 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         txtQuantidadeResumo = findViewById(R.id.txtQuantidadeResumo);
         txtTotalResumo = findViewById(R.id.txtTotalResumo);
         rvResumoItens = findViewById(R.id.rvResumoItens);
-
         cardPagamentoPix = findViewById(R.id.cardPagamentoPix);
         cardPagamentoDinheiro = findViewById(R.id.cardPagamentoDinheiro);
         cardPagamentoDebito = findViewById(R.id.cardPagamentoDebito);
         cardPagamentoCredito = findViewById(R.id.cardPagamentoCredito);
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
         btnFinalizarVenda = findViewById(R.id.btnFinalizarVenda);
+        btnSalvarEmAberto = findViewById(R.id.btnSalvarEmAberto);
     }
 
     private void configurarRecyclerView() {
@@ -115,6 +116,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         if (cardPagamentoCredito != null) {
             cardPagamentoCredito.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_CREDITO));
+        }
+
+        if (btnSalvarEmAberto != null) {
+            btnSalvarEmAberto.setOnClickListener(v -> salvarEmAberto());
         }
 
         if (btnFinalizarVenda != null) {
@@ -186,6 +191,12 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         boolean habilitado = !listaItens.isEmpty() && formaPagamentoSelecionada != null && !salvandoVenda;
         btnFinalizarVenda.setEnabled(habilitado);
         btnFinalizarVenda.setAlpha(habilitado ? 1f : 0.5f);
+
+        if (btnSalvarEmAberto != null) {
+            boolean podeAbrir = !listaItens.isEmpty() && !salvandoVenda;
+            btnSalvarEmAberto.setEnabled(podeAbrir);
+            btnSalvarEmAberto.setAlpha(podeAbrir ? 1f : 0.5f);
+        }
     }
 
     private void finalizarVenda() {
@@ -259,5 +270,51 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         }
 
         return itensVenda;
+    }
+
+    private void salvarEmAberto() {
+        if (salvandoVenda) return;
+
+        if (listaItens.isEmpty()) {
+            Toast.makeText(this, "Nenhum item encontrado na venda.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        salvandoVenda = true;
+        atualizarBotaoFinalizar();
+
+        VendaModel venda = new VendaModel();
+        venda.setDataHoraAberturaMillis(System.currentTimeMillis());
+        venda.setDataHoraFechamentoMillis(0); // 0 = ainda não fechada
+        venda.setFormaPagamento(null);
+        venda.setQuantidadeTotal(quantidadeTotal);
+        venda.setValorTotal(valorTotal);
+        venda.setStatus(VendaModel.STATUS_EM_ABERTO);
+        venda.setItens(converterItensParaVenda(listaItens));
+
+        vendaRepository.salvar(venda, new VendaRepository.Callback() {
+            @Override
+            public void onSucesso(String vendaId) {
+                salvandoVenda = false;
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Venda salva em aberto.", Toast.LENGTH_SHORT).show();
+                voltarParaNovaVenda();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                salvandoVenda = false;
+                atualizarBotaoFinalizar();
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao salvar: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void voltarParaNovaVenda() {
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 }
