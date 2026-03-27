@@ -59,6 +59,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private LinearLayout btnCobrar;
     private LinearLayout layoutResumoSacola;
     private ImageButton btnHistoricoVendas;
+    private Categoria categoriaAtiva = null;
 
     private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -95,6 +96,15 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvCategorias = findViewById(R.id.rvCategorias);
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
         etBuscarProduto = findViewById(R.id.etBuscarProduto);
+        if (etBuscarProduto != null) {
+            etBuscarProduto.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    filtrarPorTexto(s.toString().trim());
+                }
+                @Override public void afterTextChanged(android.text.Editable s) {}
+            });
+        }
         layoutResumoSacola = findViewById(R.id.layoutResumoSacola);
         txtSacolaQuantidade = findViewById(R.id.txtSacolaQuantidade);
         txtSacolaTitulo = findViewById(R.id.txtSacolaTitulo);
@@ -190,16 +200,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         });
     }
 
-    private Categoria criarCategoriaExemplo(String nome, int indexIcone) {
-        Categoria c = new Categoria();
-        c.setId(UUID.randomUUID().toString());
-        c.setNome(nome);
-        c.setDescricao("Categoria: " + nome);
-        c.setIndexIcone(indexIcone);
-        c.setAtiva(true);
-        return c;
-    }
-
     private void carregarProdutosEServicos() {
         listenerProdutos = produtoRepository.listarTempoReal(new ProdutoRepository.ListaCallback() {
             @Override
@@ -231,35 +231,34 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private void aplicarFiltroAtual() {
         listaFiltradaProdutos.clear();
+
         for (ItemVendaModel item : listaCompletaProdutos) {
+            // Filtro 1: apenas ativos
             boolean ativo = (item instanceof ProdutoModel && ((ProdutoModel) item).isStatusAtivo())
                     || (item instanceof ServicoModel && ((ServicoModel) item).isStatusAtivo());
-            if (ativo) listaFiltradaProdutos.add(item);
+            if (!ativo) continue;
+
+            // Filtro 2: categoria (null ou "todos" = sem filtro)
+            if (categoriaAtiva != null && !"todos".equals(categoriaAtiva.getId())) {
+                String catId = (item instanceof ProdutoModel)
+                        ? ((ProdutoModel) item).getCategoriaId()
+                        : (item instanceof ServicoModel)
+                        ? ((ServicoModel) item).getCategoriaId()
+                        : null;
+                if (!categoriaAtiva.getId().equals(catId)) continue;
+            }
+
+            listaFiltradaProdutos.add(item);
         }
+
         if (adapterProdutos != null) {
             adapterProdutos.atualizarLista(listaFiltradaProdutos);
         }
     }
 
     private void filtrarProdutosPorCategoria(Categoria categoria) {
-        listaFiltradaProdutos.clear();
-
-        if ("todos".equals(categoria.getId())) {
-            listaFiltradaProdutos.addAll(listaCompletaProdutos);
-        } else {
-            for (ItemVendaModel item : listaCompletaProdutos) {
-                String catId = (item instanceof ProdutoModel)
-                        ? ((ProdutoModel) item).getCategoriaId()
-                        : (item instanceof ServicoModel)
-                        ? ((ServicoModel) item).getCategoriaId()
-                        : null;
-                if (categoria.getId().equals(catId)) {
-                    listaFiltradaProdutos.add(item);
-                }
-            }
-        }
-
-        adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        categoriaAtiva = categoria;
+        aplicarFiltroAtual();
     }
 
     private void adicionarItemNaSacola(ItemVendaModel item) {
@@ -492,5 +491,22 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (listenerCategorias != null) listenerCategorias.remove();
         if (listenerProdutos != null) listenerProdutos.remove();
         if (listenerServicos != null) listenerServicos.remove();
+    }
+    private void filtrarPorTexto(String texto) {
+        listaFiltradaProdutos.clear();
+
+        for (ItemVendaModel item : listaCompletaProdutos) {
+            boolean ativo = (item instanceof ProdutoModel && ((ProdutoModel) item).isStatusAtivo())
+                    || (item instanceof ServicoModel && ((ServicoModel) item).isStatusAtivo());
+            if (!ativo) continue;
+
+            if (texto.isEmpty() || item.getNome().toLowerCase().contains(texto.toLowerCase())) {
+                listaFiltradaProdutos.add(item);
+            }
+        }
+
+        if (adapterProdutos != null) {
+            adapterProdutos.atualizarLista(listaFiltradaProdutos);
+        }
     }
 }
