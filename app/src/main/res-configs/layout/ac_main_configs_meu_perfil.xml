@@ -122,7 +122,7 @@
                     android:layout_height="1dp"
                     android:layout_marginTop="24dp"
                     android:layout_marginBottom="24dp"
-                    android:background="#E0E0E0" />
+                    android:background="@color/cor_divisor" />
 
                 <LinearLayout
                     android:id="@+id/btnEditarDados"

@@ -84,14 +84,14 @@
                             android:layout_height="wrap_content"
                             android:text="Vendedor"
                             android:textSize="10sp"
-                            android:textColor="#757575" />
+                            android:textColor="@color/cor_texto_secundario" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Selecionar"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/cor_texto_primario"
                             android:ellipsize="end"
                             android:maxLines="1"/>
                     </LinearLayout>
@@ -99,7 +99,7 @@
                     <View
                         android:layout_width="1dp"
                         android:layout_height="40dp"
-                        android:background="#E0E0E0"
+                        android:background="@color/cor_divisor"
                         android:layout_marginEnd="4dp"/>
                 </LinearLayout>
 
@@ -132,13 +132,13 @@
                             android:layout_height="wrap_content"
                             android:text="Cliente"
                             android:textSize="10sp"
-                            android:textColor="#757575"/>
+                            android:textColor="@color/cor_texto_secundario"/>
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Selecionar"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/cor_texto_primario"
                             android:ellipsize="end"
                             android:maxLines="1"/>
                     </LinearLayout>
@@ -201,7 +201,7 @@
                             android:text="R$ 0,00"
                             android:textSize="14sp"
                             android:layout_marginTop="4dp"
-                            android:textColor="#757575"/>
+                            android:textColor="@color/cor_texto_secundario"/>
                     </LinearLayout>
 
                     <LinearLayout
@@ -297,7 +297,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Nenhum item disponível"
-                    android:textColor="#333333"
+                    android:textColor="@color/cor_texto_primario"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -308,7 +308,7 @@
                     android:layout_marginTop="6dp"
                     android:gravity="center"
                     android:text="Cadastre produtos ou serviços ativos para começar uma nova venda."
-                    android:textColor="#757575"
+                    android:textColor="@color/cor_texto_secundario"
                     android:textSize="14sp" />
             </LinearLayout>
 

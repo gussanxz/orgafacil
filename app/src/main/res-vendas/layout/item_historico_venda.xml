@@ -28,7 +28,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Venda #00000000"
-                android:textColor="#333333"
+                android:textColor="@color/cor_texto_primario"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -51,7 +51,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:text="00/00/0000 00:00"
-            android:textColor="#757575"
+            android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
         <TextView
@@ -60,7 +60,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:text="Pagamento: PIX"
-            android:textColor="#757575"
+            android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
         <LinearLayout
@@ -76,7 +76,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="1 item"
-                android:textColor="#333333"
+                android:textColor="@color/cor_texto_primario"
                 android:textSize="14sp" />
 
             <TextView

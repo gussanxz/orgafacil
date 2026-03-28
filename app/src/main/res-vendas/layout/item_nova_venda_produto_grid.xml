@@ -84,7 +84,7 @@
             android:layout_marginTop="4dp"
             android:gravity="center"
             android:text="Descrição curta..."
-            android:textColor="#757575"
+            android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end"

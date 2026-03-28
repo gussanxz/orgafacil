@@ -29,7 +29,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Venda #0000001"
-                android:textColor="#333333"
+                android:textColor="@color/cor_texto_primario"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:text="Aberta em 00/00/0000 00:00"
-            android:textColor="#757575"
+            android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
         <!-- Linha 3: qtd itens + valor -->
@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="0 itens"
-                android:textColor="#333333"
+                android:textColor="@color/cor_texto_primario"
                 android:textSize="14sp" />
 
             <TextView
