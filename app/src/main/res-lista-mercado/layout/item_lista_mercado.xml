@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp"
+        android:paddingVertical="14dp">
+
+        <View
+            android:id="@+id/viewIndicadorCategoria"
+            android:layout_width="4dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/bg_indicador_categoria"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textNomeProduto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Arroz Integral"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/cor_texto"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginBottom="2dp"/>
+
+            <TextView
+                android:id="@+id/textCategoriaProduto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mercearia"
+                android:textSize="11sp"
+                android:textColor="#777777"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R$ "
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_texto"
+                    android:textStyle="bold"/>
+
+                <EditText
+                    android:id="@+id/editValorUnitario"
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:inputType="numberDecimal"
+                    android:text="25,90"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_texto"
+                    android:textStyle="bold"
+                    android:imeOptions="actionDone"
+                    android:maxLines="1"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_stepper_quantidade"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="2dp">
+
+                    <ImageView
+                        android:id="@+id/btnDiminuirQtd"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_minus_24"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="@color/cor_texto"/>
+
+                    <TextView
+                        android:id="@+id/textQuantidade"
+                        android:layout_width="32dp"
+                        android:layout_height="wrap_content"
+                        android:text="2"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:textColor="@color/cor_texto"/>
+
+                    <ImageView
+                        android:id="@+id/btnAumentarQtd"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_add_circle_24"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="@color/cor_texto"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textSubtotalItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Subtotal: R$ 51,80"
+                android:textSize="12sp"
+                android:textColor="#888888"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginStart="12dp">
+
+            <CheckBox
+                android:id="@+id/checkboxNoCarrinho"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:button="@null"
+                android:background="@drawable/ic_check_box_vazio_24"
+                android:backgroundTint="@android:color/black"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Marcar como no carrinho"/>
+
+            <ImageView
+                android:id="@+id/btnExcluirItem"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginTop="8dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_lixeira_excluir_24"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="#FFCDD2"
+                android:contentDescription="Excluir item"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

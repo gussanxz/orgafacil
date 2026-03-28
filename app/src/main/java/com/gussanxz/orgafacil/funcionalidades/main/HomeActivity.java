@@ -3,13 +3,10 @@ package com.gussanxz.orgafacil.funcionalidades.main;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.mercado.ResumoListaMercadoActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
@@ -49,7 +47,7 @@ public class HomeActivity extends AppCompatActivity {
         TemaHelper.aplicarTemaDoCache(this);
         super.onCreate(savedInstanceState);
         //EdgeToEdge.enable(this);
-        setContentView(R.layout.ac_main_intro_home);
+        setContentView(R.layout.ac_main_home);
 
         prefsRepository = new PreferenciasRepository();
         inicializarComponentes();
@@ -230,7 +228,6 @@ public class HomeActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
 
         int[] idsBloqueados = {
-                R.id.imageViewMercado,
                 R.id.imageViewTodo,
                 R.id.imageViewBoletoCPF
         };
@@ -251,5 +248,8 @@ public class HomeActivity extends AppCompatActivity {
 
     public void acessarConfigs(View view) {
         startActivity(new Intent(this, ConfigsActivity.class));
+    }
+    public void acessarListaMercado(View view) {
+        startActivity(new Intent(this, ResumoListaMercadoActivity.class));
     }
 }
