@@ -34,12 +34,11 @@ public class ResumoFinanceiroRepository {
             }
 
             if (snapshot != null && snapshot.exists()) {
-                // O Firestore converte automaticamente os mapas aninhados para as classes internas
+                // O Firestore converte automaticamente os mapas aninhados para as classes internas.
+                // calcularStatusSaude() é chamado automaticamente pelo Model ao acessar getStatusSaudeEnum().
                 ResumoFinanceiroModel resumo = snapshot.toObject(ResumoFinanceiroModel.class);
 
                 if (resumo != null) {
-                    // Executa a regra de negócio (que agora usa os getters dos sub-objetos)
-                    resumo.calcularStatusSaude();
                     callback.onUpdate(resumo);
                 }
             } else {
@@ -80,9 +79,9 @@ public class ResumoFinanceiroRepository {
         FirestoreSchema.contasResumoDoc().get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
+                        // calcularStatusSaude() é chamado automaticamente pelo Model ao acessar getStatusSaudeEnum().
                         ResumoFinanceiroModel resumo = documentSnapshot.toObject(ResumoFinanceiroModel.class);
                         if (resumo != null) {
-                            resumo.calcularStatusSaude();
                             callback.onUpdate(resumo);
                         }
                     }

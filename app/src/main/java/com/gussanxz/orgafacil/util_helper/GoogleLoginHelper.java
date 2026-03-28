@@ -76,7 +76,7 @@ public class GoogleLoginHelper {
             if (e.getStatusCode() != 12501) {
                 Toast.makeText(activity, "Erro Google: " + e.getStatusCode(), Toast.LENGTH_SHORT).show();
             }
-            Log.e("GoogleLogin", "Erro na API do Google: " + e.getStatusCode());
+            AppLogger.e("GoogleLogin", "Erro na API do Google: " + e.getStatusCode());
         }
     }
 

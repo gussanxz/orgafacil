@@ -26,11 +26,13 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.adapter.RelatoriosPagerAdapter;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -42,7 +44,6 @@ public class ResumoContasActivity extends AppCompatActivity {
     // ViewModel e Dados
     private ResumoGeralViewModel viewModel;
     private ContasViewModel contasViewModel;
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
     // UI Dashboard
     private TextView textSaldoGeral;
@@ -66,9 +67,16 @@ public class ResumoContasActivity extends AppCompatActivity {
     private View overlayBackground;
     private View radialSpotlight;
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
+    private View btnRelatoriosTop;
 
     // Controle de Carregamento para o Observer
     private boolean aguardandoPrimeiroFetch = true;
+
+    // UI Dashboard
+    private TextView textSaudacao; // NOVO
+
+    private androidx.activity.result.ActivityResultLauncher<Intent> launcherMovimentacao;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,17 +89,41 @@ public class ResumoContasActivity extends AppCompatActivity {
             return insets;
         });
 
+        // 1. Inicializa IDs e ViewModels
         inicializarComponentes();
-
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
-        // Somente o Observer da Lista manda no layout, sem brigas!
-        setupSaldoListaObserver();
+        // 👇 NOVO: Observa o nome do usuário vindo do ViewModel
+        viewModel.nomeUsuario.observe(this, nome -> {
+            if (textSaudacao != null) {
+                textSaudacao.setText("Olá, " + nome + "!");
+            }
+        });
 
+        // 3. Configurações de UI e Comportamento
+        setupSaldoListaObserver();
         viewModel.verificarViradaDeMes(this);
 
+        launcherMovimentacao = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    contasViewModel.invalidarDados();
+                    contasViewModel.fetchDados(true, null);
+                    new android.os.Handler(android.os.Looper.getMainLooper())
+                            .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+                }
+        );
+
         setupSlideView();
+
+        contasViewModel.fetchDados(true, null);   // futuro  (aba 0)
+
+        // Delay mínimo para não sobrescrever cacheHistorico com lista vazia
+// enquanto o fetch do futuro ainda está rodando e agendarFiltro() emite
+        new android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
         configurarChipsFiltro();
@@ -100,9 +132,11 @@ public class ResumoContasActivity extends AppCompatActivity {
     }
 
     private void inicializarViewsDashboard() {
-        textSaldoGeral = findViewById(R.id.textSaldo);
+
         imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
         textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
+        textSaudacao = findViewById(R.id.textSaudacao);
+        textSaldoGeral = findViewById(R.id.textSaldo);
 
         // 1. ABRIR A TELA -> MOSTRAR "CARREGANDO" (Estado inicial cravado)
         if (textSaldoGeral != null) {
@@ -125,6 +159,11 @@ public class ResumoContasActivity extends AppCompatActivity {
         overlayBackground = findViewById(R.id.overlay_background);
         bottomAppBar = findViewById(R.id.bottomAppBar);
         chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
+        btnRelatoriosTop = findViewById(R.id.btnRelatoriosTop);
+
+        if (btnRelatoriosTop != null) {
+            btnRelatoriosTop.setOnClickListener(v -> acessarRelatorios(v));
+        }
     }
 
     private void setupSaldoListaObserver() {
@@ -154,14 +193,21 @@ public class ResumoContasActivity extends AppCompatActivity {
         });
     }
 
+    // ✅ COMO DEVE FICAR O MÉTODO INTEIRO:
     private void desenharSaldoNaTela(long saldoCentavos) {
-        double saldoDouble = saldoCentavos / 100.0;
-        String valorFormatado = currencyFormat.format(Math.abs(saldoDouble));
+        // 1. O Helper já resolve pontos de milhar, vírgula de centavos e o sinal de negativo!
+        String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper.formatarCentavosParaBRL(saldoCentavos);
 
         int corSaldo;
-        if (saldoCentavos > 0)      corSaldo = Color.parseColor("#4CAF50");
-        else if (saldoCentavos < 0) corSaldo = Color.parseColor("#E53935");
-        else                        corSaldo = Color.WHITE;
+
+        // 2. Definimos apenas as cores
+        if (saldoCentavos > 0) {
+            corSaldo = Color.parseColor("#4CAF50");
+        } else if (saldoCentavos < 0) {
+            corSaldo = Color.parseColor("#E53935");
+        } else {
+            corSaldo = Color.WHITE;
+        }
 
         if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.VISIBLE);
 
@@ -172,7 +218,6 @@ public class ResumoContasActivity extends AppCompatActivity {
         }
         VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
 
-        // 3. Atualiza a legenda de forma suave
         atualizarLegendaSaldo(saldoCentavos);
     }
 
@@ -289,7 +334,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Receita");
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void acessarContasFuturas(View v) {
@@ -304,15 +349,16 @@ public class ResumoContasActivity extends AppCompatActivity {
     public void adicionarDespesa(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Despesa");
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
+
 
     public void adicionarReceitaFutura(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Agendar Receita");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void adicionarDespesaFutura(View v) {
@@ -320,7 +366,7 @@ public class ResumoContasActivity extends AppCompatActivity {
         intent.putExtra("TITULO_TELA", "Agendar Despesa");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);  // ← era startActivity()
     }
 
     public void acessarContasActivity(View view) {
@@ -405,6 +451,8 @@ public class ResumoContasActivity extends AppCompatActivity {
         DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
         viewPager.setAdapter(adapter);
 
+        viewPager.setOffscreenPageLimit(1); // mantém aba adjacente viva na memória
+
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
                 tab.setText(R.string.tab_titulo_contas_pendentes);
@@ -434,5 +482,13 @@ public class ResumoContasActivity extends AppCompatActivity {
                 contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
             }
         });
+    }
+
+    public void acessarRelatorios(View v) {
+
+        Intent intent = new Intent(this,
+                com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.activities.RelatoriosActivity.class);
+
+        startActivity(intent);
     }
 }

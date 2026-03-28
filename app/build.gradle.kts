@@ -57,6 +57,10 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -71,6 +75,7 @@ dependencies {
     implementation(libs.fragment)
     implementation(libs.gridlayout)
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -112,5 +117,17 @@ dependencies {
 
     implementation ("com.facebook.shimmer:shimmer:0.5.0")
 
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
+    implementation("androidx.work:work-runtime:2.9.0")
+
+    // ── Testes unitários ──────────────────────────────────────────────────────
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.11.0")
+// Robolectric — roda testes Android na JVM, sem emulador
+    testImplementation("org.robolectric:robolectric:4.12.2")
+// WorkManager test helpers
+    testImplementation("androidx.work:work-testing:2.9.0")
+// Coroutines test (caso use futuramente)
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }

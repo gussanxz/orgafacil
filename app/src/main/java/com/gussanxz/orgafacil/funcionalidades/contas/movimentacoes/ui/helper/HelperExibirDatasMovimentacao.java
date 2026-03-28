@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.adapter.AdapterItemListaMovimentacao;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -20,16 +21,13 @@ import java.util.TreeMap;
  *
  * Agrupa movimentações por dia e produz a lista mista (cabeçalhos + linhas)
  * que o AdapterMovimentacaoLista consome.
- *
- * CORREÇÃO: saldoDiaCentavos era calculado como long corretamente, mas sofria
- * um cast silencioso para int ao chamar header(). Valores acima de R$ 21.474,83
- * resultavam em saldo negativo ou zero exibido no cabeçalho.
- * Agora todo o pipeline usa long — nenhum cast para int em nenhum ponto.
  */
 public class HelperExibirDatasMovimentacao {
 
-    private static final SimpleDateFormat sdfKey =
-            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    private static final SimpleDateFormat sdfKey = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO, Locale.getDefault());
+
+    // Novo formatador exclusivo para o visual do Header do Dia
+    private static final SimpleDateFormat sdfHeaderVisual = new SimpleDateFormat("MMM dd, yyyy", new Locale("pt", "BR"));
 
     /**
      * Agrupa e ordena movimentações por dia, retornando uma lista mesclada de
@@ -43,6 +41,12 @@ public class HelperExibirDatasMovimentacao {
             List<MovimentacaoModel> movs, boolean ehModoFuturo) {
 
         Date hoje = zerarHora(new Date());
+
+        // ── NOVO: Limite de 1 ano para contas atrasadas (Trava de Segurança) ──
+        Calendar calLimite = Calendar.getInstance();
+        calLimite.setTime(hoje);
+        calLimite.add(Calendar.YEAR, -1);
+        Date limiteUmAno = calLimite.getTime();
 
         // ── 1. Ordena os itens individualmente ────────────────────────────────
         movs.sort((m1, m2) -> {
@@ -69,6 +73,9 @@ public class HelperExibirDatasMovimentacao {
 
             // Histórico: ignora movimentações com data futura (maior que hoje)
             if (!ehModoFuturo && dataZerada.after(hoje)) continue;
+
+            // 🔥 NOVO -> Pendentes: ignora lixo muito antigo (mais de 1 ano para trás)
+            if (ehModoFuturo && dataZerada.before(limiteUmAno)) continue;
 
             porDia.putIfAbsent(dataZerada, new ArrayList<>());
             porDia.get(dataZerada).add(m);
@@ -105,15 +112,26 @@ public class HelperExibirDatasMovimentacao {
                 }
             }
 
-            // ── Label do cabeçalho ────────────────────────────────────────────
-            String tituloDia = dataStr;
-            if (dataGrupo.equals(hoje))                     tituloDia = "Hoje";
-            else if (dataGrupo.equals(ontem))               tituloDia = "Ontem";
-            else if (dataGrupo.equals(amanha) && ehModoFuturo) tituloDia = "Amanhã";
+            // ── Label do cabeçalho visual ─────────────────────────────────────
+            // Gera algo como "FEV 22, 2026"
+            String dataFormatadaVisual = sdfHeaderVisual.format(dataGrupo).toUpperCase();
+            String tituloDia = dataFormatadaVisual;
+            boolean ehVencido = false;
 
-            // CORREÇÃO: passa saldoDiaCentavos como long — sem (int) cast
-            // O método header() agora aceita long, eliminando o overflow silencioso
-            resultado.add(AdapterItemListaMovimentacao.header(dataStr, tituloDia, saldoDiaCentavos));
+            if (ehModoFuturo && dataGrupo.before(hoje)) {
+                // Pendente com data já passada — grupo destacado (mas sem o texto "Vencida em")
+                ehVencido = true;
+            } else if (dataGrupo.equals(hoje)) {
+                tituloDia = "Hoje - " + dataFormatadaVisual;
+            } else if (dataGrupo.equals(ontem)) {
+                tituloDia = "Ontem - " + dataFormatadaVisual;
+            } else if (dataGrupo.equals(amanha) && ehModoFuturo) {
+                tituloDia = "Amanhã - " + dataFormatadaVisual;
+            }
+
+            // dataStr continua sendo a chave "dd/MM/yy" para controle interno,
+            // tituloDia é o que aparece na tela
+            resultado.add(AdapterItemListaMovimentacao.header(dataStr, tituloDia, saldoDiaCentavos, ehVencido));
 
             for (MovimentacaoModel m : listaDoDia) {
                 resultado.add(AdapterItemListaMovimentacao.linha(m));

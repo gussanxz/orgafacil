@@ -45,10 +45,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="4dp"
-            android:text="Nova Despesa"
-            android:textColor="#FFFFFF"
+            android:text="Despesa"
+            android:textColor="#E53935"
             android:textStyle="bold"
-            android:backgroundTint="@color/colorPrimaryDespesa"
+            android:backgroundTint="@android:color/white"
+            app:icon="@drawable/ic_minus_24"
+            app:iconTint="#E53935"
+            app:iconGravity="textStart"
             android:onClick="adicionarDespesa"/>
 
         <Button
@@ -57,10 +60,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="4dp"
-            android:text="Nova Receita"
-            android:textColor="#FFFFFF"
+            android:text="Receita"
+            android:textColor="#43A047"
             android:textStyle="bold"
-            android:backgroundTint="@color/colorPrimaryProventos"
+            android:backgroundTint="@android:color/white"
+            app:icon="@drawable/ic_add_circle_24"
+            app:iconTint="#43A047"
+            app:iconGravity="textStart"
             android:onClick="adicionarReceita"/>
 
     </LinearLayout>

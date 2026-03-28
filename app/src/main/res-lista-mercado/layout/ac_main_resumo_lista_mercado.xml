@@ -1,51 +1,490 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
-    tools:context=".activity.features.mercado.ResumoListaMercadoActivity">
+    android:background="@color/cor_fundo_header_resumo_contas"
+    tools:context=".funcionalidades.mercado.ResumoListaMercadoActivity">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/headerListaMercado"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/textTituloListaMercado"
+        <!-- ======================= TOOLBAR ======================= -->
+        <!-- Título centralizado: btnVoltar à esquerda, btnHistorico à direita (simétricamente) -->
+        <LinearLayout
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp">
+
+            <!-- Voltar (esquerda) -->
+            <ImageView
+                android:id="@+id/btnVoltar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back_24"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="@color/white" />
+
+            <!-- Título centralizado com weight -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lista de Mercado"
+                android:textSize="18sp"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textAlignment="center"/>
+
+            <!-- Histórico (direita — espelha o botão voltar para manter título centralizado) -->
+            <LinearLayout
+                android:id="@+id/btnHistoricoTop"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_historico_24"
+                    app:tint="@color/white" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ======================= CARD: PAINEL FINANCEIRO ======================= -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#22FFFFFF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Orçamento máximo -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Orçamento Máximo"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:alpha="0.85"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutInputOrcamento"
+                        android:layout_width="140dp"
+                        android:layout_height="wrap_content"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                        app:boxStrokeColor="@android:color/white"
+                        app:hintTextColor="@android:color/white"
+                        app:boxStrokeWidth="1dp"
+                        app:prefixText="R$ "
+                        app:prefixTextColor="@android:color/white">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editOrcamentoMaximo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"
+                            android:textColor="@android:color/white"
+                            android:hint="0,00"
+                            android:textColorHint="#99FFFFFF"
+                            android:textSize="14sp"/>
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+                <!-- Label + % da barra -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/textLabelProgresso"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="No carrinho"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp"
+                        android:alpha="0.75"/>
+
+                    <TextView
+                        android:id="@+id/textPercentualOrcamento"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:alpha="0.9"/>
+                </LinearLayout>
+
+                <!-- Barra de progresso -->
+                <ProgressBar
+                    android:id="@+id/progressBarOrcamento"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:progress="0"
+                    android:max="100"
+                    android:progressDrawable="@drawable/progressbar_orcamento"
+                    android:background="@drawable/progressbar_orcamento_bg"
+                    android:layout_marginBottom="14dp"/>
+
+                <!-- Divisor interno -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#33FFFFFF"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Totais -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <!-- Total da Lista -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total da Lista"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            android:alpha="0.7"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/textTotalLista"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="@android:color/white"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                app:autoSizeTextType="uniform"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeStepGranularity="2sp"/>
+
+                            <ImageView
+                                android:id="@+id/imgOlhoTotalLista"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:padding="6dp"
+                                android:layout_marginStart="2dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:src="@drawable/ic_visibility_24"
+                                app:tint="@color/white"/>
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Divisor vertical -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="36dp"
+                        android:background="#44FFFFFF"
+                        android:layout_marginHorizontal="8dp"/>
+
+                    <!-- No Carrinho -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:src="@drawable/ic_shopping_cart_checkout_24"
+                                android:layout_marginEnd="3dp"
+                                app:tint="#BBFFFFFF"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="No Carrinho"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:alpha="0.7"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/textTotalCarrinho"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$ 0,00"
+                                android:textColor="@android:color/white"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                app:autoSizeTextType="uniform"
+                                app:autoSizeMinTextSize="14sp"
+                                app:autoSizeMaxTextSize="22sp"
+                                app:autoSizeStepGranularity="2sp"/>
+
+                            <ImageView
+                                android:id="@+id/imgOlhoTotalCarrinho"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:padding="6dp"
+                                android:layout_marginStart="2dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:src="@drawable/ic_visibility_24"
+                                app:tint="@color/white"/>
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- ProgressBar de carregamento global -->
+        <ProgressBar
+            android:id="@+id/progressBarResumo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Lista de Mercado"
-            android:textAlignment="gravity"
-            android:textSize="24dp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_chainStyle="packed" />
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark"
+            android:visibility="gone" />
 
+        <!-- ======================= ÁREA INFERIOR: BUSCA + LISTA ======================= -->
+        <LinearLayout
+            android:id="@+id/scrollMeio"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/header_background"
+            android:orientation="vertical"
+            android:paddingTop="16dp">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- Linha de ferramentas: Busca + Categoria + Ordenar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp"
+                android:gravity="center_vertical">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="@drawable/header_background"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/headerListaMercado"
-        app:layout_constraintVertical_bias="0.0">
+                <androidx.appcompat.widget.SearchView
+                    android:id="@+id/searchViewItens"
+                    android:layout_width="0dp"
+                    android:layout_height="45dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_filtro"
+                    android:theme="@style/ThemeOverlay.AppCompat.Light"
+                    android:queryHint="Pesquisar item..."
+                    app:iconifiedByDefault="false"
+                    app:searchIcon="@drawable/ic_search_24"
+                    app:queryBackground="@android:color/transparent"/>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+                <ImageView
+                    android:id="@+id/imgBtnCategoria"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_list_24"
+                    android:background="@drawable/bg_chip_filtro"
+                    app:tint="#555555"
+                    android:contentDescription="Filtrar por categoria"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+                <ImageView
+                    android:id="@+id/imgBtnLimparFiltro"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_x_24"
+                    android:background="@drawable/bg_chip_filtro"
+                    app:tint="#D32F2F"
+                    android:visibility="gone"
+                    android:contentDescription="Limpar filtro ativo"/>
+
+                <ImageView
+                    android:id="@+id/imgBtnOrdenar"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_filtro_24"
+                    android:background="@drawable/bg_chip_filtro"
+                    app:tint="#555555"
+                    android:contentDescription="Ordenar lista"/>
+
+            </LinearLayout>
+
+            <!-- Chip de categoria ativa (visível só quando filtro aplicado) -->
+            <LinearLayout
+                android:id="@+id/layoutChipCategoriaAtiva"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="8dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCategoriaAtiva"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Categoria"
+                    style="@style/Widget.MaterialComponents.Chip.Filter"
+                    app:chipBackgroundColor="@color/chip_background"
+                    app:closeIconVisible="true"
+                    android:textSize="12sp"/>
+
+            </LinearLayout>
+
+            <!-- RecyclerView + Empty State -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerViewItens"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingBottom="80dp"
+                    android:layoutAnimation="@anim/layout_anim_slide_up"/>
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/layoutEmptyStateMercado"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/imgEmptyStateMercado"
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:layout_marginBottom="16dp"
+                        android:src="@drawable/ic_shopping_cart_96"
+                        android:alpha="0.2"/>
+
+                    <TextView
+                        android:id="@+id/textEmptyStateTitulo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sua lista está vazia"
+                        android:textAlignment="center"
+                        android:textStyle="bold"
+                        android:textSize="17sp"
+                        android:layout_marginBottom="6dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Toque no + para adicionar produtos"
+                        android:textAlignment="center"
+                        android:textSize="14sp"
+                        android:alpha="0.5"/>
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ======================= FAB fixo inferior direito — ícone de compartilhar, tamanho mini ======================= -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        app:backgroundTint="#FF4081"
+        app:fabSize="mini"
+        app:srcCompat="@drawable/ic_share_24"
+        app:tint="@color/white"
+        app:elevation="8dp"
+        app:pressedTranslationZ="10dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

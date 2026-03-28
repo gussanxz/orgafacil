@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="chip_todos_background">#DBD0D0</color>  <!-- fundo branco -->
+    <color name="chip_todos_background">#F4EEE9</color>  <!-- fundo branco -->
     <color name="chip_todos_text">#000000</color>         <!-- texto preto -->
+
+    <color name="cor_fundo_cards">#2E3A45</color> <!-- cor dos cards de relatorios -->
+    <color name="cor_fundo_inferior_resumo_contas">#293141</color>
+    <color name="cor_fundo_header_resumo_contas">#00b2bc</color>
+
+    <color name="cor_texto_abas_footer_resumo_contas">#000000</color>
 </resources>

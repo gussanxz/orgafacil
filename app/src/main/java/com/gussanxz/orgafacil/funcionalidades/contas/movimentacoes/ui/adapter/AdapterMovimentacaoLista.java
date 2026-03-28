@@ -10,12 +10,14 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.EditarMovimentacaoActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -32,29 +34,34 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
 
     // A lista local 'itens' foi removida, o ListAdapter gerencia o estado da lista em background para nós.
     private final Context context;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
-    private final SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm",       new Locale("pt", "BR"));
-    private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat(DateHelper.FORMATO_EXIBICAO, new Locale("pt", "BR"));
+    private final SimpleDateFormat hourFormat = new SimpleDateFormat(DateHelper.FORMATO_HORA, new Locale("pt", "BR"));
     private final OnItemActionListener listener;
 
     public interface OnItemActionListener {
         void onDeleteClick(MovimentacaoModel movimentacaoModel);
         void onLongClick(MovimentacaoModel movimentacaoModel);
         void onCheckClick(MovimentacaoModel movimentacaoModel);
-
-        /**
-         * Chamado quando o usuário desliza o HEADER do dia para a esquerda.
-         *
-         * @param dataDia    string da data do grupo ("dd/MM/yyyy")
-         * @param movsDoDia  lista de movimentações daquele dia
-         */
         void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia);
+
+        // NOVO: Clique simples no header
+        void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia);
     }
 
+    // Quando true, itens pagos são exibidos em cinza (estilo "concluído").
+    // Usado pela ResumoParcelasActivity para destacar parcelas já quitadas.
+    // Na ContasActivity e demais telas permanece false — sem alteração visual.
+    private final boolean modoParcelasResumidas;
+
     public AdapterMovimentacaoLista(Context context, OnItemActionListener listener) {
-        super(new MovimentacaoDiffCallback()); // 2. Passamos o comparador no construtor
-        this.context  = context;
-        this.listener = listener;
+        this(context, listener, false);
+    }
+
+    public AdapterMovimentacaoLista(Context context, OnItemActionListener listener, boolean modoParcelasResumidas) {
+        super(new MovimentacaoDiffCallback());
+        this.context               = context;
+        this.listener              = listener;
+        this.modoParcelasResumidas = modoParcelasResumidas;
     }
 
     public List<AdapterItemListaMovimentacao> getItens() {
@@ -123,13 +130,32 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
     }
 
     public List<MovimentacaoModel> getMovimentacoesDoDia(int headerPosition) {
+        // Guard contra NO_POSITION (-1): pode ocorrer quando getAdapterPosition()
+        // é chamado durante animações de remoção/inserção do RecyclerView.
+        // Sem esse guard, o loop começaria em índice 0 e retornaria os movimentos
+        // do primeiro dia da lista — comportamento silenciosamente incorreto.
+        if (headerPosition == RecyclerView.NO_POSITION) {
+            return new ArrayList<>();
+        }
+
         List<MovimentacaoModel> lista = new ArrayList<>();
         int next = headerPosition + 1;
-        while (next < getCurrentList().size()
-                && getItem(next).type == AdapterItemListaMovimentacao.TYPE_MOVIMENTO) {
-            lista.add(getItem(next).movimentacaoModel);
+        int total = getCurrentList().size();
+
+        // A invariante da lista garante que após um TYPE_HEADER vêm apenas
+        // TYPE_MOVIMENTO do mesmo dia, até o próximo TYPE_HEADER ou o fim.
+        // O break encerra o loop assim que encontra o próximo header —
+        // evitando percorrer o restante da lista (O(n) → O(k), onde k é
+        // o número de movimentos do dia, tipicamente 1–10).
+        while (next < total) {
+            AdapterItemListaMovimentacao item = getItem(next);
+            if (item.type == AdapterItemListaMovimentacao.TYPE_HEADER) {
+                break; // próximo grupo — para imediatamente
+            }
+            lista.add(item.movimentacaoModel);
             next++;
         }
+
         return lista;
     }
 
@@ -140,34 +166,26 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
     class HeaderViewHolder extends RecyclerView.ViewHolder {
 
         TextView textDiaTitulo;
-        TextView textSaldoDia;
-        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+        View layoutHeaderClicavel; // Novo
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
             textDiaTitulo = itemView.findViewById(R.id.textDiaTitulo);
-            textSaldoDia  = itemView.findViewById(R.id.textSaldoDia);
+            layoutHeaderClicavel = itemView.findViewById(R.id.layoutHeaderClicavel); // Novo
         }
 
         void bind(AdapterItemListaMovimentacao item) {
             textDiaTitulo.setText(item.tituloDia);
 
-            if (textSaldoDia == null) return;
-
-            // CORREÇÃO: item.saldoDia é long — divisão por 100.0 produz double correto.
-            // Antes havia um cast (int) no Helper que truncava valores > R$ 21.474,83,
-            // causando saldo negativo ou zero silenciosamente na UI.
-            double saldoReais = item.saldoDia / 100.0;
-            textSaldoDia.setText("Saldo: " + fmt.format(saldoReais));
-
-            // Cor do saldo: verde positivo, vermelho negativo, cinza neutro
-            if (item.saldoDia > 0) {
-                textSaldoDia.setTextColor(Color.parseColor("#008000"));
-            } else if (item.saldoDia < 0) {
-                textSaldoDia.setTextColor(Color.parseColor("#B00020"));
-            } else {
-                textSaldoDia.setTextColor(Color.parseColor("#9E9E9E"));
-            }
+            // Adiciona o evento de clique no Header
+            layoutHeaderClicavel.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    // Aproveitamos a função que já existe para pegar as contas do dia
+                    List<MovimentacaoModel> movsDoDia = getMovimentacoesDoDia(position);
+                    listener.onHeaderClick(item.tituloDia, movsDoDia);
+                }
+            });
         }
     }
 
@@ -180,6 +198,8 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
         TextView textTitulo, textCategoria, textValor, textData, textHora, textSeparador;
         View viewIndicadorCor;
         ImageButton btnConfirmar;
+        androidx.cardview.widget.CardView cardIconeConta; // Mapeado para estilizar
+        android.widget.ImageView imageIconeConta; // Mapeado para estilizar
 
         MovimentoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -191,9 +211,17 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
             textSeparador    = itemView.findViewById(R.id.textAdapterSeparador);
             viewIndicadorCor = itemView.findViewById(R.id.viewIndicadorCor);
             btnConfirmar     = itemView.findViewById(R.id.btnConfirmarPagamento);
+            cardIconeConta   = itemView.findViewById(R.id.cardIconeConta); // Novo
+            imageIconeConta  = itemView.findViewById(R.id.imageIconeConta); // Novo
         }
 
         void bind(MovimentacaoModel mov) {
+            // Restaura cores ativas padrão (Garante que a reciclagem não aplique cinza onde não deve)
+            textTitulo.setTextColor(ContextCompat.getColor(context, R.color.cor_texto));
+            textCategoria.setTextColor(Color.parseColor("#757575"));
+            textSeparador.setTextColor(Color.parseColor("#BDBDBD"));
+            if (cardIconeConta != null) cardIconeConta.setCardBackgroundColor(Color.parseColor("#E0F2F1"));
+            if (imageIconeConta != null) imageIconeConta.setColorFilter(Color.parseColor("#009688"));
 
             // ── Título e categoria ────────────────────────────────────────────
             textTitulo.setText(mov.getDescricao());
@@ -202,15 +230,15 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                     : mov.getCategoria_nome());
 
             // ── Valor com sinal e cor ─────────────────────────────────────────
-            // getValor() é long → divisão por 100.0 sempre em double, sem truncamento
-            double valorReais = mov.getValor() / 100.0;
+            String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper.formatarCentavosParaBRL(mov.getValor());
 
             if (mov.getTipoEnum() == TipoCategoriaContas.DESPESA) {
-                textValor.setText("- " + currencyFormat.format(valorReais));
+                // Usamos o replace só para tirar o "R$" nativo e colocar o nosso "- R$" visual
+                textValor.setText("- " + valorFormatado);
                 textValor.setTextColor(Color.parseColor("#E53935"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#E53935"));
             } else {
-                textValor.setText("+ " + currencyFormat.format(valorReais));
+                textValor.setText("+ " + valorFormatado);
                 textValor.setTextColor(Color.parseColor("#00D39E"));
                 viewIndicadorCor.setBackgroundColor(Color.parseColor("#00D39E"));
             }
@@ -229,6 +257,9 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                     // PENDENTE: esconde hora e separador
                     textHora.setVisibility(View.GONE);
                     textSeparador.setVisibility(View.GONE);
+
+                    // ITEM 6: Adiciona o "Vence em" para pendentes
+                    textData.setText("Vence em " + dateFormat.format(date));
 
                     // Botão de confirmação com animação de feedback tátil
                     if (btnConfirmar != null) {
@@ -260,6 +291,21 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                         if (!strPago.equals(strVenc)) {
                             textData.setText(strPago + " (Venc: " + strVenc.substring(0, 5) + ")");
                         }
+                    }
+
+                    // Estilo "Cinza/Inativo" para itens pagos — aplicado apenas quando
+                    // modoParcelasResumidas=true (ResumoParcelasActivity).
+                    // Em ContasActivity e demais telas, pagos mantêm cores normais.
+                    if (modoParcelasResumidas) {
+                        textTitulo.setTextColor(Color.parseColor("#9E9E9E"));
+                        textCategoria.setTextColor(Color.parseColor("#BDBDBD"));
+                        viewIndicadorCor.setBackgroundColor(Color.parseColor("#9E9E9E"));
+                        textValor.setTextColor(Color.parseColor("#9E9E9E"));
+                        textData.setTextColor(Color.parseColor("#9E9E9E"));
+                        textHora.setTextColor(Color.parseColor("#9E9E9E"));
+                        textSeparador.setTextColor(Color.parseColor("#9E9E9E"));
+                        if (cardIconeConta != null) cardIconeConta.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
+                        if (imageIconeConta != null) imageIconeConta.setColorFilter(Color.parseColor("#9E9E9E"));
                     }
                 }
             }

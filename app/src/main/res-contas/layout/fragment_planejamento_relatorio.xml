@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/header_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Metas e Orçamentos"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/cor_texto"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/iconMetaStatus"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/checkbox_on_background"
+                        app:tint="#A5D6A7" />
+
+                    <TextView
+                        android:id="@+id/textMetaStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Progresso Saudável!"
+                        android:textColor="#A5D6A7"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutEditarMeta"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:id="@+id/textMetaTotalCard"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$ 250,00"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="8dp"/>
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_lapis_editar_24"
+                            app:tint="#BDBDBD" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/textMetaProjecao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Projeção: R$ 197,16 (dentro da meta)"
+                    android:textColor="#BDBDBD"
+                    android:textSize="12sp" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/layoutProgressoContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:id="@+id/layoutBarraSegmentada"
+                        android:layout_width="0dp"
+                        android:layout_height="10dp"
+                        android:orientation="horizontal"
+                        android:weightSum="100"
+                        android:background="@drawable/bg_barra_segmentada"
+                        android:clipToOutline="true"
+                        app:layout_constraintTop_toBottomOf="@+id/textPercentualMarcador"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginTop="4dp">
+
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="60" android:background="#A5D6A7" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="20" android:background="#FFE082" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="20" android:background="#EF9A9A" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textPercentualMarcador"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="@+id/viewMarcador"
+                        app:layout_constraintEnd_toEndOf="@+id/viewMarcador" />
+
+                    <TextView
+                        android:id="@+id/textLabelTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total"
+                        android:textColor="#BDBDBD"
+                        android:textSize="12sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/layoutBarraSegmentada" />
+
+                    <View
+                        android:id="@+id/viewMarcador"
+                        android:layout_width="3dp"
+                        android:layout_height="18dp"
+                        android:background="#FFFFFF"
+                        app:layout_constraintTop_toTopOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintBottom_toBottomOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintStart_toStartOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintEnd_toEndOf="@+id/layoutBarraSegmentada"
+                        app:layout_constraintHorizontal_bias="0.0" /> </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <TextView
+                        android:id="@+id/textGastoAtual"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Gasto Atual: R$ 0,00"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#A5D6A7"/>
+
+                    <TextView
+                        android:id="@+id/textMetaRestante"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="Restante: R$ 0,00"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#BDBDBD"/>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gastos por dia no mês"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/cor_texto"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/textDetalheGastoDia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Toque em um ponto do gráfico para ver os detalhes"
+            android:textSize="12sp"
+            android:textColor="#BDBDBD"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lineChartEvolucao"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Posso Comprar? (Simulador)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/cor_texto"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/cor_fundo_cards"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <EditText
+                        android:id="@+id/editSimuladorGasto"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="R$ 0,00"
+                        android:inputType="numberDecimal"
+                        android:background="@color/cor_background"
+                        android:padding="12dp"/>
+
+                    <Button
+                        android:id="@+id/btnSimular"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Simular"
+                        android:layout_marginStart="8dp"
+                        android:background="@color/black"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                </LinearLayout>
+
+                <!-- Parcelas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <CheckBox
+                        android:id="@+id/checkParcelar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Parcelar (sem juros)"
+                        android:textColor="#BDBDBD"
+                        android:textSize="13sp"
+                        android:buttonTint="#A5D6A7"/>
+
+                    <EditText
+                        android:id="@+id/editNumeroParcelas"
+                        android:layout_width="64dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:hint="3x"
+                        android:inputType="number"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_edittext_simulador"
+                        android:padding="8dp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+
+                <!-- Resultados dos 3 cenários -->
+                <LinearLayout
+                    android:id="@+id/layoutResultadoSimulador"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Cenário 1: Choque de realidade -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_posso_comprar_verde"/>
+
+                    <TextView
+                        android:id="@+id/textCenario1Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#A5D6A7"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario1Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
+                    <!-- Cenário 2: Parcelamento -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_posso_comprar_amarelo"/>
+
+                    <TextView
+                        android:id="@+id/textCenario2Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#FFE082"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario2Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
+                    <!-- Cenário 3: Adiamento inteligente -->
+                    <LinearLayout
+                        android:id="@+id/layoutCenario3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:visibility="gone"
+                        android:background="@drawable/bg_posso_comprar_azul"/>
+
+                    <TextView
+                        android:id="@+id/textCenario3Titulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textColor="#82B4E8"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"/>
+
+                    <TextView
+                        android:id="@+id/textCenario3Corpo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#E0E0E0"
+                        android:lineSpacingMultiplier="1.5"
+                        android:layout_marginTop="4dp"/>
+
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  layout_empty_state_parcelas.xml                             ║
+    ║                                                              ║
+    ║  Empty State para a tela de Resumo de Parcelas.              ║
+    ║                                                              ║
+    ║  USO:  Inclua este arquivo diretamente dentro do             ║
+    ║        LinearLayout principal do tela_resumo_parcelas.xml,   ║
+    ║        logo após o cardResumo. Visibilidade controlada       ║
+    ║        via código (GONE por padrão).                         ║
+    ║                                                              ║
+    ║  Cenários cobertos (controlados pelo atributo                ║
+    ║  android:tag do root — veja o Kotlin/Java abaixo):          ║
+    ║    • "sem_parcelas"  — recorrencia_id sem nenhum documento   ║
+    ║    • "todas_pagas"   — todas as parcelas já estão pagas      ║
+    ║    • "erro_rede"     — falha ao buscar do Firestore          ║
+    ╚══════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ROOT do empty state — GONE por padrão -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layoutEmptyState"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:paddingTop="48dp"
+    android:paddingBottom="48dp"
+    android:paddingStart="32dp"
+    android:paddingEnd="32dp"
+    android:visibility="gone">
+
+    <!-- ── Ícone central ──────────────────────────────────────── -->
+    <!--
+        Use um ImageView com um drawable vetorial (24dp → escalonado
+        para 72dp aqui). Troque o srcCompat pelo ícone que fizer mais
+        sentido para cada cenário via código:
+            • ic_receipt_long_24   → sem_parcelas / todas_pagas
+            • ic_wifi_off_24       → erro_rede
+            • ic_check_circle_24   → todas_pagas (celebração)
+        Se não tiver esses drawables, use os do Material Icons via
+        XML vector ou importe via app/build.gradle com:
+            implementation 'com.google.android.material:material:<versão>'
+    -->
+    <ImageView
+        android:id="@+id/emptyStateIcon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_marginBottom="24dp"
+        android:alpha="0.35"
+        app:srcCompat="@drawable/ic_info_24"
+        android:contentDescription="@null" />
+
+    <!-- ── Título ─────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/emptyStateTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Nenhuma parcela encontrada"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/cor_texto"
+        android:layout_marginBottom="8dp" />
+
+    <!-- ── Subtítulo / descrição ──────────────────────────────── -->
+    <TextView
+        android:id="@+id/emptyStateDescricao"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Esta série não possui parcelas registradas ou foi removida."
+        android:textSize="14sp"
+        android:textColor="#888888"
+        android:lineSpacingMultiplier="1.4"
+        android:layout_marginBottom="32dp" />
+
+    <!-- ── CTA principal ──────────────────────────────────────── -->
+    <!--
+        Botão primário — ação varia por cenário:
+            • sem_parcelas  → finish() / navegar para criação
+            • todas_pagas   → finish() (voltar)
+            • erro_rede     → carregarSerie() (tentar novamente)
+        O onClick é controlado via código; aqui deixamos sem android:onClick
+        para não acoplar ao nome do método da Activity.
+    -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/emptyStateBotaoPrimario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Voltar"
+        android:textSize="14sp"
+        app:cornerRadius="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp" />
+
+    <!-- ── CTA secundário (opcional — ex: "Tentar novamente") ─── -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/emptyStateBotaoSecundario"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Tentar novamente"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+</LinearLayout>

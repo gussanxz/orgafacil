@@ -1,400 +1,390 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.os.Build;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.Timestamp;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.contas.categorias.ui.SelecionarCategoriaContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.model.MovimentacaoModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.repository.MovimentacaoRepository;
-import com.gussanxz.orgafacil.util_helper.MoedaHelper;
+import com.gussanxz.orgafacil.util_helper.AppLogger;
+import com.gussanxz.orgafacil.util_helper.DateHelper;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 
-public class EditarMovimentacaoActivity extends AppCompatActivity {
+/**
+ * EditarMovimentacaoActivity
+ *
+ * Tela de visualização e edição de uma movimentação existente.
+ *
+ * ANTES: ~430 linhas com toda a lógica de UI duplicada da Base
+ *        (máscara de moeda, seletores, categoria, status, validação).
+ *
+ * AGORA: ~200 linhas contendo APENAS o que é exclusivo desta tela:
+ *   - Modo visualização/edição (campos desabilitados por padrão, FAB alterna)
+ *   - FABs com dois estados (lápis → confirmar), texto e cor incluídos
+ *   - Header dinâmico com "(parcela x/y)"
+ *   - Banner "Ver série completa"
+ *   - Dialog de edição em série ("esta e seguintes")
+ *   - Dialog de exclusão em série ("esta e seguintes")
+ *   - DIRETO_PRA_EDICAO: entra já no modo de edição
+ *
+ * Tudo o mais (máscara, data, hora, categoria, status, validação, save)
+ * é herdado de BaseMovimentacaoActivity sem reimplementação.
+ *
+ * ── Comportamento dos botões ──────────────────────────────────────────────
+ *
+ * Modo visualização (isModoEdicaoAtivo = false):
+ *   fabSuperior  → ícone lápis, cor neutra semitransparente no header
+ *   fabInferior  → ícone lápis, texto "Editar", cor cinza neutra
+ *
+ * Modo edição (isModoEdicaoAtivo = true):
+ *   fabSuperior  → ícone confirmar, cor semitransparente no header
+ *   fabInferior  → ícone confirmar, texto "Salvar", cor accent da movimentação
+ *
+ * ── CORREÇÃO BUG 4 ────────────────────────────────────────────────────────
+ *
+ * ANTES: getLayoutResId() desserializava o Parcelable do Intent de forma
+ * independente apenas para decidir o layout, criando uma instância descartada.
+ * A Base então desserializava novamente em verificarModoEdicao(), produzindo
+ * uma segunda instância diferente atribuída a itemEmEdicao.
+ * Resultado: dois objetos distintos para a mesma movimentação, com risco de
+ * inconsistência em edge cases de memória baixa.
+ *
+ * DEPOIS: getLayoutResId() lê o Parcelable UMA ÚNICA VEZ e armazena em
+ * itemEmEdicao imediatamente (campo herdado de BaseMovimentacaoActivity).
+ * A Base detecta que itemEmEdicao já está preenchido e não lê o Intent de
+ * novo — a desserialização ocorre exatamente uma vez durante todo o ciclo.
+ *
+ * Para isso funcionar, BaseMovimentacaoActivity.carregarModoEdicao() foi
+ * ajustado para verificar se itemEmEdicao já tem valor antes de ler o Intent.
+ * Ver comentário em carregarModoEdicao() na Base.
+ */
+public class EditarMovimentacaoActivity extends BaseMovimentacaoActivity {
 
-    private final String TAG = "EditarMovActivity";
+    private static final String TAG = "EditarMovActivity";
 
-    private EditText editData, editHora, editDescricao, editValor, editCategoria;
-    private TextView textViewHeader;
-    private ImageButton btnExcluir;
-
-    private MovimentacaoModel movOriginal;
-    private MovimentacaoRepository repository;
-    private ActivityResultLauncher<Intent> launcherCategoria;
-
-    private String novoCategoriaId;
-    private androidx.appcompat.widget.SwitchCompat switchStatusPago;
-    private long valorCentavosAtual = 0;
-    private boolean acaoEmAndamento = false;
-
-    private com.google.android.material.floatingactionbutton.FloatingActionButton fabSuperior, fabInferior;
+    // ── Estado exclusivo desta tela ────────────────────────────────────────────
     private boolean isModoEdicaoAtivo = false;
+    private boolean acaoEmAndamento   = false;
+
+    // ── FABs exclusivos desta tela ─────────────────────────────────────────────
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabSuperior;
+    private ExtendedFloatingActionButton fabInferior;
+
+    // =========================================================================
+    // IMPLEMENTAÇÃO DOS MÉTODOS ABSTRATOS DA BASE
+    // =========================================================================
+
+    @Override
+    protected TipoCategoriaContas getTipo() {
+        return (itemEmEdicao != null)
+                ? itemEmEdicao.getTipoEnum()
+                : TipoCategoriaContas.DESPESA;
+    }
+
+    /**
+     * CORREÇÃO BUG 4 — leitura única do Parcelable.
+     *
+     * Este método é chamado pela Base em setContentView(), antes de
+     * verificarModoEdicao(). Aproveitamos essa chamada obrigatória para
+     * popular itemEmEdicao de uma vez, eliminando a segunda leitura do Intent
+     * que ocorreria em carregarModoEdicao() da Base.
+     *
+     * A Base foi ajustada para respeitar itemEmEdicao já preenchido:
+     * se itemEmEdicao != null ao entrar em carregarModoEdicao(), ela não
+     * chama getParcelableExtra() novamente.
+     */
+    @Override
+    protected int getLayoutResId() {
+        // Só lê do Intent se ainda não foi populado (ex: rotação de tela
+        // onde onCreate() é chamado novamente mas o campo já foi salvo).
+        if (itemEmEdicao == null) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                itemEmEdicao = getIntent().getParcelableExtra(
+                        "movimentacaoSelecionada", MovimentacaoModel.class);
+            } else {
+                itemEmEdicao = getIntent().getParcelableExtra("movimentacaoSelecionada");
+            }
+        }
+
+        return (itemEmEdicao != null && itemEmEdicao.getTipoEnum() == TipoCategoriaContas.RECEITA)
+                ? R.layout.tela_add_receita
+                : R.layout.tela_add_despesa;
+    }
+
+    @Override
+    protected String getCategoriaDefault() {
+        return "";
+    }
+
+    @Override
+    protected String getTituloExclusao() {
+        return "Excluir lançamento";
+    }
+
+    @Override
+    protected String getMensagemExclusao() {
+        return "Deseja realmente excluir? O saldo será corrigido automaticamente.";
+    }
+
+    // =========================================================================
+    // CICLO DE VIDA
+    // =========================================================================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Nota: super.onCreate() já chama getLayoutResId() internamente,
+        // que por sua vez popula itemEmEdicao. Quando chegarmos na linha
+        // abaixo do super, itemEmEdicao já está disponível.
         super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            movOriginal = getIntent().getParcelableExtra("movimentacaoSelecionada", MovimentacaoModel.class);
-        } else {
-            movOriginal = getIntent().getParcelableExtra("movimentacaoSelecionada");
-        }
-
-        repository = new MovimentacaoRepository();
-
-        if (movOriginal == null) {
+        if (itemEmEdicao == null) {
             finish();
             return;
         }
 
-        if (movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA) {
-            setContentView(R.layout.tela_add_despesa);
-        } else {
-            setContentView(R.layout.tela_add_receita);
-        }
-
-        inicializarComponentes();
-        setupCurrencyMask();
-        preencherCampos();
-        configurarListeners();
-        configurarLauncherCategoria();
-
-        aplicarModoInicial();
-
-        novoCategoriaId = movOriginal.getCategoria_id();
-    }
-
-    private void aplicarModoInicial() {
-        boolean direto = getIntent().getBooleanExtra("DIRETO_PRA_EDICAO", false);
-        if (direto) {
-            alternarModoEdicao(true);
-        }
-    }
-
-    private void inicializarComponentes() {
-        textViewHeader = findViewById(R.id.textViewHeader);
-        editData       = findViewById(R.id.editData);
-        editHora       = findViewById(R.id.editHora);
-        editDescricao  = findViewById(R.id.editDescricao);
-        editValor      = findViewById(R.id.editValor);
-        editCategoria  = findViewById(R.id.editCategoria);
-        btnExcluir     = findViewById(R.id.btnExcluir);
-        switchStatusPago = findViewById(R.id.switchStatusPago);
-
         fabSuperior = findViewById(R.id.fabSuperiorSalvarCategoria);
         fabInferior = findViewById(R.id.fabInferiorSalvarCategoria);
 
-        boolean isDespesa = movOriginal.getTipoEnum() == TipoCategoriaContas.DESPESA;
+        configurarHeader();
+        configurarBannerSerie();
 
-        if (textViewHeader != null) {
-            String tituloPrincipal = isDespesa ? "Detalhes da Despesa" : "Detalhes da Receita";
-            if (movOriginal.getTotal_parcelas() > 1) {
-                tituloPrincipal += " (" + movOriginal.getParcela_atual()
-                        + "/" + movOriginal.getTotal_parcelas() + ")";
-            }
-            textViewHeader.setText(tituloPrincipal);
-        }
-
-        // Banner "Ver série completa" — só aparece se for parcela de uma série
-        if (movOriginal.getTotal_parcelas() > 1) {
-            View bannerSerie = findViewById(R.id.bannerVerSerie);
-            if (bannerSerie != null) {
-                bannerSerie.setVisibility(View.VISIBLE);
-                TextView txtBanner = bannerSerie.findViewById(R.id.textBannerSerie);
-                if (txtBanner != null) {
-                    txtBanner.setText("Parcela " + movOriginal.getParcela_atual()
-                            + " de " + movOriginal.getTotal_parcelas()
-                            + " — Ver série completa →");
-                }
-                bannerSerie.setOnClickListener(v -> abrirResumoDaSerie());
-            }
-        }
-
-        if (editDescricao != null) {
-            editDescricao.setHint(isDespesa ? "Descrição da despesa" : "Descrição da receita");
-        }
-
-        editCategoria.setFocusable(false);
-        editData.setFocusable(false);
-        if (editHora != null) editHora.setFocusable(false);
-
-        View layoutRecorrencia = findViewById(R.id.layoutRecorrencia);
         if (layoutRecorrencia != null) layoutRecorrencia.setVisibility(View.GONE);
 
-        // Começa no modo visualização
-        alternarModoEdicao(false);
+        configurarFabs();
+
+        boolean diretoPraEdicao = getIntent().getBooleanExtra("DIRETO_PRA_EDICAO", false);
+
+        // Modo somente visualização — aberto pelo Top 5 de relatórios.
+        // Oculta os FABs e o banner de série para que o usuário veja os
+        // dados mas não possa editar ou navegar para a série neste contexto.
+        boolean apenasVisualizacao = getIntent().getBooleanExtra("MODO_APENAS_VISUALIZACAO", false);
+        if (apenasVisualizacao) {
+            if (fabSuperior != null) fabSuperior.setVisibility(View.GONE);
+            if (fabInferior != null) fabInferior.setVisibility(View.GONE);
+            // Oculta a label solta "Recorrência" e o card inteiro — o card de
+            // recorrência não faz sentido em modo somente visualização.
+            // O bannerVerSerie fica visível para que o usuário possa navegar
+            // para o resumo de parcelas normalmente.
+            View labelRecorrencia = findViewById(R.id.labelRecorrencia);
+            View cardRecorrencia  = findViewById(R.id.cardRecorrencia);
+            if (labelRecorrencia != null) labelRecorrencia.setVisibility(View.GONE);
+            if (cardRecorrencia  != null) cardRecorrencia.setVisibility(View.GONE);
+            // Garante modo visualização — campos desabilitados, sem botão excluir
+            alternarModoEdicao(false);
+            return;
+        }
+
+        alternarModoEdicao(diretoPraEdicao);
     }
 
-    /**
-     * Abre a tela de resumo da série de parcelamentos.
-     * recorrencia_id identifica o grupo; movOriginal é passado para contexto.
-     */
+    // =========================================================================
+    // HEADER E BANNER DE SÉRIE
+    // =========================================================================
+
+    private void configurarHeader() {
+        TextView textViewHeader = findViewById(R.id.textViewHeader);
+        if (textViewHeader == null) return;
+
+        boolean isDespesa = itemEmEdicao.getTipoEnum() == TipoCategoriaContas.DESPESA;
+        String titulo = isDespesa ? "Detalhes da Despesa" : "Detalhes da Receita";
+
+        if (itemEmEdicao.getTotal_parcelas() > 1) {
+            titulo += " (" + itemEmEdicao.getParcela_atual()
+                    + "/" + itemEmEdicao.getTotal_parcelas() + ")";
+        }
+        textViewHeader.setText(titulo);
+    }
+
+    private void configurarBannerSerie() {
+        if (itemEmEdicao.getTotal_parcelas() <= 1) return;
+
+        View bannerSerie = findViewById(R.id.bannerVerSerie);
+        if (bannerSerie == null) return;
+
+        bannerSerie.setVisibility(View.VISIBLE);
+
+        TextView txtBanner = bannerSerie.findViewById(R.id.textBannerSerie);
+        if (txtBanner != null) {
+            txtBanner.setText("Parcela " + itemEmEdicao.getParcela_atual()
+                    + " de " + itemEmEdicao.getTotal_parcelas()
+                    + " — Ver série completa →");
+        }
+        bannerSerie.setOnClickListener(v -> abrirResumoDaSerie());
+    }
+
     private void abrirResumoDaSerie() {
-        if (movOriginal.getRecorrencia_id() == null || movOriginal.getRecorrencia_id().isEmpty()) {
+        if (itemEmEdicao.getRecorrencia_id() == null
+                || itemEmEdicao.getRecorrencia_id().isEmpty()) {
             Toast.makeText(this, "Esta parcela não tem série vinculada.", Toast.LENGTH_SHORT).show();
             return;
         }
         Intent intent = new Intent(this, ResumoParcelasActivity.class);
-        intent.putExtra("recorrencia_id", movOriginal.getRecorrencia_id());
-        intent.putExtra("movimentacaoSelecionada", movOriginal);
+        intent.putExtra("recorrencia_id", itemEmEdicao.getRecorrencia_id());
+        intent.putExtra("movimentacaoSelecionada", itemEmEdicao);
         startActivity(intent);
     }
 
-    private void setupCurrencyMask() {
-        editValor.addTextChangedListener(new TextWatcher() {
-            private String current = "";
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!s.toString().equals(current)) {
-                    editValor.removeTextChangedListener(this);
-                    String cleanString = s.toString().replaceAll("[^\\d]", "");
-                    if (!cleanString.isEmpty()) {
-                        try {
-                            valorCentavosAtual = Long.parseLong(cleanString);
-                            String formatted = MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0);
-                            current = formatted;
-                            editValor.setText(formatted);
-                            editValor.setSelection(formatted.length());
-                        } catch (NumberFormatException e) {
-                            Log.e(TAG, "Erro ao processar máscara");
-                        }
-                    } else {
-                        valorCentavosAtual = 0;
-                        editValor.setText("");
-                    }
-                    editValor.addTextChangedListener(this);
-                }
-            }
-        });
+    // =========================================================================
+    // FABs E MODO EDIÇÃO
+    // =========================================================================
+
+    private void configurarFabs() {
+        if (fabSuperior != null) fabSuperior.setOnClickListener(v -> processarAcaoFab());
+        if (fabInferior != null) fabInferior.setOnClickListener(v -> processarAcaoFab());
     }
 
-    private void preencherCampos() {
-        valorCentavosAtual = movOriginal.getValor();
-        editValor.setText(MoedaHelper.formatarParaBRL(valorCentavosAtual / 100.0));
-        editDescricao.setText(movOriginal.getDescricao());
-        editCategoria.setText(movOriginal.getCategoria_nome());
-
-        if (movOriginal.getData_movimentacao() != null) {
-            Date date = movOriginal.getData_movimentacao().toDate();
-            editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date));
-            if (editHora != null) {
-                editHora.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date));
-            }
-            if (switchStatusPago != null) {
-                switchStatusPago.setChecked(movOriginal.isPago());
-                aplicarRegraStatusPorData(date);
-            }
+    /**
+     * Hook da Base: chamado sempre que o modo de edição é alternado.
+     *
+     * FIX 2 — comportamento dos botões por modo:
+     *   Visualizando → fabInferior: ícone lápis, texto "Editar", cor neutra cinza
+     *   Editando     → fabInferior: ícone confirmar, texto "Salvar", cor accent
+     *   fabSuperior  → apenas troca ícone (está no header colorido)
+     */
+    @Override
+    protected void onModoEdicaoAlternado(boolean modoEdicaoAtivo) {
+        // Habilita ou desabilita todos os campos de input
+        if (campoValor     != null) campoValor.setEnabled(modoEdicaoAtivo);
+        if (campoDescricao != null) campoDescricao.setEnabled(modoEdicaoAtivo);
+        if (campoCategoria != null) {
+            campoCategoria.setEnabled(modoEdicaoAtivo);
+            campoCategoria.setClickable(modoEdicaoAtivo);
         }
-    }
-
-    private void configurarListeners() {
-        editData.setOnClickListener(v -> abrirSelecionadorDeData());
-        if (editHora != null) editHora.setOnClickListener(v -> abrirSelecionadorDeHora());
-        editCategoria.setOnClickListener(v -> abrirSelecaoCategoria());
-        if (btnExcluir != null) btnExcluir.setOnClickListener(v -> confirmarExclusao());
+        if (campoData != null) {
+            campoData.setEnabled(modoEdicaoAtivo);
+            campoData.setClickable(modoEdicaoAtivo);
+        }
+        if (campoHora != null) {
+            campoHora.setEnabled(modoEdicaoAtivo);
+            campoHora.setClickable(modoEdicaoAtivo);
+        }
         if (switchStatusPago != null) {
-            switchStatusPago.setOnCheckedChangeListener((btn, checked) -> atualizarTextoStatus());
-        }
-    }
-
-    private void abrirSelecionadorDeData() {
-        Calendar c = Calendar.getInstance();
-        try {
-            Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    .parse(editData.getText().toString());
-            if (dataAtual != null) c.setTime(dataAtual);
-        } catch (Exception ignored) {}
-
-        DatePickerDialog dialog = new DatePickerDialog(this, (v, y, m, d) -> {
-            c.set(y, m, d);
-            Date dataEscolhida = c.getTime();
-            editData.setText(new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataEscolhida));
-            aplicarRegraStatusPorData(dataEscolhida);
-            validarLimiteHoraAtual();
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-
-        if (c.getTimeInMillis() <= System.currentTimeMillis()) {
-            dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        }
-        dialog.show();
-    }
-
-    private void abrirSelecionadorDeHora() {
-        Calendar agora = Calendar.getInstance();
-        int horaSet = agora.get(Calendar.HOUR_OF_DAY);
-        int minutoSet = agora.get(Calendar.MINUTE);
-
-        try {
-            String[] partes = editHora.getText().toString().split(":");
-            horaSet = Integer.parseInt(partes[0]);
-            minutoSet = Integer.parseInt(partes[1]);
-        } catch (Exception ignored) {}
-
-        new android.app.TimePickerDialog(this, (view, hourOfDay, minute) -> {
-            editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
-            validarLimiteHoraAtual();
-        }, horaSet, minutoSet, true).show();
-    }
-
-    private void validarLimiteHoraAtual() {
-        try {
-            Date dataSelecionada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    .parse(editData.getText().toString());
-            if (dataSelecionada == null) return;
-
-            Calendar calSelecionada = Calendar.getInstance();
-            calSelecionada.setTime(dataSelecionada);
-            Calendar agora = Calendar.getInstance();
-
-            boolean isPago = switchStatusPago != null && switchStatusPago.isChecked();
-
-            if (isPago
-                    && calSelecionada.get(Calendar.YEAR) == agora.get(Calendar.YEAR)
-                    && calSelecionada.get(Calendar.DAY_OF_YEAR) == agora.get(Calendar.DAY_OF_YEAR)) {
-
-                String[] partesHora = editHora.getText().toString().split(":");
-                int horaCampo = Integer.parseInt(partesHora[0]);
-                int minCampo  = Integer.parseInt(partesHora[1]);
-                int horaAgora = agora.get(Calendar.HOUR_OF_DAY);
-                int minAgora  = agora.get(Calendar.MINUTE);
-
-                if (horaCampo > horaAgora || (horaCampo == horaAgora && minCampo > minAgora)) {
-                    editHora.setText(String.format(Locale.getDefault(), "%02d:%02d", horaAgora, minAgora));
-                    Toast.makeText(this,
-                            "Horário ajustado: movimentações finalizadas não podem estar no futuro.",
-                            Toast.LENGTH_SHORT).show();
+            if (modoEdicaoAtivo && campoData != null) {
+                try {
+                    Date dataAtual = DateHelper.parsearData(campoData.getText().toString());
+                    aplicarRegraStatusPorData(dataAtual);
+                } catch (Exception e) {
+                    switchStatusPago.setEnabled(true);
                 }
+            } else {
+                switchStatusPago.setEnabled(false);
             }
-        } catch (Exception ignored) {}
-    }
+        }
 
-    private void aplicarRegraStatusPorData(Date data) {
-        if (switchStatusPago == null) return;
+        // Botão excluir só aparece no modo edição
+        if (btnExcluir != null) {
+            btnExcluir.setVisibility(modoEdicaoAtivo ? View.VISIBLE : View.GONE);
+            btnExcluir.setOnClickListener(v -> confirmarExclusao());
+        }
 
-        Calendar hoje = Calendar.getInstance();
-        hoje.set(Calendar.HOUR_OF_DAY, 0); hoje.set(Calendar.MINUTE, 0);
-        hoje.set(Calendar.SECOND, 0); hoje.set(Calendar.MILLISECOND, 0);
+        // ── fabSuperior: apenas troca o ícone ─────────────────────────────────
+        int iconeSuperior = modoEdicaoAtivo
+                ? R.drawable.ic_confirmar_branco_48
+                : R.drawable.ic_lapis_editar_24;
+        if (fabSuperior != null) fabSuperior.setImageResource(iconeSuperior);
 
-        Calendar selecionada = Calendar.getInstance();
-        selecionada.setTime(data);
-        selecionada.set(Calendar.HOUR_OF_DAY, 0); selecionada.set(Calendar.MINUTE, 0);
-        selecionada.set(Calendar.SECOND, 0); selecionada.set(Calendar.MILLISECOND, 0);
+        // ── fabInferior: troca ícone + texto + cor de fundo ───────────────────
+        if (fabInferior != null) {
+            if (modoEdicaoAtivo) {
+                // Modo edição: destaque total — cor accent + "Salvar"
+                fabInferior.setIconResource(R.drawable.ic_confirmar_branco_24);
+                fabInferior.setText("Salvar");
 
-        if (selecionada.after(hoje)) {
-            switchStatusPago.setChecked(false);
-            switchStatusPago.setEnabled(false);
-            switchStatusPago.setText("Status: Pendente (Futuro)");
-        } else {
-            switchStatusPago.setEnabled(true);
-            atualizarTextoStatus();
+                // Cor accent depende do tipo da movimentação
+                int corAccent = (itemEmEdicao != null
+                        && itemEmEdicao.getTipoEnum() == TipoCategoriaContas.RECEITA)
+                        ? R.color.colorAccentProventos
+                        : R.color.colorAccentDespesa;
+                fabInferior.setBackgroundTintList(
+                        ColorStateList.valueOf(ContextCompat.getColor(this, corAccent)));
+            } else {
+                // Modo visualização: neutro — cinza + "Editar"
+                fabInferior.setIconResource(R.drawable.ic_lapis_editar_24);
+                fabInferior.setText("Editar");
+                fabInferior.setBackgroundTintList(
+                        ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorPrimaryDark)));
+            }
         }
     }
 
-    private void atualizarTextoStatus() {
-        boolean ok = switchStatusPago.isChecked();
-        if (!switchStatusPago.isEnabled() && !ok) {
-            switchStatusPago.setText("Status: Pendente (Futuro)");
-        } else {
-            switchStatusPago.setText(ok ? "Status: OK" : "Status: Pendente");
-        }
+    /**
+     * Alterna o modo edição e notifica a Base via hook.
+     */
+    private void alternarModoEdicao(boolean habilitar) {
+        isModoEdicaoAtivo = habilitar;
+        onModoEdicaoAlternado(habilitar);
     }
 
-    private void abrirSelecaoCategoria() {
-        Intent intent = new Intent(this, SelecionarCategoriaContasActivity.class);
-        if (movOriginal != null) {
-            intent.putExtra("TIPO_CATEGORIA", movOriginal.getTipoEnum().getId());
-        }
-        launcherCategoria.launch(intent);
-    }
-
-    private void configurarLauncherCategoria() {
-        launcherCategoria = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                        editCategoria.setText(result.getData().getStringExtra("categoriaSelecionada"));
-                        novoCategoriaId = result.getData().getStringExtra("categoriaId");
-                    }
-                });
-    }
-
-    public void salvarDespesa(View v)   { processarAcaoFab(); }
-    public void salvarProventos(View v) { processarAcaoFab(); }
-
+    /**
+     * Lógica do FAB: primeiro clique entra em modo edição, segundo salva.
+     */
     private void processarAcaoFab() {
         if (!isModoEdicaoAtivo) {
             alternarModoEdicao(true);
             Toast.makeText(this, "Modo de edição habilitado", Toast.LENGTH_SHORT).show();
-            editValor.requestFocus();
+            if (campoValor != null) campoValor.requestFocus();
         } else {
             confirmarEdicao();
         }
     }
 
+    // =========================================================================
+    // SALVAR — lógica exclusiva desta tela (série, parcelas, etc.)
+    // =========================================================================
+
+    public void salvarDespesa(View v)   { processarAcaoFab(); }
+    public void salvarProventos(View v) { processarAcaoFab(); }
+
     private void confirmarEdicao() {
         if (acaoEmAndamento) return;
         if (valorCentavosAtual <= 0) {
-            editValor.setError("Preencha um valor válido");
+            if (campoValor != null) campoValor.setError("Preencha um valor válido");
             return;
         }
         acaoEmAndamento = true;
 
         try {
             MovimentacaoModel movNova = new MovimentacaoModel();
-            movNova.setId(movOriginal.getId());
-            movNova.setTipoEnum(movOriginal.getTipoEnum());
-            movNova.setData_criacao(movOriginal.getData_criacao());
-            movNova.setRecorrencia_id(movOriginal.getRecorrencia_id());
-            movNova.setParcela_atual(movOriginal.getParcela_atual());
-            movNova.setTotal_parcelas(movOriginal.getTotal_parcelas());
+            movNova.setId(itemEmEdicao.getId());
+            movNova.setTipoEnum(itemEmEdicao.getTipoEnum());
+            movNova.setData_criacao(itemEmEdicao.getData_criacao());
+            movNova.setRecorrencia_id(itemEmEdicao.getRecorrencia_id());
+            movNova.setParcela_atual(itemEmEdicao.getParcela_atual());
+            movNova.setTotal_parcelas(itemEmEdicao.getTotal_parcelas());
             movNova.setValor(valorCentavosAtual);
-            movNova.setDescricao(editDescricao.getText().toString());
-            movNova.setCategoria_nome(editCategoria.getText().toString());
-            movNova.setCategoria_id(novoCategoriaId);
+            movNova.setDescricao(campoDescricao.getText().toString().trim());
+            movNova.setCategoria_nome(campoCategoria.getText().toString());
+            movNova.setCategoria_id(categoriaIdSelecionada);
 
-            String dataHoraStr = editData.getText().toString();
-            if (editHora != null && !editHora.getText().toString().isEmpty()) {
-                dataHoraStr += " " + editHora.getText().toString();
-            } else {
-                dataHoraStr += " 00:00";
-            }
+            String dataStr = campoData.getText().toString().trim();
+            String horaStr = (campoHora != null && !campoHora.getText().toString().isEmpty())
+                    ? campoHora.getText().toString().trim()
+                    : "00:00";
 
-            Date date = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).parse(dataHoraStr);
-            if (date != null) {
-                movNova.setData_movimentacao(new Timestamp(date));
-                boolean ok = switchStatusPago != null
-                        ? switchStatusPago.isChecked()
-                        : movOriginal.isPago();
-                movNova.setPago(ok);
-            }
+            Date date = DateHelper.parsearDataHora(dataStr, horaStr);
+            movNova.setData_movimentacao(new Timestamp(date));
 
-            if (movOriginal.getTotal_parcelas() > 1
-                    && movOriginal.getParcela_atual() < movOriginal.getTotal_parcelas()) {
+            boolean ok = switchStatusPago != null
+                    ? switchStatusPago.isChecked()
+                    : itemEmEdicao.isPago();
+            movNova.setPago(ok);
 
+            boolean ehSerie = itemEmEdicao.getTotal_parcelas() > 1
+                    && itemEmEdicao.getParcela_atual() < itemEmEdicao.getTotal_parcelas();
+
+            if (ehSerie) {
                 new AlertDialog.Builder(this)
                         .setTitle("Atualizar Série")
                         .setMessage("Deseja aplicar as alterações apenas a esta parcela ou a todas as seguintes também?")
@@ -408,13 +398,13 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             acaoEmAndamento = false;
-            Log.e(TAG, "Erro ao salvar", e);
-            Toast.makeText(this, "Erro: " + e.getClass().getSimpleName(), Toast.LENGTH_LONG).show();
+            AppLogger.e(TAG, "Erro ao montar movimentação para edição", e);
+            Toast.makeText(this, "Erro inesperado: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void enviarEdicaoAoBanco(MovimentacaoModel movNova, boolean todasSeguintes) {
-        repository.editarMultiplos(movOriginal, movNova, todasSeguintes,
+        repository.editarMultiplos(itemEmEdicao, movNova, todasSeguintes,
                 new MovimentacaoRepository.Callback() {
                     @Override public void onSucesso(String msg) {
                         Toast.makeText(EditarMovimentacaoActivity.this, msg, Toast.LENGTH_SHORT).show();
@@ -423,15 +413,21 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                     }
                     @Override public void onErro(String erro) {
                         acaoEmAndamento = false;
-                        Toast.makeText(EditarMovimentacaoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EditarMovimentacaoActivity.this,
+                                "Erro: " + erro, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    private void confirmarExclusao() {
-        if (movOriginal.getTotal_parcelas() > 1
-                && movOriginal.getParcela_atual() < movOriginal.getTotal_parcelas()) {
+    // =========================================================================
+    // EXCLUSÃO — lógica exclusiva desta tela (série)
+    // =========================================================================
 
+    private void confirmarExclusao() {
+        boolean ehSerie = itemEmEdicao.getTotal_parcelas() > 1
+                && itemEmEdicao.getParcela_atual() < itemEmEdicao.getTotal_parcelas();
+
+        if (ehSerie) {
             new AlertDialog.Builder(this)
                     .setTitle("Excluir Lançamento Repetido")
                     .setMessage("Como deseja tratar a exclusão desta conta?")
@@ -455,7 +451,7 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
     }
 
     private void enviarExclusaoAoBanco(boolean todasSeguintes) {
-        repository.excluirMultiplos(movOriginal, todasSeguintes,
+        repository.excluirMultiplos(itemEmEdicao, todasSeguintes,
                 new MovimentacaoRepository.Callback() {
                     @Override public void onSucesso(String msg) {
                         Toast.makeText(EditarMovimentacaoActivity.this, msg, Toast.LENGTH_SHORT).show();
@@ -463,59 +459,19 @@ public class EditarMovimentacaoActivity extends AppCompatActivity {
                         finish();
                     }
                     @Override public void onErro(String erro) {
-                        Toast.makeText(EditarMovimentacaoActivity.this, erro, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EditarMovimentacaoActivity.this,
+                                erro, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    private void alternarModoEdicao(boolean habilitar) {
-        isModoEdicaoAtivo = habilitar;
+    // =========================================================================
+    // NAVEGAÇÃO
+    // =========================================================================
 
-        editValor.setEnabled(habilitar);
-        editDescricao.setEnabled(habilitar);
-
-        editCategoria.setEnabled(habilitar);
-        editCategoria.setClickable(habilitar);
-        editData.setEnabled(habilitar);
-        editData.setClickable(habilitar);
-        if (editHora != null) {
-            editHora.setEnabled(habilitar);
-            editHora.setClickable(habilitar);
-        }
-
-        if (btnExcluir != null) {
-            btnExcluir.setVisibility(habilitar ? View.VISIBLE : View.GONE);
-        }
-
-        if (switchStatusPago != null) {
-            if (habilitar) {
-                try {
-                    Date dataAtual = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                            .parse(editData.getText().toString());
-                    aplicarRegraStatusPorData(dataAtual);
-                } catch (Exception e) {
-                    switchStatusPago.setEnabled(true);
-                }
-            } else {
-                switchStatusPago.setEnabled(false);
-            }
-        }
-
-        if (fabSuperior != null) {
-            fabSuperior.setImageResource(habilitar
-                    ? R.drawable.ic_confirmar_branco_48
-                    : R.drawable.ic_lapis_editar_24);
-        }
-        if (fabInferior != null) {
-            fabInferior.setImageResource(habilitar
-                    ? R.drawable.ic_confirmar_branco_24
-                    : R.drawable.ic_lapis_editar_24);
-        }
-    }
-
+    @Override
     public void retornarPrincipal(View view) {
         if (acaoEmAndamento) return;
-        acaoEmAndamento = true;
         finish();
     }
 }

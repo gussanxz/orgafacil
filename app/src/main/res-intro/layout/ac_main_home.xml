@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/cor_background"
+    android:background="@color/cor_fundo_home"
     tools:context=".funcionalidades.main.HomeActivity">
 
     <ImageView
@@ -27,13 +27,15 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/imageViewVendas"
-        app:srcCompat="@drawable/ic_wallet_96" />
+        app:srcCompat="@drawable/ic_wallet_96"
+        app:tint="@color/cor_icones_home"/>
 
     <TextView
         android:id="@+id/textViewContas"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Contas"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewContas"
         app:layout_constraintStart_toStartOf="@+id/imageViewContas"
         app:layout_constraintTop_toBottomOf="@+id/imageViewContas" />
@@ -44,6 +46,7 @@
         android:layout_height="wrap_content"
         android:text="Em teste"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewContas"
         app:layout_constraintStart_toStartOf="@+id/textViewContas"
         app:layout_constraintTop_toBottomOf="@+id/textViewContas" />
@@ -60,13 +63,15 @@
         app:layout_constraintStart_toEndOf="@+id/imageViewContas"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"
-        app:srcCompat="@drawable/ic_sale_96" />
+        app:srcCompat="@drawable/ic_sale_96"
+        app:tint="@color/cor_icones_home"/>
 
     <TextView
         android:id="@+id/textViewVendas"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Vendas"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewVendas"
         app:layout_constraintStart_toStartOf="@+id/imageViewVendas"
         app:layout_constraintTop_toBottomOf="@+id/imageViewVendas" />
@@ -77,6 +82,7 @@
         android:layout_height="wrap_content"
         android:text="Em desenvolvimento"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewVendas"
         app:layout_constraintStart_toStartOf="@+id/textViewVendas"
         app:layout_constraintTop_toBottomOf="@+id/textViewVendas" />
@@ -85,20 +91,18 @@
         android:id="@+id/imageViewMercado"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:onClick="acessarResumoListaMercado"
+        android:onClick="acessarListaMercado"
         app:layout_constraintEnd_toStartOf="@+id/imageViewTodo"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/imageViewTodo"
-        app:srcCompat="@drawable/ic_shopping_cart_96" />
+        app:srcCompat="@drawable/ic_shopping_cart_96"
+        app:tint="@color/cor_icones_home"/>
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:elevation="1dp"
-        android:src="@drawable/ic_lock_24"
         app:layout_constraintBottom_toBottomOf="@+id/imageViewMercado"
         app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
         app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
@@ -110,6 +114,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Lista Mercado"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
         app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
         app:layout_constraintTop_toBottomOf="@+id/imageViewMercado" />
@@ -118,8 +123,9 @@
         android:id="@+id/textViewStatusMercado"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Em breve"
+        android:text="Em teste"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewMercado"
         app:layout_constraintStart_toStartOf="@+id/textViewMercado"
         app:layout_constraintTop_toBottomOf="@+id/textViewMercado" />
@@ -137,7 +143,8 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toEndOf="@+id/imageViewMercado"
         app:layout_constraintTop_toBottomOf="@+id/imageViewVendas"
-        app:srcCompat="@drawable/ic_checklist_96" />
+        app:srcCompat="@drawable/ic_checklist_96"
+        app:tint="@color/cor_icones_home"/>
 
     <ImageView
         android:layout_width="wrap_content"
@@ -155,6 +162,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Lista atividades"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewTodo"
         app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
         app:layout_constraintTop_toBottomOf="@+id/imageViewTodo" />
@@ -165,6 +173,7 @@
         android:layout_height="wrap_content"
         android:text="Em breve"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewAtividades"
         app:layout_constraintStart_toStartOf="@+id/textViewAtividades"
         app:layout_constraintTop_toBottomOf="@+id/textViewAtividades" />
@@ -180,7 +189,8 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/imageViewConfigs"
-        app:srcCompat="@drawable/ic_barcode_96" />
+        app:srcCompat="@drawable/ic_barcode_96"
+        app:tint="@color/cor_icones_home"/>
 
     <ImageView
         android:layout_width="wrap_content"
@@ -198,6 +208,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Boleto por CPF"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewBoletoCPF"
         app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
         app:layout_constraintTop_toBottomOf="@+id/imageViewBoletoCPF" />
@@ -208,6 +219,7 @@
         android:layout_height="wrap_content"
         android:text="Em breve"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewBoletoCPF"
         app:layout_constraintStart_toStartOf="@+id/textViewBoletoCPF"
         app:layout_constraintTop_toBottomOf="@+id/textViewBoletoCPF" />
@@ -221,13 +233,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/imageViewBoletoCPF"
         app:layout_constraintTop_toBottomOf="@+id/imageViewTodo"
-        app:srcCompat="@drawable/ic_manage_accounts_96" />
+        app:srcCompat="@drawable/ic_manage_accounts_96"
+        app:tint="@color/cor_icones_home"/>
 
     <TextView
         android:id="@+id/textViewConfigs"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Minha Conta"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/imageViewConfigs"
         app:layout_constraintStart_toStartOf="@+id/imageViewConfigs"
         app:layout_constraintTop_toBottomOf="@+id/imageViewConfigs" />
@@ -238,6 +252,7 @@
         android:layout_height="wrap_content"
         android:text="Em desenvolvimento"
         android:textSize="12sp"
+        android:textColor="@color/cor_texto_home"
         app:layout_constraintEnd_toEndOf="@+id/textViewConfigs"
         app:layout_constraintStart_toStartOf="@+id/textViewConfigs"
         app:layout_constraintTop_toBottomOf="@+id/textViewConfigs" />

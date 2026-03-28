@@ -8,6 +8,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.util_helper.CategoriaIdHelper;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,6 +22,12 @@ public class ContasCategoriaRepository {
 
     public interface Callback {
         void onSucesso();
+        void onErro(String erro);
+    }
+
+    // 1. Nova interface de callback focada em devolver a lista pronta
+    public interface ListaCallback {
+        void onSucesso(List<ContasCategoriaModel> lista);
         void onErro(String erro);
     }
 
@@ -126,5 +133,30 @@ public class ContasCategoriaRepository {
         return FirestoreSchema.contasCategoriasCol()
                 .whereEqualTo(ContasCategoriaModel.CAMPO_TIPO, tipo.getId())
                 .whereEqualTo(ContasCategoriaModel.CAMPO_ATIVA, true);
+    }
+
+    // 2. Método limpo que faz a busca e converte para os objetos da sua aplicação
+    public void listarTodasAtivas(ListaCallback callback) {
+        FirestoreSchema.contasCategoriasCol()
+                .whereEqualTo(ContasCategoriaModel.CAMPO_ATIVA, true)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<ContasCategoriaModel> lista = new ArrayList<>();
+                    if (snap != null) {
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snap) {
+                            ContasCategoriaModel cat = doc.toObject(ContasCategoriaModel.class);
+                            cat.setId(doc.getId());
+                            lista.add(cat);
+                        }
+                        // Ordena alfabeticamente garantindo que o sub-objeto visual não é nulo
+                        lista.sort((a, b) -> {
+                            String nomeA = a.getVisual() != null ? a.getVisual().getNome() : "";
+                            String nomeB = b.getVisual() != null ? b.getVisual().getNome() : "";
+                            return nomeA.compareToIgnoreCase(nomeB);
+                        });
+                    }
+                    callback.onSucesso(lista);
+                })
+                .addOnFailureListener(e -> callback.onErro(e.getMessage()));
     }
 }

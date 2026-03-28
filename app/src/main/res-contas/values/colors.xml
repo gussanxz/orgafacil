@@ -2,4 +2,20 @@
 <resources>
     <color name="chip_todos_background">#000000</color>  <!-- fundo preto -->
     <color name="chip_todos_text">#FFFFFF</color>         <!-- texto branco -->
+
+    <!-- Chips de filtro de parcelas -->
+    <color name="chip_pago_bg">#E8F5E9</color>
+    <color name="chip_pago_text">#2E7D32</color>
+
+    <color name="chip_pendente_bg">#FFF8E1</color>
+    <color name="chip_pendente_text">#F57F17</color>
+
+    <color name="chip_atrasado_bg">#FFEBEE</color>
+    <color name="chip_atrasado_text">#C62828</color>
+
+    <color name="cor_fundo_cards">#3B5B6E</color> <!-- cor dos cards de relatorios -->
+    <color name="cor_fundo_inferior_resumo_contas">#293141</color>
+    <color name="cor_fundo_header_resumo_contas">#293141</color>
+
+    <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
 </resources>

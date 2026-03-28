@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Cores modo escuro utilizadas no modulo intro -->
+    <color name="cor_fundo_home">#293141</color>
+    <color name="cor_icones_home">#F2F2F2</color>
+
+    <color name="cor_texto_home">#99FFFFFF</color>
+    <color name="cor_barra_status">#00b2bc</color>
+    <color name="cor_botoes_navegacao">#00b2bc</color>
+
+</resources>

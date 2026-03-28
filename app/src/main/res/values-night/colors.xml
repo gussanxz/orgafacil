@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Cores gerais para o modo escuro -->
-    <color name="background">#121212</color>
     <color name="black">#FFFFFFFF</color> <!-- texto primário branco -->
     <color name="white">#FF000000</color> <!-- fundo de botões ou textos escuros -->
     <color name="colorPrimary">#01C7D2</color>

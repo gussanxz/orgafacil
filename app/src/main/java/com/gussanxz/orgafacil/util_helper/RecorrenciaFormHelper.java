@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
@@ -19,11 +19,15 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Encapsula toda a lógica de UI do painel de recorrência.
  * Usado por DespesasActivity e ReceitasActivity — basta chamar init() no onCreate.
+ *
+ * Atualizado com suporte a Progressive Disclosure: o sub-painel "Personalizado"
+ * e seus sub-chips agora são lidos para compor o TipoRecorrencia final.
  */
 public class RecorrenciaFormHelper {
 
@@ -36,11 +40,16 @@ public class RecorrenciaFormHelper {
     private final Context context;
 
     // Views
-    private final MaterialCheckBox    checkboxRepetir;
+    private final MaterialSwitch      checkboxRepetir;
     private final View                painelRecorrencia;
     private final ChipGroup           chipGroup;
-    private final Chip                chipParcelado, chipSemanal, chipQuinzenal,
-            chipMensal, chipCadaXDias, chipCadaXMeses;
+    private final Chip                chipSemanal, chipQuinzenal,
+            chipMensal, chipPersonalizado, chipCadaXDias, chipCadaXMeses;
+
+    // Novos campos do Progressive Disclosure
+    private final View                painelPersonalizado;
+    private final ChipGroup           chipGroupIntervaloPersonalizado;
+
     private final TextInputLayout     layoutIntervalo;
     private final TextInputEditText   editIntervalo;
     private final TextInputLayout     layoutQtd;
@@ -48,8 +57,8 @@ public class RecorrenciaFormHelper {
     private final TextInputEditText   editDataReferencia;
     private final TextView            textPreview;
 
-    // Estado
-    private TipoRecorrencia tipoAtual = TipoRecorrencia.PARCELADO;
+    // Estado inicial padrão (já que Parcelado foi removido da UI)
+    private TipoRecorrencia tipoAtual = TipoRecorrencia.MENSAL;
     private Date            dataReferencia = null;
 
     private OnRecorrenciaChangedListener listener;
@@ -58,21 +67,25 @@ public class RecorrenciaFormHelper {
         this.context  = root.getContext();
         this.listener = listener;
 
-        checkboxRepetir    = root.findViewById(R.id.checkboxRepetir);
-        painelRecorrencia  = root.findViewById(R.id.painelRecorrencia);
-        chipGroup          = root.findViewById(R.id.chipGroupTipoRecorrencia);
-        chipParcelado      = root.findViewById(R.id.chipParcelado);
-        chipSemanal        = root.findViewById(R.id.chipSemanal);
-        chipQuinzenal      = root.findViewById(R.id.chipQuinzenal);
-        chipMensal         = root.findViewById(R.id.chipMensal);
-        chipCadaXDias      = root.findViewById(R.id.chipCadaXDias);
-        chipCadaXMeses     = root.findViewById(R.id.chipCadaXMeses);
-        layoutIntervalo    = root.findViewById(R.id.textInputIntervalo);
-        editIntervalo      = root.findViewById(R.id.editIntervalo);
-        layoutQtd          = root.findViewById(R.id.textInputMeses);
-        editQtd            = root.findViewById(R.id.editQtdMeses);
-        editDataReferencia = root.findViewById(R.id.editDataReferencia);
-        textPreview        = root.findViewById(R.id.textPreviewRecorrencia);
+        checkboxRepetir                 = root.findViewById(R.id.checkboxRepetir);
+        painelRecorrencia               = root.findViewById(R.id.painelRecorrencia);
+        chipGroup                       = root.findViewById(R.id.chipGroupTipoRecorrencia);
+        chipSemanal                     = root.findViewById(R.id.chipSemanal);
+        chipQuinzenal                   = root.findViewById(R.id.chipQuinzenal);
+        chipMensal                      = root.findViewById(R.id.chipMensal);
+        chipPersonalizado               = root.findViewById(R.id.chipPersonalizado);
+
+        painelPersonalizado             = root.findViewById(R.id.painelPersonalizado);
+        chipGroupIntervaloPersonalizado = root.findViewById(R.id.chipGroupIntervaloPersonalizado);
+        chipCadaXDias                   = root.findViewById(R.id.chipCadaXDias);
+        chipCadaXMeses                  = root.findViewById(R.id.chipCadaXMeses);
+
+        layoutIntervalo                 = root.findViewById(R.id.textInputIntervalo);
+        editIntervalo                   = root.findViewById(R.id.editIntervalo);
+        layoutQtd                       = root.findViewById(R.id.textInputMeses);
+        editQtd                         = root.findViewById(R.id.editQtdMeses);
+        editDataReferencia              = root.findViewById(R.id.editDataReferencia);
+        textPreview                     = root.findViewById(R.id.textPreviewRecorrencia);
 
         configurarListeners();
     }
@@ -81,29 +94,54 @@ public class RecorrenciaFormHelper {
 
     private void configurarListeners() {
 
-        // Checkbox mostra/esconde o painel
+        // Switch mostra/esconde o painel principal
         checkboxRepetir.setOnCheckedChangeListener((btn, checked) -> {
-            painelRecorrencia.setVisibility(checked ? View.VISIBLE : View.GONE);
+            if (painelRecorrencia != null) {
+                painelRecorrencia.setVisibility(checked ? View.VISIBLE : View.GONE);
+            }
             atualizarPreview();
             notificar();
         });
 
-        // Chips de tipo
-        chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) return;
-            int id = checkedIds.get(0);
+        // Chips do grupo PRINCIPAL
+        if (chipGroup != null) {
+            chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (checkedIds.isEmpty()) return;
+                int id = checkedIds.get(0);
 
-            if      (id == R.id.chipParcelado)  tipoAtual = TipoRecorrencia.PARCELADO;
-            else if (id == R.id.chipSemanal)     tipoAtual = TipoRecorrencia.SEMANAL;
-            else if (id == R.id.chipQuinzenal)   tipoAtual = TipoRecorrencia.QUINZENAL;
-            else if (id == R.id.chipMensal)      tipoAtual = TipoRecorrencia.MENSAL;
-            else if (id == R.id.chipCadaXDias)   tipoAtual = TipoRecorrencia.CADA_X_DIAS;
-            else if (id == R.id.chipCadaXMeses)  tipoAtual = TipoRecorrencia.CADA_X_MESES;
+                if (id == R.id.chipPersonalizado) {
+                    // Revela o sub-painel
+                    if (painelPersonalizado != null) painelPersonalizado.setVisibility(View.VISIBLE);
+                    // Define o tipo atual baseado no que estiver marcado no sub-grupo
+                    lerSubGrupoPersonalizado();
+                } else {
+                    // Esconde o sub-painel
+                    if (painelPersonalizado != null) painelPersonalizado.setVisibility(View.GONE);
 
-            atualizarCamposVisiveis();
-            atualizarPreview();
-            notificar();
-        });
+                    if      (id == R.id.chipSemanal)    tipoAtual = TipoRecorrencia.SEMANAL;
+                    else if (id == R.id.chipQuinzenal)  tipoAtual = TipoRecorrencia.QUINZENAL;
+                    else if (id == R.id.chipMensal)     tipoAtual = TipoRecorrencia.MENSAL;
+                }
+
+                atualizarCamposVisiveis();
+                atualizarPreview();
+                notificar();
+            });
+        }
+
+        // Chips do SUB-GRUPO (só reage se o painel personalizado estiver ativo)
+        if (chipGroupIntervaloPersonalizado != null) {
+            chipGroupIntervaloPersonalizado.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (chipGroup != null && !chipGroup.getCheckedChipIds().isEmpty()) {
+                    if (chipGroup.getCheckedChipIds().get(0) == R.id.chipPersonalizado) {
+                        lerSubGrupoPersonalizado();
+                        atualizarCamposVisiveis();
+                        atualizarPreview();
+                        notificar();
+                    }
+                }
+            });
+        }
 
         // Campos de texto — atualiza preview em tempo real
         TextWatcher previewWatcher = new TextWatcher() {
@@ -111,38 +149,50 @@ public class RecorrenciaFormHelper {
             @Override public void onTextChanged(CharSequence s, int i, int b, int c) {}
             @Override public void afterTextChanged(Editable s) { atualizarPreview(); notificar(); }
         };
-        editIntervalo.addTextChangedListener(previewWatcher);
-        editQtd.addTextChangedListener(previewWatcher);
+        if (editIntervalo != null) editIntervalo.addTextChangedListener(previewWatcher);
+        if (editQtd != null) editQtd.addTextChangedListener(previewWatcher);
 
         // Data de referência
-        editDataReferencia.setOnClickListener(v -> abrirDatePickerReferencia());
+        if (editDataReferencia != null) {
+            editDataReferencia.setOnClickListener(v -> abrirDatePickerReferencia());
+        }
+    }
+
+    /** Lê qual chip está selecionado dentro do grupo "Personalizado" */
+    private void lerSubGrupoPersonalizado() {
+        if (chipGroupIntervaloPersonalizado == null) return;
+        List<Integer> subIds = chipGroupIntervaloPersonalizado.getCheckedChipIds();
+        if (!subIds.isEmpty()) {
+            if (subIds.get(0) == R.id.chipCadaXDias) {
+                tipoAtual = TipoRecorrencia.CADA_X_DIAS;
+            } else {
+                tipoAtual = TipoRecorrencia.CADA_X_MESES;
+            }
+        } else {
+            tipoAtual = TipoRecorrencia.CADA_X_MESES; // Fallback seguro
+        }
     }
 
     /** Atualiza visibilidade dos campos conforme o tipo selecionado. */
     private void atualizarCamposVisiveis() {
-        // Campo de intervalo: só para CADA_X_DIAS e CADA_X_MESES
-        boolean mostraIntervalo = (tipoAtual == TipoRecorrencia.CADA_X_DIAS
-                || tipoAtual == TipoRecorrencia.CADA_X_MESES);
-        layoutIntervalo.setVisibility(mostraIntervalo ? View.VISIBLE : View.GONE);
+        if (layoutIntervalo == null || layoutQtd == null) return;
 
-        // Hint do campo de quantidade muda conforme o tipo
         String hintQtd;
         switch (tipoAtual) {
-            case PARCELADO:    hintQtd = "Nº de parcelas";         break;
-            case SEMANAL:      hintQtd = "Nº de semanas";          break;
-            case QUINZENAL:    hintQtd = "Nº de quinzenas";        break;
-            case MENSAL:       hintQtd = "Nº de meses";            break;
-            case CADA_X_DIAS:  hintQtd = "Nº de repetições";       break;
-            case CADA_X_MESES: hintQtd = "Nº de repetições";       break;
+            case SEMANAL:      hintQtd = "Nº de semanas";           break;
+            case QUINZENAL:    hintQtd = "Nº de quinzenas";         break;
+            case MENSAL:       hintQtd = "Nº de meses";             break;
+            case CADA_X_DIAS:  hintQtd = "Nº de repetições";        break;
+            case CADA_X_MESES: hintQtd = "Nº de repetições";        break;
             default:           hintQtd = "Quantidade de repetições"; break;
         }
         layoutQtd.setHint(hintQtd);
 
         // Hint do intervalo
         if (tipoAtual == TipoRecorrencia.CADA_X_DIAS) {
-            layoutIntervalo.setHint("Repetir a cada quantos dias?");
+            layoutIntervalo.setHint("A cada quantos dias?");
         } else if (tipoAtual == TipoRecorrencia.CADA_X_MESES) {
-            layoutIntervalo.setHint("Repetir a cada quantos meses?");
+            layoutIntervalo.setHint("A cada quantos meses?");
         }
     }
 
@@ -153,8 +203,10 @@ public class RecorrenciaFormHelper {
         new DatePickerDialog(context, (view, year, month, day) -> {
             c.set(year, month, day);
             dataReferencia = c.getTime();
-            editDataReferencia.setText(
-                    new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataReferencia));
+            if (editDataReferencia != null) {
+                editDataReferencia.setText(
+                        new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(dataReferencia));
+            }
             atualizarPreview();
             notificar();
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
@@ -162,22 +214,21 @@ public class RecorrenciaFormHelper {
 
     /** Gera texto de preview amigável da configuração atual. */
     private void atualizarPreview() {
+        if (checkboxRepetir == null || textPreview == null) return;
+
         if (!checkboxRepetir.isChecked()) {
             textPreview.setVisibility(View.GONE);
             return;
         }
 
-        int qtd      = parseIntSafe(editQtd.getText());
-        int intervalo = parseIntSafe(editIntervalo.getText());
+        int qtd       = parseIntSafe(editQtd != null ? editQtd.getText() : null);
+        int intervalo = parseIntSafe(editIntervalo != null ? editIntervalo.getText() : null);
 
         if (qtd <= 0) { textPreview.setVisibility(View.GONE); return; }
 
         StringBuilder sb = new StringBuilder();
 
         switch (tipoAtual) {
-            case PARCELADO:
-                sb.append("Dividido em ").append(qtd).append(" parcelas mensais");
-                break;
             case SEMANAL:
                 sb.append("Repetir por ").append(qtd).append(" semana(s), a cada 7 dias");
                 break;
@@ -199,6 +250,8 @@ public class RecorrenciaFormHelper {
                 else
                     sb.append("Informe o intervalo em meses");
                 break;
+            default:
+                break;
         }
 
         if (dataReferencia != null) {
@@ -213,20 +266,20 @@ public class RecorrenciaFormHelper {
     private void notificar() {
         if (listener == null) return;
         listener.onChange(
-                checkboxRepetir.isChecked(),
+                checkboxRepetir != null && checkboxRepetir.isChecked(),
                 tipoAtual,
-                parseIntSafe(editIntervalo.getText()),
-                parseIntSafe(editQtd.getText()),
+                parseIntSafe(editIntervalo != null ? editIntervalo.getText() : null),
+                parseIntSafe(editQtd != null ? editQtd.getText() : null),
                 dataReferencia
         );
     }
 
     // ── acesso público ───────────────────────────────────────────────────────
 
-    public boolean isRepetirAtivo()    { return checkboxRepetir.isChecked(); }
+    public boolean isRepetirAtivo()    { return checkboxRepetir != null && checkboxRepetir.isChecked(); }
     public TipoRecorrencia getTipo()   { return tipoAtual; }
-    public int getIntervalo()          { return parseIntSafe(editIntervalo.getText()); }
-    public int getQuantidade()         { return parseIntSafe(editQtd.getText()); }
+    public int getIntervalo()          { return parseIntSafe(editIntervalo != null ? editIntervalo.getText() : null); }
+    public int getQuantidade()         { return parseIntSafe(editQtd != null ? editQtd.getText() : null); }
     public Date getDataReferencia()    { return dataReferencia; }
 
     /**
@@ -243,7 +296,7 @@ public class RecorrenciaFormHelper {
         if (!isRepetirAtivo()) return null; // sem recorrência, sem validação aqui
 
         int qtd = getQuantidade();
-        if (qtd < 2)  return "Informe ao menos 2 repetições.";
+        if (qtd < 2)   return "Informe ao menos 2 repetições.";
         if (qtd > 999) return "Máximo de 999 repetições.";
 
         if (tipoAtual == TipoRecorrencia.CADA_X_DIAS || tipoAtual == TipoRecorrencia.CADA_X_MESES) {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#FFFFFF</color> <!-- cor para modo claro -->
+    <color name="cor_background">#FFFFFF</color> <!-- cor para modo claro -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="colorPrimary">#01C7D2</color>
@@ -34,7 +34,6 @@
     <color name="textColor_dark">#FFFFFF</color>
     <color name="mcv_arrowColor">#FFFFFF</color>
 
-    <color name ="cor_background">#FFFFFF</color> <!-- Utilizado no drawable fundo_arredondado -->
     <color name="cor_texto">#FF000000</color>
     <color name="cor_fundo_bloqueado">#99000000</color>
     <color name="cor_texto_primario">#333333</color>
