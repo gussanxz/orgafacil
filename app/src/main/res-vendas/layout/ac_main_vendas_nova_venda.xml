@@ -70,7 +70,7 @@
                         android:layout_height="24dp"
                         android:layout_marginStart="8dp"
                         android:src="@drawable/ic_badge_24"
-                        app:tint="#3A3A3A" />
+                        app:tint="@color/cor_icone_primario" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -118,7 +118,7 @@
                         android:layout_height="24dp"
                         android:layout_marginStart="8dp"
                         android:src="@drawable/ic_person_24"
-                        app:tint="#3A3A3A" />
+                        app:tint="@color/cor_icone_primario" />
 
                     <LinearLayout
                         android:layout_width="0dp"

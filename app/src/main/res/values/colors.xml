@@ -41,4 +41,8 @@
     <color name="cor_texto_secundario">#757575</color>
     <color name="cor_superficie">#F8F9FA</color>
     <color name="cor_divisor">#E0E0E0</color>
+
+    <!-- icones -->
+    <color name="cor_icone_primario">#3A3A3A</color>
+    <color name="cor_icone_secundario">#9A9A9A</color>
 </resources>

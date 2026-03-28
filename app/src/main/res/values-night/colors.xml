@@ -38,4 +38,8 @@
     <color name="cor_texto_secundario">#DDDDDD</color>
     <color name="cor_superficie">#293141</color>
     <color name="cor_divisor">#444A55</color>
+
+    <!-- icones -->
+    <color name="cor_icone_primario">#FFFFFF</color>
+    <color name="cor_icone_secundario">#AAAAAA</color>
 </resources>
