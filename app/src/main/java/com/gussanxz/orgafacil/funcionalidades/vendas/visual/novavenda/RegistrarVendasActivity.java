@@ -528,4 +528,20 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             atualizarResumoSacola();
         }
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        // Se vier sem "itensSacola" (ou seja, é uma nova venda limpa), zera a sacola
+        if (intent.getSerializableExtra("itensSacola") == null) {
+            sacolaMap.clear();
+            vendaIdEdicao = null;
+            atualizarResumoSacola();
+        } else {
+            // Veio de uma edição — restaura normalmente
+            restaurarSacolaSeEdicao();
+        }
+    }
 }
