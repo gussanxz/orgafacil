@@ -23,15 +23,23 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
 
-    private final OnVendaClickListener listener;
+    private final OnVendaClickListener clickListener;
+    private final OnVendaExcluirListener excluirListener;
 
-    public AdapterHistoricoVendas(List<VendaModel> listaVendas, OnVendaClickListener listener) {
+    public AdapterHistoricoVendas(List<VendaModel> listaVendas,
+                                  OnVendaClickListener clickListener,
+                                  OnVendaExcluirListener excluirListener) {
         this.listaVendas = listaVendas;
-        this.listener = listener;
+        this.clickListener = clickListener;
+        this.excluirListener = excluirListener;
     }
+
 
     public interface OnVendaClickListener {
         void onVendaClick(VendaModel venda);
+    }
+    public interface OnVendaExcluirListener {
+        void onVendaExcluir(VendaModel venda);
     }
 
     public void atualizarLista(List<VendaModel> novaLista) {
@@ -66,6 +74,8 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
         private final TextView txtVendaStatus;
         private final TextView txtVendaTotal;
 
+        private final View btnExcluirVenda;
+
         public HistoricoViewHolder(@NonNull View itemView) {
             super(itemView);
             txtVendaId = itemView.findViewById(R.id.txtVendaId);
@@ -74,6 +84,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
             txtVendaQuantidade = itemView.findViewById(R.id.txtVendaQuantidade);
             txtVendaStatus = itemView.findViewById(R.id.txtVendaStatus);
             txtVendaTotal = itemView.findViewById(R.id.txtVendaTotal);
+            btnExcluirVenda = itemView.findViewById(R.id.btnExcluirVenda);
         }
 
         void bind(VendaModel venda) {
@@ -110,8 +121,13 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
             txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
 
             itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onVendaClick(venda);
+                if (clickListener != null) clickListener.onVendaClick(venda);
             });
+            if (btnExcluirVenda != null) {
+                btnExcluirVenda.setOnClickListener(v -> {
+                    if (excluirListener != null) excluirListener.onVendaExcluir(venda);
+                });
+            }
         }
 
         private String formatarData(long dataHoraMillis) {

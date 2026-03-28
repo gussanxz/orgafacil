@@ -290,4 +290,18 @@ public class VendaRepository {
             return null;
         }
     }
+
+    public void excluir(@NonNull String vendaId, @NonNull Callback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .document(vendaId)
+                    .delete()
+                    .addOnSuccessListener(unused -> callback.onSucesso(vendaId))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao excluir venda."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
 }

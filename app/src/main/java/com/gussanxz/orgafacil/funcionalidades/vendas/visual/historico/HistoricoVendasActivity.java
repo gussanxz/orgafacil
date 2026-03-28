@@ -1,5 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico;
 
+import static com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasDialogHelper.confirmarExclusao;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -89,8 +91,11 @@ public class HistoricoVendasActivity extends AppCompatActivity {
 
     private void configurarRecyclerView() {
         rvHistoricoVendas.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AdapterHistoricoVendas(listaVendas, venda ->
-                abrirComprovante(venda.getId()));
+        adapter = new AdapterHistoricoVendas(
+                listaVendas,
+                venda -> abrirComprovante(venda.getId()),
+                venda -> confirmarExclusao(venda)
+        );
         rvHistoricoVendas.setAdapter(adapter);
     }
     private void abrirComprovante(String vendaId) {
@@ -187,5 +192,35 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         chip.setTextColor(selecionado
                 ? android.graphics.Color.WHITE
                 : android.graphics.Color.parseColor("#757575"));
+    }
+
+    private void confirmarExclusao(VendaModel venda) {
+        String numero = venda.getNumeroVenda() > 0
+                ? String.format(java.util.Locale.ROOT, "#%07d", venda.getNumeroVenda())
+                : venda.getId().substring(0, 8).toUpperCase();
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Excluir venda")
+                .setMessage("Deseja excluir permanentemente a venda " + numero + "? Essa ação não pode ser desfeita.")
+                .setPositiveButton("Excluir", (dialog, which) -> excluirVenda(venda))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void excluirVenda(VendaModel venda) {
+        vendaRepository.excluir(venda.getId(), new VendaRepository.Callback() {
+            @Override
+            public void onSucesso(String vendaId) {
+                Toast.makeText(HistoricoVendasActivity.this,
+                        "Venda excluída.", Toast.LENGTH_SHORT).show();
+                // O listener em tempo real já atualiza a lista automaticamente
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(HistoricoVendasActivity.this,
+                        "Erro ao excluir: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
