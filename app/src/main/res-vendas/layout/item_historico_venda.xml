@@ -88,14 +88,28 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- Botão editar -->
             <ImageButton
-                android:id="@+id/btnExcluirVenda"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_delete_forever_24"
+                android:id="@+id/btnEditarVenda"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Excluir venda"
+                android:contentDescription="Editar venda"
+                android:src="@drawable/ic_lapis_editar_24"
+                android:tint="@color/colorPrimary" />
+
+            <!-- Botão alternar status — ícone muda conforme status via código -->
+            <ImageButton
+                android:id="@+id/btnAlternarStatus"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Alternar status"
+                android:src="@drawable/ic_delete_forever_24"
                 android:tint="#C62828" />
+
         </LinearLayout>
 
     </LinearLayout>

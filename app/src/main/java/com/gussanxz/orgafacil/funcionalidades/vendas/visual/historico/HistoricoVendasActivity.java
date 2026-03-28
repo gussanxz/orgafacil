@@ -20,8 +20,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +97,8 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         adapter = new AdapterHistoricoVendas(
                 listaVendas,
                 venda -> abrirComprovante(venda.getId()),
-                venda -> confirmarExclusao(venda)
+                venda -> abrirEdicao(venda),
+                venda -> confirmarAlteracaoStatus(venda)
         );
         rvHistoricoVendas.setAdapter(adapter);
     }
@@ -194,32 +198,102 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                 : android.graphics.Color.parseColor("#757575"));
     }
 
-    private void confirmarExclusao(VendaModel venda) {
+    private void mostrarOpcoesStatus(VendaModel venda) {
+        boolean isFinalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
+        boolean isCancelada  = VendaModel.STATUS_CANCELADA.equals(venda.getStatus());
+
         String numero = venda.getNumeroVenda() > 0
                 ? String.format(java.util.Locale.ROOT, "#%07d", venda.getNumeroVenda())
                 : venda.getId().substring(0, 8).toUpperCase();
 
+        // Monta as opções disponíveis dinamicamente
+        java.util.List<String> opcoes = new java.util.ArrayList<>();
+        if (!isFinalizada) opcoes.add("Marcar como Finalizada");
+        if (!isCancelada)  opcoes.add("Marcar como Cancelada");
+
+        if (opcoes.isEmpty()) return;
+
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Excluir venda")
-                .setMessage("Deseja excluir permanentemente a venda " + numero + "? Essa ação não pode ser desfeita.")
-                .setPositiveButton("Excluir", (dialog, which) -> excluirVenda(venda))
+                .setTitle("Alterar status — Venda " + numero)
+                .setItems(opcoes.toArray(new String[0]), (dialog, which) -> {
+                    String novoStatus = opcoes.get(which).contains("Finalizada")
+                            ? VendaModel.STATUS_FINALIZADA
+                            : VendaModel.STATUS_CANCELADA;
+                    confirmarAlteracaoStatus(venda, novoStatus);
+                })
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
-    private void excluirVenda(VendaModel venda) {
-        vendaRepository.excluir(venda.getId(), new VendaRepository.Callback() {
+    private void confirmarAlteracaoStatus(VendaModel venda, String novoStatus) {
+        String labelStatus = VendaModel.STATUS_FINALIZADA.equals(novoStatus)
+                ? "finalizada" : "cancelada";
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Confirmar alteração")
+                .setMessage("Deseja marcar esta venda como " + labelStatus + "?")
+                .setPositiveButton("Confirmar", (dialog, which) -> {
+                    vendaRepository.atualizarStatus(venda.getId(), novoStatus,
+                            new VendaRepository.Callback() {
+                                @Override
+                                public void onSucesso(String vendaId) {
+                                    Toast.makeText(HistoricoVendasActivity.this,
+                                            "Status atualizado.", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onErro(String erro) {
+                                    Toast.makeText(HistoricoVendasActivity.this,
+                                            "Erro ao atualizar: " + erro, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void abrirEdicao(VendaModel venda) {
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
+        ArrayList<ItemSacolaVendaModel> sacola = new ArrayList<>();
+        if (venda.getItens() != null) {
+            for (ItemVendaRegistradaModel item : venda.getItens()) {
+                sacola.add(new ItemSacolaVendaModel(item));
+            }
+        }
+        intent.putExtra("itensSacola", sacola);
+        intent.putExtra("vendaId", venda.getId());
+        startActivity(intent);
+    }
+
+    private void confirmarAlteracaoStatus(VendaModel venda) {
+        boolean finalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
+        String titulo  = finalizada ? "Cancelar venda"    : "Recuperar venda";
+        String msg     = finalizada
+                ? "Deseja cancelar esta venda? Ela continuará no histórico."
+                : "Deseja marcar esta venda como finalizada novamente?";
+        String btnText = finalizada ? "Cancelar venda" : "Recuperar";
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(titulo)
+                .setMessage(msg)
+                .setPositiveButton(btnText, (dialog, which) -> alternarStatus(venda))
+                .setNegativeButton("Voltar", null)
+                .show();
+    }
+
+    private void alternarStatus(VendaModel venda) {
+        vendaRepository.alternarStatus(venda, new VendaRepository.Callback() {
             @Override
             public void onSucesso(String vendaId) {
+                // Listener em tempo real já atualiza a lista e o ResumoVendas automaticamente
                 Toast.makeText(HistoricoVendasActivity.this,
-                        "Venda excluída.", Toast.LENGTH_SHORT).show();
-                // O listener em tempo real já atualiza a lista automaticamente
+                        "Status atualizado.", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onErro(String erro) {
                 Toast.makeText(HistoricoVendasActivity.this,
-                        "Erro ao excluir: " + erro, Toast.LENGTH_LONG).show();
+                        "Erro ao atualizar: " + erro, Toast.LENGTH_LONG).show();
             }
         });
     }

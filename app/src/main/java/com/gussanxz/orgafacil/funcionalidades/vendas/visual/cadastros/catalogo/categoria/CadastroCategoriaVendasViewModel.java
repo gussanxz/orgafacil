@@ -114,28 +114,4 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
             }
         });
     }
-
-    // --- EXCLUIR (NOVO MÉTODO) ---
-    public void excluir() {
-        if (idEdicao == null) {
-            _mensagemErro.setValue("Erro: Tentando excluir categoria inexistente.");
-            return;
-        }
-
-        _carregando.setValue(true);
-
-        repository.excluir(idEdicao, new CategoriaCatalogoRepository.Callback() {
-            @Override
-            public void onSucesso(String msg) {
-                _carregando.setValue(false);
-                _mensagemSucesso.setValue(msg); // A Activity observa isso e fecha a tela
-            }
-
-            @Override
-            public void onErro(String erro) {
-                _carregando.setValue(false);
-                _mensagemErro.setValue(erro);
-            }
-        });
-    }
 }
