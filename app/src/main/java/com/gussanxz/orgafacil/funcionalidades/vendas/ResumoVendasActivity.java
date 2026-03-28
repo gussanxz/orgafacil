@@ -96,9 +96,6 @@ public class ResumoVendasActivity extends AppCompatActivity {
             textVendasHoje.setTag(true); // true = visível
             textVendasHoje.setOnClickListener(v -> alternarVisibilidadeValor());
         }
-
-        escutarVendasHoje();
-        escutarCaixa();
     }
 
     private void escutarVendasHoje() {
@@ -144,6 +141,21 @@ public class ResumoVendasActivity extends AppCompatActivity {
         }
     }
 
+    private void iniciarListeners() {
+        escutarVendasHoje();
+        escutarCaixa();
+    }
+
+    private void pararListeners() {
+        if (listenerVendasHoje != null) {
+            listenerVendasHoje.remove();
+            listenerVendasHoje = null;
+        }
+        if (listenerEmAberto != null) {
+            listenerEmAberto.remove();
+            listenerEmAberto = null;
+        }
+    }
 
     private void escutarCaixa() {
         listenerEmAberto = vendaRepository.escutarVendasEmAberto(new VendaRepository.ListaCallback() {
@@ -313,15 +325,14 @@ public class ResumoVendasActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        iniciarListeners();
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
-        if (listenerVendasHoje != null) {
-            listenerVendasHoje.remove();
-            listenerVendasHoje = null;
-        }
-        if (listenerEmAberto != null) {
-            listenerEmAberto.remove();
-            listenerEmAberto = null;
-        }
+        pararListeners();
     }
 }
