@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.mercado;
+package com.gussanxz.orgafacil.funcionalidades.mercado.ui.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;

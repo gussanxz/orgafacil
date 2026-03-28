@@ -20,7 +20,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.mercado.ResumoListaMercadoActivity;
+import com.gussanxz.orgafacil.funcionalidades.mercado.ui.activities.ResumoListaMercadoActivity;
 import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRepository;
 import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;

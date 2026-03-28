@@ -7,15 +7,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/cor_fundo_header_resumo_contas"
-    tools:context=".funcionalidades.mercado.ResumoListaMercadoActivity">
+    tools:context=".funcionalidades.mercado.ui.activities.ResumoListaMercadoActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- ======================= TOOLBAR ======================= -->
-        <!-- Título centralizado: btnVoltar à esquerda, btnHistorico à direita (simétricamente) -->
         <LinearLayout
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -24,7 +22,6 @@
             android:gravity="center_vertical"
             android:paddingHorizontal="12dp">
 
-            <!-- Voltar (esquerda) -->
             <ImageView
                 android:id="@+id/btnVoltar"
                 android:layout_width="40dp"
@@ -36,7 +33,6 @@
                 android:focusable="true"
                 app:tint="@color/white" />
 
-            <!-- Título centralizado com weight -->
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -48,7 +44,18 @@
                 android:gravity="center"
                 android:textAlignment="center"/>
 
-            <!-- Histórico (direita — espelha o botão voltar para manter título centralizado) -->
+            <ImageView
+                android:id="@+id/btnCompartilharTop"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_share_24"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                app:tint="@color/white"
+                android:contentDescription="Exportar lista" />
+
             <LinearLayout
                 android:id="@+id/btnHistoricoTop"
                 android:layout_width="40dp"
@@ -69,65 +76,182 @@
 
         </LinearLayout>
 
-        <!-- ======================= CARD: PAINEL FINANCEIRO ======================= -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="12dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
+            app:cardElevation="0dp"
             app:cardBackgroundColor="#22FFFFFF">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:gravity="center_horizontal"
+                android:padding="12dp">
 
-                <!-- Orçamento máximo -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="10dp">
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Orçamento Máximo"
+                        android:text="Orçamento:"
                         android:textColor="@android:color/white"
                         android:textSize="13sp"
-                        android:alpha="0.85"/>
+                        android:textStyle="bold"
+                        android:alpha="0.9"
+                        android:layout_marginEnd="6dp"/>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layoutInputOrcamento"
-                        android:layout_width="140dp"
+                    <EditText
+                        android:id="@+id/editOrcamentoMaximo"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                        app:boxStrokeColor="@android:color/white"
-                        app:hintTextColor="@android:color/white"
-                        app:boxStrokeWidth="1dp"
-                        app:prefixText="R$ "
-                        app:prefixTextColor="@android:color/white">
+                        android:minWidth="90dp"
+                        android:background="@drawable/bg_input_arredondado"
+                        android:inputType="number"
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:hint="0,00"
+                        android:textColorHint="#66FFFFFF"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:importantForAutofill="no"
+                        android:maxLength="10"
+                        android:maxLines="1"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:cursorVisible="false"/>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/editOrcamentoMaximo"
-                            android:layout_width="match_parent"
+                    <ImageView
+                        android:id="@+id/imgEditarOrcamento"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="6dp"
+                        android:src="@drawable/ic_lapis_editar_24"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="#AAFFFFFF"
+                        android:contentDescription="Editar orçamento"/>
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"/>
+
+                    <LinearLayout
+                        android:id="@+id/btnFinalizarLista"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="4dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/imgFinalizarIcone"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_check_circle_24"
+                            app:tint="#81C784" />
+
+                        <TextView
+                            android:id="@+id/textFinalizarRotulo"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:inputType="numberDecimal"
-                            android:textColor="@android:color/white"
-                            android:hint="0,00"
-                            android:textColorHint="#99FFFFFF"
-                            android:textSize="14sp"/>
+                            android:text="Finalizar"
+                            android:textColor="#81C784"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:textAllCaps="true"/>
 
-                    </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
 
                 </LinearLayout>
 
-                <!-- Label + % da barra -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#22FFFFFF"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛒 No Carrinho"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:alpha="0.8"
+                        android:layout_marginBottom="0dp"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/textTotalCarrinho"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$ 0,00"
+                            android:textColor="@android:color/white"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:gravity="center"
+                            app:autoSizeTextType="uniform"
+                            app:autoSizeMinTextSize="20sp"
+                            app:autoSizeMaxTextSize="28sp"
+                            app:autoSizeStepGranularity="2sp"/>
+
+                        <ImageView
+                            android:id="@+id/imgOlhoTotalCarrinho"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:padding="3dp"
+                            android:layout_marginStart="4dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:src="@drawable/ic_visibility_24"
+                            app:tint="@color/white"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textSaldoRestante"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Restam R$ 0,00"
+                        android:textColor="#81C784"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:layout_marginBottom="6dp" />
+
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -135,185 +259,55 @@
                     android:gravity="center_vertical"
                     android:layout_marginBottom="4dp">
 
-                    <TextView
-                        android:id="@+id/textLabelProgresso"
+                    <ProgressBar
+                        android:id="@+id/progressBarOrcamento"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="2dp"
                         android:layout_weight="1"
-                        android:text="No carrinho"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp"
-                        android:alpha="0.75"/>
+                        android:layout_marginStart="16dp"
+                        android:progress="0"
+                        android:max="100"
+                        android:progressDrawable="@drawable/progressbar_orcamento"
+                        android:background="@drawable/progressbar_orcamento_bg" />
 
                     <TextView
                         android:id="@+id/textPercentualOrcamento"
-                        android:layout_width="wrap_content"
+                        android:layout_width="32dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
                         android:text="0%"
                         android:textColor="@android:color/white"
-                        android:textSize="11sp"
+                        android:textSize="13sp"
                         android:textStyle="bold"
+                        android:gravity="end"
                         android:alpha="0.9"/>
                 </LinearLayout>
 
-                <!-- Barra de progresso -->
-                <ProgressBar
-                    android:id="@+id/progressBarOrcamento"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressDrawable="@drawable/progressbar_orcamento"
-                    android:background="@drawable/progressbar_orcamento_bg"
-                    android:layout_marginBottom="14dp"/>
-
-                <!-- Divisor interno -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#33FFFFFF"
-                    android:layout_marginBottom="12dp"/>
-
-                <!-- Totais -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center">
+                    android:gravity="center_vertical"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="2dp">
 
-                    <!-- Total da Lista -->
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/textContagemItens"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Total da Lista"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp"
-                            android:alpha="0.7"/>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:id="@+id/textTotalLista"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 0,00"
-                                android:textColor="@android:color/white"
-                                android:textSize="20sp"
-                                android:textStyle="bold"
-                                android:maxLines="1"
-                                android:ellipsize="end"
-                                app:autoSizeTextType="uniform"
-                                app:autoSizeMinTextSize="14sp"
-                                app:autoSizeMaxTextSize="22sp"
-                                app:autoSizeStepGranularity="2sp"/>
-
-                            <ImageView
-                                android:id="@+id/imgOlhoTotalLista"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="6dp"
-                                android:layout_marginStart="2dp"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:clickable="true"
-                                android:focusable="true"
-                                android:src="@drawable/ic_visibility_24"
-                                app:tint="@color/white"/>
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                    <!-- Divisor vertical -->
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="36dp"
-                        android:background="#44FFFFFF"
-                        android:layout_marginHorizontal="8dp"/>
-
-                    <!-- No Carrinho -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="12dp"
-                                android:layout_height="12dp"
-                                android:src="@drawable/ic_shopping_cart_checkout_24"
-                                android:layout_marginEnd="3dp"
-                                app:tint="#BBFFFFFF"/>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="No Carrinho"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:alpha="0.7"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:id="@+id/textTotalCarrinho"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$ 0,00"
-                                android:textColor="@android:color/white"
-                                android:textSize="20sp"
-                                android:textStyle="bold"
-                                android:maxLines="1"
-                                android:ellipsize="end"
-                                app:autoSizeTextType="uniform"
-                                app:autoSizeMinTextSize="14sp"
-                                app:autoSizeMaxTextSize="22sp"
-                                app:autoSizeStepGranularity="2sp"/>
-
-                            <ImageView
-                                android:id="@+id/imgOlhoTotalCarrinho"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="6dp"
-                                android:layout_marginStart="2dp"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:clickable="true"
-                                android:focusable="true"
-                                android:src="@drawable/ic_visibility_24"
-                                app:tint="@color/white"/>
-                        </LinearLayout>
-
-                    </LinearLayout>
-
+                        android:text="0 itens • 0 no carrinho"
+                        android:textColor="@android:color/white"
+                        android:textSize="10sp"
+                        android:alpha="0.65"
+                        android:gravity="start"/>
                 </LinearLayout>
 
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ProgressBar de carregamento global -->
         <ProgressBar
             android:id="@+id/progressBarResumo"
             android:layout_width="wrap_content"
@@ -323,7 +317,6 @@
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
             android:visibility="gone" />
 
-        <!-- ======================= ÁREA INFERIOR: BUSCA + LISTA ======================= -->
         <LinearLayout
             android:id="@+id/scrollMeio"
             android:layout_width="match_parent"
@@ -333,7 +326,6 @@
             android:orientation="vertical"
             android:paddingTop="16dp">
 
-            <!-- Linha de ferramentas: Busca + Categoria + Ordenar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -390,7 +382,6 @@
 
             </LinearLayout>
 
-            <!-- Chip de categoria ativa (visível só quando filtro aplicado) -->
             <LinearLayout
                 android:id="@+id/layoutChipCategoriaAtiva"
                 android:layout_width="match_parent"
@@ -413,7 +404,6 @@
 
             </LinearLayout>
 
-            <!-- RecyclerView + Empty State -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -429,7 +419,6 @@
                     android:paddingBottom="80dp"
                     android:layoutAnimation="@anim/layout_anim_slide_up"/>
 
-                <!-- Empty State -->
                 <LinearLayout
                     android:id="@+id/layoutEmptyStateMercado"
                     android:layout_width="match_parent"
@@ -473,7 +462,6 @@
 
     </LinearLayout>
 
-    <!-- ======================= FAB fixo inferior direito — ícone de compartilhar, tamanho mini ======================= -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_main"
         android:layout_width="wrap_content"
@@ -482,7 +470,7 @@
         android:layout_margin="20dp"
         app:backgroundTint="#FF4081"
         app:fabSize="mini"
-        app:srcCompat="@drawable/ic_share_24"
+        app:srcCompat="@drawable/ic_add_24"
         app:tint="@color/white"
         app:elevation="8dp"
         app:pressedTranslationZ="10dp" />

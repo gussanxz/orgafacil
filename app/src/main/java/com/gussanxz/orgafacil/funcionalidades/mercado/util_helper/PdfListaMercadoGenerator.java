@@ -1,10 +1,12 @@
-package com.gussanxz.orgafacil.funcionalidades.mercado;
+package com.gussanxz.orgafacil.funcionalidades.mercado.util_helper;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.pdf.PdfDocument;
+
+import com.gussanxz.orgafacil.funcionalidades.mercado.dados.model.ItemMercadoModel;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +34,7 @@ public class PdfListaMercadoGenerator {
      * @return          File do PDF gerado
      * @throws IOException se não for possível escrever o arquivo
      */
-    public static File gerar(Context context, List<ItemMercado> itens) throws IOException {
+    public static File gerar(Context context, List<ItemMercadoModel> itens) throws IOException {
         PdfDocument document = new PdfDocument();
 
         // Configuração da página
@@ -110,7 +112,7 @@ public class PdfListaMercadoGenerator {
         int totalItens             = itens.size();
 
         for (int i = 0; i < itens.size(); i++) {
-            ItemMercado item = itens.get(i);
+            ItemMercadoModel item = itens.get(i);
 
             // Fundo alternado
             if (i % 2 == 0) {

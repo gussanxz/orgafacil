@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardItemMercado"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
@@ -13,163 +14,238 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="8dp"
-        android:paddingVertical="14dp">
-
-        <View
-            android:id="@+id/viewIndicadorCategoria"
-            android:layout_width="4dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/bg_indicador_categoria"/>
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
 
-            <TextView
-                android:id="@+id/textNomeProduto"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Arroz Integral"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/cor_texto"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:layout_marginBottom="2dp"/>
-
-            <TextView
-                android:id="@+id/textCategoriaProduto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Mercearia"
-                android:textSize="11sp"
-                android:textColor="#777777"
-                android:layout_marginBottom="8dp"/>
+            <View
+                android:id="@+id/viewIndicadorCategoria"
+                android:layout_width="4dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="10dp"
+                android:minHeight="52dp"
+                android:background="@drawable/bg_indicador_categoria"/>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="R$ "
-                    android:textSize="14sp"
-                    android:textColor="@color/cor_texto"
-                    android:textStyle="bold"/>
-
-                <EditText
-                    android:id="@+id/editValorUnitario"
-                    android:layout_width="60dp"
-                    android:layout_height="wrap_content"
-                    android:background="@null"
-                    android:inputType="numberDecimal"
-                    android:text="25,90"
-                    android:textSize="14sp"
-                    android:textColor="@color/cor_texto"
-                    android:textStyle="bold"
-                    android:imeOptions="actionDone"
-                    android:maxLines="1"/>
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"/>
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="@drawable/bg_stepper_quantidade"
-                    android:paddingHorizontal="4dp"
-                    android:paddingVertical="2dp">
+                    android:layout_marginBottom="8dp">
 
-                    <ImageView
-                        android:id="@+id/btnDiminuirQtd"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:padding="4dp"
-                        android:src="@drawable/ic_minus_24"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:tint="@color/cor_texto"/>
-
-                    <TextView
-                        android:id="@+id/textQuantidade"
-                        android:layout_width="32dp"
+                    <EditText
+                        android:id="@+id/textNomeProduto"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="2"
+                        android:layout_weight="1"
+                        android:maxLength="35"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:text="Arroz Integral"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:gravity="center"
-                        android:textColor="@color/cor_texto"/>
+                        android:textColor="@color/cor_texto"
+                        android:background="@drawable/bg_input_item_mercado"
+                        android:paddingHorizontal="7dp"
+                        android:paddingVertical="6dp"
+                        android:inputType="textCapSentences"
+                        android:imeOptions="actionNext"
+                        android:hint="Nome"
+                        android:textColorHint="#BBBBBB"
+                        android:layout_marginEnd="8dp"/>
+
+                    <LinearLayout
+                        android:layout_width="76dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_input_item_mercado"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="6dp"
+                        android:layout_marginEnd="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="R$"
+                            android:textSize="11sp"
+                            android:textColor="#888888"
+                            android:layout_marginEnd="2dp"/>
+
+                        <EditText
+                            android:id="@+id/editValorUnitario"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:maxLength="7"
+                            android:maxLines="1"
+                            android:background="@null"
+                            android:inputType="number"
+                            android:text="0,00"
+                            android:textSize="13sp"
+                            android:textColor="@color/cor_texto"
+                            android:textStyle="bold"
+                            android:imeOptions="actionDone"
+                            android:gravity="end"/>
+                    </LinearLayout>
+
+                    <CheckBox
+                        android:id="@+id/checkboxNoCarrinho"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:button="@null"
+                        android:background="@drawable/ic_check_box_vazio_24"
+                        android:backgroundTint="#BDBDBD"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Marcar como no carrinho"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:id="@+id/btnSelecionarCategoria"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_input_item_mercado"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp">
+
+                        <View
+                            android:id="@+id/viewDotCategoria"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_indicador_categoria"/>
+
+                        <TextView
+                            android:id="@+id/textCategoriaProduto"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Categoria"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#666666"/>
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/ic_arrow_down_24"
+                            app:tint="#666666"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_stepper_quantidade"
+                        android:paddingHorizontal="4dp"
+                        android:paddingVertical="2dp"
+                        android:layout_marginEnd="12dp">
+
+                        <ImageView
+                            android:id="@+id/btnDiminuirQtd"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_minus_24"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:tint="@color/cor_texto"/>
+
+                        <EditText
+                            android:id="@+id/textQuantidade"
+                            android:layout_width="32dp"
+                            android:layout_height="wrap_content"
+                            android:text="1"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:textColor="@color/cor_texto"
+                            android:background="@null"
+                            android:inputType="number"
+                            android:maxLength="3"
+                            android:maxLines="1"
+                            android:imeOptions="actionDone"/>
+
+                        <ImageView
+                            android:id="@+id/btnAumentarQtd"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_add_circle_24"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:tint="@color/cor_texto"/>
+                    </LinearLayout>
 
                     <ImageView
-                        android:id="@+id/btnAumentarQtd"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:padding="4dp"
-                        android:src="@drawable/ic_add_circle_24"
+                        android:id="@+id/btnExcluirItem"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:padding="3dp"
+                        android:src="@drawable/ic_lixeira_excluir_24"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:focusable="true"
-                        app:tint="@color/cor_texto"/>
+                        app:tint="#EF9A9A"
+                        android:contentDescription="Excluir item"/>
+
                 </LinearLayout>
 
             </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|start"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="5dp"
+            android:background="#F5F5F5">
 
             <TextView
                 android:id="@+id/textSubtotalItem"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Subtotal: R$ 51,80"
-                android:textSize="12sp"
-                android:textColor="#888888"
-                android:layout_marginTop="4dp"/>
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginStart="12dp">
-
-            <CheckBox
-                android:id="@+id/checkboxNoCarrinho"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:button="@null"
-                android:background="@drawable/ic_check_box_vazio_24"
-                android:backgroundTint="@android:color/black"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Marcar como no carrinho"/>
-
-            <ImageView
-                android:id="@+id/btnExcluirItem"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginTop="8dp"
-                android:padding="6dp"
-                android:src="@drawable/ic_lixeira_excluir_24"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                app:tint="#FFCDD2"
-                android:contentDescription="Excluir item"/>
+                android:text="Subtotal: R$ 0,00"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#555555"/>
 
         </LinearLayout>
 
