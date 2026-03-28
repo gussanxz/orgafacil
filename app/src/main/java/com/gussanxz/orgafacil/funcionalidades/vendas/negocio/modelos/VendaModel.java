@@ -15,7 +15,7 @@ public class VendaModel implements Serializable {
     public static final String PAGAMENTO_DINHEIRO = "Dinheiro";
     public static final String PAGAMENTO_CREDITO  = "Crédito";
     public static final String PAGAMENTO_DEBITO   = "Débito";
-
+    private String diaKey;
     private String id;
     private int numeroVenda;
     private long dataHoraAberturaMillis;
@@ -108,5 +108,7 @@ public class VendaModel implements Serializable {
 
     public double getDesconto() { return desconto; }
     public void setDesconto(double desconto) { this.desconto = desconto; }
+    public String getDiaKey() { return diaKey; }
+    public void setDiaKey(String diaKey) { this.diaKey = diaKey; }
 
 }

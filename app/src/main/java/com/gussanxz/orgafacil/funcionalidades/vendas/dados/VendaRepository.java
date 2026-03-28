@@ -13,6 +13,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 public class VendaRepository {
@@ -239,6 +240,54 @@ public class VendaRepository {
                     ));
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
+        }
+    }
+
+    // Novo método: escuta em tempo real as vendas finalizadas hoje
+    public ListenerRegistration escutarVendasFinalizadasHoje(@NonNull ListaCallback callback) {
+        try {
+            return FirestoreSchema.vendasVendasCol()
+                    .whereEqualTo("status", VendaModel.STATUS_FINALIZADA)
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (error != null) {
+                            callback.onErro(error.getMessage() != null
+                                    ? error.getMessage() : "Erro ao carregar vendas do dia.");
+                            return;
+                        }
+                        // Filtra localmente pelo dia de hoje
+                        List<VendaModel> todas = extrairLista(snapshot);
+                        List<VendaModel> hoje = new ArrayList<>();
+                        String diaHoje = FirestoreSchema.diaKey(new Date());
+                        for (VendaModel v : todas) {
+                            String diaVenda = FirestoreSchema.diaKey(new Date(v.getDataHoraFechamentoMillis()));
+                            if (diaHoje.equals(diaVenda)) {
+                                hoje.add(v);
+                            }
+                        }
+                        callback.onNovosDados(hoje);
+                    });
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+            return null;
+        }
+    }
+
+    // Novo método: escuta em tempo real as vendas em aberto (para contagem no resumo)
+    public ListenerRegistration escutarVendasEmAberto(@NonNull ListaCallback callback) {
+        try {
+            return FirestoreSchema.vendasVendasCol()
+                    .whereEqualTo("status", VendaModel.STATUS_EM_ABERTO)
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (error != null) {
+                            callback.onErro(error.getMessage() != null
+                                    ? error.getMessage() : "Erro ao carregar vendas em aberto.");
+                            return;
+                        }
+                        callback.onNovosDados(extrairLista(snapshot));
+                    });
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+            return null;
         }
     }
 }

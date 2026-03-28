@@ -18,17 +18,29 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
+import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 
 public class ResumoVendasActivity extends AppCompatActivity {
     private final String TAG = "ResumoVendasActivity";
+    private VendaRepository vendaRepository;
+    private ListenerRegistration listenerVendasHoje;
+    private ListenerRegistration listenerEmAberto;
+    private TextView textVendasHoje;
+    private ImageView imgOlhoSaldo;
+    private TextView textQtdVendas;
+    private TextView textStatusCaixa;
+    private ImageView imgStatusCaixa;
+    private String ultimoValorVendas = "R$ 0,00";
 
-    // Mantendo a precisão monetária (inteiro = centavos)
-    private int saldoVendasHojeCentavos = 15000;
 
     // Componentes de UI
     private TabLayout tabLayoutDashboard;
@@ -54,7 +66,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
         });
 
         inicializarComponentes();
-        configurarSaldo();
+        inicializarResumo();
         configurarAbas();
         configurarFabMenu();
     }
@@ -72,21 +84,79 @@ public class ResumoVendasActivity extends AppCompatActivity {
         radialSpotlight = findViewById(R.id.radial_spotlight);
     }
 
-    private void configurarSaldo() {
-        TextView textVendasHoje = findViewById(R.id.textVendasHoje);
-        ImageView imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
+    private void inicializarResumo() {
+        textVendasHoje  = findViewById(R.id.textVendasHoje);
+        textQtdVendas   = findViewById(R.id.textQtdVendas);
+        textStatusCaixa = findViewById(R.id.textStatusCaixa);
+        imgStatusCaixa  = findViewById(R.id.imgStatusCaixa);
 
-        double saldoExibicao = saldoVendasHojeCentavos / 100.0;
-        String saldoFormatado = String.format(Locale.getDefault(), "R$ %.2f", saldoExibicao);
+        vendaRepository = new VendaRepository();
 
-        if (textVendasHoje != null) textVendasHoje.setText(saldoFormatado);
-
-        if (imgOlhoSaldo != null && textVendasHoje != null) {
-            imgOlhoSaldo.setTag(true);
-            imgOlhoSaldo.setOnClickListener(view -> {
-                VisibilidadeHelper.alternarVisibilidadeSaldo(textVendasHoje, imgOlhoSaldo, saldoFormatado);
-            });
+        if (textVendasHoje != null) {
+            textVendasHoje.setTag(true); // true = visível
+            textVendasHoje.setOnClickListener(v -> alternarVisibilidadeValor());
         }
+
+        escutarVendasHoje();
+        escutarCaixa();
+    }
+
+    private void escutarVendasHoje() {
+        listenerVendasHoje = vendaRepository.escutarVendasFinalizadasHoje(new VendaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<VendaModel> lista) {
+                double totalHoje = 0;
+                for (VendaModel v : lista) totalHoje += v.getValorTotal();
+
+                NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+                ultimoValorVendas = fmt.format(totalHoje);
+
+                if (textQtdVendas != null) {
+                    textQtdVendas.setText(String.valueOf(lista.size()));
+                }
+
+                if (textVendasHoje != null) {
+                    boolean visivel = textVendasHoje.getTag() != null
+                            && (boolean) textVendasHoje.getTag();
+                    if (visivel) {
+                        textVendasHoje.setText(ultimoValorVendas);
+                    }
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(ResumoVendasActivity.this,
+                        "Erro ao carregar vendas: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void alternarVisibilidadeValor() {
+        if (textVendasHoje == null) return;
+        boolean visivel = textVendasHoje.getTag() != null && (boolean) textVendasHoje.getTag();
+        if (visivel) {
+            textVendasHoje.setText("R$ ••••••");
+            textVendasHoje.setTag(false);
+        } else {
+            textVendasHoje.setText(ultimoValorVendas);
+            textVendasHoje.setTag(true);
+        }
+    }
+
+
+    private void escutarCaixa() {
+        listenerEmAberto = vendaRepository.escutarVendasEmAberto(new VendaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<VendaModel> lista) {
+                if (textStatusCaixa != null) {
+                    textStatusCaixa.setText(lista.isEmpty() ? "Fechado" : "Aberto");
+                }
+            }
+
+            @Override
+            public void onErro(String erro) { }
+        });
     }
 
     private void configurarAbas() {
@@ -240,5 +310,18 @@ public class ResumoVendasActivity extends AppCompatActivity {
     public void acessarRegistrarVendasActivity(View view) {
         startActivity(new Intent(this, RegistrarVendasActivity.class));
         Log.i(TAG, "Acessou RegistrarVendasActivity");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (listenerVendasHoje != null) {
+            listenerVendasHoje.remove();
+            listenerVendasHoje = null;
+        }
+        if (listenerEmAberto != null) {
+            listenerEmAberto.remove();
+            listenerEmAberto = null;
+        }
     }
 }

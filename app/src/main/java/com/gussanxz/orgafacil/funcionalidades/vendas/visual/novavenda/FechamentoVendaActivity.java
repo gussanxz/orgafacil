@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
@@ -23,6 +24,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -263,6 +265,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setValorTotal(valorTotal);
         venda.setStatus(VendaModel.STATUS_FINALIZADA);
         venda.setItens(converterItensParaVenda(listaItens));
+        venda.setDiaKey(FirestoreSchema.diaKey(new Date()));
         return venda;
     }
 
