@@ -18,83 +18,106 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoricoVendas.HistoricoViewHolder> {
+public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private List<VendaModel> listaVendas;
+    private static final int TIPO_HEADER = 0;
+    private static final int TIPO_VENDA  = 1;
+
+    // Lista mista: String = header do dia, VendaModel = item
+    private List<Object> listaItens;
+
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-    private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+    private final SimpleDateFormat formatadorHora = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
 
-    private final OnVendaClickListener clickListener;
-    private final OnVendaEditarListener editarListener;
+    public interface OnVendaClickListener         { void onVendaClick(VendaModel venda); }
+    public interface OnVendaEditarListener        { void onVendaEditar(VendaModel venda); }
+    public interface OnVendaAlternarStatusListener{ void onVendaAlternarStatus(VendaModel venda); }
+
+    private final OnVendaClickListener          clickListener;
+    private final OnVendaEditarListener         editarListener;
     private final OnVendaAlternarStatusListener alternarStatusListener;
 
-    public AdapterHistoricoVendas(List<VendaModel> listaVendas,
+    public AdapterHistoricoVendas(List<Object> listaItens,
                                   OnVendaClickListener clickListener,
                                   OnVendaEditarListener editarListener,
                                   OnVendaAlternarStatusListener alternarStatusListener) {
-        this.listaVendas = listaVendas;
-        this.clickListener = clickListener;
-        this.editarListener = editarListener;
+        this.listaItens             = listaItens;
+        this.clickListener          = clickListener;
+        this.editarListener         = editarListener;
         this.alternarStatusListener = alternarStatusListener;
     }
 
-
-
-    public interface OnVendaClickListener {
-        void onVendaClick(VendaModel venda);
-    }
-    public interface OnVendaEditarListener {
-        void onVendaEditar(VendaModel venda);
-    }
-
-    public interface OnVendaAlternarStatusListener {
-        void onVendaAlternarStatus(VendaModel venda);
-    }
-
-
-    public void atualizarLista(List<VendaModel> novaLista) {
-        this.listaVendas = novaLista;
+    public void atualizarLista(List<Object> novaLista) {
+        this.listaItens = novaLista;
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return listaItens.get(position) instanceof String ? TIPO_HEADER : TIPO_VENDA;
     }
 
     @NonNull
     @Override
-    public HistoricoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_historico_venda, parent, false);
-        return new HistoricoViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TIPO_HEADER) {
+            View v = inflater.inflate(R.layout.item_historico_header_dia, parent, false);
+            return new HeaderViewHolder(v);
+        } else {
+            View v = inflater.inflate(R.layout.item_historico_venda, parent, false);
+            return new VendaViewHolder(v);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull HistoricoViewHolder holder, int position) {
-        holder.bind(listaVendas.get(position));
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof HeaderViewHolder) {
+            ((HeaderViewHolder) holder).bind((String) listaItens.get(position));
+        } else {
+            ((VendaViewHolder) holder).bind((VendaModel) listaItens.get(position));
+        }
     }
 
     @Override
     public int getItemCount() {
-        return listaVendas != null ? listaVendas.size() : 0;
+        return listaItens != null ? listaItens.size() : 0;
     }
 
-    class HistoricoViewHolder extends RecyclerView.ViewHolder {
+    // ── Header ViewHolder ──────────────────────────────────────────────────
+    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+        private final TextView txtHeaderDia;
 
-        private final TextView txtVendaId;
-        private final TextView txtVendaData;
-        private final TextView txtVendaPagamento;
-        private final TextView txtVendaQuantidade;
-        private final TextView txtVendaStatus;
-        private final TextView txtVendaTotal;
-        private final ImageButton btnEditarVenda;
-        private final ImageButton btnAlternarStatus;
-
-        public HistoricoViewHolder(@NonNull View itemView) {
+        HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtVendaId = itemView.findViewById(R.id.txtVendaId);
-            txtVendaData = itemView.findViewById(R.id.txtVendaData);
+            txtHeaderDia = itemView.findViewById(R.id.txtHeaderDia);
+        }
+
+        void bind(String titulo) {
+            txtHeaderDia.setText(titulo);
+        }
+    }
+
+    // ── Venda ViewHolder ───────────────────────────────────────────────────
+    class VendaViewHolder extends RecyclerView.ViewHolder {
+        private final TextView     txtVendaId;
+        private final TextView     txtVendaData;
+        private final TextView     txtVendaPagamento;
+        private final TextView     txtVendaQuantidade;
+        private final TextView     txtVendaStatus;
+        private final TextView     txtVendaTotal;
+        private final ImageButton  btnEditarVenda;
+        private final ImageButton  btnAlternarStatus;
+
+        VendaViewHolder(@NonNull View itemView) {
+            super(itemView);
+            txtVendaId        = itemView.findViewById(R.id.txtVendaId);
+            txtVendaData      = itemView.findViewById(R.id.txtVendaData);
             txtVendaPagamento = itemView.findViewById(R.id.txtVendaPagamento);
-            txtVendaQuantidade = itemView.findViewById(R.id.txtVendaQuantidade);
-            txtVendaStatus = itemView.findViewById(R.id.txtVendaStatus);
-            txtVendaTotal = itemView.findViewById(R.id.txtVendaTotal);
-            btnEditarVenda   = itemView.findViewById(R.id.btnEditarVenda);
+            txtVendaQuantidade= itemView.findViewById(R.id.txtVendaQuantidade);
+            txtVendaStatus    = itemView.findViewById(R.id.txtVendaStatus);
+            txtVendaTotal     = itemView.findViewById(R.id.txtVendaTotal);
+            btnEditarVenda    = itemView.findViewById(R.id.btnEditarVenda);
             btnAlternarStatus = itemView.findViewById(R.id.btnAlternarStatus);
         }
 
@@ -107,64 +130,54 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<AdapterHistoric
             long dataExibir = venda.getDataHoraFechamentoMillis() > 0
                     ? venda.getDataHoraFechamentoMillis()
                     : venda.getDataHoraAberturaMillis();
-            txtVendaData.setText(formatarData(dataExibir));
-            txtVendaPagamento.setText("Pagamento: " + valorOuPadrao(venda.getFormaPagamento(), "-"));
-            txtVendaQuantidade.setText(
-                    venda.getQuantidadeTotal() + (venda.getQuantidadeTotal() == 1 ? " item" : " itens")
-            );
-            String status = valorOuPadrao(venda.getStatus(), VendaModel.STATUS_FINALIZADA);
-            txtVendaStatus.setText(status);
+            // No header de dia já temos a data — aqui mostramos só o horário
+            txtVendaData.setText(formatadorHora.format(new Date(dataExibir)));
 
+            txtVendaPagamento.setText("Pagamento: " + (venda.getFormaPagamento() != null
+                    ? venda.getFormaPagamento() : "-"));
+
+            txtVendaQuantidade.setText(venda.getQuantidadeTotal()
+                    + (venda.getQuantidadeTotal() == 1 ? " item" : " itens"));
+
+            String status = venda.getStatus() != null
+                    ? venda.getStatus() : VendaModel.STATUS_FINALIZADA;
+            txtVendaStatus.setText(status);
             switch (status) {
                 case VendaModel.STATUS_FINALIZADA:
-                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#2E7D32")); // verde
-                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#2E7D32"));
                     break;
                 case VendaModel.STATUS_CANCELADA:
-                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#C62828")); // vermelho
-                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#C62828"));
                     break;
                 default:
-                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#E65100")); // laranja
-                    txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
-                    break;
+                    txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#E65100"));
             }
+            txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+
             txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
 
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) clickListener.onVendaClick(venda);
             });
+
             if (btnEditarVenda != null) {
                 btnEditarVenda.setOnClickListener(v -> {
                     if (editarListener != null) editarListener.onVendaEditar(venda);
                 });
             }
+
             if (btnAlternarStatus != null) {
                 boolean finalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
-                // Finalizada → mostra X vermelho (cancelar)
-                // Cancelada  → mostra ícone de restaurar verde
-                btnAlternarStatus.setImageResource(
-                        finalizada ? R.drawable.ic_delete_forever_24 : R.drawable.ic_restore_24
-                );
-                btnAlternarStatus.setColorFilter(
-                        itemView.getContext().getColor(finalizada ? R.color.colorPrimaryDespesa
-                                : R.color.colorPrimaryProventos)
-                );
+                btnAlternarStatus.setImageResource(finalizada
+                        ? R.drawable.ic_delete_forever_24
+                        : R.drawable.ic_restore_24);
+                btnAlternarStatus.setColorFilter(itemView.getContext().getColor(
+                        finalizada ? R.color.colorPrimaryDespesa : R.color.colorPrimaryProventos));
                 btnAlternarStatus.setOnClickListener(v -> {
-                    if (alternarStatusListener != null) alternarStatusListener.onVendaAlternarStatus(venda);
+                    if (alternarStatusListener != null)
+                        alternarStatusListener.onVendaAlternarStatus(venda);
                 });
             }
-
-
-        }
-
-        private String formatarData(long dataHoraMillis) {
-            if (dataHoraMillis <= 0) return "-";
-            return formatadorData.format(new Date(dataHoraMillis));
-        }
-
-        private String valorOuPadrao(String valor, String padrao) {
-            return valor == null || valor.trim().isEmpty() ? padrao : valor;
         }
     }
 }

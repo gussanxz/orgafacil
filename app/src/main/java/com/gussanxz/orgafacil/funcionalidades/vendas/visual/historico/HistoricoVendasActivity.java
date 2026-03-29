@@ -26,8 +26,11 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HistoricoVendasActivity extends AppCompatActivity {
 
@@ -36,7 +39,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private View layoutEstadoVazioHistorico;
     private TextView txtQuantidadeVendas;
 
-    private final List<VendaModel> listaVendas = new ArrayList<>();
+    private final List<Object> listaItens = new ArrayList<>();
     private AdapterHistoricoVendas adapter;
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
@@ -95,7 +98,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private void configurarRecyclerView() {
         rvHistoricoVendas.setLayoutManager(new LinearLayoutManager(this));
         adapter = new AdapterHistoricoVendas(
-                listaVendas,
+                listaItens,
                 venda -> abrirComprovante(venda.getId()),
                 venda -> abrirEdicao(venda),
                 venda -> confirmarAlteracaoStatus(venda)
@@ -140,45 +143,59 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     }
 
     private void atualizarEstadoTela() {
-        boolean vazio = listaVendas.isEmpty();
+        long qtdVendas = listaItens.stream()
+                .filter(o -> o instanceof VendaModel)
+                .count();
+        boolean vazio = qtdVendas == 0;
 
-        if (layoutEstadoVazioHistorico != null) {
+        if (layoutEstadoVazioHistorico != null)
             layoutEstadoVazioHistorico.setVisibility(vazio ? View.VISIBLE : View.GONE);
-        }
-
-        if (rvHistoricoVendas != null) {
+        if (rvHistoricoVendas != null)
             rvHistoricoVendas.setVisibility(vazio ? View.GONE : View.VISIBLE);
-        }
-
-        if (txtQuantidadeVendas != null) {
-            txtQuantidadeVendas.setText(
-                    vazio
-                            ? "Nenhuma venda encontrada"
-                            : listaVendas.size() + (listaVendas.size() == 1 ? " venda" : " vendas")
-            );
-        }
+        if (txtQuantidadeVendas != null)
+            txtQuantidadeVendas.setText(vazio
+                    ? "Nenhuma venda encontrada"
+                    : qtdVendas + (qtdVendas == 1 ? " venda" : " vendas"));
     }
 
     private void aplicarFiltro(String status) {
         filtroAtivo = status;
 
-        listaVendas.clear();
-        if (status == null) {
-            // "Todas" — exclui apenas EM_ABERTO (essas ficam na tela de Vendas em Aberto)
-            for (VendaModel v : listaCompleta) {
-                if (!VendaModel.STATUS_EM_ABERTO.equals(v.getStatus())) {
-                    listaVendas.add(v);
-                }
-            }
-        } else {
-            for (VendaModel v : listaCompleta) {
-                if (status.equals(v.getStatus())) {
-                    listaVendas.add(v);
-                }
-            }
+        // 1. Filtra as vendas
+        List<VendaModel> filtradas = new ArrayList<>();
+        for (VendaModel v : listaCompleta) {
+            if (VendaModel.STATUS_EM_ABERTO.equals(v.getStatus())) continue;
+            if (status != null && !status.equals(v.getStatus())) continue;
+            filtradas.add(v);
         }
 
-        adapter.atualizarLista(listaVendas);
+        // 2. Agrupa por dia montando lista mista com headers
+        listaItens.clear();
+        SimpleDateFormat fmtDia  = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        SimpleDateFormat fmtExib = new SimpleDateFormat("dd 'de' MMMM 'de' yyyy", new Locale("pt", "BR"));
+        String diaHoje = fmtDia.format(new Date());
+        String diaOntem = fmtDia.format(new Date(System.currentTimeMillis() - 86400000L));
+
+        String ultimoDia = null;
+        for (VendaModel v : filtradas) {
+            long ts = v.getDataHoraFechamentoMillis() > 0
+                    ? v.getDataHoraFechamentoMillis()
+                    : v.getDataHoraAberturaMillis();
+            String diaVenda = fmtDia.format(new Date(ts));
+
+            if (!diaVenda.equals(ultimoDia)) {
+                String label;
+                if (diaVenda.equals(diaHoje))   label = "Hoje";
+                else if (diaVenda.equals(diaOntem)) label = "Ontem";
+                else label = fmtExib.format(new Date(ts));
+
+                listaItens.add(label);
+                ultimoDia = diaVenda;
+            }
+            listaItens.add(v);
+        }
+
+        adapter.atualizarLista(listaItens);
         atualizarEstadoTela();
         atualizarEstiloChips();
     }
