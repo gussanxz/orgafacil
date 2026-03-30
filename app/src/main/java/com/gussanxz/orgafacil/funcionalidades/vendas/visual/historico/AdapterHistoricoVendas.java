@@ -23,28 +23,31 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
     private static final int TIPO_HEADER = 0;
     private static final int TIPO_VENDA  = 1;
 
-    // Lista mista: String = header do dia, VendaModel = item
     private List<Object> listaItens;
 
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat formatadorHora = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
 
-    public interface OnVendaClickListener         { void onVendaClick(VendaModel venda); }
-    public interface OnVendaEditarListener        { void onVendaEditar(VendaModel venda); }
-    public interface OnVendaAlternarStatusListener{ void onVendaAlternarStatus(VendaModel venda); }
+    public interface OnVendaClickListener          { void onVendaClick(VendaModel venda); }
+    public interface OnVendaEditarListener         { void onVendaEditar(VendaModel venda); }
+    public interface OnVendaAlternarStatusListener { void onVendaAlternarStatus(VendaModel venda); }
+    public interface OnResumoDiaListener           { void onResumoDia(HeaderDiaVenda header); }
 
     private final OnVendaClickListener          clickListener;
     private final OnVendaEditarListener         editarListener;
     private final OnVendaAlternarStatusListener alternarStatusListener;
+    private final OnResumoDiaListener           resumoDiaListener;
 
     public AdapterHistoricoVendas(List<Object> listaItens,
                                   OnVendaClickListener clickListener,
                                   OnVendaEditarListener editarListener,
-                                  OnVendaAlternarStatusListener alternarStatusListener) {
+                                  OnVendaAlternarStatusListener alternarStatusListener,
+                                  OnResumoDiaListener resumoDiaListener) {
         this.listaItens             = listaItens;
         this.clickListener          = clickListener;
         this.editarListener         = editarListener;
         this.alternarStatusListener = alternarStatusListener;
+        this.resumoDiaListener      = resumoDiaListener;
     }
 
     public void atualizarLista(List<Object> novaLista) {
@@ -54,7 +57,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
 
     @Override
     public int getItemViewType(int position) {
-        return listaItens.get(position) instanceof String ? TIPO_HEADER : TIPO_VENDA;
+        return listaItens.get(position) instanceof HeaderDiaVenda ? TIPO_HEADER : TIPO_VENDA;
     }
 
     @NonNull
@@ -73,7 +76,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof HeaderViewHolder) {
-            ((HeaderViewHolder) holder).bind((String) listaItens.get(position));
+            ((HeaderViewHolder) holder).bind((HeaderDiaVenda) listaItens.get(position));
         } else {
             ((VendaViewHolder) holder).bind((VendaModel) listaItens.get(position));
         }
@@ -85,40 +88,47 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
     }
 
     // ── Header ViewHolder ──────────────────────────────────────────────────
-    static class HeaderViewHolder extends RecyclerView.ViewHolder {
-        private final TextView txtHeaderDia;
+    class HeaderViewHolder extends RecyclerView.ViewHolder {
+        private final TextView    txtHeaderDia;
+        private final ImageButton btnResumoDia;
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
             txtHeaderDia = itemView.findViewById(R.id.txtHeaderDia);
+            btnResumoDia = itemView.findViewById(R.id.btnResumoDia);
         }
 
-        void bind(String titulo) {
-            txtHeaderDia.setText(titulo);
+        void bind(HeaderDiaVenda header) {
+            txtHeaderDia.setText(header.titulo);
+            if (btnResumoDia != null) {
+                btnResumoDia.setOnClickListener(v -> {
+                    if (resumoDiaListener != null) resumoDiaListener.onResumoDia(header);
+                });
+            }
         }
     }
 
     // ── Venda ViewHolder ───────────────────────────────────────────────────
     class VendaViewHolder extends RecyclerView.ViewHolder {
-        private final TextView     txtVendaId;
-        private final TextView     txtVendaData;
-        private final TextView     txtVendaPagamento;
-        private final TextView     txtVendaQuantidade;
-        private final TextView     txtVendaStatus;
-        private final TextView     txtVendaTotal;
-        private final ImageButton  btnEditarVenda;
-        private final ImageButton  btnAlternarStatus;
+        private final TextView    txtVendaId;
+        private final TextView    txtVendaData;
+        private final TextView    txtVendaPagamento;
+        private final TextView    txtVendaQuantidade;
+        private final TextView    txtVendaStatus;
+        private final TextView    txtVendaTotal;
+        private final ImageButton btnEditarVenda;
+        private final ImageButton btnAlternarStatus;
 
         VendaViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtVendaId        = itemView.findViewById(R.id.txtVendaId);
-            txtVendaData      = itemView.findViewById(R.id.txtVendaData);
-            txtVendaPagamento = itemView.findViewById(R.id.txtVendaPagamento);
-            txtVendaQuantidade= itemView.findViewById(R.id.txtVendaQuantidade);
-            txtVendaStatus    = itemView.findViewById(R.id.txtVendaStatus);
-            txtVendaTotal     = itemView.findViewById(R.id.txtVendaTotal);
-            btnEditarVenda    = itemView.findViewById(R.id.btnEditarVenda);
-            btnAlternarStatus = itemView.findViewById(R.id.btnAlternarStatus);
+            txtVendaId         = itemView.findViewById(R.id.txtVendaId);
+            txtVendaData       = itemView.findViewById(R.id.txtVendaData);
+            txtVendaPagamento  = itemView.findViewById(R.id.txtVendaPagamento);
+            txtVendaQuantidade = itemView.findViewById(R.id.txtVendaQuantidade);
+            txtVendaStatus     = itemView.findViewById(R.id.txtVendaStatus);
+            txtVendaTotal      = itemView.findViewById(R.id.txtVendaTotal);
+            btnEditarVenda     = itemView.findViewById(R.id.btnEditarVenda);
+            btnAlternarStatus  = itemView.findViewById(R.id.btnAlternarStatus);
         }
 
         void bind(VendaModel venda) {
@@ -130,7 +140,6 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
             long dataExibir = venda.getDataHoraFechamentoMillis() > 0
                     ? venda.getDataHoraFechamentoMillis()
                     : venda.getDataHoraAberturaMillis();
-            // No header de dia já temos a data — aqui mostramos só o horário
             txtVendaData.setText(formatadorHora.format(new Date(dataExibir)));
 
             txtVendaPagamento.setText("Pagamento: " + (venda.getFormaPagamento() != null
@@ -142,6 +151,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
             String status = venda.getStatus() != null
                     ? venda.getStatus() : VendaModel.STATUS_FINALIZADA;
             txtVendaStatus.setText(status);
+            txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
             switch (status) {
                 case VendaModel.STATUS_FINALIZADA:
                     txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#2E7D32"));
@@ -151,8 +161,8 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
                     break;
                 default:
                     txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#E65100"));
+                    break;
             }
-            txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
 
             txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
 

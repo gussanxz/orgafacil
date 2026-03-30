@@ -1,15 +1,17 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico;
 
-import static com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ContasDialogHelper.confirmarExclusao;
-
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -26,11 +28,14 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class HistoricoVendasActivity extends AppCompatActivity {
 
@@ -38,16 +43,17 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private RecyclerView rvHistoricoVendas;
     private View layoutEstadoVazioHistorico;
     private TextView txtQuantidadeVendas;
-
-    private final List<Object> listaItens = new ArrayList<>();
-    private AdapterHistoricoVendas adapter;
-    private VendaRepository vendaRepository;
-    private ListenerRegistration listenerRegistration;
     private TextView chipTodas;
     private TextView chipFinalizadas;
     private TextView chipCanceladas;
+
+    private final List<Object> listaItens = new ArrayList<>();
     private final List<VendaModel> listaCompleta = new ArrayList<>();
     private String filtroAtivo = null;
+
+    private AdapterHistoricoVendas adapter;
+    private VendaRepository vendaRepository;
+    private ListenerRegistration listenerRegistration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +84,6 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-
         if (listenerRegistration != null) {
             listenerRegistration.remove();
             listenerRegistration = null;
@@ -86,13 +91,13 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     }
 
     private void inicializarComponentes() {
-        btnVoltarHistorico = findViewById(R.id.btnVoltarHistorico);
-        rvHistoricoVendas = findViewById(R.id.rvHistoricoVendas);
+        btnVoltarHistorico         = findViewById(R.id.btnVoltarHistorico);
+        rvHistoricoVendas          = findViewById(R.id.rvHistoricoVendas);
         layoutEstadoVazioHistorico = findViewById(R.id.layoutEstadoVazioHistorico);
-        txtQuantidadeVendas = findViewById(R.id.txtQuantidadeVendas);
-        chipTodas       = findViewById(R.id.chipTodas);
-        chipFinalizadas = findViewById(R.id.chipFinalizadas);
-        chipCanceladas  = findViewById(R.id.chipCanceladas);
+        txtQuantidadeVendas        = findViewById(R.id.txtQuantidadeVendas);
+        chipTodas                  = findViewById(R.id.chipTodas);
+        chipFinalizadas            = findViewById(R.id.chipFinalizadas);
+        chipCanceladas             = findViewById(R.id.chipCanceladas);
     }
 
     private void configurarRecyclerView() {
@@ -101,24 +106,19 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                 listaItens,
                 venda -> abrirComprovante(venda.getId()),
                 venda -> abrirEdicao(venda),
-                venda -> confirmarAlteracaoStatus(venda)
+                venda -> confirmarAlteracaoStatus(venda),
+                header -> exibirResumoDia(header)
         );
         rvHistoricoVendas.setAdapter(adapter);
-    }
-    private void abrirComprovante(String vendaId) {
-        Intent intent = new Intent(this, ComprovanteVendaActivity.class);
-        intent.putExtra("vendaId", vendaId);
-        startActivity(intent);
     }
 
     private void configurarAcoes() {
         if (btnVoltarHistorico != null) {
             btnVoltarHistorico.setOnClickListener(v -> finish());
         }
-        if (chipTodas != null) chipTodas.setOnClickListener(v -> aplicarFiltro(null));
+        if (chipTodas != null)       chipTodas.setOnClickListener(v -> aplicarFiltro(null));
         if (chipFinalizadas != null) chipFinalizadas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_FINALIZADA));
         if (chipCanceladas != null)  chipCanceladas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_CANCELADA));
-
         atualizarEstiloChips();
     }
 
@@ -133,11 +133,8 @@ public class HistoricoVendasActivity extends AppCompatActivity {
 
             @Override
             public void onErro(String erro) {
-                Toast.makeText(
-                        HistoricoVendasActivity.this,
-                        "Erro ao carregar histórico: " + erro,
-                        Toast.LENGTH_LONG
-                ).show();
+                Toast.makeText(HistoricoVendasActivity.this,
+                        "Erro ao carregar histórico: " + erro, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -169,30 +166,49 @@ public class HistoricoVendasActivity extends AppCompatActivity {
             filtradas.add(v);
         }
 
-        // 2. Agrupa por dia montando lista mista com headers
+        // 2. Agrupa por dia
         listaItens.clear();
         SimpleDateFormat fmtDia  = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
         SimpleDateFormat fmtExib = new SimpleDateFormat("dd 'de' MMMM 'de' yyyy", new Locale("pt", "BR"));
-        String diaHoje = fmtDia.format(new Date());
-        String diaOntem = fmtDia.format(new Date(System.currentTimeMillis() - 86400000L));
+        String diaHoje  = fmtDia.format(new Date());
+        String diaOntem = fmtDia.format(new Date(System.currentTimeMillis() - 86_400_000L));
 
-        String ultimoDia = null;
+        LinkedHashMap<String, List<VendaModel>> porDia = new LinkedHashMap<>();
         for (VendaModel v : filtradas) {
             long ts = v.getDataHoraFechamentoMillis() > 0
                     ? v.getDataHoraFechamentoMillis()
                     : v.getDataHoraAberturaMillis();
-            String diaVenda = fmtDia.format(new Date(ts));
+            String chave = fmtDia.format(new Date(ts));
+            if (!porDia.containsKey(chave)) porDia.put(chave, new ArrayList<>());
+            porDia.get(chave).add(v);
+        }
 
-            if (!diaVenda.equals(ultimoDia)) {
-                String label;
-                if (diaVenda.equals(diaHoje))   label = "Hoje";
-                else if (diaVenda.equals(diaOntem)) label = "Ontem";
-                else label = fmtExib.format(new Date(ts));
+        for (Map.Entry<String, List<VendaModel>> entrada : porDia.entrySet()) {
+            String chave = entrada.getKey();
+            List<VendaModel> vendasDoDia = entrada.getValue();
 
-                listaItens.add(label);
-                ultimoDia = diaVenda;
+            double totalDia = 0;
+            int qtdDia = 0;
+            int qtdCanceladas = 0;
+            for (VendaModel v : vendasDoDia) {
+                if (VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
+                    totalDia += v.getValorTotal();
+                    qtdDia++;
+                } else if (VendaModel.STATUS_CANCELADA.equals(v.getStatus())) {
+                    qtdCanceladas++;
+                }
             }
-            listaItens.add(v);
+
+            String label;
+            try {
+                Date dataRef = fmtDia.parse(chave);
+                if (chave.equals(diaHoje))       label = "Hoje";
+                else if (chave.equals(diaOntem)) label = "Ontem";
+                else                             label = fmtExib.format(dataRef);
+            } catch (Exception e) { label = chave; }
+
+            listaItens.add(new HeaderDiaVenda(label, totalDia, qtdDia, qtdCanceladas));
+            listaItens.addAll(vendasDoDia);
         }
 
         adapter.atualizarLista(listaItens);
@@ -200,73 +216,10 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         atualizarEstiloChips();
     }
 
-    private void atualizarEstiloChips() {
-        atualizarEstiloChip(chipTodas,       filtroAtivo == null);
-        atualizarEstiloChip(chipFinalizadas, VendaModel.STATUS_FINALIZADA.equals(filtroAtivo));
-        atualizarEstiloChip(chipCanceladas,  VendaModel.STATUS_CANCELADA.equals(filtroAtivo));
-    }
-
-    private void atualizarEstiloChip(TextView chip, boolean selecionado) {
-        if (chip == null) return;
-        chip.setBackgroundTintList(getColorStateList(
-                selecionado ? R.color.colorPrimary : android.R.color.white));
-        chip.setTextColor(selecionado
-                ? android.graphics.Color.WHITE
-                : android.graphics.Color.parseColor("#757575"));
-    }
-
-    private void mostrarOpcoesStatus(VendaModel venda) {
-        boolean isFinalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
-        boolean isCancelada  = VendaModel.STATUS_CANCELADA.equals(venda.getStatus());
-
-        String numero = venda.getNumeroVenda() > 0
-                ? String.format(java.util.Locale.ROOT, "#%07d", venda.getNumeroVenda())
-                : venda.getId().substring(0, 8).toUpperCase();
-
-        // Monta as opções disponíveis dinamicamente
-        java.util.List<String> opcoes = new java.util.ArrayList<>();
-        if (!isFinalizada) opcoes.add("Marcar como Finalizada");
-        if (!isCancelada)  opcoes.add("Marcar como Cancelada");
-
-        if (opcoes.isEmpty()) return;
-
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Alterar status — Venda " + numero)
-                .setItems(opcoes.toArray(new String[0]), (dialog, which) -> {
-                    String novoStatus = opcoes.get(which).contains("Finalizada")
-                            ? VendaModel.STATUS_FINALIZADA
-                            : VendaModel.STATUS_CANCELADA;
-                    confirmarAlteracaoStatus(venda, novoStatus);
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
-    private void confirmarAlteracaoStatus(VendaModel venda, String novoStatus) {
-        String labelStatus = VendaModel.STATUS_FINALIZADA.equals(novoStatus)
-                ? "finalizada" : "cancelada";
-
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Confirmar alteração")
-                .setMessage("Deseja marcar esta venda como " + labelStatus + "?")
-                .setPositiveButton("Confirmar", (dialog, which) -> {
-                    vendaRepository.atualizarStatus(venda.getId(), novoStatus,
-                            new VendaRepository.Callback() {
-                                @Override
-                                public void onSucesso(String vendaId) {
-                                    Toast.makeText(HistoricoVendasActivity.this,
-                                            "Status atualizado.", Toast.LENGTH_SHORT).show();
-                                }
-
-                                @Override
-                                public void onErro(String erro) {
-                                    Toast.makeText(HistoricoVendasActivity.this,
-                                            "Erro ao atualizar: " + erro, Toast.LENGTH_LONG).show();
-                                }
-                            });
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+    private void abrirComprovante(String vendaId) {
+        Intent intent = new Intent(this, ComprovanteVendaActivity.class);
+        intent.putExtra("vendaId", vendaId);
+        startActivity(intent);
     }
 
     private void abrirEdicao(VendaModel venda) {
@@ -290,7 +243,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                 : "Deseja marcar esta venda como finalizada novamente?";
         String btnText = finalizada ? "Cancelar venda" : "Recuperar";
 
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle(titulo)
                 .setMessage(msg)
                 .setPositiveButton(btnText, (dialog, which) -> alternarStatus(venda))
@@ -302,7 +255,6 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         vendaRepository.alternarStatus(venda, new VendaRepository.Callback() {
             @Override
             public void onSucesso(String vendaId) {
-                // Listener em tempo real já atualiza a lista e o ResumoVendas automaticamente
                 Toast.makeText(HistoricoVendasActivity.this,
                         "Status atualizado.", Toast.LENGTH_SHORT).show();
             }
@@ -313,5 +265,47 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                         "Erro ao atualizar: " + erro, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void exibirResumoDia(HeaderDiaVenda header) {
+        NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_resumo_dia_vendas, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        ((TextView) view.findViewById(R.id.txtResumoDiaTitulo))
+                .setText("Resumo: " + header.titulo);
+        ((TextView) view.findViewById(R.id.txtResumoQtdFinalizadas))
+                .setText(String.valueOf(header.qtdVendasFinalizadas));
+        ((TextView) view.findViewById(R.id.txtResumoQtdCanceladas))
+                .setText(String.valueOf(header.qtdCanceladas));
+        ((TextView) view.findViewById(R.id.txtResumoTotalDia))
+                .setText(fmt.format(header.totalDia));
+
+        view.findViewById(R.id.btnFecharResumoDia).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void atualizarEstiloChips() {
+        atualizarEstiloChip(chipTodas,       filtroAtivo == null);
+        atualizarEstiloChip(chipFinalizadas, VendaModel.STATUS_FINALIZADA.equals(filtroAtivo));
+        atualizarEstiloChip(chipCanceladas,  VendaModel.STATUS_CANCELADA.equals(filtroAtivo));
+    }
+
+    private void atualizarEstiloChip(TextView chip, boolean selecionado) {
+        if (chip == null) return;
+        chip.setBackgroundTintList(getColorStateList(
+                selecionado ? R.color.colorPrimary : android.R.color.white));
+        chip.setTextColor(selecionado
+                ? android.graphics.Color.WHITE
+                : android.graphics.Color.parseColor("#757575"));
     }
 }

@@ -7,7 +7,7 @@
     android:layout_marginBottom="10dp"
     app:cardCornerRadius="14dp"
     app:cardElevation="1dp"
-    app:strokeColor="#E0E0E0"
+    app:strokeColor="@color/cor_divisor"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -16,6 +16,7 @@
         android:orientation="vertical"
         android:padding="14dp">
 
+        <!-- Linha 1: número + status -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -27,7 +28,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Venda #00000000"
+                android:text="Venda #0000000"
                 android:textColor="@color/cor_texto_primario"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -45,24 +46,27 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- Linha 2: horário -->
         <TextView
             android:id="@+id/txtVendaData"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="00/00/0000 00:00"
+            android:text="00:00"
             android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
+        <!-- Linha 3: pagamento -->
         <TextView
             android:id="@+id/txtVendaPagamento"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:text="Pagamento: PIX"
             android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
+        <!-- Linha 4: qtd + total + botões -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -99,7 +103,7 @@
                 android:src="@drawable/ic_lapis_editar_24"
                 android:tint="@color/colorPrimary" />
 
-            <!-- Botão alternar status — ícone muda conforme status via código -->
+            <!-- Botão alternar status (ícone muda via código) -->
             <ImageButton
                 android:id="@+id/btnAlternarStatus"
                 android:layout_width="36dp"
@@ -111,6 +115,5 @@
                 android:tint="#C62828" />
 
         </LinearLayout>
-
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
