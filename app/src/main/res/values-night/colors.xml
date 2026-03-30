@@ -15,6 +15,7 @@
     <color name="cardDiaTextPrimary">#FFFFFF</color>
     <color name="cardDiaTextSecondary">#DDDDDD</color>
     <color name="cardDiaDivider">#444A55</color>
+    <color name="cor_pagamento_selecionado">#1A3A5C</color>
 
     <!-- Cores para despesas -->
     <color name="colorPrimaryDespesa">#FF706A</color>

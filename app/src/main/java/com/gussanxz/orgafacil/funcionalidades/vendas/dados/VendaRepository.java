@@ -171,6 +171,12 @@ public class VendaRepository {
             callback.onErro("Usuário não logado");
         }
     }
+    public void alternarStatus(@NonNull VendaModel venda, @NonNull Callback callback) {
+        String novoStatus = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus())
+                ? VendaModel.STATUS_CANCELADA
+                : VendaModel.STATUS_FINALIZADA;
+        atualizarStatus(venda.getId(), novoStatus, callback);
+    }
 
     // -----------------------------------------------------------
     // HELPER PRIVADO
@@ -291,17 +297,4 @@ public class VendaRepository {
         }
     }
 
-    public void excluir(@NonNull String vendaId, @NonNull Callback callback) {
-        try {
-            FirestoreSchema.vendasVendasCol()
-                    .document(vendaId)
-                    .delete()
-                    .addOnSuccessListener(unused -> callback.onSucesso(vendaId))
-                    .addOnFailureListener(e -> callback.onErro(
-                            e.getMessage() != null ? e.getMessage() : "Erro ao excluir venda."
-                    ));
-        } catch (IllegalStateException e) {
-            callback.onErro("Usuário não logado");
-        }
-    }
 }
