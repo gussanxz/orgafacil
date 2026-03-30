@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
+    tools:context=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.CadastroCatalogoActivity">
+
+    <!-- ── Header ─────────────────────────────────────────────────── -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabVoltar"
+            style="@style/NoElevationFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:clickable="true"
+            app:backgroundTint="@color/cardview_dark_background"
+            app:fabCustomSize="45dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_arrow_back_48" />
+
+        <TextView
+            android:id="@+id/textViewHeader"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:text="Novo Item"
+            android:textAlignment="gravity"
+            android:textColor="@color/cor_texto"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnExcluirHeader"
+            app:layout_constraintStart_toEndOf="@+id/fabVoltar"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btnExcluirHeader"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Excluir"
+            android:src="@drawable/ic_lixeira_excluir_24"
+            android:visibility="gone"
+            app:tint="#D32F2F"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/fabSuperiorSalvarProduto"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabSuperiorSalvarProduto"
+            style="@style/NoElevationFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            app:backgroundTint="@color/colorAccentProventos"
+            app:fabCustomSize="45dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_confirmar_branco_48" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ── Conteúdo rolável ────────────────────────────────────────── -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollViewContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/header_background"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/header">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="88dp">
+
+            <!-- ── Seletor de tipo (visível apenas em novo item) ──── -->
+            <LinearLayout
+                android:id="@+id/layoutSeletorTipo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="24dp"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="O que você quer cadastrar?"
+                    android:textColor="@color/cor_texto"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Card Produto -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardTipoProduto"
+                        android:layout_width="0dp"
+                        android:layout_height="80dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:cardBackgroundColor="@color/cor_background">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:id="@+id/iconTipoProduto"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_categorias_geral_24"
+                                app:tint="#9E9E9E" />
+
+                            <TextView
+                                android:id="@+id/txtTipoProduto"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Produto"
+                                android:textColor="#9E9E9E"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Card Serviço -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardTipoServico"
+                        android:layout_width="0dp"
+                        android:layout_height="80dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="2dp"
+                        app:strokeColor="#E0E0E0"
+                        app:cardBackgroundColor="@color/cor_background">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:id="@+id/iconTipoServico"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_paid_28"
+                                app:tint="#9E9E9E" />
+
+                            <TextView
+                                android:id="@+id/txtTipoServico"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Serviço"
+                                android:textColor="#9E9E9E"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ── Formulário (oculto até tipo ser selecionado) ────── -->
+            <LinearLayout
+                android:id="@+id/layoutFormulario"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/textInputProduto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:hint="Nome">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editProduto"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:drawableStart="@drawable/ic_label_24"
+                        android:drawablePadding="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/textInputDescricao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:hint="Descrição (opcional)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editDescricao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:drawableStart="@drawable/ic_description_24"
+                        android:drawablePadding="12dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/textInputPreco"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:startIconDrawable="@drawable/ic_moeda_real_24">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Preço de Venda"
+                        android:inputType="numberDecimal"
+                        android:text="0.00" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Status ativo -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardStatusProduto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#E0E0E0">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:id="@+id/txtStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Status"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="18sp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchStatusAtivo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="Ativo"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Bloco de ícones — só visível para Produto -->
+                <LinearLayout
+                    android:id="@+id/caixa"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="15dp"
+                    android:layout_marginEnd="16dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/txtLabelVisual"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Definir Visual"
+                        android:textColor="@color/cor_texto"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:id="@+id/containerBotoesVisual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:layout_marginEnd="24dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ícone Padrão"
+                                android:textColor="@color/cor_texto"
+                                android:textSize="14sp"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardBtnSelecionarIcones"
+                                android:layout_width="60dp"
+                                android:layout_height="60dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="#E0E0E0"
+                                app:strokeWidth="1dp">
+
+                                <ImageButton
+                                    android:id="@+id/imgBtnSelecionarIcones"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Selecionar Ícone"
+                                    android:onClick="exibeSelecaoDeIcones"
+                                    android:padding="12dp"
+                                    android:scaleType="centerInside"
+                                    android:src="@drawable/ic_add_reaction_24"
+                                    app:tint="@color/colorPrimary" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:layout_marginStart="24dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Galeria"
+                                android:textColor="@color/cor_texto"
+                                android:textSize="14sp"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardBtnGaleria"
+                                android:layout_width="60dp"
+                                android:layout_height="60dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="24dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="#E0E0E0"
+                                app:strokeWidth="1dp">
+
+                                <ImageButton
+                                    android:id="@+id/imgBtnGaleria"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Selecionar da Galeria"
+                                    android:padding="12dp"
+                                    android:scaleType="centerCrop"
+                                    android:src="@drawable/ic_camera_alt_120"
+                                    app:tint="#757575" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutSelecao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@color/cor_background"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/txtTituloSelecao"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:text="Selecione:"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardPreviewFoto"
+                            android:layout_width="match_parent"
+                            android:layout_height="250dp"
+                            android:layout_margin="2dp"
+                            android:visibility="gone"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="#E0E0E0"
+                            app:strokeWidth="1dp"
+                            app:cardBackgroundColor="#F5F5F5">
+
+                            <ImageView
+                                android:id="@+id/imgPreviewLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/ic_camera_alt_120"
+                                app:tint="#9E9E9E" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardContainerGrid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="2dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="#E0E0E0"
+                            app:strokeWidth="1dp"
+                            app:cardBackgroundColor="@color/cor_background">
+
+                            <androidx.core.widget.NestedScrollView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <GridLayout
+                                    android:id="@+id/containerIcones"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:columnCount="4"
+                                    android:rowCount="3"
+                                    android:alignmentMode="alignMargins"
+                                    android:useDefaultMargins="true"
+                                    android:layout_gravity="center_horizontal">
+
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_mercado_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_roupas_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_comida_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_bebidas_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_eletronicos_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_spa_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_fitness_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_geral_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_ferramentas_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_papelaria_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_casa_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+                                    <com.google.android.material.card.MaterialCardView android:layout_width="46dp" android:layout_height="46dp" android:layout_margin="8dp" android:clickable="true" android:focusable="true" app:cardBackgroundColor="#F5F5F5" app:cardCornerRadius="25dp" app:strokeWidth="1dp" app:strokeColor="#E0E0E0"><ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:src="@drawable/ic_categorias_brinquedos_24" app:tint="#9E9E9E" /></com.google.android.material.card.MaterialCardView>
+
+                                </GridLayout>
+                            </androidx.core.widget.NestedScrollView>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ── Loading overlay ────────────────────────────────────────── -->
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/white" />
+    </FrameLayout>
+
+    <!-- ── FAB salvar inferior ────────────────────────────────────── -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabInferiorSalvarProduto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:layout_marginEnd="16dp"
+        android:clickable="true"
+        app:backgroundTint="@color/colorAccentProventos"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/ic_confirmar_branco_24" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

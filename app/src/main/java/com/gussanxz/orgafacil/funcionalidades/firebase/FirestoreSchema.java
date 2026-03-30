@@ -7,6 +7,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -155,6 +156,11 @@ public final class FirestoreSchema {
     }
 
     @NonNull
+    public static Query vendasCatalogoPorTipoQuery(@NonNull String tipo) {
+        return vendasCatalogoCol().whereEqualTo("tipo", tipo);
+    }
+
+    @NonNull
     public static CollectionReference vendasCaixaCol() {
         return myUserDoc().collection(MODULO).document(VENDAS).collection(VENDAS_CAIXA);
     }
@@ -162,6 +168,11 @@ public final class FirestoreSchema {
     @NonNull
     public static DocumentReference vendasCaixaDoc(@NonNull String caixaId) {
         return vendasCaixaCol().document(caixaId);
+    }
+
+    @NonNull
+    public static DocumentReference vendasResumoDoc() {
+        return myUserDoc().collection(MODULO).document(VENDAS);
     }
 
     @NonNull

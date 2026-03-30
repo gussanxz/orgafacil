@@ -52,15 +52,6 @@ public class VendasRepository {
     // PRODUTOS (vendas/resumo_geral/produtos)
     // =========================
 
-    public void listarProdutosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasProdutosCol()
-                .whereEqualTo("statusAtivo", true)
-                .orderBy("nome", Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(cb::onSuccess)
-                .addOnFailureListener(cb::onError);
-    }
-
     public void salvarProduto(@NonNull String produtoId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
         if (!data.containsKey("createdAt")) data.put("createdAt", Timestamp.now());
         data.put("updatedAt", Timestamp.now());
@@ -214,12 +205,22 @@ public class VendasRepository {
                 .addOnSuccessListener(v -> cb.onSuccess())
                 .addOnFailureListener(cb::onError);
     }
-    public void listarServicosAtivos(@NonNull RepoCallback<QuerySnapshot> cb) {
-        FirestoreSchema.vendasServicosCol()
+    public void listarCatalogoAtivo(@NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasCatalogoCol()
                 .whereEqualTo("statusAtivo", true)
-                .orderBy("descricao", Query.Direction.ASCENDING)
+                .orderBy("nome", Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(cb::onSuccess)
                 .addOnFailureListener(cb::onError);
     }
+
+    public void listarCatalogoPorTipo(@NonNull String tipo, @NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasCatalogoPorTipoQuery(tipo)
+                .whereEqualTo("statusAtivo", true)
+                .orderBy("nome", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(cb::onSuccess)
+                .addOnFailureListener(cb::onError);
+    }
+
 }

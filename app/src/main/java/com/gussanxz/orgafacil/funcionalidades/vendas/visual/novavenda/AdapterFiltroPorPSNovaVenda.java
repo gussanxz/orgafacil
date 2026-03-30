@@ -12,8 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -148,9 +148,8 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
 
                         if (imgIcone != null) {
-                                if (item instanceof ProdutoModel) {
-                                        ProdutoModel produto = (ProdutoModel) item;
-                                        imgIcone.setImageResource(getIconeProdutoPorIndex(produto.getIconeIndex()));
+                                if (item instanceof CatalogoModel && ((CatalogoModel) item).isProduto()) {
+                                        imgIcone.setImageResource(getIconeProdutoPorIndex(((CatalogoModel) item).getIconeIndex()));
                                         imgIcone.setColorFilter(Color.parseColor("#EF6C00"));
                                 } else {
                                         imgIcone.setImageResource(R.drawable.ic_paid_28);

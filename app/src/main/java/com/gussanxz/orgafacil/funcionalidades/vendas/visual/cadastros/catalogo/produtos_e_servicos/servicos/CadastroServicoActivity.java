@@ -15,11 +15,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
-
-import javax.security.auth.callback.Callback;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 
 public class CadastroServicoActivity extends AppCompatActivity {
 
@@ -30,7 +27,7 @@ public class CadastroServicoActivity extends AppCompatActivity {
     private TextView textViewHeader;
 
     // Lógica
-    private ServicoRepository repository;
+    private CatalogoRepository repository;
     private String idEmEdicao = null;
 
     @Override
@@ -47,7 +44,7 @@ public class CadastroServicoActivity extends AppCompatActivity {
         });
 
         // 1. Inicializa Repositório
-        repository = new ServicoRepository();
+        repository = new CatalogoRepository();
 
         // 2. Inicializa UI
         inicializarComponentes();
@@ -115,14 +112,15 @@ public class CadastroServicoActivity extends AppCompatActivity {
         }
 
         // 4. Cria Objeto
-        ServicoModel servicoModel = new ServicoModel();
-        servicoModel.setId(idEmEdicao); // Se null cria novo, se tem ID atualiza
-        servicoModel.setDescricao(descricao);
+        CatalogoModel servicoModel = new CatalogoModel();
+        servicoModel.setId(idEmEdicao);
+        servicoModel.setTipo(CatalogoModel.TIPO_STR_SERVICO);
+        servicoModel.setNome(descricao);
         servicoModel.setCategoria(categoria);
-        servicoModel.setValor(valor);
+        servicoModel.setPreco(valor);
 
         // 5. Chama Repositório
-        repository.salvar(servicoModel, new ServicoRepository.Callback() {
+        repository.salvar(servicoModel, new CatalogoRepository.Callback() {
             @Override
             public void onSucesso(String mensagem) {
                 Toast.makeText(CadastroServicoActivity.this, mensagem, Toast.LENGTH_SHORT).show();

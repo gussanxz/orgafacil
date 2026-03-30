@@ -10,22 +10,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.GridLayoutManager; // IMPORTANTE
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButtonToggleGroup; // IMPORTANTE
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.ChipGroup;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-// Ajuste os imports abaixo conforme seus pacotes
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.AdapterExibirPSGradeListaNovaVenda;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ServicoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.AdapterExibirPSGradeListaNovaVenda;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,23 +30,17 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
 
     private RecyclerView recyclerProdutos;
     private ChipGroup chipGroupTipo;
-    private MaterialButtonToggleGroup toggleVisualizacao; // VOLTOU!
+    private MaterialButtonToggleGroup toggleVisualizacao;
 
     private AdapterExibirPSGradeListaNovaVenda adapter;
 
     // Listas
-    private final List<ItemVendaModel> listaTotal = new ArrayList<>();
+    private final List<ItemVendaModel> listaTotal    = new ArrayList<>();
     private final List<ItemVendaModel> listaFiltrada = new ArrayList<>();
 
-    // Caches
-    private final List<ItemVendaModel> cacheProdutos = new ArrayList<>();
-    private final List<ItemVendaModel> cacheServicos = new ArrayList<>();
-
-    // Repositórios
-    private ProdutoRepository produtoRepo;
-    private ServicoRepository servicoRepo;
-    private com.google.firebase.firestore.ListenerRegistration listenerProdutos;
-    private com.google.firebase.firestore.ListenerRegistration listenerServicos;
+    // Repositório unificado
+    private CatalogoRepository catalogoRepo;
+    private ListenerRegistration listenerCatalogo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,17 +49,15 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
 
         setupWindowInsets();
 
-        produtoRepo = new ProdutoRepository();
-        servicoRepo = new ServicoRepository();
+        catalogoRepo = new CatalogoRepository();
 
-        // Inicializa Componentes
-        recyclerProdutos = findViewById(R.id.recyclerProdutos);
-        chipGroupTipo = findViewById(R.id.chipGroupTipo);
-        toggleVisualizacao = findViewById(R.id.toggleVisualizacao); // Recupera do XML
+        recyclerProdutos   = findViewById(R.id.recyclerProdutos);
+        chipGroupTipo      = findViewById(R.id.chipGroupTipo);
+        toggleVisualizacao = findViewById(R.id.toggleVisualizacao);
 
         configurarRecyclerView();
         configurarFiltros();
-        configurarAlternanciaVisualizacao(); // Configura o clique Lista vs Grade
+        configurarAlternanciaVisualizacao();
     }
 
     @Override
@@ -81,110 +69,77 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        if (listenerProdutos != null) listenerProdutos.remove();
-        if (listenerServicos != null) listenerServicos.remove();
+        if (listenerCatalogo != null) listenerCatalogo.remove();
     }
+
+    // ── Carregamento ──────────────────────────────────────────────────
 
     private void carregarDados() {
-        // 1. Produtos
-        listenerProdutos = produtoRepo.listarTempoReal(new ProdutoRepository.ListaCallback() {
+        listenerCatalogo = catalogoRepo.listarTempoReal(new CatalogoRepository.ListaCallback() {
             @Override
-            public void onNovosDados(List<ProdutoModel> lista) {
-                cacheProdutos.clear();
-                cacheProdutos.addAll(lista);
-                atualizarListaUnificada();
+            public void onNovosDados(List<CatalogoModel> lista) {
+                listaTotal.clear();
+                listaTotal.addAll(lista);
+                aplicarFiltros();
             }
 
             @Override
             public void onErro(String erro) {
-                Toast.makeText(ListaProdutosEServicosActivity.this, "Erro Prod: " + erro, Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // 2. Serviços
-        listenerServicos = servicoRepo.listarTempoReal(new ServicoRepository.ListaCallback() {
-            @Override
-            public void onNovosDados(List<ServicoModel> lista) {
-                cacheServicos.clear();
-                cacheServicos.addAll(lista);
-                atualizarListaUnificada();
-            }
-
-            @Override
-            public void onErro(String erro) {
-                Toast.makeText(ListaProdutosEServicosActivity.this, "Erro Serv: " + erro, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ListaProdutosEServicosActivity.this,
+                        "Erro ao carregar catálogo: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void atualizarListaUnificada() {
-        listaTotal.clear();
-        listaTotal.addAll(cacheProdutos);
-        listaTotal.addAll(cacheServicos);
-        aplicarFiltros();
-    }
+    // ── RecyclerView ──────────────────────────────────────────────────
 
     private void configurarRecyclerView() {
         adapter = new AdapterExibirPSGradeListaNovaVenda(listaFiltrada, this::onItemClick);
-        // Padrão inicial: Lista Vertical
         recyclerProdutos.setLayoutManager(new LinearLayoutManager(this));
         recyclerProdutos.setAdapter(adapter);
     }
 
-    // --- NOVA LÓGICA: LISTA vs GRADE ---
     private void configurarAlternanciaVisualizacao() {
         toggleVisualizacao.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
                 boolean modoGrade = (checkedId == R.id.btnVisualizacaoGrade);
-
-                if (modoGrade) {
-                    recyclerProdutos.setLayoutManager(new GridLayoutManager(this, 2));
-                } else {
-                    recyclerProdutos.setLayoutManager(new LinearLayoutManager(this));
-                }
-                // Avisa o adapter para trocar o XML inflado (de Lista para Grade)
-                if (adapter != null) {
-                    adapter.setModoGrade(modoGrade);
-                }
+                recyclerProdutos.setLayoutManager(
+                        modoGrade
+                                ? new GridLayoutManager(this, 2)
+                                : new LinearLayoutManager(this));
+                if (adapter != null) adapter.setModoGrade(modoGrade);
             }
         });
     }
 
+    // ── Clique no item → abre CadastroCatalogoActivity ───────────────
+
     private void onItemClick(ItemVendaModel item) {
-        Intent intent;
-        if (item instanceof ProdutoModel) {
-            intent = new Intent(this, CadastroProdutoActivity.class);
-            ProdutoModel p = (ProdutoModel) item;
-            intent.putExtra("id", p.getId());
-            intent.putExtra("nome", p.getNome());
-            intent.putExtra("categoriaId", p.getCategoriaId());
-            intent.putExtra("categoria", p.getCategoria());
-            intent.putExtra("descricao", p.getDescricao());
-            intent.putExtra("statusAtivo", p.isStatusAtivo());
-            intent.putExtra("iconeIndex", p.getIconeIndex());
-            intent.putExtra("preco", p.getPreco());
-        } else {
-            intent = new Intent(this, CadastroServicoActivity.class);
-            ServicoModel s = (ServicoModel) item;
-            intent.putExtra("id", s.getId());
-            intent.putExtra("nome", s.getDescricao());
-            intent.putExtra("categoriaId", s.getCategoriaId());
-            intent.putExtra("categoria", s.getCategoria());
-            intent.putExtra("preco", s.getValor());
-        }
+        CatalogoModel c = (CatalogoModel) item;
+        Intent intent = new Intent(this, CadastroCatalogoActivity.class);
+        intent.putExtra("id",          c.getId());
+        intent.putExtra("nome",        c.getNome());
+        intent.putExtra("tipo",        c.getTipoStr());
+        intent.putExtra("preco",       c.getPreco());
+        intent.putExtra("categoriaId", c.getCategoriaId());
+        intent.putExtra("categoria",   c.getCategoria());
+        intent.putExtra("descricao",   c.getDescricao());
+        intent.putExtra("statusAtivo", c.isStatusAtivo());
+        intent.putExtra("iconeIndex",  c.getIconeIndex());
         startActivity(intent);
     }
 
+    // ── FAB / botão de cadastro ───────────────────────────────────────
+
+    /**
+     * Chamado pelo XML via android:onClick="cadastrarProdutoOuServico".
+     * Exibe um diálogo para o usuário escolher o tipo antes de abrir o cadastro.
+     */
     public void cadastrarProdutoOuServico(View view) {
-        String[] opcoes = {"Novo Produto", "Novo Serviço"};
-        new AlertDialog.Builder(this)
-                .setTitle("O que deseja cadastrar?")
-                .setItems(opcoes, (dialog, which) -> {
-                    if (which == 0) startActivity(new Intent(this, CadastroProdutoActivity.class));
-                    else startActivity(new Intent(this, CadastroServicoActivity.class));
-                })
-                .show();
+        startActivity(new Intent(this, CadastroCatalogoActivity.class));
     }
+
+    // ── Filtros por chip (Todos / Produtos / Serviços) ────────────────
 
     private void configurarFiltros() {
         chipGroupTipo.setOnCheckedChangeListener((group, checkedId) -> aplicarFiltros());
@@ -198,22 +153,26 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
             boolean isProd = item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
             boolean isServ = item.getTipo() == ItemVendaModel.TIPO_SERVICO;
 
-            if (id == R.id.chipProdutos && isProd) listaFiltrada.add(item);
-            else if (id == R.id.chipServicos && isServ) listaFiltrada.add(item);
-            else if (id == View.NO_ID || id == R.id.chipTodos) listaFiltrada.add(item);
+            if      (id == R.id.chipProdutos && isProd)               listaFiltrada.add(item);
+            else if (id == R.id.chipServicos && isServ)               listaFiltrada.add(item);
+            else if (id == View.NO_ID        || id == R.id.chipTodos) listaFiltrada.add(item);
         }
-        adapter.notifyDataSetChanged();
+
+        if (adapter != null) adapter.notifyDataSetChanged();
     }
+
+    // ── Utilitários ───────────────────────────────────────────────────
 
     public void retornarParaVendasCadastros(View view) {
         finish();
     }
 
     private void setupWindowInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        ViewCompat.setOnApplyWindowInsetsListener(
+                findViewById(android.R.id.content), (v, insets) -> {
+                    Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                    v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                    return insets;
+                });
     }
 }

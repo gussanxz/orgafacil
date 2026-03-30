@@ -86,8 +86,7 @@
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity" android:exported="false" />
-        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.produtos.CadastroProdutoActivity" android:exported="false" />
-        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos.CadastroServicoActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.CadastroCatalogoActivity" android:exported="false" />
 
         <activity
             android:name=".funcionalidades.contas.ContasActivity"

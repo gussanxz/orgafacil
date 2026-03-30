@@ -13,9 +13,8 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ServicoModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -136,20 +135,16 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     }
 
     private boolean isItemAtivo(ItemVendaModel item) {
-        if (item instanceof ProdutoModel) {
-            return ((ProdutoModel) item).isStatusAtivo();
-        }
-        if (item instanceof ServicoModel) {
-            return ((ServicoModel) item).isStatusAtivo();
+        if (item instanceof CatalogoModel) {
+            return ((CatalogoModel) item).isStatusAtivo();
         }
         return true;
     }
 
     private int getIconeDoItem(ItemVendaModel item) {
-        if (item instanceof ProdutoModel) {
-            return getIconeProdutoPorIndex(((ProdutoModel) item).getIconeIndex());
+        if (item instanceof CatalogoModel) {
+            return getIconeProdutoPorIndex(((CatalogoModel) item).getIconeIndex());
         }
-
         return R.drawable.ic_paid_28;
     }
 

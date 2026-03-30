@@ -29,8 +29,8 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.ProdutoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ProdutoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 
 public class CadastroProdutoActivity extends AppCompatActivity {
 
@@ -59,7 +59,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
     private ImageView imgPreviewLarge;
     private TextView txtTituloSelecao;
 
-    private ProdutoRepository repository;
+    private CatalogoRepository repository;
     private String idEmEdicao = null;
     private int iconeSelecionado = 7;
     private Uri imagemSelecionadaUri = null;
@@ -89,7 +89,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
             return insets;
         });
 
-        repository = new ProdutoRepository();
+        repository = new CatalogoRepository();
         inicializarComponentes();
         configurarAcoesBasicas();
         configurarCliquesGridIcones();
@@ -196,15 +196,16 @@ public class CadastroProdutoActivity extends AppCompatActivity {
 
         exibirLoading(true);
 
-        ProdutoModel produtoModel = new ProdutoModel();
+        CatalogoModel produtoModel = new CatalogoModel();
         produtoModel.setId(idEmEdicao);
         produtoModel.setNome(nome);
         produtoModel.setDescricao(descricao);
         produtoModel.setPreco(preco);
         produtoModel.setStatusAtivo(switchStatusAtivo.isChecked());
         produtoModel.setIconeIndex(iconeSelecionado);
+        produtoModel.setTipo(CatalogoModel.TIPO_STR_PRODUTO);
 
-        repository.salvar(produtoModel, new ProdutoRepository.Callback() {
+        repository.salvar(produtoModel, new CatalogoRepository.Callback() {
             @Override
             public void onSucesso(String msg) {
                 exibirLoading(false);
