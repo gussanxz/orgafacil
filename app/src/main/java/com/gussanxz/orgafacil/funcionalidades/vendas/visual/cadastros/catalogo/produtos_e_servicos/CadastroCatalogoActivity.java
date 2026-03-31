@@ -28,9 +28,15 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CadastroCatalogoActivity extends AppCompatActivity {
 
@@ -49,6 +55,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
     private ImageView        iconTipoServico;
     private TextView         txtTipoProduto;
     private TextView         txtTipoServico;
+    private TextInputLayout textInputCategoria;
 
     // ── Views: formulário ─────────────────────────────────────────────
     private LinearLayout       layoutFormulario;
@@ -79,6 +86,12 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
     private String  tipoAtual          = null;   // null = ainda não escolheu
     private int     iconeSelecionado   = 7;
     private Uri     imagemSelecionadaUri = null;
+    private ListenerRegistration listenerCategorias;
+    private String categoriaSelecionadaId   = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO;
+
+    private String categoriaSelecionadaNome = CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO;
+    private CategoriaCatalogoRepository categoriaRepo;
+    private List<Categoria> listaCategorias = new ArrayList<>();
 
     // Cores de destaque por tipo
     private static final int COR_PRODUTO = 0xFFEF6C00;
@@ -109,9 +122,11 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             return insets;
         });
 
-        repository = new CatalogoRepository();
+        repository    = new CatalogoRepository();
+        categoriaRepo = new CategoriaCatalogoRepository();
         vincularViews();
         configurarAcoes();
+        carregarCategorias();
         configurarCliquesGridIcones();
 
         Bundle extras = getIntent().getExtras();
@@ -161,6 +176,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         containerIcones       = findViewById(R.id.containerIcones);
         layoutSelecao         = findViewById(R.id.layoutSelecao);
         imgBtnSelecionarIcones= findViewById(R.id.imgBtnSelecionarIcones);
+        textInputCategoria = findViewById(R.id.textInputCategoria);
         imgBtnGaleria         = findViewById(R.id.imgBtnGaleria);
         cardBtnGaleria        = findViewById(R.id.cardBtnGaleria);
         cardPreviewFoto       = findViewById(R.id.cardPreviewFoto);
@@ -182,6 +198,38 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
 
         if (cardBtnGaleria != null) cardBtnGaleria.setOnClickListener(v -> abrirGaleria());
         if (imgBtnGaleria  != null) imgBtnGaleria.setOnClickListener(v -> abrirGaleria());
+        configurarCliquesCategoria();
+    }
+
+    private void carregarCategorias() {
+        listenerCategorias = categoriaRepo.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
+            @Override public void onNovosDados(List<Categoria> lista) {
+                listaCategorias.clear();
+                listaCategorias.addAll(lista);
+            }
+            @Override public void onErro(String erro) { /* silencioso */ }
+        });
+    }
+
+    private void exibirDialogCategorias() {
+        if (listaCategorias.isEmpty()) {
+            Toast.makeText(this, "Carregando categorias, tente novamente", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] nomes = new String[listaCategorias.size()];
+        for (int i = 0; i < listaCategorias.size(); i++)
+            nomes[i] = listaCategorias.get(i).getNome();
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Selecionar Categoria")
+                .setItems(nomes, (dialog, which) -> {
+                    Categoria c = listaCategorias.get(which);
+                    categoriaSelecionadaId   = c.getId();
+                    categoriaSelecionadaNome = c.getNome();
+                    if (textInputCategoria != null && textInputCategoria.getEditText() != null)
+                        textInputCategoria.getEditText().setText(c.getNome());
+                })
+                .show();
     }
 
     // ── Seletor de tipo (estado inicial de novo item) ─────────────────
@@ -246,6 +294,8 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         if (textInputNome != null) {
             textInputNome.setHint(isProduto ? "Nome do Produto" : "Nome do Serviço");
         }
+        if (textInputCategoria != null && textInputCategoria.getEditText() != null)
+            textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
 
         if (isProduto) atualizarVisualGridIcones(iconeSelecionado);
     }
@@ -271,6 +321,8 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         idEmEdicao = dados.getString("id");
         String tipo = dados.getString("tipo", CatalogoModel.TIPO_STR_PRODUTO);
         boolean isProduto = CatalogoModel.TIPO_STR_PRODUTO.equals(tipo);
+        categoriaSelecionadaId   = dados.getString("categoriaId", CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
+        categoriaSelecionadaNome = dados.getString("categoria",   CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
 
         tipoAtual = tipo;
         textViewHeader.setText(isProduto ? "Editar Produto" : "Editar Serviço");
@@ -295,6 +347,9 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             textInputPreco.getEditText().setText(String.valueOf(dados.getDouble("preco", 0.0)));
 
         switchStatusAtivo.setChecked(dados.getBoolean("statusAtivo", true));
+        if (textInputCategoria != null && textInputCategoria.getEditText() != null)
+            textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
+
         iconeSelecionado = dados.getInt("iconeIndex", 7);
         if (isProduto) atualizarVisualGridIcones(iconeSelecionado);
     }
@@ -340,6 +395,8 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         model.setTipo(tipoAtual);
         model.setNome(nome);
         model.setDescricao(descricao);
+        model.setCategoriaId(categoriaSelecionadaId);
+        model.setCategoria(categoriaSelecionadaNome);
         model.setPreco(preco);
         model.setStatusAtivo(switchStatusAtivo.isChecked());
 
@@ -471,5 +528,18 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         if (loadingOverlay    != null) loadingOverlay.setVisibility(exibir ? View.VISIBLE : View.GONE);
         if (btnSalvarSuperior != null) btnSalvarSuperior.setEnabled(!exibir);
         if (btnSalvarInferior != null) btnSalvarInferior.setEnabled(!exibir);
+    }
+    private void configurarCliquesCategoria() {
+        if (textInputCategoria == null) return;
+        textInputCategoria.setOnClickListener(v -> exibirDialogCategorias());
+        textInputCategoria.setEndIconOnClickListener(v -> exibirDialogCategorias());
+        if (textInputCategoria.getEditText() != null)
+            textInputCategoria.getEditText().setOnClickListener(v -> exibirDialogCategorias());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (listenerCategorias != null) listenerCategorias.remove();
     }
 }

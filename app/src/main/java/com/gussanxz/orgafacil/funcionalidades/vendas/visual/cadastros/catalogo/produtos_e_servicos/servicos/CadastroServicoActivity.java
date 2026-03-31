@@ -14,9 +14,15 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CadastroServicoActivity extends AppCompatActivity {
 
@@ -29,6 +35,11 @@ public class CadastroServicoActivity extends AppCompatActivity {
     // Lógica
     private CatalogoRepository repository;
     private String idEmEdicao = null;
+    private String categoriaSelecionadaId   = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO;
+    private String categoriaSelecionadaNome = CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO;
+    private CategoriaCatalogoRepository categoriaRepo;
+    private List<Categoria> listaCategorias = new ArrayList<>();
+    private ListenerRegistration listenerCategorias;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +56,12 @@ public class CadastroServicoActivity extends AppCompatActivity {
 
         // 1. Inicializa Repositório
         repository = new CatalogoRepository();
+        categoriaRepo = new CategoriaCatalogoRepository();
 
         // 2. Inicializa UI
         inicializarComponentes();
+        carregarCategorias();
+        configurarCliquesCategoria();
 
         // 3. Configura Listeners (Cliques)
         fabVoltar.setOnClickListener(v -> finish());
@@ -71,10 +85,13 @@ public class CadastroServicoActivity extends AppCompatActivity {
         textViewHeader = findViewById(R.id.textViewHeader);
 
         textViewHeader.setText("Novo Serviço");
+        textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
     }
 
     private void prepararEdicao(Bundle dados) {
         textViewHeader.setText("Editar Serviço");
+        categoriaSelecionadaId   = dados.getString("categoriaId", CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
+        categoriaSelecionadaNome = dados.getString("categoria",   CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
         idEmEdicao = dados.getString("id");
 
         // Preenche campos com segurança (verifica null)
@@ -86,6 +103,9 @@ public class CadastroServicoActivity extends AppCompatActivity {
 
         if(textInputValor.getEditText() != null)
             textInputValor.getEditText().setText(String.valueOf(dados.getDouble("preco"))); // ou "valor"
+
+        if (textInputCategoria != null && textInputCategoria.getEditText() != null)
+            textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
     }
 
     public void salvarServico(View view) {
@@ -116,8 +136,9 @@ public class CadastroServicoActivity extends AppCompatActivity {
         servicoModel.setId(idEmEdicao);
         servicoModel.setTipo(CatalogoModel.TIPO_STR_SERVICO);
         servicoModel.setNome(descricao);
-        servicoModel.setCategoria(categoria);
         servicoModel.setPreco(valor);
+        servicoModel.setCategoriaId(categoriaSelecionadaId);
+        servicoModel.setCategoria(categoriaSelecionadaNome);
 
         // 5. Chama Repositório
         repository.salvar(servicoModel, new CatalogoRepository.Callback() {
@@ -132,5 +153,60 @@ public class CadastroServicoActivity extends AppCompatActivity {
                 Toast.makeText(CadastroServicoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+    private void configurarCliquesCategoria() {
+        if (textInputCategoria == null) return;
+        // Clique em qualquer parte do campo abre o dialog
+        textInputCategoria.setOnClickListener(v -> exibirDialogCategorias());
+        textInputCategoria.setEndIconOnClickListener(v -> exibirDialogCategorias());
+        if (textInputCategoria.getEditText() != null)
+            textInputCategoria.getEditText().setOnClickListener(v -> exibirDialogCategorias());
+    }
+
+    private void carregarCategorias() {
+        listenerCategorias = categoriaRepo.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<Categoria> lista) {
+                listaCategorias.clear();
+                // "Não alocado" sempre aparece primeiro
+                Categoria padrao = new Categoria();
+                padrao.setId(CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
+                padrao.setNome(CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
+                listaCategorias.add(padrao);
+                for (Categoria c : lista) {
+                    if (!CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO.equals(c.getId()))
+                        listaCategorias.add(c);
+                }
+            }
+            @Override
+            public void onErro(String erro) { /* silencioso */ }
+        });
+    }
+
+    private void exibirDialogCategorias() {
+        if (listaCategorias.isEmpty()) {
+            Toast.makeText(this, "Carregando categorias, tente novamente", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] nomes = new String[listaCategorias.size()];
+        for (int i = 0; i < listaCategorias.size(); i++)
+            nomes[i] = listaCategorias.get(i).getNome();
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Categoria do Serviço")
+                .setItems(nomes, (dialog, which) -> {
+                    Categoria c = listaCategorias.get(which);
+                    categoriaSelecionadaId   = c.getId();
+                    categoriaSelecionadaNome = c.getNome();
+                    if (textInputCategoria != null && textInputCategoria.getEditText() != null)
+                        textInputCategoria.getEditText().setText(c.getNome());
+                })
+                .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (listenerCategorias != null) listenerCategorias.remove();
     }
 }
