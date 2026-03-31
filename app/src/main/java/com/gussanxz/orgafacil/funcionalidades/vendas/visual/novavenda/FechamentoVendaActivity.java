@@ -1,5 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageButton;
@@ -23,35 +25,52 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRe
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class FechamentoVendaActivity extends AppCompatActivity {
-    private ImageButton btnVoltarFechamento;
-    private TextView txtQuantidadeResumo;
-    private TextView txtTotalResumo;
+
+    private ImageButton  btnVoltarFechamento;
+    private TextView     txtQuantidadeResumo;
+    private TextView     txtTotalResumo;
     private RecyclerView rvResumoItens;
 
     private LinearLayout cardPagamentoPix;
     private LinearLayout cardPagamentoDebito;
     private LinearLayout cardPagamentoCredito;
     private LinearLayout cardPagamentoDinheiro;
-    private TextView txtFormaPagamentoSelecionada;
+    private TextView     txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
     private LinearLayout btnSalvarEmAberto;
+
+    // Seletor de data/hora -- so visivel em modo edicao
+    private LinearLayout layoutSeletorData;
+    private TextView     txtDataSelecionada;
+    private TextView     txtHoraSelecionada;
+    private ImageButton  btnSelecionarData;
+    private ImageButton  btnSelecionarHora;
 
     private AdapterResumoFechamentoVenda adapter;
     private final List<ItemSacolaVendaModel> listaItens = new ArrayList<>();
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtData  = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtHora  = new SimpleDateFormat("HH:mm",      new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtChave = new SimpleDateFormat("yyyyMMdd",   Locale.US);
 
-    private String formaPagamentoSelecionada = null;
-    private int quantidadeTotal = 0;
-    private double valorTotal = 0.0;
-    private String vendaIdEdicao = null;
+    private String  formaPagamentoSelecionada = null;
+    private int     quantidadeTotal           = 0;
+    private double  valorTotal                = 0.0;
+    private String  vendaIdEdicao             = null;
+    private boolean modoEdicao                = false;
     private VendaRepository vendaRepository;
     private boolean salvandoVenda = false;
+
+    // null em nova venda; preenchido na edicao
+    private Calendar dataEscolhida = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,24 +88,34 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         inicializarComponentes();
         configurarRecyclerView();
-        configurarAcoes();
+        configurarAcoesPagamento();
         carregarDadosRecebidos();
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
     }
 
+    // ----------------------------------------------------------------
+    // Bind
+    // ----------------------------------------------------------------
+
     private void inicializarComponentes() {
-        btnVoltarFechamento = findViewById(R.id.btnVoltarFechamento);
-        txtQuantidadeResumo = findViewById(R.id.txtQuantidadeResumo);
-        txtTotalResumo = findViewById(R.id.txtTotalResumo);
-        rvResumoItens = findViewById(R.id.rvResumoItens);
-        cardPagamentoPix = findViewById(R.id.cardPagamentoPix);
-        cardPagamentoDinheiro = findViewById(R.id.cardPagamentoDinheiro);
-        cardPagamentoDebito = findViewById(R.id.cardPagamentoDebito);
-        cardPagamentoCredito = findViewById(R.id.cardPagamentoCredito);
+        btnVoltarFechamento          = findViewById(R.id.btnVoltarFechamento);
+        txtQuantidadeResumo          = findViewById(R.id.txtQuantidadeResumo);
+        txtTotalResumo               = findViewById(R.id.txtTotalResumo);
+        rvResumoItens                = findViewById(R.id.rvResumoItens);
+        cardPagamentoPix             = findViewById(R.id.cardPagamentoPix);
+        cardPagamentoDinheiro        = findViewById(R.id.cardPagamentoDinheiro);
+        cardPagamentoDebito          = findViewById(R.id.cardPagamentoDebito);
+        cardPagamentoCredito         = findViewById(R.id.cardPagamentoCredito);
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
-        btnFinalizarVenda = findViewById(R.id.btnFinalizarVenda);
-        btnSalvarEmAberto = findViewById(R.id.btnSalvarEmAberto);
+        btnFinalizarVenda            = findViewById(R.id.btnFinalizarVenda);
+        btnSalvarEmAberto            = findViewById(R.id.btnSalvarEmAberto);
+
+        // layoutSeletorData comeca GONE no XML.
+        // Os filhos (txtDataSelecionada, btnSelecionarHora, etc.) sao vinculados
+        // em configurarSeletorDataHora(), DEPOIS de setVisibility(VISIBLE),
+        // o que garante que o Android os encontre corretamente.
+        layoutSeletorData = findViewById(R.id.layoutSeletorData);
     }
 
     private void configurarRecyclerView() {
@@ -95,102 +124,172 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         rvResumoItens.setAdapter(adapter);
     }
 
-    private void configurarAcoes() {
-        if (btnVoltarFechamento != null) {
-            btnVoltarFechamento.setOnClickListener(v -> {
-                if (!salvandoVenda) {
-                    finish();
-                }
-            });
-        }
+    private void configurarAcoesPagamento() {
+        if (btnVoltarFechamento != null)
+            btnVoltarFechamento.setOnClickListener(v -> { if (!salvandoVenda) finish(); });
 
-        if (cardPagamentoPix != null) {
-            cardPagamentoPix.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_PIX));
-        }
+        if (cardPagamentoPix     != null) cardPagamentoPix.setOnClickListener(v     -> selecionarFormaPagamento(VendaModel.PAGAMENTO_PIX));
+        if (cardPagamentoDinheiro!= null) cardPagamentoDinheiro.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DINHEIRO));
+        if (cardPagamentoDebito  != null) cardPagamentoDebito.setOnClickListener(v   -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DEBITO));
+        if (cardPagamentoCredito != null) cardPagamentoCredito.setOnClickListener(v  -> selecionarFormaPagamento(VendaModel.PAGAMENTO_CREDITO));
 
-        if (cardPagamentoDinheiro != null) {
-            cardPagamentoDinheiro.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DINHEIRO));
-        }
-
-        if (cardPagamentoDebito != null) {
-            cardPagamentoDebito.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DEBITO));
-        }
-
-        if (cardPagamentoCredito != null) {
-            cardPagamentoCredito.setOnClickListener(v -> selecionarFormaPagamento(VendaModel.PAGAMENTO_CREDITO));
-        }
-
-        if (btnSalvarEmAberto != null) {
-            btnSalvarEmAberto.setOnClickListener(v -> salvarEmAberto());
-        }
-
-        if (btnFinalizarVenda != null) {
-            btnFinalizarVenda.setOnClickListener(v -> finalizarVenda());
-        }
+        if (btnSalvarEmAberto != null) btnSalvarEmAberto.setOnClickListener(v -> salvarEmAberto());
+        if (btnFinalizarVenda != null) btnFinalizarVenda.setOnClickListener(v -> finalizarVenda());
     }
+
+    // ----------------------------------------------------------------
+    // Intent
+    // ----------------------------------------------------------------
 
     @SuppressWarnings("unchecked")
     private void carregarDadosRecebidos() {
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
 
-        vendaIdEdicao = getIntent().getStringExtra("vendaId");
+        vendaIdEdicao   = getIntent().getStringExtra("vendaId");
         quantidadeTotal = getIntent().getIntExtra("quantidadeTotal", 0);
-        valorTotal = getIntent().getDoubleExtra("valorTotal", 0.0);
+        valorTotal      = getIntent().getDoubleExtra("valorTotal", 0.0);
+
+        long   dataHoraOriginal       = getIntent().getLongExtra("dataHoraOriginal", 0L);
+        String formaPagamentoOriginal = getIntent().getStringExtra("formaPagamentoOriginal");
+
+        modoEdicao = vendaIdEdicao != null && dataHoraOriginal > 0;
 
         listaItens.clear();
-        if (itensRecebidos != null) {
-            listaItens.addAll(itensRecebidos);
-        }
-
+        if (itensRecebidos != null) listaItens.addAll(itensRecebidos);
         adapter.atualizarLista(listaItens);
 
-        if (txtQuantidadeResumo != null) {
-            txtQuantidadeResumo.setText(
-                    quantidadeTotal + (quantidadeTotal == 1 ? " item" : " itens")
-            );
-        }
-
-        if (txtTotalResumo != null) {
+        if (txtQuantidadeResumo != null)
+            txtQuantidadeResumo.setText(quantidadeTotal + (quantidadeTotal == 1 ? " item" : " itens"));
+        if (txtTotalResumo != null)
             txtTotalResumo.setText(formatadorMoeda.format(valorTotal));
+
+        if (formaPagamentoOriginal != null)
+            formaPagamentoSelecionada = formaPagamentoOriginal;
+
+        if (modoEdicao) {
+            dataEscolhida = Calendar.getInstance();
+            dataEscolhida.setTimeInMillis(dataHoraOriginal);
+            configurarSeletorDataHora();
         }
     }
 
+    // ----------------------------------------------------------------
+    // Seletor de data e hora
+    //
+    // O bind dos filhos e feito AQUI, apos setVisibility(VISIBLE),
+    // porque views dentro de layouts GONE podem nao ser encontradas
+    // pelo findViewById da Activity em algumas versoes do Android.
+    // Usar layoutSeletorData.findViewById() como raiz e o mais seguro.
+    // ----------------------------------------------------------------
+
+    private void configurarSeletorDataHora() {
+        if (layoutSeletorData == null) return;
+
+        layoutSeletorData.setVisibility(android.view.View.VISIBLE);
+
+        txtDataSelecionada = layoutSeletorData.findViewById(R.id.txtDataSelecionada);
+        txtHoraSelecionada = layoutSeletorData.findViewById(R.id.txtHoraSelecionada);
+        btnSelecionarData  = layoutSeletorData.findViewById(R.id.btnSelecionarData);
+        btnSelecionarHora  = layoutSeletorData.findViewById(R.id.btnSelecionarHora);
+
+        if (btnSelecionarData != null)
+            btnSelecionarData.setOnClickListener(v -> abrirDatePicker());
+
+        if (btnSelecionarHora != null)
+            btnSelecionarHora.setOnClickListener(v -> abrirTimePicker());
+
+        atualizarExibicaoDataHora();
+    }
+
+    private void abrirDatePicker() {
+        if (dataEscolhida == null) dataEscolhida = Calendar.getInstance();
+
+        new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    dataEscolhida.set(Calendar.YEAR,         year);
+                    dataEscolhida.set(Calendar.MONTH,        month);
+                    dataEscolhida.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    atualizarExibicaoDataHora();
+                },
+                dataEscolhida.get(Calendar.YEAR),
+                dataEscolhida.get(Calendar.MONTH),
+                dataEscolhida.get(Calendar.DAY_OF_MONTH)
+        ) {{
+            getDatePicker().setMaxDate(System.currentTimeMillis());
+        }}.show();
+    }
+
+    private void abrirTimePicker() {
+        if (dataEscolhida == null) dataEscolhida = Calendar.getInstance();
+
+        new TimePickerDialog(
+                this,
+                (view, hourOfDay, minute) -> {
+                    dataEscolhida.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    dataEscolhida.set(Calendar.MINUTE,      minute);
+                    dataEscolhida.set(Calendar.SECOND,      0);
+                    dataEscolhida.set(Calendar.MILLISECOND, 0);
+                    atualizarExibicaoDataHora();
+                },
+                dataEscolhida.get(Calendar.HOUR_OF_DAY),
+                dataEscolhida.get(Calendar.MINUTE),
+                true  // formato 24h
+        ).show();
+    }
+
+    private void atualizarExibicaoDataHora() {
+        if (dataEscolhida == null) return;
+
+        if (txtDataSelecionada != null) {
+            String hoje  = fmtChave.format(new Date());
+            String ontem = fmtChave.format(new Date(System.currentTimeMillis() - 86_400_000L));
+            String chave = fmtChave.format(dataEscolhida.getTime());
+
+            if      (chave.equals(hoje))  txtDataSelecionada.setText("Hoje");
+            else if (chave.equals(ontem)) txtDataSelecionada.setText("Ontem");
+            else                          txtDataSelecionada.setText(fmtData.format(dataEscolhida.getTime()));
+        }
+
+        if (txtHoraSelecionada != null)
+            txtHoraSelecionada.setText(fmtHora.format(dataEscolhida.getTime()));
+    }
+
+    // ----------------------------------------------------------------
+    // Pagamento
+    // ----------------------------------------------------------------
+
     private void selecionarFormaPagamento(String formaPagamento) {
         if (salvandoVenda) return;
-
         formaPagamentoSelecionada = formaPagamento;
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
     }
 
     private void atualizarEstadoPagamento() {
-        atualizarCardPagamento(cardPagamentoPix, VendaModel.PAGAMENTO_PIX.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoPix,      VendaModel.PAGAMENTO_PIX.equals(formaPagamentoSelecionada));
         atualizarCardPagamento(cardPagamentoDinheiro, VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoDebito, VendaModel.PAGAMENTO_DEBITO.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoCredito, VendaModel.PAGAMENTO_CREDITO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoDebito,   VendaModel.PAGAMENTO_DEBITO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoCredito,  VendaModel.PAGAMENTO_CREDITO.equals(formaPagamentoSelecionada));
 
         if (txtFormaPagamentoSelecionada != null) {
-            txtFormaPagamentoSelecionada.setText(
-                    formaPagamentoSelecionada == null
-                            ? "Selecione uma forma de pagamento"
-                            : "Pagamento selecionado: " + formaPagamentoSelecionada
-            );
+            txtFormaPagamentoSelecionada.setText(formaPagamentoSelecionada == null
+                    ? "Selecione uma forma de pagamento"
+                    : "Pagamento selecionado: " + formaPagamentoSelecionada);
         }
     }
 
     private void atualizarCardPagamento(LinearLayout card, boolean selecionado) {
         if (card == null) return;
-
         card.setAlpha(selecionado ? 1f : 0.75f);
-        card.setBackgroundResource(
-                selecionado ? R.drawable.bg_pagamento_selecionado : R.drawable.fundo_arredondado
-        );
+        card.setBackgroundResource(selecionado
+                ? R.drawable.bg_pagamento_selecionado
+                : R.drawable.fundo_arredondado);
     }
 
     private void atualizarBotaoFinalizar() {
         if (btnFinalizarVenda == null) return;
-
         boolean habilitado = !listaItens.isEmpty() && formaPagamentoSelecionada != null && !salvandoVenda;
         btnFinalizarVenda.setEnabled(habilitado);
         btnFinalizarVenda.setAlpha(habilitado ? 1f : 0.5f);
@@ -202,16 +301,16 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         }
     }
 
-    private void finalizarVenda() {
-        if (salvandoVenda) {
-            return;
-        }
+    // ----------------------------------------------------------------
+    // Salvar
+    // ----------------------------------------------------------------
 
+    private void finalizarVenda() {
+        if (salvandoVenda) return;
         if (listaItens.isEmpty()) {
             Toast.makeText(this, "Nenhum item encontrado na venda.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (formaPagamentoSelecionada == null) {
             Toast.makeText(this, "Selecione uma forma de pagamento.", Toast.LENGTH_SHORT).show();
             return;
@@ -220,9 +319,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         salvandoVenda = true;
         atualizarBotaoFinalizar();
 
-        VendaModel venda = montarVendaParaSalvar();
-
-        vendaRepository.salvar(venda, new VendaRepository.Callback() {
+        vendaRepository.salvar(montarVendaParaSalvar(), new VendaRepository.Callback() {
             @Override
             public void onSucesso(String vendaId) {
                 salvandoVenda = false;
@@ -234,14 +331,30 @@ public class FechamentoVendaActivity extends AppCompatActivity {
             public void onErro(String erro) {
                 salvandoVenda = false;
                 atualizarBotaoFinalizar();
-
-                Toast.makeText(
-                        FechamentoVendaActivity.this,
-                        "Erro ao salvar venda: " + erro,
-                        Toast.LENGTH_LONG
-                ).show();
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao salvar venda: " + erro, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private VendaModel montarVendaParaSalvar() {
+        VendaModel venda = new VendaModel();
+        if (vendaIdEdicao != null) venda.setId(vendaIdEdicao);
+
+        long dataFechamento = (modoEdicao && dataEscolhida != null)
+                ? dataEscolhida.getTimeInMillis()
+                : System.currentTimeMillis();
+
+        venda.setDataHoraAberturaMillis(dataFechamento);
+        venda.setDataHoraFechamentoMillis(dataFechamento);
+        venda.setDiaKey(FirestoreSchema.diaKey(new Date(dataFechamento)));
+        venda.setFormaPagamento(formaPagamentoSelecionada);
+        venda.setQuantidadeTotal(quantidadeTotal);
+        venda.setValorTotal(valorTotal);
+        venda.setStatus(VendaModel.STATUS_FINALIZADA);
+        venda.setItens(converterItensParaVenda(listaItens));
+
+        return venda;
     }
 
     private void abrirComprovante(String vendaId) {
@@ -252,36 +365,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         finish();
     }
 
-    private VendaModel montarVendaParaSalvar() {
-        VendaModel venda = new VendaModel();
-        if (vendaIdEdicao != null) {
-            venda.setId(vendaIdEdicao); // VendaRepository.salvar() detecta ID preenchido e atualiza
-        }
-        long agora = System.currentTimeMillis();
-        venda.setDataHoraAberturaMillis(agora);
-        venda.setDataHoraFechamentoMillis(agora);
-        venda.setFormaPagamento(formaPagamentoSelecionada);
-        venda.setQuantidadeTotal(quantidadeTotal);
-        venda.setValorTotal(valorTotal);
-        venda.setStatus(VendaModel.STATUS_FINALIZADA);
-        venda.setItens(converterItensParaVenda(listaItens));
-        venda.setDiaKey(FirestoreSchema.diaKey(new Date()));
-        return venda;
-    }
-
-    private List<ItemVendaRegistradaModel> converterItensParaVenda(List<ItemSacolaVendaModel> itensSacola) {
-        List<ItemVendaRegistradaModel> itensVenda = new ArrayList<>();
-
-        for (ItemSacolaVendaModel itemSacola : itensSacola) {
-            itensVenda.add(new ItemVendaRegistradaModel(itemSacola));
-        }
-
-        return itensVenda;
-    }
-
     private void salvarEmAberto() {
         if (salvandoVenda) return;
-
         if (listaItens.isEmpty()) {
             Toast.makeText(this, "Nenhum item encontrado na venda.", Toast.LENGTH_SHORT).show();
             return;
@@ -291,9 +376,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         atualizarBotaoFinalizar();
 
         VendaModel venda = new VendaModel();
-        if (vendaIdEdicao != null) {
-            venda.setId(vendaIdEdicao);
-        }
+        if (vendaIdEdicao != null) venda.setId(vendaIdEdicao);
         venda.setDataHoraAberturaMillis(System.currentTimeMillis());
         venda.setDataHoraFechamentoMillis(0);
         venda.setFormaPagamento(null);
@@ -319,6 +402,17 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                         "Erro ao salvar: " + erro, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    // ----------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------
+
+    private List<ItemVendaRegistradaModel> converterItensParaVenda(List<ItemSacolaVendaModel> itensSacola) {
+        List<ItemVendaRegistradaModel> itensVenda = new ArrayList<>();
+        for (ItemSacolaVendaModel item : itensSacola)
+            itensVenda.add(new ItemVendaRegistradaModel(item));
+        return itensVenda;
     }
 
     private void voltarParaNovaVenda() {

@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:background="@color/colorPrimary">
 
-    <!-- Header  -->
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -27,6 +27,7 @@
             app:tint="@color/white" />
 
         <TextView
+            android:id="@+id/txtHeaderFechamento"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -49,6 +50,7 @@
             android:paddingTop="16dp"
             android:paddingBottom="16dp">
 
+            <!-- Resumo -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -86,6 +88,102 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- ── Seletor de data (visível apenas em modo edição) ── -->
+            <LinearLayout
+                android:id="@+id/layoutSeletorData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/fundo_arredondado"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <!-- Linha: Data -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Data"
+                        android:textColor="@color/cor_texto_primario"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtDataSelecionada"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hoje"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnSelecionarData"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Selecionar data"
+                        android:src="@drawable/ic_calendar_month_24"
+                        app:tint="@color/colorPrimary" />
+                </LinearLayout>
+
+                <!-- Linha: Hora -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Hora"
+                        android:textColor="@color/cor_texto_primario"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtHoraSelecionada"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnSelecionarHora"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Selecionar hora"
+                        android:src="@drawable/ic_schedule_24"
+                        app:tint="@color/colorPrimary" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="A venda será registrada na data e hora acima para fins de relatório"
+                    android:textColor="@color/cor_texto_secundario"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Forma de pagamento -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -227,6 +325,7 @@
                 android:textColor="@color/cor_texto_secundario"
                 android:textSize="14sp" />
 
+            <!-- Itens da venda -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -245,6 +344,7 @@
                 android:clipToPadding="false"
                 android:nestedScrollingEnabled="false" />
 
+            <!-- Botões -->
             <LinearLayout
                 android:id="@+id/btnSalvarEmAberto"
                 android:layout_width="match_parent"

@@ -306,7 +306,15 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         intent.putExtra("itensSacola",      new ArrayList<>(sacolaMap.values()));
         intent.putExtra("quantidadeTotal",  getQuantidadeTotalSacola());
         intent.putExtra("valorTotal",       getValorTotalSacola());
-        if (vendaIdEdicao != null) intent.putExtra("vendaId", vendaIdEdicao);
+        if (vendaIdEdicao != null) {
+            intent.putExtra("vendaId", vendaIdEdicao);
+            // Repassa os dados de contexto da edição para o FechamentoVendaActivity
+            // ativar o seletor de data retroativa
+            if (dataHoraOriginalEdicao > 0)
+                intent.putExtra("dataHoraOriginal", dataHoraOriginalEdicao);
+            if (formaPagamentoOriginalEdicao != null)
+                intent.putExtra("formaPagamentoOriginal", formaPagamentoOriginalEdicao);
+        }
         startActivity(intent);
     }
 
@@ -417,9 +425,16 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     // ── Edição de venda ───────────────────────────────────────────────
 
+    // Extras de edição retroativa — preservados para repassar ao FechamentoVendaActivity
+    private long   dataHoraOriginalEdicao        = 0L;
+    private String formaPagamentoOriginalEdicao  = null;
+
     @SuppressWarnings("unchecked")
     private void restaurarSacolaSeEdicao() {
-        vendaIdEdicao = getIntent().getStringExtra("vendaId");
+        vendaIdEdicao               = getIntent().getStringExtra("vendaId");
+        dataHoraOriginalEdicao      = getIntent().getLongExtra("dataHoraOriginal", 0L);
+        formaPagamentoOriginalEdicao= getIntent().getStringExtra("formaPagamentoOriginal");
+
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
 
