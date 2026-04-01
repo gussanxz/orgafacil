@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.gridlayout)
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.core)
+    implementation(libs.firebase.appcheck.debug)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

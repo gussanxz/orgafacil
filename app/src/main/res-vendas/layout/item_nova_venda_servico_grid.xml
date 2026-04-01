@@ -57,8 +57,7 @@
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_camera_alt_120"
-                app:tint="#616161" />
+                android:src="@drawable/ic_camera_alt_120" />
         </androidx.cardview.widget.CardView>
 
         <TextView

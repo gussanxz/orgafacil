@@ -64,7 +64,8 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         // --- LÓGICA DE VISUAL: FOTO vs ÍCONE ---
         if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
-            holder.imgIconeCategoria.setColorFilter(null);
+            androidx.core.widget.ImageViewCompat.setImageTintList(holder.imgIconeCategoria, null);
+            holder.imgIconeCategoria.clearColorFilter();
             holder.imgIconeCategoria.setPadding(0, 0, 0, 0);
 
             Glide.with(context)

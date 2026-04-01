@@ -40,7 +40,7 @@
             app:layout_constraintTop_toTopOf="@id/btnExcluirProduto"
             app:layout_constraintBottom_toBottomOf="@id/btnExcluirProduto"/>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -54,12 +54,13 @@
 
             <ImageView
                 android:id="@+id/imageIconeProduto"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_camera_alt_120"
-                app:tint="#616161" />
-        </androidx.cardview.widget.CardView>
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_camera_alt_120" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/textNomeProduto"

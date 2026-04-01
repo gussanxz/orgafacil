@@ -13,6 +13,7 @@ public class CatalogoModel implements ItemVendaModel {
     private double preco;
     private boolean statusAtivo = true;
     private int iconeIndex = 7;
+    private String urlFoto = null;
     private String tipo = TIPO_STR_PRODUTO; // "produto" ou "servico"
 
     public CatalogoModel() {}
@@ -49,4 +50,10 @@ public class CatalogoModel implements ItemVendaModel {
 
     public boolean isProduto() { return TIPO_STR_PRODUTO.equals(tipo); }
     public boolean isServico() { return TIPO_STR_SERVICO.equals(tipo); }
+    @com.google.firebase.firestore.PropertyName("urlFoto")
+    public String getUrlFoto() { return urlFoto; }
+
+    @com.google.firebase.firestore.PropertyName("urlFoto")
+    public void setUrlFoto(String urlFoto) { this.urlFoto = urlFoto; }
+    public boolean temFoto()                { return urlFoto != null && !urlFoto.isEmpty(); }
 }

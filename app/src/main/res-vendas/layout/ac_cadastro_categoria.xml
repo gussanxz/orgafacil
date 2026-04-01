@@ -269,8 +269,7 @@
                                 android:contentDescription="Selecionar da Galeria"
                                 android:padding="12dp"
                                 android:scaleType="centerCrop"
-                                android:src="@drawable/ic_camera_alt_120"
-                                app:tint="#757575" />
+                                android:src="@drawable/ic_camera_alt_120"/>
                         </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
                 </LinearLayout>
@@ -311,8 +310,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:scaleType="centerCrop"
-                            android:src="@drawable/ic_camera_alt_120"
-                            app:tint="#9E9E9E"/>
+                            android:src="@drawable/ic_camera_alt_120"/>
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView

@@ -141,16 +141,32 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
             // Se tiver foto antiga (URL), carregar com Glide
             if (urlFoto != null && !urlFoto.isEmpty()) {
+                // Botão pequeno
                 com.bumptech.glide.Glide.with(this)
                         .load(urlFoto)
                         .centerCrop()
                         .placeholder(R.drawable.ic_launcher_foreground)
-                        .into(imgBtnGaleria); // Carrega no botão pequeno apenas visualmente
+                        .into(imgBtnGaleria);
 
-                // Ajustes visuais manuais pois o Glide é assíncrono
                 imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                androidx.core.widget.ImageViewCompat.setImageTintList(imgBtnGaleria, null);
                 cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
                 cardBtnGaleria.setStrokeWidth(4);
+
+                // ── ADICIONE ISTO: Preview grande com a foto existente ──
+                if (imgPreviewLarge != null) {
+                    com.bumptech.glide.Glide.with(this)
+                            .load(urlFoto)
+                            .centerCrop()
+                            .placeholder(R.drawable.ic_launcher_foreground)
+                            .into(imgPreviewLarge);
+                    androidx.core.widget.ImageViewCompat.setImageTintList(imgPreviewLarge, null);
+                    imgPreviewLarge.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                }
+                if (layoutSelecao != null)    layoutSelecao.setVisibility(View.VISIBLE);
+                if (cardContainerGrid != null) cardContainerGrid.setVisibility(View.GONE);
+                if (cardPreviewFoto != null)   cardPreviewFoto.setVisibility(View.VISIBLE);
+                if (txtTituloSelecao != null)  txtTituloSelecao.setText("Pré-visualização:");
             }
 
             viewModel.carregarDadosEdicao(
@@ -305,7 +321,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
         if (imgPreviewLarge != null) {
             imgPreviewLarge.setImageURI(uri);
             imgPreviewLarge.setImageTintList(null); // Remove tint
-            imgPreviewLarge.setColorFilter(null);   // Remove filtro cinza
+            androidx.core.widget.ImageViewCompat.setImageTintList(imgPreviewLarge, null);
             imgPreviewLarge.setScaleType(ImageView.ScaleType.CENTER_CROP);
         }
 

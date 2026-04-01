@@ -63,6 +63,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
     private String idEmEdicao = null;
     private int iconeSelecionado = 7;
     private Uri imagemSelecionadaUri = null;
+    private String urlFotoAtual = null;
 
     private final ActivityResultLauncher<Intent> launcherGaleria = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -163,6 +164,7 @@ public class CadastroProdutoActivity extends AppCompatActivity {
 
         switchStatusAtivo.setChecked(dados.getBoolean("statusAtivo", true));
         iconeSelecionado = dados.getInt("iconeIndex", 7);
+        urlFotoAtual = dados.getString("urlFoto", null);
         atualizarVisualGridIcones(iconeSelecionado);
     }
 
@@ -205,7 +207,10 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         produtoModel.setIconeIndex(iconeSelecionado);
         produtoModel.setTipo(CatalogoModel.TIPO_STR_PRODUTO);
 
-        repository.salvar(produtoModel, new CatalogoRepository.Callback() {
+        if (imagemSelecionadaUri == null && urlFotoAtual != null)
+            produtoModel.setUrlFoto(urlFotoAtual);
+
+        repository.salvar(produtoModel, imagemSelecionadaUri, new CatalogoRepository.Callback() {
             @Override
             public void onSucesso(String msg) {
                 exibirLoading(false);

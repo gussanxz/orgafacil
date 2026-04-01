@@ -46,30 +46,23 @@ public class CategoriaCatalogoRepository {
      * Salva Categoria do Catálogo (Vendas).
      */
     public void salvar(@NonNull Categoria categoria, @Nullable Uri imagemUri, @NonNull Callback callback) {
-        // Pensa fora da caixa: A validação de login acontece automaticamente
-        // quando tentamos acessar o UID via Session. Se não houver login, o app
-        // lança a exceção controlada da FirebaseSession.
-
         try {
-            // 1. Se tem imagem NOVA, faz upload primeiro
             if (imagemUri != null) {
-                uploadImagem(imagemUri, (url, erro) -> {
-                    if (erro != null) {
-                        callback.onErro("Erro ao subir imagem: " + erro);
-                    } else {
-                        categoria.setUrlImagem(url);
-                        categoria.setIndexIcone(-1);
-                        salvarNoFirestore(categoria, callback);
-                    }
+                // Garante que tem ID antes do upload para usar como nome do arquivo
+                if (categoria.getId() == null || categoria.getId().isEmpty()) {
+                    DocumentReference docRef = FirestoreSchema.vendasCategoriasCol().document();
+                    categoria.setId(docRef.getId());
+                }
+                uploadImagem(imagemUri, categoria.getId(), (url, erro) -> {
+                    if (erro != null) { callback.onErro("Erro ao subir imagem: " + erro); return; }
+                    categoria.setUrlImagem(url);
+                    categoria.setIndexIcone(-1);
+                    salvarNoFirestore(categoria, callback);
                 });
-            }
-            // 2. Se usa ícone, limpa a URL de imagem antiga
-            else if (categoria.getIndexIcone() != -1) {
+            } else if (categoria.getIndexIcone() != -1) {
                 categoria.setUrlImagem(null);
                 salvarNoFirestore(categoria, callback);
-            }
-            // 3. Edição simples sem alteração de mídia
-            else {
+            } else {
                 salvarNoFirestore(categoria, callback);
             }
         } catch (IllegalStateException e) {
@@ -130,10 +123,8 @@ public class CategoriaCatalogoRepository {
 
     // --- Helpers Privados ---
 
-    private void uploadImagem(Uri uri, BiConsumer<String, String> callback) {
-        String nomeArquivo = UUID.randomUUID().toString() + ".jpg";
-
-        // Note que agora pedimos o UID diretamente para a Session aqui no upload também
+    private void uploadImagem(Uri uri, String categoriaId, BiConsumer<String, String> callback) {
+        String nomeArquivo = categoriaId + ".jpg";
         StorageReference fotoRef = storageRef
                 .child("images")
                 .child("users")
@@ -142,10 +133,14 @@ public class CategoriaCatalogoRepository {
                 .child("categorias")
                 .child(nomeArquivo);
 
-        fotoRef.putFile(uri)
-                .addOnSuccessListener(task -> fotoRef.getDownloadUrl()
-                        .addOnSuccessListener(url -> callback.accept(url.toString(), null)))
-                .addOnFailureListener(e -> callback.accept(null, e.getMessage()));
+        // Deleta a anterior (se existir) antes de subir a nova
+        fotoRef.delete().addOnCompleteListener(deleteTask -> {
+            fotoRef.putFile(uri)
+                    .addOnSuccessListener(task -> fotoRef.getDownloadUrl()
+                            .addOnSuccessListener(url -> callback.accept(url.toString(), null))
+                            .addOnFailureListener(e -> callback.accept(null, e.getMessage())))
+                    .addOnFailureListener(e -> callback.accept(null, e.getMessage()));
+        });
     }
 
     private interface BiConsumer<T, U> { void accept(T t, U u); }

@@ -1,11 +1,17 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 
+import android.net.Uri;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 
@@ -15,9 +21,12 @@ import java.util.List;
 public class CatalogoRepository {
 
     private final CategoriaCatalogoRepository categoriaRepository;
+    private final StorageReference storageRef;
+
 
     public CatalogoRepository() {
         this.categoriaRepository = new CategoriaCatalogoRepository();
+        this.storageRef = FirebaseStorage.getInstance().getReference();
     }
 
     public interface Callback {
@@ -31,20 +40,35 @@ public class CatalogoRepository {
     }
 
     // ── Salvar (novo ou edição) ───────────────────────────────────────
-    public void salvar(@NonNull CatalogoModel model, @NonNull Callback callback) {
+    public void salvar(@NonNull CatalogoModel model, @Nullable android.net.Uri imagemUri, @NonNull Callback callback) {
         try {
             normalizarCategoria(model);
-
             boolean categoriaPadrao = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO
                     .equals(model.getCategoriaId());
 
+            Runnable prosseguir = () -> {
+                if (imagemUri != null) {
+                    // Precisa de ID antes do upload para nomear o arquivo
+                    if (model.getId() == null || model.getId().isEmpty()) {
+                        model.setId(FirestoreSchema.vendasCatalogoCol().document().getId());
+                    }
+                    uploadImagem(imagemUri, model.getId(), (url, erro) -> {
+                        if (erro != null) { callback.onErro("Erro ao subir imagem: " + erro); return; }
+                        model.setUrlFoto(url);
+                        salvarNoFirestore(model, callback);
+                    });
+                } else {
+                    salvarNoFirestore(model, callback);
+                }
+            };
+
             if (categoriaPadrao) {
                 categoriaRepository.garantirCategoriaPadrao(new CategoriaCatalogoRepository.Callback() {
-                    @Override public void onSucesso(String msg) { salvarNoFirestore(model, callback); }
+                    @Override public void onSucesso(String msg) { prosseguir.run(); }
                     @Override public void onErro(String erro)   { callback.onErro(erro); }
                 });
             } else {
-                salvarNoFirestore(model, callback);
+                prosseguir.run();
             }
         } catch (IllegalStateException e) {
             callback.onErro("Sessão expirada: " + e.getMessage());
@@ -218,5 +242,29 @@ public class CatalogoRepository {
             model.setCategoriaId(CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
             model.setCategoria(CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
         }
+    }
+
+    private interface BiConsumer<T, U> { void accept(T t, U u); }
+
+    private void uploadImagem(Uri uri, String itemId, BiConsumer<String, String> callback) {
+        String nomeArquivo = itemId + ".jpg";
+        StorageReference fotoRef = storageRef
+                        .child("images")
+                        .child("users")
+                        .child(FirebaseSession.getUserId())
+                        .child("vendas")
+                        .child("catalogo")
+                        .child(nomeArquivo);
+
+        // Tenta deletar a anterior (ignora erro se não existir)
+        fotoRef.delete()
+                .addOnCompleteListener(deleteTask -> {
+                    // Independente de ter deletado ou não, faz o upload
+                    fotoRef.putFile(uri)
+                            .addOnSuccessListener(task -> fotoRef.getDownloadUrl()
+                                    .addOnSuccessListener(url -> callback.accept(url.toString(), null))
+                                    .addOnFailureListener(e -> callback.accept(null, e.getMessage())))
+                            .addOnFailureListener(e -> callback.accept(null, e.getMessage()));
+                });
     }
 }

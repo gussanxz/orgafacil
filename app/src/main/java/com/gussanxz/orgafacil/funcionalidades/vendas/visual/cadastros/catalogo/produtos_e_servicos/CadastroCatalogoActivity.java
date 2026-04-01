@@ -86,6 +86,21 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
     private String  tipoAtual          = null;   // null = ainda não escolheu
     private int     iconeSelecionado   = 7;
     private Uri     imagemSelecionadaUri = null;
+    private String urlFotoAtual = null;
+    private Uri uriCameraTemp;
+
+    private final ActivityResultLauncher<Uri> launcherCamera = registerForActivityResult(
+            new ActivityResultContracts.TakePicture(),
+            sucesso -> {
+                if (sucesso && uriCameraTemp != null) {
+                    java.io.File f = new java.io.File(uriCameraTemp.getPath());
+                    if (f.exists() && f.length() > 0)
+                        atualizarVisualGaleria(uriCameraTemp);
+                    else
+                        Toast.makeText(this, "Erro ao capturar foto", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
     private ListenerRegistration listenerCategorias;
     private String categoriaSelecionadaId   = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO;
 
@@ -196,9 +211,21 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         cardTipoProduto.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_PRODUTO, true));
         cardTipoServico.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_SERVICO, true));
 
-        if (cardBtnGaleria != null) cardBtnGaleria.setOnClickListener(v -> abrirGaleria());
-        if (imgBtnGaleria  != null) imgBtnGaleria.setOnClickListener(v -> abrirGaleria());
         configurarCliquesCategoria();
+
+        View.OnClickListener abrirOpcoesFoto = v -> exibirDialogFonte();
+        if (cardBtnGaleria != null) cardBtnGaleria.setOnClickListener(abrirOpcoesFoto);
+        if (imgBtnGaleria  != null) imgBtnGaleria.setOnClickListener(abrirOpcoesFoto);
+    }
+
+    private void exibirDialogFonte() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Adicionar foto")
+                .setItems(new String[]{"Câmera", "Galeria"}, (d, which) -> {
+                    if (which == 0) abrirCamera();
+                    else            abrirGaleria();
+                })
+                .show();
     }
 
     private void carregarCategorias() {
@@ -323,7 +350,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         boolean isProduto = CatalogoModel.TIPO_STR_PRODUTO.equals(tipo);
         categoriaSelecionadaId   = dados.getString("categoriaId", CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
         categoriaSelecionadaNome = dados.getString("categoria",   CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
-
+        urlFotoAtual = dados.getString("urlFoto", null);
         tipoAtual = tipo;
         textViewHeader.setText(isProduto ? "Editar Produto" : "Editar Serviço");
         btnExcluirHeader.setVisibility(View.VISIBLE);
@@ -404,7 +431,10 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             model.setIconeIndex(iconeSelecionado);
         }
 
-        repository.salvar(model, new CatalogoRepository.Callback() {
+        if (imagemSelecionadaUri == null && urlFotoAtual != null)
+            model.setUrlFoto(urlFotoAtual);
+
+        repository.salvar(model, imagemSelecionadaUri, new CatalogoRepository.Callback() {
             @Override
             public void onSucesso(String msg) {
                 exibirLoading(false);
@@ -537,9 +567,20 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             textInputCategoria.getEditText().setOnClickListener(v -> exibirDialogCategorias());
     }
 
+    private void abrirCamera() {
+        java.io.File arquivo = new java.io.File(getCacheDir(), "foto_temp_" + System.currentTimeMillis() + ".jpg");
+        uriCameraTemp = androidx.core.content.FileProvider.getUriForFile(
+                this, getPackageName() + ".provider", arquivo);
+        launcherCamera.launch(uriCameraTemp);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (listenerCategorias != null) listenerCategorias.remove();
+        if (uriCameraTemp != null) {
+            new java.io.File(uriCameraTemp.getPath()).delete();
+            uriCameraTemp = null;
+        }
     }
 }

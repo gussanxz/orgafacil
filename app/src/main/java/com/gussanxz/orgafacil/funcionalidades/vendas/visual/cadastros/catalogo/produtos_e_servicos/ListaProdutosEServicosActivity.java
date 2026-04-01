@@ -115,6 +115,10 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     // ── Clique no item → abre CadastroCatalogoActivity ───────────────
 
     private void onItemClick(ItemVendaModel item) {
+        if (!(item instanceof CatalogoModel)) {
+            Toast.makeText(this, "Item inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
         CatalogoModel c = (CatalogoModel) item;
         Intent intent = new Intent(this, CadastroCatalogoActivity.class);
         intent.putExtra("id",          c.getId());
@@ -126,6 +130,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
         intent.putExtra("descricao",   c.getDescricao());
         intent.putExtra("statusAtivo", c.isStatusAtivo());
         intent.putExtra("iconeIndex",  c.getIconeIndex());
+        intent.putExtra("urlFoto", c.getUrlFoto());
         startActivity(intent);
     }
 

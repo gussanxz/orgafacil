@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="44dp"
             android:layout_height="44dp"
@@ -29,12 +29,12 @@
 
             <ImageView
                 android:id="@+id/imageIconeCategoria"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_camera_alt_120"
-                app:tint="#616161" />
-        </androidx.cardview.widget.CardView>
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_camera_alt_120" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/textStatus"

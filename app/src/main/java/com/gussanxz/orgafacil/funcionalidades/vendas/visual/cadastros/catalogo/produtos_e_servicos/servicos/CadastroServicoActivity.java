@@ -1,11 +1,17 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.servicos;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -31,6 +37,7 @@ public class CadastroServicoActivity extends AppCompatActivity {
     private TextInputLayout textInputCategoria, textInputDescricao, textInputValor;
     // Futuro: private TextInputLayout textInputTempoDuracao;
     private TextView textViewHeader;
+    private com.google.android.material.card.MaterialCardView cardBtnFoto;
 
     // Lógica
     private CatalogoRepository repository;
@@ -40,6 +47,25 @@ public class CadastroServicoActivity extends AppCompatActivity {
     private CategoriaCatalogoRepository categoriaRepo;
     private List<Categoria> listaCategorias = new ArrayList<>();
     private ListenerRegistration listenerCategorias;
+    private String urlFotoAtual = null;
+    private Uri imagemSelecionadaUri = null;
+    private Uri uriCameraTemp;
+    private final ActivityResultLauncher<Intent> launcherGaleria = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) atualizarVisualFoto(uri);
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Uri> launcherCamera = registerForActivityResult(
+            new ActivityResultContracts.TakePicture(),
+            sucesso -> {
+                if (sucesso && uriCameraTemp != null) atualizarVisualFoto(uriCameraTemp);
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,16 +109,22 @@ public class CadastroServicoActivity extends AppCompatActivity {
         textInputDescricao = findViewById(R.id.textInputDescricao);
         textInputValor = findViewById(R.id.textInputValor);
         textViewHeader = findViewById(R.id.textViewHeader);
-
+        cardBtnFoto = findViewById(R.id.cardBtnFoto);
         textViewHeader.setText("Novo Serviço");
         textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
+
+        if (cardBtnFoto != null)
+            cardBtnFoto.setOnClickListener(v -> exibirDialogFonte());
     }
 
     private void prepararEdicao(Bundle dados) {
         textViewHeader.setText("Editar Serviço");
         categoriaSelecionadaId   = dados.getString("categoriaId", CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
         categoriaSelecionadaNome = dados.getString("categoria",   CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
+        urlFotoAtual = dados.getString("urlFoto", null);
         idEmEdicao = dados.getString("id");
+        if (cardBtnFoto != null)
+            cardBtnFoto.post(() -> inicializarVisualFoto(urlFotoAtual));
 
         // Preenche campos com segurança (verifica null)
         if(textInputDescricao.getEditText() != null)
@@ -131,7 +163,7 @@ public class CadastroServicoActivity extends AppCompatActivity {
             return;
         }
 
-        // 4. Cria Objeto
+// 4. Cria Objeto
         CatalogoModel servicoModel = new CatalogoModel();
         servicoModel.setId(idEmEdicao);
         servicoModel.setTipo(CatalogoModel.TIPO_STR_SERVICO);
@@ -139,9 +171,13 @@ public class CadastroServicoActivity extends AppCompatActivity {
         servicoModel.setPreco(valor);
         servicoModel.setCategoriaId(categoriaSelecionadaId);
         servicoModel.setCategoria(categoriaSelecionadaNome);
+        servicoModel.setStatusAtivo(true);
+
+        if (imagemSelecionadaUri == null && urlFotoAtual != null)
+            servicoModel.setUrlFoto(urlFotoAtual);
 
         // 5. Chama Repositório
-        repository.salvar(servicoModel, new CatalogoRepository.Callback() {
+        repository.salvar(servicoModel, imagemSelecionadaUri, new CatalogoRepository.Callback() {
             @Override
             public void onSucesso(String mensagem) {
                 Toast.makeText(CadastroServicoActivity.this, mensagem, Toast.LENGTH_SHORT).show();
@@ -204,9 +240,67 @@ public class CadastroServicoActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void exibirDialogFonte() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Adicionar foto")
+                .setItems(new String[]{"Câmera", "Galeria"}, (d, which) -> {
+                    if (which == 0) abrirCamera();
+                    else            abrirGaleria();
+                })
+                .show();
+    }
+
+    private void abrirGaleria() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        launcherGaleria.launch(intent);
+    }
+
+    private void abrirCamera() {
+        java.io.File arquivo = new java.io.File(getCacheDir(), "foto_temp_" + System.currentTimeMillis() + ".jpg");
+        uriCameraTemp = androidx.core.content.FileProvider.getUriForFile(
+                this, getPackageName() + ".provider", arquivo);
+        launcherCamera.launch(uriCameraTemp);
+    }
+
+    private void atualizarVisualFoto(Uri uri) {
+        imagemSelecionadaUri = uri;
+        if (cardBtnFoto != null) {
+            // Mostra a foto dentro do card usando Glide
+            android.widget.ImageView imgPreview = cardBtnFoto.findViewById(R.id.imgBtnFoto);
+            if (imgPreview != null) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(uri)
+                        .centerCrop()
+                        .into(imgPreview);
+            }
+            cardBtnFoto.setStrokeColor(android.graphics.Color.parseColor("#2196F3"));
+            cardBtnFoto.setStrokeWidth(4);
+        }
+        Toast.makeText(this, "Foto selecionada", Toast.LENGTH_SHORT).show();
+    }
+
+    private void inicializarVisualFoto(String urlFotoExistente) {
+        if (urlFotoExistente == null || urlFotoExistente.isEmpty()) return;
+        if (cardBtnFoto == null) return;
+        android.widget.ImageView imgPreview = cardBtnFoto.findViewById(R.id.imgBtnFoto);
+        if (imgPreview != null) {
+            com.bumptech.glide.Glide.with(this)
+                    .load(urlFotoExistente)
+                    .centerCrop()
+                    .placeholder(R.drawable.ic_camera_alt_120)
+                    .into(imgPreview);
+        }
+        cardBtnFoto.setStrokeColor(android.graphics.Color.parseColor("#2196F3"));
+        cardBtnFoto.setStrokeWidth(4);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (listenerCategorias != null) listenerCategorias.remove();
+        if (uriCameraTemp != null) {
+            new java.io.File(uriCameraTemp.getPath()).delete();
+            uriCameraTemp = null;
+        }
     }
 }

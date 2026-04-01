@@ -9,8 +9,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
+import com.google.android.material.card.MaterialCardView;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
@@ -91,7 +93,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             TextView txtTag,
             TextView txtStatus,
             ImageView imgIcone,
-            CardView cardIcone,
+            MaterialCardView cardIcone,
             View rootView
     ) {
         boolean isProduto = item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
@@ -126,10 +128,22 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         txtStatus.setText(isAtivo ? "ATIVO" : "INATIVO");
         txtStatus.setBackgroundResource(isAtivo ? R.drawable.bg_status_ativo : R.drawable.bg_status_inativo);
 
-        imgIcone.setImageResource(getIconeDoItem(item));
-        imgIcone.setColorFilter(corDestaque);
-
-        cardIcone.setCardBackgroundColor(corFundoElements);
+        if (item instanceof CatalogoModel && ((CatalogoModel) item).temFoto()) {
+            String url = ((CatalogoModel) item).getUrlFoto();
+            imgIcone.clearColorFilter();
+            imgIcone.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            cardIcone.setCardBackgroundColor(Color.TRANSPARENT);
+            Glide.with(context)
+                    .load(url)
+                    .placeholder(R.drawable.ic_camera_alt_120)
+                    .circleCrop()
+                    .into(imgIcone);
+        } else {
+            imgIcone.setScaleType(ImageView.ScaleType.CENTER);
+            imgIcone.setImageResource(getIconeDoItem(item));
+            imgIcone.setColorFilter(corDestaque);
+            cardIcone.setCardBackgroundColor(corFundoElements);
+        }
 
         rootView.setAlpha(isAtivo ? 1f : 0.55f);
     }
@@ -169,7 +183,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     class GradeViewHolder extends RecyclerView.ViewHolder {
         TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
         ImageView imageIcone;
-        CardView cardIcone;
+        com.google.android.material.card.MaterialCardView cardIcone;
 
         public GradeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -203,7 +217,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     class ListaViewHolder extends RecyclerView.ViewHolder {
         TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
         ImageView imageIcone;
-        CardView cardIcone;
+        com.google.android.material.card.MaterialCardView cardIcone;
 
         public ListaViewHolder(@NonNull View itemView) {
             super(itemView);
