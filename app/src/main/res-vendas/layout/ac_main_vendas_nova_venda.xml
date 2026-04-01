@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
     android:orientation="vertical"
-    tools:context=".activity.features.vendas.novavenda.RegistrarVendasActivity">
+    tools:context=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -261,16 +261,35 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvCategorias"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp"
-                tools:listitem="@layout/item_nova_venda_categoria_chip"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                android:requiresFadingEdge="horizontal"
-                android:fadingEdgeLength="30dp"/>
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCategorias"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    tools:listitem="@layout/item_nova_venda_categoria_chip"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    android:requiresFadingEdge="horizontal"
+                    android:fadingEdgeLength="30dp"/>
+
+                <ImageButton
+                    android:id="@+id/btnAlternarModoExibicao"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_grid_24"
+                    android:contentDescription="Alternar modo de exibição"
+                    app:tint="@color/cor_icone_primario" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/layoutEstadoVazio"
@@ -311,6 +330,14 @@
                     android:textColor="@color/cor_texto_secundario"
                     android:textSize="14sp" />
             </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvGridCategorias"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="3" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvGradeProdutos"
