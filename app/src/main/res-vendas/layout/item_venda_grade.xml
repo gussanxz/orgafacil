@@ -64,7 +64,7 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -78,12 +78,12 @@
 
             <ImageView
                 android:id="@+id/imageIcone"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:padding="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_categorias_geral_24"
-                app:tint="#616161" />
-        </androidx.cardview.widget.CardView>
+                android:src="@drawable/ic_categorias_geral_24" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/textNomeItem"
