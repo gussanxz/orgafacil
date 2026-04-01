@@ -67,6 +67,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     private final CategoriaCatalogoRepository categoriaRepository = new CategoriaCatalogoRepository();
     private ListenerRegistration listenerCategorias;
+    private boolean modoCategorias = true;
+    private ImageButton btnAlternarModo;
+    private RecyclerView rvGridCategorias;
+    private AdapterFiltroCategoriasNovaVenda adapterGridCategorias;
     private String vendaIdEdicao = null;
 
     @Override
@@ -83,6 +87,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         inicializarComponentes();
         configurarRvCategorias();
+        configurarGridCategorias();
+        configurarBotaoAlternarModo();
+        aplicarModoCategorias();
         configurarRvProdutos();
         configurarBotaoCobrar();
         configurarAcoesHeader();
@@ -113,6 +120,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         txtCobrarTotal      = findViewById(R.id.txtCobrarTotal);
         btnCobrar           = findViewById(R.id.btnCobrar);
         btnHistoricoVendas  = findViewById(R.id.btnHistoricoVendas);
+        btnAlternarModo   = findViewById(R.id.btnAlternarModoExibicao);
+        rvGridCategorias  = findViewById(R.id.rvGridCategorias);
     }
 
     // ── Categorias ────────────────────────────────────────────────────
@@ -152,6 +161,61 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                         "Erro ao carregar categorias: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void configurarGridCategorias() {
+        if (rvGridCategorias == null) return;
+        rvGridCategorias.setLayoutManager(new GridLayoutManager(this, 3));
+        rvGridCategorias.setNestedScrollingEnabled(false);
+        // Reutiliza a mesma lista de categorias já carregada
+        adapterGridCategorias = new AdapterFiltroCategoriasNovaVenda(
+                listaCategorias, this,
+                (categoria, position) -> {
+                    if ("todos".equals(categoria.getId())) {
+                        // "Todos" no grid de categorias vai para modo PS sem filtro
+                        categoriaAtiva = null;
+                    } else {
+                        categoriaAtiva = categoria;
+                    }
+                    entrarEmModoPS();
+                }
+        );
+        rvGridCategorias.setAdapter(adapterGridCategorias);
+    }
+
+    private void configurarBotaoAlternarModo() {
+        if (btnAlternarModo == null) return;
+        btnAlternarModo.setOnClickListener(v -> {
+            if (modoCategorias) entrarEmModoPS();
+            else entrarEmModoCategorias();
+        });
+    }
+
+    private void entrarEmModoPS() {
+        modoCategorias = false;
+        filtrarProdutosVisiveis();
+        rvGridCategorias.setVisibility(View.GONE);
+        rvGradeProdutos.setVisibility(View.VISIBLE);
+        // Ícone: quando está em PS, mostra ícone de categorias para poder voltar
+        btnAlternarModo.setImageResource(R.drawable.ic_grid_24); // grid de categorias
+        btnAlternarModo.setContentDescription("Ver categorias");
+    }
+
+    private void entrarEmModoCategorias() {
+        modoCategorias = true;
+        categoriaAtiva = null;
+        rvGradeProdutos.setVisibility(View.GONE);
+        rvGridCategorias.setVisibility(View.VISIBLE);
+        // Ícone: quando está em categorias, mostra ícone de lista de itens
+        btnAlternarModo.setImageResource(R.drawable.ic_list_24);
+        btnAlternarModo.setContentDescription("Ver produtos e serviços");
+    }
+
+    private void aplicarModoCategorias() {
+        // Estado inicial — categorias visíveis, grade de produtos oculta
+        rvGradeProdutos.setVisibility(View.GONE);
+        rvGridCategorias.setVisibility(View.VISIBLE);
+        btnAlternarModo.setImageResource(R.drawable.ic_list_24);
     }
 
     // ── Catálogo (produtos + serviços unificados) ─────────────────────
@@ -455,6 +519,15 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             atualizarResumoSacola();
         } else {
             restaurarSacolaSeEdicao();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!modoCategorias) {
+            entrarEmModoCategorias();
+        } else {
+            super.onBackPressed();
         }
     }
 
