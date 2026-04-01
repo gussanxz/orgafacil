@@ -188,17 +188,19 @@ public class ResumoVendasActivity extends AppCompatActivity {
 
     private void configurarFabMenu() {
         if (fabMain != null) {
-            fabMain.setOnClickListener(v -> {
-                if (!isMenuOpen) abrirMenu();
-                else fecharMenu();
-            });
+            fabMain.setOnClickListener(v -> acessarRegistrarVendasActivity(v));
+//            fabMain.setOnClickListener(v -> {
+//                if (!isMenuOpen) abrirMenu();
+//                else fecharMenu();
+//            });
         }
 
-        if (overlayBackground != null) {
-            overlayBackground.setOnClickListener(v -> {
-                if (isMenuOpen) fecharMenu();
-            });
-        }
+// Menu expansível temporariamente suspenso
+// if (overlayBackground != null) {
+//     overlayBackground.setOnClickListener(v -> {
+//         if (isMenuOpen) fecharMenu();
+//     });
+// }
 
         if (fabNovaVenda != null) {
             fabNovaVenda.setOnClickListener(v -> {
