@@ -18,25 +18,37 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/textPrecoItem"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="R$ 0,00"
-            android:textColor="#4CAF50"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
         <LinearLayout
-            android:id="@+id/layoutBadgesTopo"
-            android:layout_width="wrap_content"
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="end"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintStart_toStartOf="@id/layoutProdutoGrid"
+            app:layout_constraintTop_toTopOf="@id/layoutProdutoGrid">
+
+            <TextView
+                android:id="@+id/textPrecoItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="R$ 0,00"
+                android:textColor="#4CAF50"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/textTipoTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="5dp"
+                android:background="@drawable/bg_tag_produto"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="PRODUTO"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="10sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/textStatusItem"
@@ -45,43 +57,31 @@
                 android:background="@drawable/bg_status_ativo"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="4dp"
+                android:layout_marginBottom="5dp"
                 android:text="ATIVO"
                 android:textColor="#2E7D32"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/textTipoTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_tag_produto"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="PRODUTO"
-                android:textColor="@color/cor_texto_secundario"
-                android:textSize="10sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:layout_marginTop="12dp"
             app:cardBackgroundColor="#F5F5F5"
             app:cardCornerRadius="28dp"
             app:cardElevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layoutBadgesTopo">
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout">
 
             <ImageView
                 android:id="@+id/imageIcone"
-                android:padding="5dp"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
+                android:padding="5dp"
                 android:src="@drawable/ic_categorias_geral_24" />
         </com.google.android.material.card.MaterialCardView>
 

@@ -105,7 +105,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
                 boolean modoGrade = (checkedId == R.id.btnVisualizacaoGrade);
                 recyclerProdutos.setLayoutManager(
                         modoGrade
-                                ? new GridLayoutManager(this, 2)
+                                ? new GridLayoutManager(this, 3)
                                 : new LinearLayoutManager(this));
                 if (adapter != null) adapter.setModoGrade(modoGrade);
             }
