@@ -273,8 +273,12 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     }
 
     private void filtrarProdutosPorCategoria(Categoria categoria) {
-        categoriaAtiva = categoria;
-        filtrarProdutosVisiveis();
+        if ("todos".equals(categoria.getId())) {
+            categoriaAtiva = null;
+        } else {
+            categoriaAtiva = categoria;
+        }
+        entrarEmModoPS();
     }
 
     private void filtrarPorTexto(String texto) {
