@@ -167,11 +167,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         if (formaPagamentoOriginal != null)
             formaPagamentoSelecionada = formaPagamentoOriginal;
 
-        if (modoEdicao) {
-            dataEscolhida = Calendar.getInstance();
+        dataEscolhida = Calendar.getInstance();
+        if (modoEdicao && dataHoraOriginal > 0)
             dataEscolhida.setTimeInMillis(dataHoraOriginal);
-            configurarSeletorDataHora();
-        }
+        configurarSeletorDataHora();
+
     }
 
     // ----------------------------------------------------------------
@@ -341,7 +341,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         VendaModel venda = new VendaModel();
         if (vendaIdEdicao != null) venda.setId(vendaIdEdicao);
 
-        long dataFechamento = (modoEdicao && dataEscolhida != null)
+        long dataFechamento = dataEscolhida != null
                 ? dataEscolhida.getTimeInMillis()
                 : System.currentTimeMillis();
 
