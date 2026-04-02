@@ -34,6 +34,8 @@ import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+import com.gussanxz.orgafacil.util_helper.MascaraMoedaWatcher;
+import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,6 +86,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
     // ── Estado ────────────────────────────────────────────────────────
     private CatalogoRepository repository;
     private String  idEmEdicao         = null;
+    private MascaraMoedaWatcher mascaraPreco;
     private String  tipoAtual          = null;   // null = ainda não escolheu
     private int     iconeSelecionado   = 7;
     private Uri     imagemSelecionadaUri = null;
@@ -209,6 +212,12 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         btnSalvarSuperior.setOnClickListener(v -> salvarItem());
         btnSalvarInferior.setOnClickListener(v -> salvarItem());
         btnExcluirHeader.setOnClickListener(v -> confirmarExclusao());
+
+        if (textInputPreco.getEditText() != null) {
+            mascaraPreco = new MascaraMoedaWatcher(textInputPreco.getEditText());
+            textInputPreco.getEditText().addTextChangedListener(mascaraPreco);
+            mascaraPreco.setValorInicial(0.0); // R$ 0,00 por padrão
+        }
 
         cardTipoProduto.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_PRODUTO, true));
         cardTipoServico.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_SERVICO, true));
@@ -383,8 +392,8 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             editNome.setText(dados.getString("nome", ""));
         if (editDescricao != null)
             editDescricao.setText(dados.getString("descricao", ""));
-        if (textInputPreco.getEditText() != null)
-            textInputPreco.getEditText().setText(String.valueOf(dados.getDouble("preco", 0.0)));
+        if (mascaraPreco != null)
+            mascaraPreco.setValorInicial(dados.getDouble("preco", 0.0));
 
         switchStatusAtivo.setChecked(dados.getBoolean("statusAtivo", true));
         if (textInputCategoria != null && textInputCategoria.getEditText() != null)
@@ -408,23 +417,15 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
                 ? editNome.getText().toString().trim() : "";
         String descricao = editDescricao != null && editDescricao.getText() != null
                 ? editDescricao.getText().toString().trim() : "";
-        String precoStr = textInputPreco.getEditText() != null
-                ? textInputPreco.getEditText().getText().toString().trim() : "";
-
-        if (nome.isEmpty()) {
-            textInputNome.setError("Obrigatório");
-            return;
-        }
-        if (precoStr.isEmpty()) {
-            textInputPreco.setError("Obrigatório");
+        if (mascaraPreco == null) {
+            textInputPreco.setError("Erro no campo de preço");
             return;
         }
 
-        double preco;
-        try {
-            preco = Double.parseDouble(precoStr.replace(",", "."));
-        } catch (NumberFormatException e) {
-            textInputPreco.setError("Preço inválido");
+        double preco = mascaraPreco.getValorDouble();
+
+        if (preco <= 0.0) {
+            textInputPreco.setError("Informe um preço válido");
             return;
         }
 
