@@ -103,6 +103,7 @@ public class VendasEmAbertoActivity extends AppCompatActivity {
         intent.putExtra("itensSacola", new ArrayList<>(
                 converterItensRegistradosParaSacola(venda.getItens())));
         intent.putExtra("vendaId", venda.getId());
+        intent.putExtra("numeroVenda", venda.getNumeroVenda());
         startActivity(intent);
     }
 

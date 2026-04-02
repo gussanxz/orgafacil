@@ -66,6 +66,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private double  valorTotal                = 0.0;
     private String  vendaIdEdicao             = null;
     private boolean modoEdicao                = false;
+    private int     numeroVendaEdicao         = 0;
     private VendaRepository vendaRepository;
     private boolean salvandoVenda = false;
 
@@ -154,6 +155,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         String formaPagamentoOriginal = getIntent().getStringExtra("formaPagamentoOriginal");
 
         modoEdicao = vendaIdEdicao != null && dataHoraOriginal > 0;
+        numeroVendaEdicao   = getIntent().getIntExtra("numeroVenda", 0);
 
         listaItens.clear();
         if (itensRecebidos != null) listaItens.addAll(itensRecebidos);
@@ -340,6 +342,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private VendaModel montarVendaParaSalvar() {
         VendaModel venda = new VendaModel();
         if (vendaIdEdicao != null) venda.setId(vendaIdEdicao);
+        if (numeroVendaEdicao > 0) venda.setNumeroVenda(numeroVendaEdicao);
 
         long dataFechamento = dataEscolhida != null
                 ? dataEscolhida.getTimeInMillis()

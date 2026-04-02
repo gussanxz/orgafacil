@@ -380,6 +380,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 intent.putExtra("dataHoraOriginal", dataHoraOriginalEdicao);
             if (formaPagamentoOriginalEdicao != null)
                 intent.putExtra("formaPagamentoOriginal", formaPagamentoOriginalEdicao);
+            if (numeroVendaEdicao > 0)
+                intent.putExtra("numeroVenda", numeroVendaEdicao);
         }
         startActivity(intent);
     }
@@ -494,12 +496,14 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     // Extras de edição retroativa — preservados para repassar ao FechamentoVendaActivity
     private long   dataHoraOriginalEdicao        = 0L;
     private String formaPagamentoOriginalEdicao  = null;
+    private int    numeroVendaEdicao             = 0;
 
     @SuppressWarnings("unchecked")
     private void restaurarSacolaSeEdicao() {
         vendaIdEdicao               = getIntent().getStringExtra("vendaId");
         dataHoraOriginalEdicao      = getIntent().getLongExtra("dataHoraOriginal", 0L);
         formaPagamentoOriginalEdicao= getIntent().getStringExtra("formaPagamentoOriginal");
+        numeroVendaEdicao           = getIntent().getIntExtra("numeroVenda", 0);
 
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
