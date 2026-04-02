@@ -207,6 +207,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         fabVoltar.setOnClickListener(v -> finish());
         btnSalvarSuperior.setOnClickListener(v -> salvarItem());
         btnSalvarInferior.setOnClickListener(v -> salvarItem());
+        btnExcluirHeader.setOnClickListener(v -> confirmarExclusao());
 
         cardTipoProduto.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_PRODUTO, true));
         cardTipoServico.setOnClickListener(v -> selecionarTipo(CatalogoModel.TIPO_STR_SERVICO, true));
@@ -583,4 +584,35 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             uriCameraTemp = null;
         }
     }
+
+    private void confirmarExclusao() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Excluir item")
+                .setMessage("Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.")
+                .setPositiveButton("Excluir", (dialog, which) -> excluirItem())
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void excluirItem() {
+        if (idEmEdicao == null || idEmEdicao.isEmpty()) {
+            Toast.makeText(this, "ID do item não encontrado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        exibirLoading(true);
+        repository.excluir(idEmEdicao, urlFotoAtual, new CatalogoRepository.Callback() {
+            @Override
+            public void onSucesso(String mensagem) {
+                exibirLoading(false);
+                Toast.makeText(CadastroCatalogoActivity.this, mensagem, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            @Override
+            public void onErro(String erro) {
+                exibirLoading(false);
+                Toast.makeText(CadastroCatalogoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }

@@ -93,6 +93,28 @@ public class CatalogoRepository {
                         e.getMessage() != null ? e.getMessage() : "Erro ao salvar"));
     }
 
+    public void excluir(@NonNull String itemId, @Nullable String urlFoto, @NonNull Callback callback) {
+        try {
+            FirestoreSchema.vendasProdutoDoc(itemId)
+                    .delete()
+                    .addOnSuccessListener(v -> {
+                        // Se tiver foto, tenta remover do Storage (ignora falha)
+                        if (urlFoto != null && !urlFoto.isEmpty()) {
+                            FirebaseStorage.getInstance()
+                                    .getReferenceFromUrl(urlFoto)
+                                    .delete()
+                                    .addOnCompleteListener(t -> callback.onSucesso("Item excluído!"));
+                        } else {
+                            callback.onSucesso("Item excluído!");
+                        }
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao excluir"));
+        } catch (IllegalStateException e) {
+            callback.onErro("Sessão expirada: " + e.getMessage());
+        }
+    }
+
     // ── Listener em tempo real (todos) ────────────────────────────────
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         return listarTempoRealFiltrado(null, callback);
