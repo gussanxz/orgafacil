@@ -46,6 +46,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
     private View                 btnSalvarInferior;
     private ImageButton          btnExcluirHeader;
     private TextView             textViewHeader;
+    private TextView             textTipoCadastro;
 
     // ── Views: seletor de tipo (novo item) ────────────────────────────
     private LinearLayout     layoutSeletorTipo;
@@ -305,10 +306,12 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
 
     private void revelarFormulario(boolean isProduto) {
         // Oculta seletor e revela formulário
-        layoutSeletorTipo.setVisibility(View.GONE);
-        layoutFormulario.setVisibility(View.VISIBLE);
-        btnSalvarSuperior.setVisibility(View.VISIBLE);
-        btnSalvarInferior.setVisibility(View.VISIBLE);
+        if (idEmEdicao == null) {
+            layoutSeletorTipo.setVisibility(View.VISIBLE);
+            layoutFormulario.setVisibility(View.VISIBLE);
+            btnSalvarSuperior.setVisibility(View.VISIBLE);
+            btnSalvarInferior.setVisibility(View.VISIBLE);
+        }
 
         // Bloco de ícones apenas para produto
         if (caixaIcones != null) {
@@ -318,6 +321,8 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         // Atualiza header e hint do campo nome
         if (idEmEdicao == null) {
             textViewHeader.setText(isProduto ? "Novo Produto" : "Novo Serviço");
+        } else {
+            textViewHeader.setText(isProduto ? "Editar Produto" : "Editar Serviço");
         }
         if (textInputNome != null) {
             textInputNome.setHint(isProduto ? "Nome do Produto" : "Nome do Serviço");
@@ -357,10 +362,17 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         btnExcluirHeader.setVisibility(View.VISIBLE);
 
         // Em edição o seletor não aparece, vai direto ao formulário
-        layoutSeletorTipo.setVisibility(View.GONE);
+        layoutSeletorTipo.setVisibility(View.VISIBLE);
         layoutFormulario.setVisibility(View.VISIBLE);
         btnSalvarSuperior.setVisibility(View.VISIBLE);
         btnSalvarInferior.setVisibility(View.VISIBLE);
+
+        // Aplica destaque visual no card do tipo atual sem animar/revelar formulário
+        int corAtual = isProduto ? COR_PRODUTO : COR_SERVICO;
+        aplicarVisualCardTipo(cardTipoProduto, iconTipoProduto, txtTipoProduto,
+                isProduto ? corAtual : COR_NEUTRO, isProduto);
+        aplicarVisualCardTipo(cardTipoServico, iconTipoServico, txtTipoServico,
+                isProduto ? COR_NEUTRO : corAtual, !isProduto);
 
         if (caixaIcones != null)
             caixaIcones.setVisibility(isProduto ? View.VISIBLE : View.GONE);
