@@ -151,7 +151,10 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
             String status = venda.getStatus() != null
                     ? venda.getStatus() : VendaModel.STATUS_FINALIZADA;
             txtVendaStatus.setText(status);
-            txtVendaStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+            boolean isFinalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
+            txtVendaStatus.setBackgroundResource(
+                    isFinalizada ? R.drawable.bg_status_finalizada : R.drawable.bg_status_cancelada
+            );
             switch (status) {
                 case VendaModel.STATUS_FINALIZADA:
                     txtVendaStatus.setTextColor(android.graphics.Color.parseColor("#2E7D32"));
