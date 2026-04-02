@@ -140,8 +140,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
 
                         if (textStatus != null) {
-                                textStatus.setText("ATIVO");
-                                textStatus.setTextColor(Color.parseColor("#2E7D32"));
+                                textStatus.setVisibility(View.GONE);
                         }
 
                         if (btnExcluirProduto != null) {

@@ -59,19 +59,6 @@
             app:layout_constraintTop_toBottomOf="@id/textPrecoItem">
 
             <TextView
-                android:id="@+id/textStatusItem"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/bg_status_ativo"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:text="STATUS"
-                android:textColor="#2E7D32"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-
-            <TextView
                 android:id="@+id/textTipoTag"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -82,6 +69,17 @@
                 android:background="@drawable/bg_tag_produto"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="2dp" />
+
+            <TextView
+                android:id="@+id/textStatusItem"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="@drawable/bg_status_ativo"
+                android:paddingVertical="2dp"
+                android:layout_marginLeft="10dp"
+                android:textColor="#2E7D32"
+                android:textSize="10sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView

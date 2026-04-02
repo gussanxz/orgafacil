@@ -37,31 +37,34 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/textTipoTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginVertical="5dp"
-                android:background="@drawable/bg_tag_produto"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="PRODUTO"
-                android:textColor="@color/cor_texto_secundario"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+                <TextView
+                    android:id="@+id/textTipoTag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="5dp"
+                    android:background="@drawable/bg_tag_produto"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="PRODUTO"
+                    android:textColor="@color/cor_texto_secundario"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/textStatusItem"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_status_ativo"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:layout_marginBottom="5dp"
-                android:text="ATIVO"
-                android:textColor="#2E7D32"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/textStatusItem"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/bg_status_ativo"
+                    android:layout_marginBottom="5dp"
+                    android:textColor="#2E7D32"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginVertical="2dp"
+                    android:layout_marginLeft="10dp"/>
+            </LinearLayout>
 
         </LinearLayout>
 

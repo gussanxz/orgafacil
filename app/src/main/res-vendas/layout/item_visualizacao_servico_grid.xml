@@ -28,14 +28,11 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
+        <View
             android:id="@+id/textStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ativa"
-            android:textColor="#4CAF50"
-            android:textSize="12sp"
-            android:textStyle="bold"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="@drawable/bg_status_ativo"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/btnExcluirProduto"
             app:layout_constraintBottom_toBottomOf="@id/btnExcluirProduto"/>

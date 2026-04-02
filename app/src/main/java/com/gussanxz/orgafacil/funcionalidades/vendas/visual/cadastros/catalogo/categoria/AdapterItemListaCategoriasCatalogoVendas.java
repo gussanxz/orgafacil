@@ -92,12 +92,10 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         // --- STATUS VISUAL ---
         if (categoria.isAtiva()) {
-            holder.textStatus.setText("Ativa");
-            holder.textStatus.setTextColor(Color.parseColor("#4CAF50")); // Verde
+            holder.textStatus.setBackgroundResource(R.drawable.bg_status_ativo);
             holder.itemView.setAlpha(1.0f);
         } else {
-            holder.textStatus.setText("Inativa");
-            holder.textStatus.setTextColor(Color.parseColor("#F44336")); // Vermelho
+            holder.textStatus.setBackgroundResource(R.drawable.bg_status_inativo);
             holder.itemView.setAlpha(0.7f);
         }
 
@@ -115,7 +113,8 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-        TextView textNomeCategoria, textDescCategoria, textStatus;
+        TextView textNomeCategoria, textDescCategoria;
+        View textStatus;
         ImageView imgIconeCategoria;
         MaterialCardView cardIconeCategoria;
         ImageButton btnExcluirCategoria;

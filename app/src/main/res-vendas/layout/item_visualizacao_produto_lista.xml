@@ -36,16 +36,14 @@
                 android:src="@drawable/ic_camera_alt_120" />
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
+        <View
             android:id="@+id/textStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ativa"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="#4CAF50"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="@drawable/bg_status_ativo"
+            app:layout_constraintEnd_toEndOf="@+id/btnExcluirCategoria"
+            app:layout_constraintStart_toStartOf="@+id/btnExcluirCategoria"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
             android:id="@+id/btnExcluirCategoria"

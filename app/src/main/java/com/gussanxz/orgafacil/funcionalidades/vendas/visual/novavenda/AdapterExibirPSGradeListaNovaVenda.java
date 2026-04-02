@@ -91,7 +91,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     private void aplicarEstiloVisual(
             ItemVendaModel item,
             TextView txtTag,
-            TextView txtStatus,
+            View  txtStatus,
             ImageView imgIcone,
             MaterialCardView cardIcone,
             View rootView
@@ -125,7 +125,6 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             );
         }
 
-        txtStatus.setText(isAtivo ? "ATIVO" : "INATIVO");
         txtStatus.setBackgroundResource(isAtivo ? R.drawable.bg_status_ativo : R.drawable.bg_status_inativo);
 
         if (item instanceof CatalogoModel && ((CatalogoModel) item).temFoto()) {
@@ -181,7 +180,8 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
     }
 
     class GradeViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
+        TextView textNome, textDescricao, textPreco, textTipoTag;
+        View textStatusItem;
         ImageView imageIcone;
         com.google.android.material.card.MaterialCardView cardIcone;
 
@@ -215,7 +215,8 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
 
     // --- VIEWHOLDER: LISTA ---
     class ListaViewHolder extends RecyclerView.ViewHolder {
-        TextView textNome, textDescricao, textPreco, textTipoTag, textStatusItem;
+        TextView textNome, textDescricao, textPreco, textTipoTag;
+        View textStatusItem;
         ImageView imageIcone;
         com.google.android.material.card.MaterialCardView cardIcone;
 
