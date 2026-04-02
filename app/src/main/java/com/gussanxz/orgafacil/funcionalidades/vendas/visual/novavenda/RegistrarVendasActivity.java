@@ -70,7 +70,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private boolean modoCategorias = true;
     private ImageButton btnAlternarModo;
     private RecyclerView rvGridCategorias;
-    private AdapterFiltroCategoriasNovaVenda adapterGridCategorias;
+    private AdapterGradeCategoriasNovaVenda  adapterGridCategorias;
     private String vendaIdEdicao = null;
 
     @Override
@@ -152,7 +152,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 listaCategorias.add(todos);
                 listaCategorias.addAll(lista);
 
-                if (adapterFiltro != null) adapterFiltro.notifyDataSetChanged();
+                if (adapterFiltro         != null) adapterFiltro.notifyDataSetChanged();
+                if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged(); // ← ADICIONE
             }
 
             @Override
@@ -167,12 +168,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (rvGridCategorias == null) return;
         rvGridCategorias.setLayoutManager(new GridLayoutManager(this, 3));
         rvGridCategorias.setNestedScrollingEnabled(false);
-        // Reutiliza a mesma lista de categorias já carregada
-        adapterGridCategorias = new AdapterFiltroCategoriasNovaVenda(
-                listaCategorias, this,
-                (categoria, position) -> {
+        adapterGridCategorias = new AdapterGradeCategoriasNovaVenda(
+                listaCategorias,
+                categoria -> {
                     if ("todos".equals(categoria.getId())) {
-                        // "Todos" no grid de categorias vai para modo PS sem filtro
                         categoriaAtiva = null;
                     } else {
                         categoriaAtiva = categoria;

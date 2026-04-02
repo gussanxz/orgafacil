@@ -125,7 +125,8 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
 
                         textStatus = itemView.findViewById(R.id.textStatus);
-                        imgIcone = itemView.findViewById(R.id.imgIcone);
+                        imgIcone = itemView.findViewById(R.id.imageIconeProduto);
+                        if (imgIcone == null) imgIcone = itemView.findViewById(R.id.imgIcone);
                         btnExcluirProduto = itemView.findViewById(R.id.btnExcluirProduto);
                 }
 
