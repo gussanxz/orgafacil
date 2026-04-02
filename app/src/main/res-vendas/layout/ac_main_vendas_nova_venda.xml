@@ -179,7 +179,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginEnd="8dp"
-                                android:background="#EEEEEE"
+                                android:background="@color/cardDiaBackground"
                                 android:paddingHorizontal="8dp"
                                 android:paddingVertical="4dp"
                                 android:text="0"
@@ -191,7 +191,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Sacola vazia"
                                 android:textStyle="bold"
-                                android:textColor="#333"/>
+                                android:textColor="@color/cor_texto_primario"/>
                         </LinearLayout>
 
                         <TextView

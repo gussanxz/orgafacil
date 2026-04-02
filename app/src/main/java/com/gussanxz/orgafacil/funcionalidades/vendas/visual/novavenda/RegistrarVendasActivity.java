@@ -308,7 +308,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         }
 
         atualizarResumoSacola();
-        Toast.makeText(this, item.getNome() + " adicionado à sacola", Toast.LENGTH_SHORT).show();
     }
 
     private void atualizarResumoSacola() {
@@ -321,7 +320,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (txtSacolaTitulo != null)
             txtSacolaTitulo.setText(quantidadeTotal == 0
                     ? "Sacola vazia"
-                    : quantidadeTotal + (quantidadeTotal == 1 ? " item na sacola" : " itens na sacola"));
+                    : (quantidadeTotal == 1 ? " item na sacola" : " itens na sacola"));
 
         if (txtSacolaSubtotal != null)
             txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal));
