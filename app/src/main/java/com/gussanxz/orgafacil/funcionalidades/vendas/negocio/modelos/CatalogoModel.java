@@ -26,6 +26,7 @@ public class CatalogoModel implements ItemVendaModel {
         return categoria != null ? categoria : "";
     }
     @Override public double getPreco()    { return preco; }
+    @com.google.firebase.firestore.Exclude
     @Override public int getTipo() {
         return TIPO_STR_SERVICO.equals(tipo)
                 ? ItemVendaModel.TIPO_SERVICO
@@ -45,7 +46,9 @@ public class CatalogoModel implements ItemVendaModel {
     public void setStatusAtivo(boolean statusAtivo){ this.statusAtivo = statusAtivo; }
     public int getIconeIndex()                     { return iconeIndex; }
     public void setIconeIndex(int iconeIndex)      { this.iconeIndex = iconeIndex; }
+    @com.google.firebase.firestore.PropertyName("tipo")
     public String getTipoStr()                     { return tipo; }
+    @com.google.firebase.firestore.PropertyName("tipo")
     public void setTipo(String tipo)               { this.tipo = tipo; }
 
     public boolean isProduto() { return TIPO_STR_PRODUTO.equals(tipo); }
