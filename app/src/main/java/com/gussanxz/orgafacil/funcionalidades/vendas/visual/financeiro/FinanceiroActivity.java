@@ -196,34 +196,40 @@ public class FinanceiroActivity extends AppCompatActivity {
         rvFinanceiro.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView rv, int dx, int dy) {
-                LinearLayoutManager lm = (LinearLayoutManager) rv.getLayoutManager();
-                if (lm == null) return;
-
-                int firstVisible = lm.findFirstVisibleItemPosition();
-                if (firstVisible < 0 || listaItens.isEmpty()) {
-                    cardHeaderDiaCongelado.setVisibility(View.GONE);
-                    return;
-                }
-
-                // Encontra o header do dia que está "cobrindo" os itens visíveis
-                HeaderDiaVenda headerAtual = null;
-                for (int i = firstVisible; i >= 0; i--) {
-                    Object item = listaItens.get(i);
-                    if (item instanceof HeaderDiaVenda) {
-                        headerAtual = (HeaderDiaVenda) item;
-                        break;
-                    }
-                }
-
-                if (headerAtual != null) {
-                    cardHeaderDiaCongelado.setVisibility(View.VISIBLE);
-                    txtHeaderDiaCongelado.setText(headerAtual.titulo);
-                    txtTotalDiaCongelado.setText(fmt.format(headerAtual.totalDia));
-                } else {
-                    cardHeaderDiaCongelado.setVisibility(View.GONE);
-                }
+                atualizarHeaderCongelado();
             }
         });
+    }
+
+    private void atualizarHeaderCongelado() {
+        LinearLayoutManager lm = (LinearLayoutManager) rvFinanceiro.getLayoutManager();
+        if (lm == null) return;
+
+        int firstVisible = lm.findFirstVisibleItemPosition();
+        if (firstVisible < 0 || listaItens.isEmpty()) {
+            cardHeaderDiaCongelado.setVisibility(View.GONE);
+            return;
+        }
+
+        // Se o próprio item no topo já é um header, o congelado não precisa aparecer
+        if (listaItens.get(firstVisible) instanceof HeaderDiaVenda) {
+            cardHeaderDiaCongelado.setVisibility(View.GONE);
+            return;
+        }
+
+        // Busca o header do grupo que cobre os itens visíveis
+        for (int i = firstVisible - 1; i >= 0; i--) {
+            Object item = listaItens.get(i);
+            if (item instanceof HeaderDiaVenda) {
+                HeaderDiaVenda h = (HeaderDiaVenda) item;
+                cardHeaderDiaCongelado.setVisibility(View.VISIBLE);
+                txtHeaderDiaCongelado.setText(h.titulo);
+                txtTotalDiaCongelado.setText(fmt.format(h.totalDia));
+                return;
+            }
+        }
+
+        cardHeaderDiaCongelado.setVisibility(View.GONE);
     }
 
     private void abrirDatePicker(boolean isInicial) {
@@ -366,6 +372,7 @@ public class FinanceiroActivity extends AppCompatActivity {
 
         adapter.atualizarLista(listaItens);
         atualizarEstadoTela();
+        atualizarHeaderCongelado();
     }
 
     private void atualizarEstadoTela() {
