@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,6 +50,8 @@ public class FinanceiroActivity extends AppCompatActivity {
     private TextView txtHeaderDiaCongelado, txtTotalDiaCongelado;
     private RecyclerView rvFinanceiro;
     private View layoutEstadoVazio;
+    private ImageButton btnToggleFiltros, btnToggleDatas;
+    private LinearLayout painelFiltrosAvancados, painelDatas;
 
     // Estado
     private final List<VendaModel> listaCompleta = new ArrayList<>();
@@ -131,6 +134,10 @@ public class FinanceiroActivity extends AppCompatActivity {
         txtTotalDiaCongelado    = findViewById(R.id.txtTotalDiaCongelado);
         rvFinanceiro            = findViewById(R.id.rvFinanceiro);
         layoutEstadoVazio       = findViewById(R.id.layoutEstadoVazioFinanceiro);
+        btnToggleFiltros       = findViewById(R.id.btnToggleFiltros);
+        btnToggleDatas         = findViewById(R.id.btnToggleDatas);
+        painelFiltrosAvancados = findViewById(R.id.painelFiltrosAvancados);
+        painelDatas            = findViewById(R.id.painelDatas);
     }
 
     private void configurarSpinners() {
@@ -188,6 +195,24 @@ public class FinanceiroActivity extends AppCompatActivity {
 
         btnDataInicial.setOnClickListener(v -> abrirDatePicker(true));
         btnDataFinal.setOnClickListener(v   -> abrirDatePicker(false));
+
+        btnToggleFiltros.setOnClickListener(v -> {
+            boolean visivel = painelFiltrosAvancados.getVisibility() == View.VISIBLE;
+            painelFiltrosAvancados.setVisibility(visivel ? View.GONE : View.VISIBLE);
+            btnToggleFiltros.setBackgroundTintList(getColorStateList(
+                    visivel ? android.R.color.white : R.color.colorPrimary));
+            androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleFiltros,
+                    getColorStateList(visivel ? R.color.colorPrimary : android.R.color.white));
+        });
+
+        btnToggleDatas.setOnClickListener(v -> {
+            boolean visivel = painelDatas.getVisibility() == View.VISIBLE;
+            painelDatas.setVisibility(visivel ? View.GONE : View.VISIBLE);
+            btnToggleDatas.setBackgroundTintList(getColorStateList(
+                    visivel ? android.R.color.white : R.color.colorPrimary));
+            androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleDatas,
+                    getColorStateList(visivel ? R.color.colorPrimary : android.R.color.white));
+        });
 
         btnLimparFiltros.setOnClickListener(v -> limparTodosFiltros());
     }
@@ -266,12 +291,14 @@ public class FinanceiroActivity extends AppCompatActivity {
         dataInicialMs   = null;
         dataFinalMs     = null;
 
-        spinnerPagamento.setSelection(0);
-        spinnerTipoItem.setSelection(0);
-        btnDataInicial.setText("Data inicial");
-        btnDataInicial.setTextColor(getColor(android.R.color.darker_gray));
-        btnDataFinal.setText("Data final");
-        btnDataFinal.setTextColor(getColor(android.R.color.darker_gray));
+        painelFiltrosAvancados.setVisibility(View.GONE);
+        painelDatas.setVisibility(View.GONE);
+        btnToggleFiltros.setBackgroundTintList(getColorStateList(android.R.color.white));
+        btnToggleDatas.setBackgroundTintList(getColorStateList(android.R.color.white));
+        androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleFiltros,
+                getColorStateList(R.color.colorPrimary));
+        androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleDatas,
+                getColorStateList(R.color.colorPrimary));
 
         atualizarChips();
         aplicarFiltros();

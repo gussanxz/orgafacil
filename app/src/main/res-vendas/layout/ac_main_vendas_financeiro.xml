@@ -118,23 +118,65 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- Painel de filtros avançados -->
+        <!-- Barra de ações: filtro + calendário + X -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp">
+
+            <!-- Botão filtros avançados -->
+            <ImageButton
+                android:id="@+id/btnToggleFiltros"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/fundo_arredondado"
+                android:src="@drawable/ic_filtro_24"
+                android:contentDescription="Filtros" />
+
+            <!-- Botão intervalo de datas -->
+            <ImageButton
+                android:id="@+id/btnToggleDatas"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/fundo_arredondado"
+                android:src="@drawable/ic_calendar_month_24"
+                android:contentDescription="Datas" />
+
+            <!-- Botão X: limpar filtros, só aparece quando há filtro -->
+            <ImageButton
+                android:id="@+id/btnLimparFiltros"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/fundo_arredondado"
+                android:backgroundTint="#EF5350"
+                android:src="@drawable/ic_x_24"
+                android:contentDescription="Limpar filtros"
+                app:tint="@color/white"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Painel de filtros avançados (recolhível) -->
         <LinearLayout
             android:id="@+id/painelFiltrosAvancados"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="8dp">
+            android:paddingBottom="8dp"
+            android:visibility="gone">
 
-            <!-- Linha 1: pagamento + tipo -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <!-- Filtro: forma de pagamento -->
                 <Spinner
                     android:id="@+id/spinnerPagamento"
                     android:layout_width="0dp"
@@ -145,7 +187,6 @@
                     android:paddingHorizontal="12dp"
                     android:spinnerMode="dropdown" />
 
-                <!-- Filtro: produto ou serviço -->
                 <Spinner
                     android:id="@+id/spinnerTipoItem"
                     android:layout_width="0dp"
@@ -156,56 +197,47 @@
                     android:spinnerMode="dropdown" />
 
             </LinearLayout>
+        </LinearLayout>
 
-            <!-- Linha 2: intervalo de datas -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
+        <!-- Painel de datas (recolhível) -->
+        <LinearLayout
+            android:id="@+id/painelDatas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnDataInicial"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/fundo_arredondado"
+                android:paddingHorizontal="12dp"
                 android:gravity="center_vertical"
-                android:layout_marginTop="8dp">
+                android:text="Data inicial"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="13sp"
+                android:clickable="true"
+                android:focusable="true" />
 
-                <TextView
-                    android:id="@+id/btnDataInicial"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/fundo_arredondado"
-                    android:paddingHorizontal="12dp"
-                    android:gravity="center_vertical"
-                    android:text="Data inicial"
-                    android:textColor="@color/cor_texto_secundario"
-                    android:textSize="13sp"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:id="@+id/btnDataFinal"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/fundo_arredondado"
-                    android:paddingHorizontal="12dp"
-                    android:gravity="center_vertical"
-                    android:text="Data final"
-                    android:textColor="@color/cor_texto_secundario"
-                    android:textSize="13sp"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <!-- Botão X: limpar filtros -->
-                <ImageButton
-                    android:id="@+id/btnLimparFiltros"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/fundo_arredondado"
-                    android:src="@drawable/bg_chip_clear"
-                    android:contentDescription="Limpar filtros"
-                    android:visibility="gone" />
-
-            </LinearLayout>
+            <TextView
+                android:id="@+id/btnDataFinal"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/fundo_arredondado"
+                android:paddingHorizontal="12dp"
+                android:gravity="center_vertical"
+                android:text="Data final"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="13sp"
+                android:clickable="true"
+                android:focusable="true" />
 
         </LinearLayout>
 
