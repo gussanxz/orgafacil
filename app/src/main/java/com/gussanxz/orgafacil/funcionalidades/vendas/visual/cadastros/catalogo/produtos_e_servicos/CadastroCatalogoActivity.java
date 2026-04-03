@@ -72,6 +72,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
 
     // ── Views: bloco de ícones (produto) ──────────────────────────────
     private LinearLayout       caixaIcones;        // id: caixa
+    private LinearLayout       layoutBtnIconePadrao; // id: layoutBtnIconePadrao
     private NestedScrollView   scrollView;
     private LinearLayout       layoutSelecao;
     private GridLayout         containerIcones;
@@ -191,6 +192,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         loadingOverlay    = findViewById(R.id.loadingOverlay);
 
         caixaIcones           = findViewById(R.id.caixa);
+        layoutBtnIconePadrao  = findViewById(R.id.layoutBtnIconePadrao);
         scrollView            = findViewById(R.id.scrollViewContent);
         containerIcones       = findViewById(R.id.containerIcones);
         layoutSelecao         = findViewById(R.id.layoutSelecao);
@@ -324,7 +326,9 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
 
         // Bloco de ícones apenas para produto
         if (caixaIcones != null) {
-            caixaIcones.setVisibility(isProduto ? View.VISIBLE : View.GONE);
+            caixaIcones.setVisibility(View.VISIBLE); // galeria disponível para ambos
+            if (layoutBtnIconePadrao != null)
+                layoutBtnIconePadrao.setVisibility(isProduto ? View.VISIBLE : View.GONE);
         }
 
         // Atualiza header e hint do campo nome
@@ -383,8 +387,11 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         aplicarVisualCardTipo(cardTipoServico, iconTipoServico, txtTipoServico,
                 isProduto ? COR_NEUTRO : corAtual, !isProduto);
 
-        if (caixaIcones != null)
-            caixaIcones.setVisibility(isProduto ? View.VISIBLE : View.GONE);
+        if (caixaIcones != null) {
+            caixaIcones.setVisibility(View.VISIBLE);
+            if (layoutBtnIconePadrao != null)
+                layoutBtnIconePadrao.setVisibility(isProduto ? View.VISIBLE : View.GONE);
+        }
         if (textInputNome != null)
             textInputNome.setHint(isProduto ? "Nome do Produto" : "Nome do Serviço");
 
