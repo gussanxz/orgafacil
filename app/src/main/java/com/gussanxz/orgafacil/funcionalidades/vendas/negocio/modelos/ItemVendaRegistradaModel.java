@@ -3,7 +3,8 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
 import java.io.Serializable;
 
 public class ItemVendaRegistradaModel implements Serializable {
-
+    public static final int TIPO_PRODUTO = 1;
+    public static final int TIPO_SERVICO = 2;
     private String itemId;
     private String nome;
     private int tipo;
