@@ -52,17 +52,24 @@ public class AdapterGradeCategoriasNovaVenda
 
         // Ícone "Todos" usa ícone de grade; demais categorias usam label
         if ("todos".equals(categoria.getId())) {
-            holder.imgIcone.clearColorFilter();
+            holder.imgIcone.setPadding(24, 24, 24, 24);
+            holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+            holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));
             holder.imgIcone.setImageResource(R.drawable.ic_grid_24);
         } else if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
-            holder.imgIcone.clearColorFilter();
+            holder.imgIcone.setPadding(0, 0, 0, 0);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            holder.imgIcone.clearColorFilter();
+            androidx.core.widget.ImageViewCompat.setImageTintList(holder.imgIcone, null);
             Glide.with(holder.itemView.getContext())
                     .load(categoria.getUrlImagem())
                     .placeholder(R.drawable.ic_label_24)
                     .circleCrop()
                     .into(holder.imgIcone);
         } else {
+            holder.imgIcone.setPadding(24, 24, 24, 24);
+            holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+            holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));
             holder.imgIcone.setImageResource(R.drawable.ic_label_24);
         }
 

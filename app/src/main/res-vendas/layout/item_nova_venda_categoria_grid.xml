@@ -34,8 +34,7 @@
                 android:layout_height="match_parent"
                 android:padding="10dp"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_label_24"
-                app:tint="#616161" />
+                android:src="@drawable/ic_label_24"/>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
