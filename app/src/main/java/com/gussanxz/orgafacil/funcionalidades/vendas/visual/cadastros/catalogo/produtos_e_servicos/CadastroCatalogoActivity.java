@@ -370,6 +370,33 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         categoriaSelecionadaId   = dados.getString("categoriaId", CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO);
         categoriaSelecionadaNome = dados.getString("categoria",   CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
         urlFotoAtual = dados.getString("urlFoto", null);
+        if (urlFotoAtual != null && !urlFotoAtual.isEmpty()) {
+            if (imgBtnGaleria != null) {
+                imgBtnGaleria.setColorFilter(null);
+                imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                com.bumptech.glide.Glide.with(this)
+                        .load(urlFotoAtual)
+                        .placeholder(R.drawable.ic_camera_alt_120)
+                        .into(imgBtnGaleria);
+                if (cardBtnGaleria != null) {
+                    cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
+                    cardBtnGaleria.setStrokeWidth(4);
+                }
+            }
+            if (imgPreviewLarge != null) {
+                imgPreviewLarge.setImageTintList(null);
+                imgPreviewLarge.setColorFilter(null);
+                imgPreviewLarge.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                com.bumptech.glide.Glide.with(this)
+                        .load(urlFotoAtual)
+                        .placeholder(R.drawable.ic_camera_alt_120)
+                        .into(imgPreviewLarge);
+            }
+            if (layoutSelecao   != null) layoutSelecao.setVisibility(View.VISIBLE);
+            if (cardPreviewFoto != null) cardPreviewFoto.setVisibility(View.VISIBLE);
+            if (cardContainerGrid != null) cardContainerGrid.setVisibility(View.GONE);
+            if (txtTituloSelecao  != null) txtTituloSelecao.setText("Pré-visualização:");
+        }
         tipoAtual = tipo;
         textViewHeader.setText(isProduto ? "Editar Produto" : "Editar Serviço");
         btnExcluirHeader.setVisibility(View.VISIBLE);
@@ -510,8 +537,11 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
 
     private void resetarVisualGaleria() {
         imagemSelecionadaUri = null;
-        if (cardBtnGaleria != null) { cardBtnGaleria.setStrokeColor(Color.parseColor("#E0E0E0")); cardBtnGaleria.setStrokeWidth(1); }
-        if (imgBtnGaleria  != null) { imgBtnGaleria.setImageResource(R.drawable.ic_camera_alt_120); imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP); imgBtnGaleria.setColorFilter(Color.parseColor("#757575")); }
+        urlFotoAtual = null;
+        if (cardBtnGaleria  != null) { cardBtnGaleria.setStrokeColor(Color.parseColor("#E0E0E0")); cardBtnGaleria.setStrokeWidth(1); }
+        if (imgBtnGaleria   != null) { imgBtnGaleria.setImageResource(R.drawable.ic_camera_alt_120); imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP); imgBtnGaleria.setColorFilter(Color.parseColor("#757575")); }
+        if (layoutSelecao   != null) layoutSelecao.setVisibility(View.GONE);
+        if (cardPreviewFoto != null) cardPreviewFoto.setVisibility(View.GONE);
     }
 
     private void atualizarVisualGridIcones(int indexSelecionado) {
