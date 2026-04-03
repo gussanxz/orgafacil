@@ -136,7 +136,6 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             Glide.with(context)
                     .load(url)
                     .placeholder(R.drawable.ic_camera_alt_120)
-                    .circleCrop()
                     .into(imgIcone);
         } else {
             imgIcone.setScaleType(ImageView.ScaleType.CENTER);

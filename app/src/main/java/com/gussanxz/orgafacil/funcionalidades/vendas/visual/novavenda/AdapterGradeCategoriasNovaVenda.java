@@ -52,25 +52,30 @@ public class AdapterGradeCategoriasNovaVenda
 
         // Ícone "Todos" usa ícone de grade; demais categorias usam label
         if ("todos".equals(categoria.getId())) {
-            holder.imgIcone.setPadding(24, 24, 24, 24);
+            holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
             holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));
             holder.imgIcone.setImageResource(R.drawable.ic_grid_24);
+            if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
+                    android.graphics.Color.parseColor("#F5F5F5"));
         } else if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
             holder.imgIcone.setPadding(0, 0, 0, 0);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             holder.imgIcone.clearColorFilter();
             androidx.core.widget.ImageViewCompat.setImageTintList(holder.imgIcone, null);
+            if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
+                    android.graphics.Color.TRANSPARENT);
             Glide.with(holder.itemView.getContext())
                     .load(categoria.getUrlImagem())
                     .placeholder(R.drawable.ic_label_24)
-                    .circleCrop()
-                    .into(holder.imgIcone);
+                    .into(holder.imgIcone); // sem circleCrop — agora é retangular
         } else {
-            holder.imgIcone.setPadding(24, 24, 24, 24);
+            holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-            holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));
+            holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#9E9E9E"));
             holder.imgIcone.setImageResource(R.drawable.ic_label_24);
+            if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
+                    android.graphics.Color.parseColor("#F5F5F5"));
         }
 
         holder.itemView.setOnClickListener(v -> {
@@ -86,11 +91,13 @@ public class AdapterGradeCategoriasNovaVenda
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView  txtNome;
         ImageView imgIcone;
+        com.google.android.material.card.MaterialCardView cardRaiz;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             txtNome  = itemView.findViewById(R.id.txtNomeCategoriaGrid);
             imgIcone = itemView.findViewById(R.id.imgIconeCategoriaGrid);
+            cardRaiz = itemView.findViewById(R.id.cardCategoriaGrid);
         }
     }
 }

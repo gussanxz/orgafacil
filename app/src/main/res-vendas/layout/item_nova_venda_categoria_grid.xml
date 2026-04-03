@@ -13,42 +13,40 @@
     app:strokeColor="#E0E0E0"
     app:strokeWidth="1dp">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="12dp">
+        android:layout_height="wrap_content">
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardIconeCategoriaGrid"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:cardBackgroundColor="#F5F5F5"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="0dp">
+        <!-- Imagem ocupa o card inteiro -->
+        <ImageView
+            android:id="@+id/imgIconeCategoriaGrid"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_label_24" />
 
-            <ImageView
-                android:id="@+id/imgIconeCategoriaGrid"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="10dp"
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_label_24"/>
-        </com.google.android.material.card.MaterialCardView>
+        <!-- Overlay escuro na parte de baixo para o texto ser legível -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_gravity="bottom"
+            android:background="#99000000" />
 
+        <!-- Nome sobre a imagem -->
         <TextView
             android:id="@+id/txtNomeCategoriaGrid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_gravity="bottom"
             android:gravity="center"
             android:maxLines="2"
             android:ellipsize="end"
+            android:padding="6dp"
             android:text="Categoria"
-            android:textColor="@color/cor_texto_primario"
+            android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />
 
-    </LinearLayout>
+    </FrameLayout>
+
 </com.google.android.material.card.MaterialCardView>
