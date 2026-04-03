@@ -72,6 +72,7 @@
             android:exported="false" />
 
         <activity android:name=".funcionalidades.vendas.ResumoVendasActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.vendas.visual.financeiro.FinanceiroActivity"/>
         <activity android:name=".funcionalidades.vendas.visual.historico.HistoricoVendasActivity" />
         <activity android:name=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity" android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity" />

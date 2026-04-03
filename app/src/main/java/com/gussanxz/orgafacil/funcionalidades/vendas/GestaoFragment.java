@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro.FinanceiroActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HistoricoVendasActivity;
 
 public class GestaoFragment extends Fragment {
@@ -30,9 +31,14 @@ public class GestaoFragment extends Fragment {
         // 1. Configurar botão de Vendas (O único que não está bloqueado na sua imagem/código base)
         View cardVendas = view.findViewById(R.id.cardVendas);
         if (cardVendas != null) {
-            cardVendas.setOnClickListener(v -> {
-                startActivity(new Intent(requireContext(), HistoricoVendasActivity.class));
-            });
+            cardVendas.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), HistoricoVendasActivity.class)));
+        }
+
+        View cardFinanceiro = view.findViewById(R.id.cardFinanceiro);
+        if (cardFinanceiro != null) {
+            cardFinanceiro.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), FinanceiroActivity.class)));
         }
 
         // 2. Configurar os botões com cadeado (Funcionalidade futura)
@@ -51,7 +57,6 @@ public class GestaoFragment extends Fragment {
                 R.id.overlayDevolucoes,
                 R.id.overlayRelatorios,
                 R.id.overlayControleCaixa,
-                R.id.overlayFinanceiro
         };
 
         // Aplica o clique em cada um
