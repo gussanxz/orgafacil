@@ -130,6 +130,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         if (item instanceof CatalogoModel && ((CatalogoModel) item).temFoto()) {
             String url = ((CatalogoModel) item).getUrlFoto();
             imgIcone.clearColorFilter();
+            androidx.core.widget.ImageViewCompat.setImageTintList(imgIcone, null);
             imgIcone.setScaleType(ImageView.ScaleType.CENTER_CROP);
             cardIcone.setCardBackgroundColor(Color.TRANSPARENT);
             Glide.with(context)
