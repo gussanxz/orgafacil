@@ -2,6 +2,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
+import com.bumptech.glide.Glide;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -107,6 +108,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                 TextView textNome;
                 TextView textPreco;
                 TextView textStatus;
+                com.google.android.material.card.MaterialCardView cardIcone;
                 ImageView imgIcone;
                 ImageButton btnExcluirProduto;
 
@@ -125,7 +127,8 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
 
                         textStatus = itemView.findViewById(R.id.textStatus);
-                        imgIcone = itemView.findViewById(R.id.imageIconeProduto);
+                        imgIcone   = itemView.findViewById(R.id.imageIconeProduto);
+                        cardIcone  = itemView.findViewById(R.id.cardIcone);
                         if (imgIcone == null) imgIcone = itemView.findViewById(R.id.imgIcone);
                         btnExcluirProduto = itemView.findViewById(R.id.btnExcluirProduto);
                 }
@@ -148,12 +151,28 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                         }
 
                         if (imgIcone != null) {
-                                if (item instanceof CatalogoModel && ((CatalogoModel) item).isProduto()) {
+                                if (item instanceof CatalogoModel && ((CatalogoModel) item).temFoto()) {
+                                        // Tem foto: carrega via Glide
+                                        imgIcone.clearColorFilter();
+                                        imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+                                        if (cardIcone != null) cardIcone.setCardBackgroundColor(Color.TRANSPARENT);
+                                        Glide.with(itemView.getContext())
+                                                .load(((CatalogoModel) item).getUrlFoto())
+                                                .placeholder(R.drawable.ic_camera_alt_120)
+                                                .circleCrop()
+                                                .into(imgIcone);
+                                } else if (item instanceof CatalogoModel && ((CatalogoModel) item).isProduto()) {
+                                        // Produto sem foto: ícone laranja
+                                        imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER);
                                         imgIcone.setImageResource(getIconeProdutoPorIndex(((CatalogoModel) item).getIconeIndex()));
                                         imgIcone.setColorFilter(Color.parseColor("#EF6C00"));
+                                        if (cardIcone != null) cardIcone.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
                                 } else {
+                                        // Serviço sem foto: ícone azul
+                                        imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER);
                                         imgIcone.setImageResource(R.drawable.ic_paid_28);
                                         imgIcone.setColorFilter(Color.parseColor("#1565C0"));
+                                        if (cardIcone != null) cardIcone.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
                                 }
                         }
 

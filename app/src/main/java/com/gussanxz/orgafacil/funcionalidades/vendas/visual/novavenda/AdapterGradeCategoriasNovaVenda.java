@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class AdapterGradeCategoriasNovaVenda
@@ -50,7 +52,16 @@ public class AdapterGradeCategoriasNovaVenda
 
         // Ícone "Todos" usa ícone de grade; demais categorias usam label
         if ("todos".equals(categoria.getId())) {
+            holder.imgIcone.clearColorFilter();
             holder.imgIcone.setImageResource(R.drawable.ic_grid_24);
+        } else if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
+            holder.imgIcone.clearColorFilter();
+            holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            Glide.with(holder.itemView.getContext())
+                    .load(categoria.getUrlImagem())
+                    .placeholder(R.drawable.ic_label_24)
+                    .circleCrop()
+                    .into(holder.imgIcone);
         } else {
             holder.imgIcone.setImageResource(R.drawable.ic_label_24);
         }

@@ -58,5 +58,10 @@ public class CatalogoModel implements ItemVendaModel {
 
     @com.google.firebase.firestore.PropertyName("urlFoto")
     public void setUrlFoto(String urlFoto) { this.urlFoto = urlFoto; }
+    /** Campos legados no Firestore — ignorados pelo mapper */
+    @com.google.firebase.firestore.Exclude
+    public void setProduto(Object ignored) {}
+    @com.google.firebase.firestore.Exclude
+    public void setServico(Object ignored) {}
     public boolean temFoto()                { return urlFoto != null && !urlFoto.isEmpty(); }
 }
