@@ -241,29 +241,31 @@ public class FinanceiroActivity extends AppCompatActivity {
 
         int firstVisible = lm.findFirstVisibleItemPosition();
         if (firstVisible < 0 || listaItens.isEmpty()) {
-            cardHeaderDiaCongelado.setVisibility(View.GONE);
+            cardHeaderDiaCongelado.setVisibility(View.INVISIBLE);
             return;
         }
 
-        // Se o próprio item no topo já é um header, o congelado não precisa aparecer
+        // Se o próprio item no topo já é um header visível, esconde o congelado
         if (listaItens.get(firstVisible) instanceof HeaderDiaVenda) {
-            cardHeaderDiaCongelado.setVisibility(View.GONE);
+            cardHeaderDiaCongelado.setVisibility(View.INVISIBLE);
             return;
         }
 
         // Busca o header do grupo que cobre os itens visíveis
         for (int i = firstVisible - 1; i >= 0; i--) {
-            Object item = listaItens.get(i);
-            if (item instanceof HeaderDiaVenda) {
-                HeaderDiaVenda h = (HeaderDiaVenda) item;
+            if (listaItens.get(i) instanceof HeaderDiaVenda) {
+                HeaderDiaVenda h = (HeaderDiaVenda) listaItens.get(i);
+                // Só atualiza o texto se mudou, evita relayout desnecessário
+                if (!h.titulo.equals(txtHeaderDiaCongelado.getText().toString())) {
+                    txtHeaderDiaCongelado.setText(h.titulo);
+                    txtTotalDiaCongelado.setText(fmt.format(h.totalDia));
+                }
                 cardHeaderDiaCongelado.setVisibility(View.VISIBLE);
-                txtHeaderDiaCongelado.setText(h.titulo);
-                txtTotalDiaCongelado.setText(fmt.format(h.totalDia));
                 return;
             }
         }
 
-        cardHeaderDiaCongelado.setVisibility(View.GONE);
+        cardHeaderDiaCongelado.setVisibility(View.INVISIBLE);
     }
 
     private void abrirDatePicker(boolean isInicial) {
