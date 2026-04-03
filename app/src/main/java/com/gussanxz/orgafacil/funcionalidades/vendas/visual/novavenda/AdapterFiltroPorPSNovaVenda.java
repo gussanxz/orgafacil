@@ -159,7 +159,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                                         Glide.with(itemView.getContext())
                                                 .load(((CatalogoModel) item).getUrlFoto())
                                                 .placeholder(R.drawable.ic_camera_alt_120)
-                                                .circleCrop()
+                                                .centerCrop()
                                                 .into(imgIcone);
                                 } else if (item instanceof CatalogoModel && ((CatalogoModel) item).isProduto()) {
                                         // Produto sem foto: ícone laranja
