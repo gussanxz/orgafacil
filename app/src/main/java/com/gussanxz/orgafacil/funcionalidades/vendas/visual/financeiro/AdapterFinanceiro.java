@@ -28,8 +28,12 @@ public class AdapterFinanceiro extends RecyclerView.Adapter<RecyclerView.ViewHol
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat fmtHora = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
 
-    public AdapterFinanceiro(List<Object> listaItens) {
-        this.listaItens = listaItens;
+    public interface OnVendaClickListener { void onVendaClick(VendaModel venda); }
+    private OnVendaClickListener clickListener;
+
+    public AdapterFinanceiro(List<Object> listaItens, OnVendaClickListener listener) {
+        this.listaItens   = listaItens;
+        this.clickListener = listener;
     }
 
     public void atualizarLista(List<Object> novaLista) {
@@ -122,6 +126,9 @@ public class AdapterFinanceiro extends RecyclerView.Adapter<RecyclerView.ViewHol
             txtTotal.setText(fmt.format(venda.getValorTotal()));
             txtTotal.setTextColor(android.graphics.Color.parseColor(
                     finalizada ? "#1B5E20" : "#9E9E9E"));
+            itemView.setOnClickListener(v -> {
+                if (clickListener != null) clickListener.onVendaClick(venda);
+            });
         }
     }
 }

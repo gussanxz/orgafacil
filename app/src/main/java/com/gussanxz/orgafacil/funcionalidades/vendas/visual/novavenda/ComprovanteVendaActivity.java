@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
@@ -49,6 +50,10 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", new Locale("pt", "BR"));
 
     private VendaRepository vendaRepository;
+    private LinearLayout layoutAcoesFinanceiro;
+    private com.google.android.material.button.MaterialButton btnEditarDoFinanceiro;
+    private com.google.android.material.button.MaterialButton btnAlternarStatusDoFinanceiro;
+    private VendaModel vendaAtual; // guarda a venda carregada
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +95,9 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         rowAcrescimo        = findViewById(R.id.rowAcrescimo);
         rowDesconto         = findViewById(R.id.rowDesconto);
         btnFecharComprovante = findViewById(R.id.btnFecharComprovante);
+        layoutAcoesFinanceiro       = findViewById(R.id.layoutAcoesFinanceiro);
+        btnEditarDoFinanceiro       = findViewById(R.id.btnEditarDoFinanceiro);
+        btnAlternarStatusDoFinanceiro = findViewById(R.id.btnAlternarStatusDoFinanceiro);
     }
 
     private void configurarRecyclerView() {
@@ -170,6 +178,16 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         } else {
             rowDesconto.setVisibility(View.GONE);
         }
+
+        vendaAtual = venda;
+        boolean origemFinanceiro = getIntent().getBooleanExtra("origemFinanceiro", false);
+        if (origemFinanceiro && layoutAcoesFinanceiro != null) {
+            layoutAcoesFinanceiro.setVisibility(View.VISIBLE);
+            boolean finalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
+            btnAlternarStatusDoFinanceiro.setText(finalizada ? "Cancelar venda" : "Recuperar venda");
+            btnEditarDoFinanceiro.setOnClickListener(v -> abrirEdicao(venda));
+            btnAlternarStatusDoFinanceiro.setOnClickListener(v -> confirmarAlteracaoStatus(venda));
+        }
     }
 
     private void voltarParaNovaVenda() {
@@ -189,5 +207,43 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
+    }
+
+    private void abrirEdicao(VendaModel venda) {
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
+        ArrayList<ItemSacolaVendaModel> sacola = new ArrayList<>();
+        if (venda.getItens() != null) {
+            for (ItemVendaRegistradaModel item : venda.getItens()) {
+                sacola.add(new ItemSacolaVendaModel(item));
+            }
+        }
+        intent.putExtra("itensSacola", sacola);
+        intent.putExtra("vendaId", venda.getId());
+        intent.putExtra("dataHoraOriginal",
+                venda.getDataHoraFechamentoMillis() > 0
+                        ? venda.getDataHoraFechamentoMillis()
+                        : venda.getDataHoraAberturaMillis());
+        intent.putExtra("formaPagamentoOriginal", venda.getFormaPagamento());
+        startActivity(intent);
+    }
+
+    private void confirmarAlteracaoStatus(VendaModel venda) {
+        boolean finalizada = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus());
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(finalizada ? "Cancelar venda" : "Recuperar venda")
+                .setMessage(finalizada
+                        ? "Deseja cancelar esta venda? Ela continuará no histórico."
+                        : "Deseja marcar esta venda como finalizada novamente?")
+                .setPositiveButton(finalizada ? "Cancelar venda" : "Recuperar", (d, w) -> {
+                    vendaRepository.alternarStatus(venda, new VendaRepository.Callback() {
+                        @Override public void onSucesso(String id) { finish(); }
+                        @Override public void onErro(String erro) {
+                            Toast.makeText(ComprovanteVendaActivity.this,
+                                    "Erro: " + erro, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Voltar", null)
+                .show();
     }
 }

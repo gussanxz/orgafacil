@@ -1,6 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -25,6 +26,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HeaderDiaVenda;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -182,8 +184,15 @@ public class FinanceiroActivity extends AppCompatActivity {
 
     private void configurarRecyclerView() {
         rvFinanceiro.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AdapterFinanceiro(listaItens);
+        adapter = new AdapterFinanceiro(listaItens, venda -> abrirVenda(venda));
         rvFinanceiro.setAdapter(adapter);
+    }
+
+    private void abrirVenda(VendaModel venda) {
+        Intent intent = new Intent(this, ComprovanteVendaActivity.class);
+        intent.putExtra("vendaId", venda.getId());
+        intent.putExtra("origemFinanceiro", true); // sinaliza que veio do Financeiro
+        startActivity(intent);
     }
 
     private void configurarAcoes() {
