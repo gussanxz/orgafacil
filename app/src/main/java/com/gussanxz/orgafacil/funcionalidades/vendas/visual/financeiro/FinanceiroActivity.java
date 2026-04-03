@@ -361,8 +361,9 @@ public class FinanceiroActivity extends AppCompatActivity {
             String label;
             try {
                 Date dataRef = fmtDia.parse(chave);
-                if (chave.equals(diaHoje))       label = "Hoje";
-                else if (chave.equals(diaOntem)) label = "Ontem";
+                String dataFormatada = fmtExib.format(dataRef); // ex: "03/04/2026"
+                if (chave.equals(diaHoje))       label = "Hoje, "  + dataFormatada;
+                else if (chave.equals(diaOntem)) label = "Ontem, " + dataFormatada;
                 else                             label = fmtLabel.format(dataRef);
             } catch (ParseException e) { label = chave; }
 
