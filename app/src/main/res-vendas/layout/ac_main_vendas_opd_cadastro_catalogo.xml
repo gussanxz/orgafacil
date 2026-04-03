@@ -430,8 +430,7 @@
                                     android:contentDescription="Selecionar da Galeria"
                                     android:padding="12dp"
                                     android:scaleType="centerCrop"
-                                    android:src="@drawable/ic_camera_alt_120"
-                                    app:tint="#757575" />
+                                    android:src="@drawable/ic_camera_alt_120"/>
                             </com.google.android.material.card.MaterialCardView>
                         </LinearLayout>
                     </LinearLayout>
