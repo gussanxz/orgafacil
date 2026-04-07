@@ -144,7 +144,9 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
                     } else {
                         abortarLogin("Erro crítico: Usuário não identificado.");
                     }
-                });
+                })
+                .setNegativeButton("Não, Sair", (dialog, which) -> realizarLogoutDeLimpeza())
+                .show();
     }
 
     private void exibirDialogoTermos(FirebaseUser user) {
