@@ -109,9 +109,11 @@ public class ResumoContasActivity extends AppCompatActivity {
                 new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     contasViewModel.invalidarDados();
-                    contasViewModel.fetchDados(true, null);
-                    new android.os.Handler(android.os.Looper.getMainLooper())
-                            .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+                    com.google.firebase.Timestamp tsFirestore = resumo.getUltimaAtualizacao();
+                    if (!contasViewModel.dadosEstaAtualizados(tsFirestore)) {
+                        contasViewModel.fetchDados(true, null);
+                        new android.os.Handler().postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
+                    }
                 }
         );
 

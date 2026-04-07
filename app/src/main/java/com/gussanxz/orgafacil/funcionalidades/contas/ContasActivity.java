@@ -279,14 +279,24 @@ public class ContasActivity extends AppCompatActivity {
                 new ResumoFinanceiroRepository.ResumoCallback() {
                     @Override
                     public void onUpdate(ResumoFinanceiroModel resumo) {
-                        if (resumo != null && resumo.getBalanco() != null) {
-                            if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
-                                    || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())
-                                    || ultimoSaldoCarregado != null) return;
+                        if (resumo == null || resumo.getBalanco() == null) return;
 
-                            long saldoCentavos = resumo.getBalanco().getSaldoAtual();
-                            textoSaldo.setText(MoedaHelper.formatarCentavosParaBRL(saldoCentavos));
+                        // Verifica se o Firestore tem dados mais novos do que os que estamos exibindo.
+                        // Só faz o fetch se realmente houver diferença — evita downloads desnecessários
+                        // ao navegar entre telas quando nada mudou.
+                        com.google.firebase.Timestamp tsFirestore = resumo.getUltimaAtualizacao();
+                        if (!viewModel.dadosEstaAtualizados(tsFirestore)
+                                && !Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())) {
+                            viewModel.fetchDados(ehAtalho, null);
                         }
+
+                        // Atualiza o saldo na tela (este trecho não muda)
+                        if (Boolean.TRUE.equals(viewModel.isPrimeiroCarregamento.getValue())
+                                || Boolean.TRUE.equals(viewModel.carregandoPaginacao.getValue())
+                                || ultimoSaldoCarregado != null) return;
+
+                        long saldoCentavos = resumo.getBalanco().getSaldoAtual();
+                        textoSaldo.setText(MoedaHelper.formatarCentavosParaBRL(saldoCentavos));
                     }
 
                     @Override

@@ -98,6 +98,9 @@ public class ContasViewModel extends ViewModel {
     private static final long DEBOUNCE_MS = 200L;
 
 
+    // Timestamp da última vez que os dados locais foram sincronizados com o Firestore.
+// Compara com ultimaAtualizacao do resumo para evitar buscas desnecessárias.
+    private com.google.firebase.Timestamp ultimaAtualizacaoLocal = null;
 
     // ── Construtor ─────────────────────────────────────────────────────────────
 
@@ -125,6 +128,37 @@ public class ContasViewModel extends ViewModel {
 
     public boolean isDadosInvalidados() { return dadosInvalidados; }
     public void invalidarDados() { dadosInvalidados = true; }
+
+    // ── Sync por timestamp ─────────────────────────────────────────────────────
+
+    /** Retorna o timestamp do último fetch bem-sucedido. null = nunca buscou nesta sessão. */
+    public com.google.firebase.Timestamp getUltimaAtualizacaoLocal() {
+        return ultimaAtualizacaoLocal;
+    }
+
+    /**
+     * Compara o timestamp do Firestore com o do último fetch local.
+     * Retorna true se os dados locais já estão na versão mais recente — não precisa buscar.
+     * Retorna false se nunca buscou, ou se o Firestore tem dados mais novos.
+     */
+    public boolean dadosEstaAtualizados(com.google.firebase.Timestamp tsFirestore) {
+        if (ultimaAtualizacaoLocal == null || tsFirestore == null) return false;
+        // "antes" = tsFirestore é mais novo que o local = dados desatualizados
+        return !ultimaAtualizacaoLocal.toDate().before(tsFirestore.toDate());
+    }
+
+    /**
+     * Zera o cache e o timestamp local.
+     * Use quando o usuário escolhe "baixar versão do servidor" no diálogo de conflito.
+     */
+    public void invalidarCacheCompleto() {
+        cacheHistorico = new ArrayList<>();
+        cacheFuturo = new ArrayList<>();
+        ultimaAtualizacaoLocal = null;
+        ultimoDocumentoVisivelHistorico = null;
+        ultimoDocumentoVisivelFuturo = null;
+        dadosInvalidados = true;
+    }
 
     public boolean isUltimaPaginaHistorico() { return isUltimaPaginaHistorico; }
     public boolean isUltimaPaginaFuturo()    { return isUltimaPaginaFuturo; }
@@ -218,6 +252,14 @@ public class ContasViewModel extends ViewModel {
         _carregandoPaginacao.setValue(false);
 
         _isPrimeiroCarregamento.setValue(false); // <--- NOVO: Avisa que o primeiro carregamento acabou!
+
+        // Registra o momento em que os dados foram buscados.
+        // Se ultimaAtualizacaoLocal ainda for null (primeiro fetch da sessão),
+        // marca com now() como ponto de referência. Quando o resumo do Firestore
+        // chegar com um timestamp mais novo, sabemos que houve mudança depois.
+        if (ultimaAtualizacaoLocal == null) {
+            ultimaAtualizacaoLocal = com.google.firebase.Timestamp.now();
+        }
 
         agendarFiltro();
         if (callbackExterno != null) callbackExterno.onSucesso(lista);
