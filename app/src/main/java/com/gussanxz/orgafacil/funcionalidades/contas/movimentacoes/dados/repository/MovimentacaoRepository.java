@@ -273,6 +273,10 @@ public class MovimentacaoRepository {
                 ResumoFinanceiroModel.CAMPO_SALDO_ATUAL,
                 FieldValue.increment(isReceita ? centavos * fator : -centavos * fator));
 
+        batch.update(resumoRef,
+                ResumoFinanceiroModel.CAMPO_ULTIMA_ATUALIZACAO,
+                FieldValue.serverTimestamp());
+
         // data_pagamento pode ser nulo em movimentações antigas salvas antes do campo existir.
         // Para pagamentos (fator=1): usa hoje — a movimentação está sendo confirmada agora.
         // Para exclusões (fator=-1): usa hoje como fallback seguro, pois o impacto mensal
