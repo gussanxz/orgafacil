@@ -44,6 +44,7 @@ android {
             res.srcDirs(
                 "src/main/res",
                 "src/main/res-intro",
+                "src/main/res-boletos",
                 "src/main/res-contas",
                 "src/main/res-vendas",
                 "src/main/res-configs",
@@ -60,6 +61,12 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 }
 
@@ -121,6 +128,14 @@ dependencies {
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     implementation("androidx.work:work-runtime:2.9.0")
+
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:android-core:3.3.0")
+    val cameraxVersion = "1.3.4"
+    implementation("androidx.camera:camera-core:$cameraxVersion")
+    implementation("androidx.camera:camera-camera2:$cameraxVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
 
     // ── Testes unitários ──────────────────────────────────────────────────────
     testImplementation("junit:junit:4.13.2")

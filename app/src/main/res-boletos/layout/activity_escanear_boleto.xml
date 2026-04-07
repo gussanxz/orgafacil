@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Preview ocupa tela toda -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Overlay escuro em cima -->
+    <View
+        android:id="@+id/overlayTop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#AA000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/scanArea" />
+
+    <!-- Overlay escuro embaixo -->
+    <View
+        android:id="@+id/overlayBottom"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#AA000000"
+        app:layout_constraintTop_toBottomOf="@+id/scanArea"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Overlay escuro à esquerda -->
+    <View
+        android:layout_width="24dp"
+        android:layout_height="0dp"
+        android:background="#AA000000"
+        app:layout_constraintTop_toTopOf="@+id/scanArea"
+        app:layout_constraintBottom_toBottomOf="@+id/scanArea"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/scanArea" />
+
+    <!-- Overlay escuro à direita -->
+    <View
+        android:layout_width="24dp"
+        android:layout_height="0dp"
+        android:background="#AA000000"
+        app:layout_constraintTop_toTopOf="@+id/scanArea"
+        app:layout_constraintBottom_toBottomOf="@+id/scanArea"
+        app:layout_constraintStart_toEndOf="@+id/scanArea"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Área de scan: larga e baixa, como o código de barras do boleto -->
+    <View
+        android:id="@+id/scanArea"
+        android:layout_width="0dp"
+        android:layout_height="120dp"
+        android:background="@drawable/bg_scan_window"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintWidth_percent="0.88" />
+
+    <!-- Linha de scan animada -->
+    <View
+        android:id="@+id/scanLine"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:background="#FF00BCD4"
+        app:layout_constraintStart_toStartOf="@+id/scanArea"
+        app:layout_constraintEnd_toEndOf="@+id/scanArea"
+        app:layout_constraintTop_toTopOf="@+id/scanArea" />
+
+    <!-- Instrução -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Encaixe o código de barras na área"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@+id/scanArea"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Botão cancelar -->
+    <Button
+        android:id="@+id/btnCancelar"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancelar"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

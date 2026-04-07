@@ -9,6 +9,11 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".funcionalidades.main.OrgaFacilApp"
@@ -115,6 +120,12 @@
 
 
         <activity android:name=".funcionalidades.boletos.BoletosActivity" android:exported="false" />
+        <activity android:name=".funcionalidades.boletos.AdicionarBoletoActivity" android:exported="false" />
+        <activity
+            android:name=".funcionalidades.boletos.EscanearBoletoActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
         <activity android:name=".funcionalidades.todo.ListaAtividadesActivity" android:exported="false" />
         <activity android:name=".funcionalidades.mercado.ui.activities.ResumoListaMercadoActivity" android:exported="false" />
         <activity android:name=".funcionalidades.contas.movimentacoes.ui.activities.ResumoParcelasActivity" />

@@ -1,7 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.main;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
+import android.Manifest;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -12,12 +15,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.boletos.BoletosActivity;
 import com.gussanxz.orgafacil.funcionalidades.configuracoes.ConfigsActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.mercado.ui.activities.ResumoListaMercadoActivity;
@@ -29,6 +34,8 @@ import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.gussanxz.orgafacil.util_helper.SecurityConstants;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 public class HomeActivity extends AppCompatActivity {
@@ -56,6 +63,7 @@ public class HomeActivity extends AppCompatActivity {
 
         verificarSegurancaBiometrica();
         carregarPreferenciasUsuario();
+        solicitarPermissoes();
     }
 
     @Override
@@ -228,8 +236,7 @@ public class HomeActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
 
         int[] idsBloqueados = {
-                R.id.imageViewTodo,
-                R.id.imageViewBoletoCPF
+                R.id.imageViewTodo
         };
 
         for (int id : idsBloqueados) {
@@ -251,5 +258,39 @@ public class HomeActivity extends AppCompatActivity {
     }
     public void acessarListaMercado(View view) {
         startActivity(new Intent(this, ResumoListaMercadoActivity.class));
+    }
+
+    public void acessarBoletos(View view) {
+        startActivity(new Intent(this, BoletosActivity.class));
+    }
+
+    private void solicitarPermissoes() {
+        List<String> permissoesPendentes = new ArrayList<>();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            permissoesPendentes.add(Manifest.permission.CAMERA);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissoesPendentes.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissoesPendentes.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                permissoesPendentes.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+        }
+
+        if (!permissoesPendentes.isEmpty()) {
+            ActivityCompat.requestPermissions(this,
+                    permissoesPendentes.toArray(new String[0]), 100);
+        }
     }
 }
