@@ -44,9 +44,10 @@ public class VencimentoWorker extends Worker {
         }
 
         // 2. Buscar movimentações não pagas
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<List<MovimentacaoModel>> resultRef = new AtomicReference<>();
-        AtomicReference<Exception>               erroRef   = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        AtomicReference<List<MovimentacaoModel>> resultMovRef    = new AtomicReference<>();
+        AtomicReference<List<MovimentacaoModel>> resultFuturasRef = new AtomicReference<>();
+        AtomicReference<Exception>               erroRef          = new AtomicReference<>();
 
         try {
             FirestoreSchema.contasMovimentacoesCol()
@@ -59,13 +60,26 @@ public class VencimentoWorker extends Worker {
                             m.setId(doc.getId());
                             lista.add(m);
                         }
-                        resultRef.set(lista);
+                        resultMovRef.set(lista);
                         latch.countDown();
                     })
-                    .addOnFailureListener(e -> {
-                        erroRef.set(e);
+                    .addOnFailureListener(e -> { erroRef.set(e); latch.countDown(); });
+
+            FirestoreSchema.contasFuturasCol()
+                    .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        List<MovimentacaoModel> lista = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : snap) {
+                            MovimentacaoModel m = doc.toObject(MovimentacaoModel.class);
+                            m.setId(doc.getId());
+                            lista.add(m);
+                        }
+                        resultFuturasRef.set(lista);
                         latch.countDown();
-                    });
+                    })
+                    .addOnFailureListener(e -> { erroRef.set(e); latch.countDown(); });
+
         } catch (Exception e) {
             // requireUid() lançou — usuário deslogou entre a checagem e a query
             AppLogger.e(TAG, "Erro ao montar query: " + e.getMessage());
@@ -88,8 +102,10 @@ public class VencimentoWorker extends Worker {
             return Result.retry();
         }
 
-        List<MovimentacaoModel> lista = resultRef.get();
-        if (lista == null || lista.isEmpty()) return Result.success();
+        List<MovimentacaoModel> lista = new ArrayList<>();
+        if (resultMovRef.get()    != null) lista.addAll(resultMovRef.get());
+        if (resultFuturasRef.get() != null) lista.addAll(resultFuturasRef.get());
+        if (lista.isEmpty()) return Result.success();
 
         // 4. Classificar usando os métodos prontos do Model
         List<MovimentacaoModel> vencidas = new ArrayList<>();
