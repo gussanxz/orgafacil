@@ -119,6 +119,11 @@ public class CadastroActivity extends BaseAuthActivity {
             return;
         }
 
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            campoEmail.setError("Informe um e-mail válido");
+            return;
+        }
+
         // Valida se a senha é segura usando o Helper (evita código duplicado)
         if (!senhaForcaHelper.ehSegura(senha)) {
             campoSenha.setError("A senha precisa ser pelo menos 'Boa'");
