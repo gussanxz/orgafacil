@@ -23,6 +23,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
@@ -227,7 +228,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         ArrayList<ItemSacolaVendaModel> sacola = new ArrayList<>();
         if (venda.getItens() != null) {
             for (ItemVendaRegistradaModel item : venda.getItens()) {
-                sacola.add(new ItemSacolaVendaModel(item));
+                sacola.add(new ItemSacolaVendaModel((ItemVendaModel) item));
             }
         }
         intent.putExtra("itensSacola", sacola);

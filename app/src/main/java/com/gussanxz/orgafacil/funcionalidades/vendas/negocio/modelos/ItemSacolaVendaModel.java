@@ -22,13 +22,14 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     }
 
     // Construtor 2: para restaurar sacola a partir de uma venda já registrada
-    public ItemSacolaVendaModel(ItemVendaRegistradaModel item) {
+    public ItemSacolaVendaModel(ItemVendaRegistradaModel item, String categoria) {
         this.chave = item.getTipo() + "_" + item.getItemId();
         this.itemId = item.getItemId();
         this.nome = item.getNome();
         this.tipo = item.getTipo();
         this.precoUnitario = item.getPrecoUnitario();
         this.quantidade = item.getQuantidade();
+        this.categoria = categoria;
     }
 
     public static String gerarChave(ItemVendaModel item) {
