@@ -70,6 +70,12 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         vendaRepository = new VendaRepository();
 
         inicializarComponentes();
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                irParaResumoVendas();
+            }
+        });
         configurarRecyclerView();
         configurarAcoes();
 
@@ -198,11 +204,6 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         finish();
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        irParaResumoVendas();
-    }
     private void irParaResumoVendas() {
         Intent intent = new Intent(this, ResumoVendasActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
