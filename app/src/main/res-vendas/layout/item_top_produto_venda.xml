@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="8dp"
+    android:paddingVertical="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/txtTopVendaPosicao"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="@drawable/bg_btn_excluir_circular"
+            android:backgroundTint="#1A888888"
+            android:gravity="center"
+            android:text="1"
+            android:textColor="@color/cor_texto"
+            android:textSize="12sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/txtTopVendaNome"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Produto"
+            android:textColor="@color/cor_texto"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:ellipsize="end"
+            android:maxLines="1"/>
+
+        <TextView
+            android:id="@+id/txtTopVendaQtd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="0x"
+            android:textColor="@color/cor_texto_secundario"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:id="@+id/txtTopVendaPercentual"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="0%"
+            android:textColor="@color/cor_texto_secundario"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:id="@+id/txtTopVendaValor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="70dp"
+            android:gravity="end"
+            android:text="R$ 0,00"
+            android:textColor="@color/colorPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressTopVenda"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="6dp"
+        android:max="100"
+        android:progress="50"
+        android:progressTint="@color/colorPrimary"
+        android:progressBackgroundTint="#33888888"/>
+</LinearLayout>
