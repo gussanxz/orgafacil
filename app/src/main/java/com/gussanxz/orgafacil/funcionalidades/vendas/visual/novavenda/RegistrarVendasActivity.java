@@ -150,10 +150,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 todos.setNome("Todos");
                 todos.setAtiva(true);
                 listaCategorias.add(todos);
-                listaCategorias.addAll(lista);
+                listaCategorias.addAll(filtrarCategoriasSemItens(lista));
 
                 if (adapterFiltro         != null) adapterFiltro.notifyDataSetChanged();
-                if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged(); // ← ADICIONE
+                if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged();
             }
 
             @Override
@@ -162,6 +162,20 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                         "Erro ao carregar categorias: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private List<Categoria> filtrarCategoriasSemItens(List<Categoria> categorias) {
+        List<Categoria> comItens = new ArrayList<>();
+        for (Categoria categoria : categorias) {
+            for (ItemVendaModel item : listaCompletaProdutos) {
+                CatalogoModel c = (CatalogoModel) item;
+                if (c.isStatusAtivo() && categoria.getId().equals(c.getCategoriaId())) {
+                    comItens.add(categoria);
+                    break;
+                }
+            }
+        }
+        return comItens;
     }
 
     private void configurarGridCategorias() {
