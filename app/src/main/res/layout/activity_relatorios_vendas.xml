@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/header_background">
+
+    <!-- Header com título e botão voltar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingBottom="98dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="12dp"
+            android:background="@color/colorPrimary">
+
+            <ImageButton
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_arrow_back_48"
+                app:tint="@color/white"
+                android:onClick="retornarPrincipal"
+                android:contentDescription="Voltar" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Relatórios"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPagerRelVendas"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- Bolinhas de navegação -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="64dp"
+        android:orientation="vertical"
+        android:background="@color/cor_background"
+        android:paddingTop="6dp"
+        android:paddingBottom="4dp"
+        android:gravity="center_horizontal"
+        android:elevation="8dp">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabPontinhosRelVendas"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:background="@android:color/transparent"
+            app:tabBackground="@drawable/seletor_pontinhos"
+            app:tabGravity="center"
+            app:tabIndicatorHeight="0dp"
+            app:tabPaddingStart="6dp"
+            app:tabPaddingEnd="6dp"
+            app:tabRippleColor="@null" />
+    </LinearLayout>
+
+    <!-- BottomAppBar com 2 abas -->
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBarRelVendas"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        app:backgroundTint="@color/colorPrimary"
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:id="@+id/btnRelVendasResumo"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_analytics_24"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="RESUMO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnRelVendasEvolucao"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_evolucao_24"
+                    app:tint="#FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EVOLUÇÃO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
