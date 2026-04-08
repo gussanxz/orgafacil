@@ -42,6 +42,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private RecyclerView recyclerTopProdutos;
     private TopProdutosVendasAdapter topAdapter;
     private View layoutVazio;
+    private TextView btnAbaProdutos, btnAbaCategorias;
+    private boolean exibindoProdutos = true;
+    private List<VendaModel> doMesCache = new ArrayList<>();
 
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
@@ -77,6 +80,20 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         recyclerTopProdutos.setLayoutManager(new LinearLayoutManager(requireContext()));
         topAdapter = new TopProdutosVendasAdapter();
         recyclerTopProdutos.setAdapter(topAdapter);
+
+        btnAbaProdutos   = view.findViewById(R.id.btnRelVendasAbaProdutos);
+        btnAbaCategorias = view.findViewById(R.id.btnRelVendasAbaCategorias);
+
+        btnAbaProdutos.setOnClickListener(v -> {
+            exibindoProdutos = true;
+            atualizarVisualAbas();
+            renderizarTop5(doMesCache);
+        });
+        btnAbaCategorias.setOnClickListener(v -> {
+            exibindoProdutos = false;
+            atualizarVisualAbas();
+            renderizarTop5(doMesCache);
+        });
 
         mesSelecionado = Calendar.getInstance();
         atualizarTextMes();
@@ -178,21 +195,46 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtPagPrincipal.setText(pagTop.isEmpty() ? "—" : pagTop);
         txtPagPercentual.setText(pagTop.isEmpty() ? "" : pct + "% das vendas");
 
-        // Top 5 produtos/serviços
+        // Salva cache e renderiza conforme aba ativa
+        doMesCache = doMes;
+        renderizarTop5(doMes);
+    }
+
+    private void atualizarVisualAbas() {
+        if (exibindoProdutos) {
+            btnAbaProdutos.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnAbaProdutos.setTextColor(Color.WHITE);
+            btnAbaCategorias.setBackgroundResource(0);
+            btnAbaCategorias.setTextColor(Color.parseColor("#9E9E9E"));
+        } else {
+            btnAbaCategorias.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnAbaCategorias.setTextColor(Color.WHITE);
+            btnAbaProdutos.setBackgroundResource(0);
+            btnAbaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
+        }
+    }
+
+    private void renderizarTop5(List<VendaModel> doMes) {
         Map<String, double[]> rankMap = new LinkedHashMap<>();
         for (VendaModel v : doMes) {
             if (v.getItens() == null) continue;
             for (ItemVendaRegistradaModel item : v.getItens()) {
-                String nome = item.getNome();
-                if (nome == null) continue;
-                double[] dados = rankMap.getOrDefault(nome, new double[]{0, 0});
-                dados[0] += item.getQuantidade();   // qtd
-                dados[1] += item.getPrecoUnitario() * item.getQuantidade(); // valor
-                rankMap.put(nome, dados);
+                // Chave: nome do produto OU categoria, conforme aba ativa
+                String chave;
+                if (exibindoProdutos) {
+                    chave = item.getNome();
+                } else {
+                    chave = item.getCategoria();
+                    if (chave == null || chave.isEmpty()) chave = "Sem categoria";
+                }
+                if (chave == null) continue;
+                double[] dados = rankMap.getOrDefault(chave, new double[]{0, 0});
+                dados[0] += item.getQuantidade();
+                dados[1] += item.getPrecoUnitario() * item.getQuantidade();
+                rankMap.put(chave, dados);
             }
         }
 
-        // Ordena por valor total desc, pega top 5
         List<Map.Entry<String, double[]>> entries = new ArrayList<>(rankMap.entrySet());
         entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
         if (entries.size() > 5) entries = entries.subList(0, 5);
@@ -205,11 +247,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             Map.Entry<String, double[]> e = entries.get(i);
             int pctItem = totalItens > 0 ? (int) ((e.getValue()[1] / totalItens) * 100) : 0;
             topItens.add(new TopProdutosVendasAdapter.TopItemVenda(
-                    i + 1, e.getKey(),
-                    (int) e.getValue()[0],
-                    e.getValue()[1],
-                    pctItem
-            ));
+                    i + 1, e.getKey(), (int) e.getValue()[0], e.getValue()[1], pctItem));
         }
         topAdapter.atualizar(topItens);
     }

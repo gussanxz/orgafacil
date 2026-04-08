@@ -11,6 +11,7 @@ public class ItemVendaRegistradaModel implements Serializable {
     private double precoUnitario;
     private int quantidade;
     private double subtotal;
+    private String categoria;
 
     public ItemVendaRegistradaModel() {
     }
@@ -71,4 +72,7 @@ public class ItemVendaRegistradaModel implements Serializable {
     public void setSubtotal(double subtotal) {
         this.subtotal = subtotal;
     }
+
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
 }
