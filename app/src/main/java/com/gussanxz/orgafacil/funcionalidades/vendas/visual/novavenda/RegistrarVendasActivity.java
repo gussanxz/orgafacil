@@ -287,6 +287,10 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         for (ItemVendaModel item : listaCompletaProdutos) {
             CatalogoModel c = (CatalogoModel) item;
             if (!c.isStatusAtivo()) continue;
+
+            // Respeita categoria ativa
+            if (categoriaAtiva != null && !categoriaAtiva.getId().equals(c.getCategoriaId())) continue;
+
             if (texto.isEmpty() || c.getNome().toLowerCase().contains(texto.toLowerCase())) {
                 listaFiltradaProdutos.add(item);
             }
