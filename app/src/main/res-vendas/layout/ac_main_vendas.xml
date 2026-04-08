@@ -144,9 +144,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@android:color/transparent"
-                app:tabIndicatorColor="#00BCD4"
-                app:tabSelectedTextColor="#00BCD4"
-                app:tabTextColor="#80FFFFFF"
+                app:tabIndicatorColor="?attr/colorPrimary"
+                app:tabSelectedTextColor="?attr/colorPrimary"
+                app:tabTextColor="?attr/colorOnSurface"
                 app:tabMode="fixed"
                 app:tabGravity="fill"/>
 
