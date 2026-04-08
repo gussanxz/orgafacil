@@ -157,11 +157,12 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         txtQtdTotalItens.setText(venda.getQuantidadeTotal() + " " +
                 (venda.getQuantidadeTotal() == 1 ? "item" : "itens"));
 
-        double subtotal = venda.getValorTotal()
-                + venda.getAcrescimo()
-                - venda.getDesconto();
+        // subtotal = soma bruta dos itens (valorTotal já carrega esse valor quando não há ajustes)
+        // valorTotal = subtotal + acrescimo - desconto
+        double subtotal = venda.getValorTotal();
+        double valorFinal = subtotal + venda.getAcrescimo() - venda.getDesconto();
         txtSubtotal.setText(formatadorMoeda.format(subtotal));
-        txtValorTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
+        txtValorTotal.setText(formatadorMoeda.format(valorFinal));
 
         // Acréscimo — só exibe a linha se for > 0
         if (venda.getAcrescimo() > 0) {
