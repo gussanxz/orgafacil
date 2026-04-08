@@ -23,6 +23,7 @@ public class ItemVendaRegistradaModel implements Serializable {
         this.precoUnitario = itemSacola.getPrecoUnitario();
         this.quantidade = itemSacola.getQuantidade();
         this.subtotal = itemSacola.getSubtotal();
+        this.categoria = itemSacola.getCategoria();  // NOVO
     }
 
     public String getItemId() {

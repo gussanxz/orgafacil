@@ -5,6 +5,7 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     private final String chave;
     private final String itemId;
     private final String nome;
+    private final String categoria;
     private final int tipo;
     private final double precoUnitario;
     private int quantidade;
@@ -17,6 +18,7 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
         this.tipo = item.getTipo();
         this.precoUnitario = item.getPreco();
         this.quantidade = 1;
+        this.categoria = (item instanceof CatalogoModel) ? ((CatalogoModel) item).getCategoria() : null;
     }
 
     // Construtor 2: para restaurar sacola a partir de uma venda já registrada
@@ -70,4 +72,6 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     public double getSubtotal() {
         return precoUnitario * quantidade;
     }
+
+    public String getCategoria() { return categoria; }
 }
