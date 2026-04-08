@@ -147,6 +147,10 @@ public class ContasViewModel extends ViewModel {
         return !ultimaAtualizacaoLocal.toDate().before(tsFirestore.toDate());
     }
 
+    public void marcarComoAtualizado(com.google.firebase.Timestamp ts) {
+        this.ultimaAtualizacaoLocal = ts;
+    }
+
     /**
      * Zera o cache e o timestamp local.
      * Use quando o usuário escolhe "baixar versão do servidor" no diálogo de conflito.

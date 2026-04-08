@@ -26,6 +26,7 @@ import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.T
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
+import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ConflitoDadosHelper;
 import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.adapter.RelatoriosPagerAdapter;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 import com.google.android.material.bottomappbar.BottomAppBar;
@@ -109,11 +110,9 @@ public class ResumoContasActivity extends AppCompatActivity {
                 new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     contasViewModel.invalidarDados();
-                    com.google.firebase.Timestamp tsFirestore = resumo.getUltimaAtualizacao();
-                    if (!contasViewModel.dadosEstaAtualizados(tsFirestore)) {
-                        contasViewModel.fetchDados(true, null);
-                        new android.os.Handler().postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
-                    }
+                    contasViewModel.fetchDados(true, null);
+                    new android.os.Handler(android.os.Looper.getMainLooper())
+                            .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
                 }
         );
 
