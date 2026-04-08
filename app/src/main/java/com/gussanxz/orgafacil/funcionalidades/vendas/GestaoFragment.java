@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro.FinanceiroActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HistoricoVendasActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.RelatoriosVendasActivity;
 
 public class GestaoFragment extends Fragment {
 
@@ -35,6 +36,13 @@ public class GestaoFragment extends Fragment {
                     startActivity(new Intent(requireContext(), HistoricoVendasActivity.class)));
         }
 
+        View cardRelatorios = view.findViewById(R.id.cardRelatorios);
+        if (cardRelatorios != null) {
+            cardRelatorios.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), RelatoriosVendasActivity.class)));
+        }
+
+
         View cardFinanceiro = view.findViewById(R.id.cardFinanceiro);
         if (cardFinanceiro != null) {
             cardFinanceiro.setOnClickListener(v ->
@@ -51,11 +59,10 @@ public class GestaoFragment extends Fragment {
             Toast.makeText(requireContext(), "Funcionalidade futura", Toast.LENGTH_SHORT).show();
         };
 
-        // Lista de IDs dos overlays bloqueados nesta tela
+        // overlayRelatorios removido — funcionalidade agora disponível
         int[] idsBloqueados = {
                 R.id.overlayEstoque,
                 R.id.overlayDevolucoes,
-                R.id.overlayRelatorios,
                 R.id.overlayControleCaixa,
         };
 

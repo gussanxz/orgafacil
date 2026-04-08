@@ -185,19 +185,6 @@
                     android:layout_marginBottom="16dp"
                     android:lines="3" />
             </LinearLayout>
-
-            <ImageView
-                android:id="@+id/overlayRelatorios"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#CC000000"
-                android:src="@drawable/ic_lock_24"
-                android:scaleType="center"
-                app:tint="@android:color/white"
-                android:visibility="visible"
-                android:elevation="10dp"
-                android:clickable="true"
-                android:focusable="true"/>
         </FrameLayout>
 
         <FrameLayout
