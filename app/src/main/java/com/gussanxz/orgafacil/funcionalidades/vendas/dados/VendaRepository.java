@@ -172,10 +172,16 @@ public class VendaRepository {
         }
     }
     public void alternarStatus(@NonNull VendaModel venda, @NonNull Callback callback) {
-        String novoStatus = VendaModel.STATUS_FINALIZADA.equals(venda.getStatus())
-                ? VendaModel.STATUS_CANCELADA
-                : VendaModel.STATUS_FINALIZADA;
-        atualizarStatus(venda.getId(), novoStatus, callback);
+        String statusAtual = venda.getStatus();
+
+        if (VendaModel.STATUS_FINALIZADA.equals(statusAtual)) {
+            atualizarStatus(venda.getId(), VendaModel.STATUS_CANCELADA, callback);
+        } else if (VendaModel.STATUS_CANCELADA.equals(statusAtual)) {
+            atualizarStatus(venda.getId(), VendaModel.STATUS_FINALIZADA, callback);
+        } else {
+            // Venda EM_ABERTO ou status desconhecido não pode ser alternado por esse fluxo
+            callback.onErro("Operação inválida: apenas vendas finalizadas ou canceladas podem ter o status alternado.");
+        }
     }
 
     // -----------------------------------------------------------
