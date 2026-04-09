@@ -41,6 +41,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private RecyclerView rvCategorias;
     private AdapterFiltroCategoriasNovaVenda adapterFiltro;
     private final List<Categoria> listaCategorias = new ArrayList<>();
+    private List<Categoria> listaCategoriasBrutas = new ArrayList<>();
 
     private RecyclerView rvGradeProdutos;
     private AdapterFiltroPorPSNovaVenda adapterProdutos;
@@ -143,17 +144,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         listenerCategorias = categoriaRepository.listarTempoReal(new CategoriaCatalogoRepository.ListaCallback() {
             @Override
             public void onNovosDados(List<Categoria> lista) {
-                listaCategorias.clear();
-
-                Categoria todos = new Categoria();
-                todos.setId("todos");
-                todos.setNome("Todos");
-                todos.setAtiva(true);
-                listaCategorias.add(todos);
-                listaCategorias.addAll(filtrarCategoriasSemItens(lista));
-
-                if (adapterFiltro         != null) adapterFiltro.notifyDataSetChanged();
-                if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged();
+                listaCategoriasBrutas.clear();
+                listaCategoriasBrutas.addAll(lista);
+                atualizarListaCategorias(); // ← usa estado atual de listaCompletaProdutos
             }
 
             @Override
@@ -163,6 +156,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             }
         });
     }
+
 
     private List<Categoria> filtrarCategoriasSemItens(List<Categoria> categorias) {
         List<Categoria> comItens = new ArrayList<>();
@@ -252,6 +246,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             public void onNovosDados(List<CatalogoModel> lista) {
                 listaCompletaProdutos.clear();
                 listaCompletaProdutos.addAll(lista);
+                atualizarListaCategorias(); // ← refiltra categorias com produtos já carregados
                 filtrarProdutosVisiveis();
             }
 
@@ -262,6 +257,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             }
         });
     }
+
 
     // ── Filtros ───────────────────────────────────────────────────────
 
@@ -312,6 +308,21 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         if (adapterProdutos != null) adapterProdutos.atualizarLista(listaFiltradaProdutos);
     }
+
+    private void atualizarListaCategorias() {
+        listaCategorias.clear();
+
+        Categoria todos = new Categoria();
+        todos.setId("todos");
+        todos.setNome("Todos");
+        todos.setAtiva(true);
+        listaCategorias.add(todos);
+        listaCategorias.addAll(filtrarCategoriasSemItens(listaCategoriasBrutas));
+
+        if (adapterFiltro         != null) adapterFiltro.notifyDataSetChanged();
+        if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged();
+    }
+
 
     // ── Sacola ────────────────────────────────────────────────────────
 
