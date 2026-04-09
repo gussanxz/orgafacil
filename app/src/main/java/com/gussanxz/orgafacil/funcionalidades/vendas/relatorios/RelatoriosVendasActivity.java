@@ -9,12 +9,30 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.regras.BaseAuthActivity;
+import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 
 public class RelatoriosVendasActivity extends AppCompatActivity {
 
     private ViewPager2 viewPagerRelatorios;
     private View btnResumo, btnEvolucao;
     private final int[] botaoIds = { R.id.btnRelVendasResumo, R.id.btnRelVendasEvolucao };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (FirebaseSession.sessaoExpirou(this)) {
+            FirebaseSession.limparTimestampBackground(this);
+            BaseAuthActivity.redirecionarParaLogin(this);
+            return;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        FirebaseSession.registrarBackground(this);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
