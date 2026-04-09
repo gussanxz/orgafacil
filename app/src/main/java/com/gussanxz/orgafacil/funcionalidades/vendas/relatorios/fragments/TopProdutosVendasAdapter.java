@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.adapter;
+package com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments;
 
 import android.view.LayoutInflater;
 import android.view.View;

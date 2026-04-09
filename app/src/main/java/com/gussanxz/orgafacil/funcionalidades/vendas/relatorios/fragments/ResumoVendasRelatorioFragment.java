@@ -20,7 +20,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.adapter.TopProdutosVendasAdapter;
+import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments.TopProdutosVendasAdapter;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
