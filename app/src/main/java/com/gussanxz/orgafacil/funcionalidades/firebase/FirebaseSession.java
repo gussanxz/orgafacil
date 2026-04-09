@@ -13,7 +13,31 @@ import com.google.firebase.auth.FirebaseUser;
 public final class FirebaseSession {
 
     private static final String PREF_NAME = "OrgaFacilPrefs";
-    public static final String KEY_MOEDA = "moeda_padrao";
+    public static final String KEY_MOEDA         = "moeda_padrao";
+    public static final String KEY_BG_TIMESTAMP  = "bg_timestamp";
+    private static final long  TIMEOUT_MS        = 60_000L; // 1 minuto
+
+    public static void registrarBackground(Context context) {
+        putLong(context, KEY_BG_TIMESTAMP, System.currentTimeMillis());
+    }
+
+    public static boolean sessaoExpirou(Context context) {
+        long ts = getLong(context, KEY_BG_TIMESTAMP, 0L);
+        if (ts == 0L) return false; // nunca foi para background
+        return (System.currentTimeMillis() - ts) > TIMEOUT_MS;
+    }
+
+    public static void limparTimestampBackground(Context context) {
+        getPrefs(context).edit().remove(KEY_BG_TIMESTAMP).apply();
+    }
+
+    public static void putLong(Context context, String key, long value) {
+        getPrefs(context).edit().putLong(key, value).apply();
+    }
+
+    public static long getLong(Context context, String key, long defaultValue) {
+        return getPrefs(context).getLong(key, defaultValue);
+    }
 
     private FirebaseSession() {}
 

@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.autenticacao.visual.LoginActivity;
 import com.gussanxz.orgafacil.funcionalidades.firebase.ConfiguracaoFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.main.HomeActivity;
@@ -203,10 +204,19 @@ public abstract class BaseAuthActivity extends AppCompatActivity {
         if (loadingHelper != null) loadingHelper.ocultar();
         if (mensagem != null) Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
 
+        FirebaseSession.limparTimestampBackground(this);
         Intent intent = new Intent(this, HomeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    /** Redireciona para login limpando toda a pilha. Usar em onResume de Activities protegidas. */
+    public static void redirecionarParaLogin(AppCompatActivity activity) {
+        Intent intent = new Intent(activity, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        activity.startActivity(intent);
+        activity.finish();
     }
 
     private void realizarLogoutDeLimpeza() {
