@@ -113,8 +113,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
         listenerRegistration = vendaRepository.listarTempoReal(new VendaRepository.ListaCallback() {
             @Override
             public void onNovosDados(List<VendaModel> lista) {
@@ -128,8 +128,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         if (listenerRegistration != null) {
             listenerRegistration.remove();
             listenerRegistration = null;
