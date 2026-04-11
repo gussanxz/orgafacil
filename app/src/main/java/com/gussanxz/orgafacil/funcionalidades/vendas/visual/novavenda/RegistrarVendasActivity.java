@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,10 +54,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private TextView txtSacolaQuantidade;
     private TextView txtSacolaTitulo;
     private TextView txtSacolaSubtotal;
-    private TextView txtCobrarTotal;
-    private LinearLayout btnCobrar;
     private LinearLayout layoutResumoSacola;
     private ImageButton btnHistoricoVendas;
+    private ImageView imgIconeSacolaResumo;
     private Categoria categoriaAtiva = null;
 
     private final Map<String, ItemSacolaVendaModel> sacolaMap = new LinkedHashMap<>();
@@ -71,14 +71,19 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private boolean modoCategorias = true;
     private ImageButton btnAlternarModo;
     private RecyclerView rvGridCategorias;
-    private AdapterGradeCategoriasNovaVenda  adapterGridCategorias;
+    private AdapterGradeCategoriasNovaVenda adapterGridCategorias;
     private String vendaIdEdicao = null;
+
+    // Extras de edição retroativa — preservados para repassar ao FechamentoVendaActivity
+    private long   dataHoraOriginalEdicao       = 0L;
+    private String formaPagamentoOriginalEdicao = null;
+    private int    numeroVendaEdicao            = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.ac_main_vendas_nova_venda);
+        setContentView(R.layout.layout_nova_venda);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.novaVenda), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -92,7 +97,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         configurarBotaoAlternarModo();
         aplicarModoCategorias();
         configurarRvProdutos();
-        configurarBotaoCobrar();
         configurarAcoesHeader();
         configurarResumoSacola();
         atualizarResumoSacola();
@@ -103,6 +107,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvCategorias    = findViewById(R.id.rvCategorias);
         rvGradeProdutos = findViewById(R.id.rvGradeProdutos);
         etBuscarProduto = findViewById(R.id.etBuscarProduto);
+        imgIconeSacolaResumo = findViewById(R.id.imgIconeSacolaResumo);
 
         if (etBuscarProduto != null) {
             etBuscarProduto.addTextChangedListener(new android.text.TextWatcher() {
@@ -118,11 +123,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         txtSacolaQuantidade = findViewById(R.id.txtSacolaQuantidade);
         txtSacolaTitulo     = findViewById(R.id.txtSacolaTitulo);
         txtSacolaSubtotal   = findViewById(R.id.txtSacolaSubtotal);
-        txtCobrarTotal      = findViewById(R.id.txtCobrarTotal);
-        btnCobrar           = findViewById(R.id.btnCobrar);
         btnHistoricoVendas  = findViewById(R.id.btnHistoricoVendas);
-        btnAlternarModo   = findViewById(R.id.btnAlternarModoExibicao);
-        rvGridCategorias  = findViewById(R.id.rvGridCategorias);
+        btnAlternarModo     = findViewById(R.id.btnAlternarModoExibicao);
+        rvGridCategorias    = findViewById(R.id.rvGridCategorias);
     }
 
     // ── Categorias ────────────────────────────────────────────────────
@@ -146,7 +149,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             public void onNovosDados(List<Categoria> lista) {
                 listaCategoriasBrutas.clear();
                 listaCategoriasBrutas.addAll(lista);
-                atualizarListaCategorias(); // ← usa estado atual de listaCompletaProdutos
+                atualizarListaCategorias();
             }
 
             @Override
@@ -156,7 +159,6 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             }
         });
     }
-
 
     private List<Categoria> filtrarCategoriasSemItens(List<Categoria> categorias) {
         List<Categoria> comItens = new ArrayList<>();
@@ -203,8 +205,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         filtrarProdutosVisiveis();
         rvGridCategorias.setVisibility(View.GONE);
         rvGradeProdutos.setVisibility(View.VISIBLE);
-        // Ícone: quando está em PS, mostra ícone de categorias para poder voltar
-        btnAlternarModo.setImageResource(R.drawable.ic_grid_24); // grid de categorias
+        btnAlternarModo.setImageResource(R.drawable.ic_grid_24);
         btnAlternarModo.setContentDescription("Ver categorias");
     }
 
@@ -213,13 +214,11 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         categoriaAtiva = null;
         rvGradeProdutos.setVisibility(View.GONE);
         rvGridCategorias.setVisibility(View.VISIBLE);
-        // Ícone: quando está em categorias, mostra ícone de lista de itens
         btnAlternarModo.setImageResource(R.drawable.ic_list_24);
         btnAlternarModo.setContentDescription("Ver produtos e serviços");
     }
 
     private void aplicarModoCategorias() {
-        // Estado inicial — categorias visíveis, grade de produtos oculta
         rvGradeProdutos.setVisibility(View.GONE);
         rvGridCategorias.setVisibility(View.VISIBLE);
         btnAlternarModo.setImageResource(R.drawable.ic_list_24);
@@ -234,8 +233,17 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         rvGradeProdutos.setLayoutManager(gridManager);
         rvGradeProdutos.setNestedScrollingEnabled(false);
 
-        adapterProdutos = new AdapterFiltroPorPSNovaVenda(listaFiltradaProdutos,
-                item -> adicionarItemNaSacola(item));
+        adapterProdutos = new AdapterFiltroPorPSNovaVenda(listaFiltradaProdutos, new AdapterFiltroPorPSNovaVenda.OnItemClickListener() {
+            @Override
+            public void onItemClick(ItemVendaModel item) {
+                adicionarItemNaSacola(item); // Toque normal: adiciona 1
+            }
+
+            @Override
+            public void onLongClick(ItemVendaModel item) {
+                abrirModalQuantidadeRapida(item); // Toque longo: abre pop-up
+            }
+        });
 
         rvGradeProdutos.setAdapter(adapterProdutos);
     }
@@ -246,7 +254,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             public void onNovosDados(List<CatalogoModel> lista) {
                 listaCompletaProdutos.clear();
                 listaCompletaProdutos.addAll(lista);
-                atualizarListaCategorias(); // ← refiltra categorias com produtos já carregados
+                atualizarListaCategorias();
                 filtrarProdutosVisiveis();
             }
 
@@ -258,24 +266,17 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         });
     }
 
-
     // ── Filtros ───────────────────────────────────────────────────────
 
-    /** Filtra por categoria ativa + status ativo. Renomeado de aplicarFiltroAtual(). */
     private void filtrarProdutosVisiveis() {
         listaFiltradaProdutos.clear();
 
         for (ItemVendaModel item : listaCompletaProdutos) {
             CatalogoModel c = (CatalogoModel) item;
-
-            // Apenas ativos
             if (!c.isStatusAtivo()) continue;
-
-            // Filtro de categoria
             if (categoriaAtiva != null && !"todos".equals(categoriaAtiva.getId())) {
                 if (!categoriaAtiva.getId().equals(c.getCategoriaId())) continue;
             }
-
             listaFiltradaProdutos.add(item);
         }
 
@@ -297,10 +298,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         for (ItemVendaModel item : listaCompletaProdutos) {
             CatalogoModel c = (CatalogoModel) item;
             if (!c.isStatusAtivo()) continue;
-
-            // Respeita categoria ativa
             if (categoriaAtiva != null && !categoriaAtiva.getId().equals(c.getCategoriaId())) continue;
-
             if (texto.isEmpty() || c.getNome().toLowerCase().contains(texto.toLowerCase())) {
                 listaFiltradaProdutos.add(item);
             }
@@ -323,21 +321,42 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (adapterGridCategorias != null) adapterGridCategorias.notifyDataSetChanged();
     }
 
-
     // ── Sacola ────────────────────────────────────────────────────────
 
     private void adicionarItemNaSacola(ItemVendaModel item) {
+        adicionarItemNaSacola(item, 1);
+    }
+
+    // Sobrecarga para aceitar múltiplas quantidades de uma vez
+    private void adicionarItemNaSacola(ItemVendaModel item, int quantidadeDesejada) {
         String chave = ItemSacolaVendaModel.gerarChave(item);
         ItemSacolaVendaModel itemSacola = sacolaMap.get(chave);
 
         if (itemSacola == null) {
-            sacolaMap.put(chave, new ItemSacolaVendaModel(item));
+            ItemSacolaVendaModel novoItem = new ItemSacolaVendaModel(item);
+            // Incrementa o restante (já começa com 1 no construtor)
+            for (int i = 1; i < quantidadeDesejada; i++) {
+                novoItem.incrementarQuantidade();
+            }
+            sacolaMap.put(chave, novoItem);
         } else {
-            itemSacola.incrementarQuantidade();
+            for (int i = 0; i < quantidadeDesejada; i++) {
+                itemSacola.incrementarQuantidade();
+            }
+        }
+
+        // Vibração tátil de confirmação (Virtual Key)
+        if (rvGradeProdutos != null) {
+            rvGradeProdutos.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
         }
 
         atualizarResumoSacola();
+
+        if (quantidadeDesejada > 1) {
+            Toast.makeText(this, quantidadeDesejada + " itens adicionados", Toast.LENGTH_SHORT).show();
+        }
     }
+
 
     private void atualizarResumoSacola() {
         int    quantidadeTotal = getQuantidadeTotalSacola();
@@ -346,25 +365,42 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (txtSacolaQuantidade != null)
             txtSacolaQuantidade.setText(String.valueOf(quantidadeTotal));
 
-        if (txtSacolaTitulo != null)
-            txtSacolaTitulo.setText(quantidadeTotal == 0
-                    ? "Sacola vazia"
-                    : (quantidadeTotal == 1 ? " item na sacola" : " itens na sacola"));
-
-        if (txtSacolaSubtotal != null)
-            txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal));
-
-        if (txtCobrarTotal != null)
-            txtCobrarTotal.setText(formatadorMoeda.format(valorTotal));
-
-        if (btnCobrar != null) {
-            boolean habilitado = quantidadeTotal > 0;
-            btnCobrar.setEnabled(habilitado);
-            btnCobrar.setAlpha(habilitado ? 1f : 0.5f);
+        if (txtSacolaTitulo != null) {
+            if (quantidadeTotal == 0) {
+                txtSacolaTitulo.setText("Sacola vazia");
+            } else if (quantidadeTotal == 1) {
+                txtSacolaTitulo.setText("1 item na sacola");
+            } else {
+                txtSacolaTitulo.setText(quantidadeTotal + " itens na sacola");
+            }
         }
 
-        if (layoutResumoSacola != null)
-            layoutResumoSacola.setAlpha(quantidadeTotal > 0 ? 1f : 0.75f);
+        if (txtSacolaSubtotal != null) {
+            if (quantidadeTotal == 0) {
+                txtSacolaSubtotal.setText("Toque para ver os itens");
+            } else {
+                txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal));
+            }
+        }
+
+        if (quantidadeTotal == 0) {
+            // Estado Vazio: Ícone cinza e texto mais apagado
+            if (imgIconeSacolaResumo != null) {
+                imgIconeSacolaResumo.setColorFilter(android.graphics.Color.parseColor("#9E9E9E"));
+            }
+            if (txtSacolaTitulo != null) {
+                txtSacolaTitulo.setTextColor(android.graphics.Color.parseColor("#9E9E9E"));
+            }
+        } else {
+            // Estado com itens: Ícone e título com a cor primária do app
+            if (imgIconeSacolaResumo != null) {
+                imgIconeSacolaResumo.setColorFilter(androidx.core.content.ContextCompat.getColor(this, R.color.colorPrimary));
+            }
+            if (txtSacolaTitulo != null) {
+                txtSacolaTitulo.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.colorPrimary));
+            }
+        }
+
     }
 
     private int getQuantidadeTotalSacola() {
@@ -385,26 +421,13 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     // ── Cobrar / Fechamento ───────────────────────────────────────────
 
-    private void configurarBotaoCobrar() {
-        if (btnCobrar == null) return;
-        btnCobrar.setOnClickListener(v -> {
-            if (sacolaMap.isEmpty()) {
-                Toast.makeText(this, "Adicione ao menos um item para continuar.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            abrirResumoFechamentoVenda();
-        });
-    }
-
     private void abrirResumoFechamentoVenda() {
         Intent intent = new Intent(this, FechamentoVendaActivity.class);
-        intent.putExtra("itensSacola",      new ArrayList<>(sacolaMap.values()));
-        intent.putExtra("quantidadeTotal",  getQuantidadeTotalSacola());
-        intent.putExtra("valorTotal",       getValorTotalSacola());
+        intent.putExtra("itensSacola",     new ArrayList<>(sacolaMap.values()));
+        intent.putExtra("quantidadeTotal", getQuantidadeTotalSacola());
+        intent.putExtra("valorTotal",      getValorTotalSacola());
         if (vendaIdEdicao != null) {
             intent.putExtra("vendaId", vendaIdEdicao);
-            // Repassa os dados de contexto da edição para o FechamentoVendaActivity
-            // ativar o seletor de data retroativa
             if (dataHoraOriginalEdicao > 0)
                 intent.putExtra("dataHoraOriginal", dataHoraOriginalEdicao);
             if (formaPagamentoOriginalEdicao != null)
@@ -439,81 +462,163 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     }
 
     private void abrirBottomSheetSacola() {
-        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        BottomSheetDialog dialog = new BottomSheetDialog(this,
+                com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
         View view = getLayoutInflater().inflate(R.layout.bottom_sheet_sacola_nova_venda, null);
         dialog.setContentView(view);
 
-        RecyclerView rvItensSacola       = view.findViewById(R.id.rvItensSacola);
-        TextView txtQtdItensSacola       = view.findViewById(R.id.txtQtdItensSacola);
-        TextView txtTotalSacolaBottom    = view.findViewById(R.id.txtTotalSacolaBottom);
-        TextView txtEstadoVazioSacola    = view.findViewById(R.id.txtEstadoVazioSacola);
-        ImageButton btnFecharSacola      = view.findViewById(R.id.btnFecharSacola);
+        // Expande o bottom sheet imediatamente (comportamento de modal)
+        com.google.android.material.bottomsheet.BottomSheetBehavior<?> behavior =
+                com.google.android.material.bottomsheet.BottomSheetBehavior.from(
+                        (View) view.getParent());
+        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+        behavior.setSkipCollapsed(true);
+
+        RecyclerView rvItensSacola  = view.findViewById(R.id.rvItensSacola);
+        TextView     txtQtdItens    = view.findViewById(R.id.txtQtdItensSacola);
+        TextView     txtTotalBottom = view.findViewById(R.id.txtTotalSacolaBottom);
+        TextView     txtEstadoVazio = view.findViewById(R.id.txtEstadoVazioSacola);
+        ImageButton  btnFechar      = view.findViewById(R.id.btnFecharSacola);
+        LinearLayout btnCobrarModal = view.findViewById(R.id.btnCobrar);
+        TextView     txtCobrarTotal = view.findViewById(R.id.txtCobrarTotal);
 
         rvItensSacola.setLayoutManager(new LinearLayoutManager(this));
 
-        final AdapterSacolaNovaVenda[] adapterSacolaRef = new AdapterSacolaNovaVenda[1];
-        adapterSacolaRef[0] = new AdapterSacolaNovaVenda(
+        final AdapterSacolaNovaVenda[] adapterRef = new AdapterSacolaNovaVenda[1];
+        adapterRef[0] = new AdapterSacolaNovaVenda(
                 getItensSacolaEmLista(),
                 new AdapterSacolaNovaVenda.OnSacolaActionListener() {
                     @Override
                     public void onSomar(ItemSacolaVendaModel item) {
+                        rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
                         ItemSacolaVendaModel itemMap = sacolaMap.get(item.getChave());
                         if (itemMap != null) {
                             itemMap.incrementarQuantidade();
-                            atualizarBottomSheetSacola(adapterSacolaRef[0], rvItensSacola,
-                                    txtQtdItensSacola, txtTotalSacolaBottom, txtEstadoVazioSacola);
+                            sincronizarBottomSheet(adapterRef[0], rvItensSacola,
+                                    txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
                         }
                     }
 
                     @Override
                     public void onSubtrair(ItemSacolaVendaModel item) {
+                        rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
                         ItemSacolaVendaModel itemMap = sacolaMap.get(item.getChave());
                         if (itemMap != null) {
                             itemMap.decrementarQuantidade();
                             if (itemMap.getQuantidade() <= 0) sacolaMap.remove(item.getChave());
-                            atualizarBottomSheetSacola(adapterSacolaRef[0], rvItensSacola,
-                                    txtQtdItensSacola, txtTotalSacolaBottom, txtEstadoVazioSacola);
+                            sincronizarBottomSheet(adapterRef[0], rvItensSacola,
+                                    txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
                         }
                     }
 
                     @Override
                     public void onRemover(ItemSacolaVendaModel item) {
+                        rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK);
                         sacolaMap.remove(item.getChave());
-                        atualizarBottomSheetSacola(adapterSacolaRef[0], rvItensSacola,
-                                txtQtdItensSacola, txtTotalSacolaBottom, txtEstadoVazioSacola);
+                        sincronizarBottomSheet(adapterRef[0], rvItensSacola,
+                                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
                         if (sacolaMap.isEmpty()) dialog.dismiss();
                     }
                 }
         );
 
-        rvItensSacola.setAdapter(adapterSacolaRef[0]);
-        if (btnFecharSacola != null) btnFecharSacola.setOnClickListener(v -> dialog.dismiss());
-        atualizarBottomSheetSacola(adapterSacolaRef[0], rvItensSacola,
-                txtQtdItensSacola, txtTotalSacolaBottom, txtEstadoVazioSacola);
+        rvItensSacola.setAdapter(adapterRef[0]);
+
+        if (btnFechar != null)
+            btnFechar.setOnClickListener(v -> dialog.dismiss());
+
+        // Botão COBRAR — exclusivo dentro do modal da sacola
+        if (btnCobrarModal != null) {
+            btnCobrarModal.setOnClickListener(v -> {
+                if (sacolaMap.isEmpty()) {
+                    Toast.makeText(this, "Adicione ao menos um item para continuar.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                dialog.dismiss();
+                abrirResumoFechamentoVenda();
+            });
+        }
+
+        sincronizarBottomSheet(adapterRef[0], rvItensSacola,
+                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
         dialog.show();
     }
 
-    private void atualizarBottomSheetSacola(
-            AdapterSacolaNovaVenda adapterSacola,
-            RecyclerView rvItensSacola,
-            TextView txtQtdItensSacola,
-            TextView txtTotalSacolaBottom,
-            TextView txtEstadoVazioSacola) {
+    // ── Quick Add (Clique Longo) ──────────────────────────────────────────
 
-        List<ItemSacolaVendaModel> itens = getItensSacolaEmLista();
-        adapterSacola.atualizarLista(itens);
-
-        if (txtQtdItensSacola != null) {
-            int quantidade = getQuantidadeTotalSacola();
-            txtQtdItensSacola.setText(quantidade + (quantidade == 1 ? " item" : " itens"));
+    private void abrirModalQuantidadeRapida(ItemVendaModel item) {
+        // Vibração específica de clique longo
+        if (rvGradeProdutos != null) {
+            rvGradeProdutos.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
         }
 
-        if (txtTotalSacolaBottom != null)
-            txtTotalSacolaBottom.setText(formatadorMoeda.format(getValorTotalSacola()));
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Adicionar quantidade");
+        CatalogoModel catalogoItem = (CatalogoModel) item;
+        builder.setMessage("Digite a quantidade desejada para:\n" + catalogoItem.getNome());
 
-        if (txtEstadoVazioSacola != null) {
+        // Criando o campo de texto dinamicamente com margens
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        input.setGravity(android.view.Gravity.CENTER);
+
+        android.widget.FrameLayout container = new android.widget.FrameLayout(this);
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(48, 0, 48, 0); // Margem lateral para não colar nas bordas
+        input.setLayoutParams(params);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton("Adicionar", (dialog, which) -> {
+            String valor = input.getText().toString();
+            if (!valor.isEmpty()) {
+                int qtd = Integer.parseInt(valor);
+                if (qtd > 0) {
+                    adicionarItemNaSacola(item, qtd); // Chamaremos a nova versão do método
+                }
+            }
+        });
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
+
+        // Mostra o teclado automaticamente
+        android.app.AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(d -> {
+            input.requestFocus();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+        });
+        dialog.show();
+    }
+
+    private void sincronizarBottomSheet(
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio) {
+
+        List<ItemSacolaVendaModel> itens = getItensSacolaEmLista();
+        adapter.atualizarLista(itens);
+
+        int    quantidade = getQuantidadeTotalSacola();
+        double total      = getValorTotalSacola();
+
+        if (txtQtdItens != null)
+            txtQtdItens.setText(quantidade + (quantidade == 1 ? " item" : " itens"));
+
+        if (txtTotalBottom != null)
+            txtTotalBottom.setText(formatadorMoeda.format(total));
+
+        if (txtCobrarTotal != null)
+            txtCobrarTotal.setText(formatadorMoeda.format(total));
+
+        if (txtEstadoVazio != null) {
             boolean vazio = itens.isEmpty();
-            txtEstadoVazioSacola.setVisibility(vazio ? View.VISIBLE : View.GONE);
+            txtEstadoVazio.setVisibility(vazio ? View.VISIBLE : View.GONE);
             rvItensSacola.setVisibility(vazio ? View.GONE : View.VISIBLE);
         }
 
@@ -522,17 +627,12 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     // ── Edição de venda ───────────────────────────────────────────────
 
-    // Extras de edição retroativa — preservados para repassar ao FechamentoVendaActivity
-    private long   dataHoraOriginalEdicao        = 0L;
-    private String formaPagamentoOriginalEdicao  = null;
-    private int    numeroVendaEdicao             = 0;
-
     @SuppressWarnings("unchecked")
     private void restaurarSacolaSeEdicao() {
-        vendaIdEdicao               = getIntent().getStringExtra("vendaId");
-        dataHoraOriginalEdicao      = getIntent().getLongExtra("dataHoraOriginal", 0L);
-        formaPagamentoOriginalEdicao= getIntent().getStringExtra("formaPagamentoOriginal");
-        numeroVendaEdicao           = getIntent().getIntExtra("numeroVenda", 0);
+        vendaIdEdicao                = getIntent().getStringExtra("vendaId");
+        dataHoraOriginalEdicao       = getIntent().getLongExtra("dataHoraOriginal", 0L);
+        formaPagamentoOriginalEdicao = getIntent().getStringExtra("formaPagamentoOriginal");
+        numeroVendaEdicao            = getIntent().getIntExtra("numeroVenda", 0);
 
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
