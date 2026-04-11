@@ -5,7 +5,7 @@
     android:id="@+id/novaVenda"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
+    android:background="@color/header_telas_vendas"
     android:orientation="vertical"
     tools:context=".funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity">
 
@@ -21,7 +21,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nova Venda"
-            android:textColor="@android:color/white"
+            android:textColor="@color/texto_nova_venda"
             android:textSize="24sp"
             android:textStyle="bold" />
         <ImageButton
@@ -149,90 +149,75 @@
                 android:id="@+id/layoutResumoSacola"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:orientation="horizontal"
                 android:background="@drawable/fundo_arredondado"
                 android:layout_marginBottom="16dp"
+                android:padding="12dp"
+                android:gravity="center_vertical"
                 android:clickable="true"
                 android:focusable="true">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Ícone sacola + badge de quantidade -->
+                <FrameLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="12dp"
-                    android:gravity="center_vertical">
+                    android:layout_marginEnd="12dp">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                    <ImageView
+                        android:id="@+id/imgIconeSacolaResumo"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/ic_shopping_cart_96"
+                        app:tint="#9E9E9E" />
 
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
+                    <TextView
+                        android:id="@+id/txtSacolaQuantidade"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="-4dp"
+                        android:layout_marginEnd="-4dp"
+                        android:background="@color/colorPrimary"
+                        android:gravity="center"
+                        android:text="0"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
 
-                            <TextView
-                                android:id="@+id/txtSacolaQuantidade"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
-                                android:background="@color/cardDiaBackground"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="4dp"
-                                android:text="0"
-                                android:textStyle="bold"
-                                android:textSize="14sp"/>
-                            <TextView
-                                android:id="@+id/txtSacolaTitulo"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Sacola vazia"
-                                android:textStyle="bold"
-                                android:textColor="@color/cor_texto_primario"/>
-                        </LinearLayout>
+                <!-- Título e subtotal -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/txtSacolaSubtotal"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$ 0,00"
-                            android:textSize="14sp"
-                            android:layout_marginTop="4dp"
-                            android:textColor="@color/cor_texto_secundario"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/btnCobrar"
+                    <TextView
+                        android:id="@+id/txtSacolaTitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/fundo_arredondado"
-                        android:backgroundTint="@color/colorPrimary"
-                        android:orientation="vertical"
-                        android:paddingHorizontal="20dp"
-                        android:paddingVertical="8dp"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="COBRAR"
-                            android:textColor="#FFFFFF"
-                            android:textSize="12sp"
-                            android:textStyle="bold"/>
-                        <TextView
-                            android:id="@+id/txtCobrarTotal"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="R$ 0,00"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp"
-                            android:textStyle="bold"/>
-                    </LinearLayout>
+                        android:text="Sacola vazia"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_texto_primario" />
+
+                    <TextView
+                        android:id="@+id/txtSacolaSubtotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Toque para ver os itens"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/cor_texto_secundario" />
                 </LinearLayout>
+
+                <!-- Seta indicando que é clicável -->
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_chevron_right_24"
+                    app:tint="@color/cor_texto_secundario" />
+
             </LinearLayout>
 
             <LinearLayout
