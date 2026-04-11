@@ -31,7 +31,7 @@
             android:background="@android:color/transparent"
             android:contentDescription="Histórico de vendas"
             android:src="@drawable/ic_receipt_long_28"
-            app:tint="#333333" />
+            app:tint="@color/icone_recibo_header" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
