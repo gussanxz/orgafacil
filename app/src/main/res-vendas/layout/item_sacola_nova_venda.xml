@@ -86,7 +86,7 @@
                     android:background="@drawable/fundo_arredondado"
                     android:contentDescription="Diminuir quantidade"
                     android:src="@drawable/ic_remove_24"
-                    android:tint="@color/white"/>
+                    app:tint="@color/icone_menos_item_sacola" />
 
                 <TextView
                     android:id="@+id/txtQuantidadeSacola"
@@ -105,7 +105,7 @@
                     android:background="@drawable/fundo_arredondado"
                     android:contentDescription="Aumentar quantidade"
                     android:src="@drawable/ic_add_24"
-                    android:tint="#333333" />
+                    app:tint="@color/icone_mais_item_sacola" />
             </LinearLayout>
 
             <TextView
