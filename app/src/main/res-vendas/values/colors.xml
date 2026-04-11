@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- COORES MODO CLARO -->
+
+    <!-- CORES REUTILIZAVEIS -->
+
+    <!-- layout_nova_venda -->
+    <color name="texto_nova_venda">#FFFFFFFF</color>
+    <color name="header_telas_vendas">#01C7D2</color>
+    <color name="icone_recibo_header">#FF000000</color>
+
+    <!-- item_sacola_nova_venda -->
+    <color name="icone_menos_item_sacola">#FF000000</color>
+    <color name="icone_mais_item_sacola">#FF000000</color>
+
+    <!-- bottom_sheet_sacola_nova_venda -->
+    <color name="background_sacola">#FFFFFFFF</color>
+
+</resources>
