@@ -55,6 +55,7 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
 
         public interface OnItemClickListener {
                 void onItemClick(ItemVendaModel item);
+                void onLongClick(ItemVendaModel item);
         }
 
         // CORREÇÃO 2: O nome do construtor deve ser IGUAL ao nome da classe
@@ -176,7 +177,21 @@ public class AdapterFiltroPorPSNovaVenda extends RecyclerView.Adapter<AdapterFil
                                 }
                         }
 
-                        itemView.setOnClickListener(v -> listener.onItemClick(item));
+                        // AQUI ESTÃO OS LISTENERS ATUALIZADOS:
+                        // Toque rápido (Adiciona 1)
+                        itemView.setOnClickListener(v -> {
+                                if (listener != null) {
+                                        listener.onItemClick(item);
+                                }
+                        });
+
+                        // Toque longo (Abre o pop-up de Quick Add)
+                        itemView.setOnLongClickListener(v -> {
+                                if (listener != null) {
+                                        listener.onLongClick(item);
+                                }
+                                return true; // Retorna true para avisar o Android que o toque longo consumiu a ação
+                        });
                 }
         }
 
