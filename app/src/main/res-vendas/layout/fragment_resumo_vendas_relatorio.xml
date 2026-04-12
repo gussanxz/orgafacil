@@ -281,9 +281,9 @@
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"/>
 
-        <!-- Seção: Todos os produtos do mês -->
+        <!-- Seção unificada: Todos os produtos / Todas as categorias -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardTodosProdutos"
+            android:id="@+id/cardListaCompleta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
@@ -297,7 +297,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Cabeçalho -->
+                <!-- Cabeçalho com toggle -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -308,6 +308,7 @@
                     android:paddingBottom="8dp">
 
                     <TextView
+                        android:id="@+id/txtListaCompletaTitulo"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -317,11 +318,37 @@
                         android:textStyle="bold"/>
 
                     <TextView
-                        android:id="@+id/txtTodosProdutosContagem"
+                        android:id="@+id/txtListaCompletaContagem"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginEnd="12dp"
                         android:textColor="@color/cor_texto_secundario"
                         android:textSize="12sp"/>
+
+                    <TextView
+                        android:id="@+id/btnListaCompletaProdutos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Produtos"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp"
+                        android:background="@drawable/bg_rounded_dark"/>
+
+                    <TextView
+                        android:id="@+id/btnListaCompletaCategorias"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Categorias"
+                        android:textColor="#9E9E9E"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp"
+                        android:layout_marginStart="6dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"/>
 
                 </LinearLayout>
 
@@ -341,6 +368,7 @@
                     android:paddingBottom="4dp">
 
                     <TextView
+                        android:id="@+id/txtListaCompletaColunaLabel"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -373,7 +401,7 @@
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerTodosProdutos"
+                    android:id="@+id/recyclerListaCompleta"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
