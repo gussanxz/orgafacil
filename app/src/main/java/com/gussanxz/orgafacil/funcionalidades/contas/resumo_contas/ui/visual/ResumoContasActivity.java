@@ -444,7 +444,7 @@ public class ResumoContasActivity extends AppCompatActivity {
     }
 
     private void acaoRapida(String mensagem) {
-        Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
         fecharMenu();
     }
 
