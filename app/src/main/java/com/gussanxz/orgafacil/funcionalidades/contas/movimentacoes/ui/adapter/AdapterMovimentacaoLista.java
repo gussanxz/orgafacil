@@ -46,6 +46,7 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
 
         // NOVO: Clique simples no header
         void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia);
+        void onItemClick(MovimentacaoModel movimentacaoModel);
     }
 
     // Quando true, itens pagos são exibidos em cinza (estilo "concluído").
@@ -99,7 +100,8 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
                 return m1.getValor() == m2.getValor() &&
                         m1.isPago() == m2.isPago() &&
                         Objects.equals(m1.getDescricao(), m2.getDescricao()) &&
-                        Objects.equals(m1.getCategoria_nome(), m2.getCategoria_nome());
+                        Objects.equals(m1.getCategoria_nome(), m2.getCategoria_nome()) &&
+                        Objects.equals(m1.getData_movimentacao(), m2.getData_movimentacao());
             }
         }
     }
@@ -312,9 +314,7 @@ public class AdapterMovimentacaoLista extends ListAdapter<AdapterItemListaMovime
 
             // ── Cliques no item ───────────────────────────────────────────────
             itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(context, EditarMovimentacaoActivity.class);
-                intent.putExtra("movimentacaoSelecionada", mov);
-                context.startActivity(intent);
+                if (listener != null) listener.onItemClick(mov);
             });
 
             itemView.setOnLongClickListener(v -> {

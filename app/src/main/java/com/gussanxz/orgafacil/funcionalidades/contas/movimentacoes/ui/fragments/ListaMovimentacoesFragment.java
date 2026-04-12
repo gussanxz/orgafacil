@@ -286,6 +286,11 @@ public class ListaMovimentacoesFragment extends Fragment
         exibirPopupResumoDia(tituloDia, movsDoDia);
     }
 
+    @Override
+    public void onItemClick(MovimentacaoModel movimentacaoModel) {
+        abrirTelaEdicao(movimentacaoModel, false);
+    }
+
     private void exibirPopupResumoDia(String tituloDia, List<MovimentacaoModel> movsDoDia) {
         // 1. Cria o Dialog usando o contexto seguro do Fragment
         android.app.Dialog dialog = new android.app.Dialog(requireContext());

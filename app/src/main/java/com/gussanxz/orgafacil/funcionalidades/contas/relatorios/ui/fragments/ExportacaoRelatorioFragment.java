@@ -165,6 +165,11 @@ public class ExportacaoRelatorioFragment extends Fragment {
                     @Override public void onCheckClick(MovimentacaoModel m) {}
                     @Override public void onHeaderSwipeDelete(String d, List<MovimentacaoModel> l) {}
                     @Override public void onHeaderClick(String t, List<MovimentacaoModel> l) {}
+
+                    @Override
+                    public void onItemClick(MovimentacaoModel movimentacaoModel) {
+
+                    }
                 });
         recyclerPrevia.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPrevia.setAdapter(adapterPrevia);
