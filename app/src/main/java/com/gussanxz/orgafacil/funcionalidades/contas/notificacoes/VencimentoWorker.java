@@ -157,6 +157,14 @@ public class VencimentoWorker extends Worker {
     // ── disparo ───────────────────────────────────────────────────────────────
 
     private void notificar(Context ctx, int id, String titulo, String mensagem) {
+        android.content.Intent intent = new android.content.Intent(ctx,
+                com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity.class);
+        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                ctx, id, intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder b =
                 new NotificationCompat.Builder(ctx, VencimentoNotificationChannel.CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_hourglass_empty_24)
@@ -164,6 +172,7 @@ public class VencimentoWorker extends Worker {
                         .setContentText(mensagem)
                         .setStyle(new NotificationCompat.BigTextStyle().bigText(mensagem))
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setContentIntent(pendingIntent)
                         .setAutoCancel(true);
 
         NotificationManager nm =
