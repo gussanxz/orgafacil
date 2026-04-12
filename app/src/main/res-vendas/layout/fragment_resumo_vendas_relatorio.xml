@@ -65,7 +65,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="@color/colorPrimary"
+                app:cardBackgroundColor="@color/cor_superficie"
                 app:cardElevation="2dp">
 
                 <LinearLayout
@@ -78,7 +78,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Total vendido"
-                        android:textColor="#CCFFFFFF"
+                        android:textColor="@color/cor_texto_secundario"
                         android:textSize="11sp"/>
 
                     <TextView
@@ -86,7 +86,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="R$ 0,00"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/cor_texto_primario"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
@@ -300,14 +300,14 @@
                         android:textStyle="bold"
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="6dp"
-                        android:background="@drawable/bg_rounded_dark"/>
+                        android:background="@drawable/bg_aba_ativa"/>
 
                     <TextView
                         android:id="@+id/btnRelVendasAbaCategorias"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Categorias"
-                        android:textColor="#9E9E9E"
+                        android:textColor="@color/cor_texto_secundario"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:paddingHorizontal="12dp"
@@ -427,14 +427,14 @@
                         android:textStyle="bold"
                         android:paddingHorizontal="10dp"
                         android:paddingVertical="5dp"
-                        android:background="@drawable/bg_rounded_dark"/>
+                        android:background="@drawable/bg_aba_ativa"/>
 
                     <TextView
                         android:id="@+id/btnListaCompletaCategorias"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Categorias"
-                        android:textColor="#9E9E9E"
+                        android:textColor="@color/cor_texto_secundario"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:paddingHorizontal="10dp"

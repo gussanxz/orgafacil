@@ -333,8 +333,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         String sinal = positivo ? "↑" : "↓";
         txtRelVendasTotalVariacao.setText(
                 String.format(Locale.ROOT, "%s %.0f%% vs mês ant.", sinal, Math.abs(variacao)));
+        // Cores com alto contraste sobre fundo colorPrimary
         txtRelVendasTotalVariacao.setTextColor(
-                positivo ? Color.parseColor("#A5D6A7") : Color.parseColor("#EF9A9A"));
+                positivo ? Color.parseColor("#B9F6CA") : Color.parseColor("#FF8A80"));
         txtRelVendasTotalVariacao.setVisibility(View.VISIBLE);
     }
 
@@ -404,17 +405,18 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     private void atualizarVisualAbas() {
+        int corInativo = ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario);
         if (exibindoProdutos) {
-            btnAbaProdutos.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnAbaProdutos.setBackgroundResource(R.drawable.bg_aba_ativa);
             btnAbaProdutos.setTextColor(Color.WHITE);
             btnAbaCategorias.setBackgroundResource(0);
-            btnAbaCategorias.setTextColor(Color.parseColor("#9E9E9E"));
+            btnAbaCategorias.setTextColor(corInativo);
             txtTop5ColunaLabel.setText("Produto");
         } else {
-            btnAbaCategorias.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnAbaCategorias.setBackgroundResource(R.drawable.bg_aba_ativa);
             btnAbaCategorias.setTextColor(Color.WHITE);
             btnAbaProdutos.setBackgroundResource(0);
-            btnAbaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
+            btnAbaProdutos.setTextColor(corInativo);
             txtTop5ColunaLabel.setText("Categoria");
         }
     }
@@ -461,16 +463,17 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     private void atualizarVisualToggleLista() {
+        int corInativo = ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario);
         if (listaExibindoProdutos) {
-            btnListaCompletaProdutos.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnListaCompletaProdutos.setBackgroundResource(R.drawable.bg_aba_ativa);
             btnListaCompletaProdutos.setTextColor(Color.WHITE);
             btnListaCompletaCategorias.setBackgroundResource(0);
-            btnListaCompletaCategorias.setTextColor(Color.parseColor("#9E9E9E"));
+            btnListaCompletaCategorias.setTextColor(corInativo);
         } else {
-            btnListaCompletaCategorias.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnListaCompletaCategorias.setBackgroundResource(R.drawable.bg_aba_ativa);
             btnListaCompletaCategorias.setTextColor(Color.WHITE);
             btnListaCompletaProdutos.setBackgroundResource(0);
-            btnListaCompletaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
+            btnListaCompletaProdutos.setTextColor(corInativo);
         }
     }
 
