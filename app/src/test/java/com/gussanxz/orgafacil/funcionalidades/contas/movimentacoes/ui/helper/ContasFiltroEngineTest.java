@@ -126,8 +126,9 @@ public class ContasFiltroEngineTest {
 
     private FiltroResultado executar(List<MovimentacaoModel> hist, List<MovimentacaoModel> fut,
                                      String query, TipoCategoriaContas tipo, String catId) {
+        List<String> catIds = catId != null ? Collections.singletonList(catId) : null;
         return filtrar(hist, fut, query, tipo, catId, -1, -1, cb -> {
-            engine.filtrarAsync(hist, fut, query, null, null, tipo, catId, cb);
+            engine.filtrarAsync(hist, fut, query, null, null, tipo, catIds, cb);
             return null;
         });
     }
