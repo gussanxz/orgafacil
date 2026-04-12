@@ -214,6 +214,32 @@ public class VendasRepository {
                 .addOnFailureListener(cb::onError);
     }
 
+    /**
+     * Retorna todos os itens do catálogo (ativos e inativos).
+     * Usado para resolução de nomes/categorias em vendas históricas,
+     * onde mesmo produtos inativados precisam ter seus nomes/categorias
+     * atualizados conforme o cadastro mais recente.
+     */
+    public void listarTodoCatalogo(@NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasCatalogoCol()
+                .orderBy("nome", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(cb::onSuccess)
+                .addOnFailureListener(cb::onError);
+    }
+
+    /**
+     * Retorna todas as categorias (ativas e inativas).
+     * Usado para resolver o nome atual de uma categoria a partir do seu ID,
+     * garantindo que renomeações reflitam nas vendas históricas.
+     */
+    public void listarTodasCategorias(@NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasCategoriasCol()
+                .get()
+                .addOnSuccessListener(cb::onSuccess)
+                .addOnFailureListener(cb::onError);
+    }
+
     public void listarCatalogoPorTipo(@NonNull String tipo, @NonNull RepoCallback<QuerySnapshot> cb) {
         FirestoreSchema.vendasCatalogoPorTipoQuery(tipo)
                 .whereEqualTo("statusAtivo", true)

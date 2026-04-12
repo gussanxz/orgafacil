@@ -15,9 +15,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
@@ -27,8 +31,10 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ComprovanteVendaActivity extends AppCompatActivity {
 
@@ -51,6 +57,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     private final SimpleDateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", new Locale("pt", "BR"));
 
     private VendaRepository vendaRepository;
+    private VendasRepository vendasRepository;
     private LinearLayout layoutAcoesFinanceiro;
     private com.google.android.material.button.MaterialButton btnEditarDoFinanceiro;
     private com.google.android.material.button.MaterialButton btnAlternarStatusDoFinanceiro;
@@ -69,6 +76,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         });
 
         vendaRepository = new VendaRepository();
+        vendasRepository = new VendasRepository();
 
         inicializarComponentes();
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
@@ -153,12 +161,27 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         txtFormaPagamento.setText(venda.getFormaPagamento() != null
                 ? venda.getFormaPagamento() : "—");
 
-        // Itens
-        listaItens.clear();
-        if (venda.getItens() != null) {
-            listaItens.addAll(venda.getItens());
-        }
-        adapter.notifyDataSetChanged();
+        // Itens — carrega catálogo completo (ativos e inativos) para resolver nomes atuais
+        vendasRepository.listarTodoCatalogo(new RepoCallback<QuerySnapshot>() {
+            @Override
+            public void onSuccess(QuerySnapshot snap) {
+                Map<String, String> nomesMap = new HashMap<>();
+                for (DocumentSnapshot doc : snap.getDocuments()) {
+                    String nome = doc.getString("nome");
+                    if (nome != null && !nome.isEmpty()) nomesMap.put(doc.getId(), nome);
+                }
+                adapter.setNomesMap(nomesMap);
+                listaItens.clear();
+                if (venda.getItens() != null) listaItens.addAll(venda.getItens());
+                adapter.notifyDataSetChanged();
+            }
+            @Override
+            public void onError(Exception e) {
+                listaItens.clear();
+                if (venda.getItens() != null) listaItens.addAll(venda.getItens());
+                adapter.notifyDataSetChanged();
+            }
+        });
 
         // Totalizadores
         txtQtdTotalItens.setText(venda.getQuantidadeTotal() + " " +

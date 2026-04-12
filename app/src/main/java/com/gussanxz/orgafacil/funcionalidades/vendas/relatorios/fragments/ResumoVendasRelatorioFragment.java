@@ -15,9 +15,13 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments.TopProdutosVendasAdapter;
@@ -54,8 +58,13 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private boolean listaExibindoProdutos = true;
 
     private VendaRepository vendaRepository;
+    private VendasRepository vendasRepository;
     private ListenerRegistration listenerRegistration;
     private List<VendaModel> listaCompleta = new ArrayList<>();
+    private Map<String, String> catalogoCategoriasMap = new HashMap<>();
+    private Map<String, String> catalogoCategoriasIdMap = new HashMap<>();
+    private Map<String, String> categoriaNomesMap = new HashMap<>();
+    private Map<String, String> catalogoNomesMap = new HashMap<>();
 
     private Calendar mesSelecionado;
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -128,6 +137,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         atualizarTextMes();
 
         vendaRepository = new VendaRepository();
+        vendasRepository = new VendasRepository();
 
         btnMesAnterior.setOnClickListener(v -> {
             mesSelecionado.add(Calendar.MONTH, -1);
@@ -144,6 +154,58 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Carrega todos os itens do catálogo (ativos e inativos) para resolver
+        // nomes e categorias atuais nas vendas históricas.
+        vendasRepository.listarTodoCatalogo(new RepoCallback<QuerySnapshot>() {
+            @Override
+            public void onSuccess(QuerySnapshot snap) {
+                catalogoCategoriasMap.clear();
+                catalogoCategoriasIdMap.clear();
+                catalogoNomesMap.clear();
+                for (DocumentSnapshot doc : snap.getDocuments()) {
+                    String cat = doc.getString("categoria");
+                    if (cat != null && !cat.isEmpty()) {
+                        catalogoCategoriasMap.put(doc.getId(), cat);
+                    }
+                    String catId = doc.getString("categoriaId");
+                    if (catId != null && !catId.isEmpty()) {
+                        catalogoCategoriasIdMap.put(doc.getId(), catId);
+                    }
+                    String nome = doc.getString("nome");
+                    if (nome != null && !nome.isEmpty()) {
+                        catalogoNomesMap.put(doc.getId(), nome);
+                    }
+                }
+                // Após o catálogo, carrega as categorias para resolver nomes atuais pelo ID.
+                vendasRepository.listarTodasCategorias(new RepoCallback<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot catSnap) {
+                        categoriaNomesMap.clear();
+                        for (DocumentSnapshot catDoc : catSnap.getDocuments()) {
+                            String nome = catDoc.getString("nome");
+                            if (nome != null && !nome.isEmpty()) {
+                                categoriaNomesMap.put(catDoc.getId(), nome);
+                            }
+                        }
+                        iniciarListenerVendas();
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        iniciarListenerVendas();
+                    }
+                });
+            }
+            @Override
+            public void onError(Exception e) {
+                iniciarListenerVendas();
+            }
+        });
+    }
+
+    private void iniciarListenerVendas() {
+        if (listenerRegistration != null) {
+            listenerRegistration.remove();
+        }
         listenerRegistration = vendaRepository.listarTempoReal(new VendaRepository.ListaCallback() {
             @Override
             public void onNovosDados(List<VendaModel> lista) {
@@ -253,11 +315,10 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             for (ItemVendaRegistradaModel item : v.getItens()) {
                 String chave;
                 if (listaExibindoProdutos) {
-                    chave = item.getNome();
+                    chave = resolverNome(item);
                     if (chave == null || chave.isEmpty()) continue;
                 } else {
-                    chave = item.getCategoria();
-                    if (chave == null || chave.isEmpty()) chave = "Sem categoria";
+                    chave = resolverCategoria(item);
                 }
                 double[] dados = mapa.getOrDefault(chave, new double[]{0, 0});
                 dados[0] += item.getQuantidade();
@@ -310,10 +371,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                 // Chave: nome do produto OU categoria, conforme aba ativa
                 String chave;
                 if (exibindoProdutos) {
-                    chave = item.getNome();
+                    chave = resolverNome(item);
                 } else {
-                    chave = item.getCategoria();
-                    if (chave == null || chave.isEmpty()) chave = "Sem categoria";
+                    chave = resolverCategoria(item);
                 }
                 if (chave == null) continue;
                 double[] dados = rankMap.getOrDefault(chave, new double[]{0, 0});
@@ -338,5 +398,30 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     i + 1, e.getKey(), (int) e.getValue()[0], e.getValue()[1], pctItem));
         }
         topAdapter.atualizar(topItens);
+    }
+
+    private String resolverNome(ItemVendaRegistradaModel item) {
+        if (item.getItemId() != null) {
+            String nome = catalogoNomesMap.get(item.getItemId());
+            if (nome != null && !nome.isEmpty()) return nome;
+        }
+        String fallback = item.getNome();
+        return (fallback != null) ? fallback : "";
+    }
+
+    private String resolverCategoria(ItemVendaRegistradaModel item) {
+        if (item.getItemId() != null) {
+            // 1ª opção: categoriaId do produto → nome atual da entidade categoria
+            String catId = catalogoCategoriasIdMap.get(item.getItemId());
+            if (catId != null) {
+                String catNome = categoriaNomesMap.get(catId);
+                if (catNome != null && !catNome.isEmpty()) return catNome;
+            }
+            // 2ª opção: nome de categoria salvo no próprio documento do produto
+            String cat = catalogoCategoriasMap.get(item.getItemId());
+            if (cat != null && !cat.isEmpty()) return cat;
+        }
+        String fallback = item.getCategoria();
+        return (fallback != null && !fallback.isEmpty()) ? fallback : "Sem categoria";
     }
 }

@@ -13,16 +13,23 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaMo
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 
 import java.text.NumberFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class AdapterItensComprovante extends RecyclerView.Adapter<AdapterItensComprovante.ViewHolder> {
 
     private final List<ItemVendaRegistradaModel> listaItens;
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private Map<String, String> nomesMap = new HashMap<>();
 
     public AdapterItensComprovante(List<ItemVendaRegistradaModel> listaItens) {
         this.listaItens = listaItens;
+    }
+
+    public void setNomesMap(Map<String, String> map) {
+        this.nomesMap = map != null ? map : new HashMap<>();
     }
 
     @NonNull
@@ -55,7 +62,10 @@ public class AdapterItensComprovante extends RecyclerView.Adapter<AdapterItensCo
         }
 
         void bind(ItemVendaRegistradaModel item) {
-            txtNome.setText(item.getNome());
+            String nome = (item.getItemId() != null && nomesMap.containsKey(item.getItemId()))
+                    ? nomesMap.get(item.getItemId())
+                    : item.getNome();
+            txtNome.setText(nome);
             txtTipo.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço");
             txtQtdUnitario.setText(item.getQuantidade() + "x  " + fmt.format(item.getPrecoUnitario()));
             txtSubtotalItem.setText(fmt.format(item.getSubtotal()));
