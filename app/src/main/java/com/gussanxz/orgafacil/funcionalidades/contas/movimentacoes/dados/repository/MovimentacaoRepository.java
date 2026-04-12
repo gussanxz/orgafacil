@@ -79,7 +79,7 @@ public class MovimentacaoRepository {
      *   - troca de filtro    → ViewModel reseta cursor antes de chamar este método
      */
     public void recuperarHistoricoPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
-                                           String categoriaId, String filtroTipo,
+                                           List<String> categoriaIds, String filtroTipo,
                                            DadosPaginadosCallback callback) {
         com.google.firebase.Timestamp limite = dataReferencia != null
                 ? new com.google.firebase.Timestamp(dataReferencia)
@@ -91,9 +91,12 @@ public class MovimentacaoRepository {
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
 
-        if (categoriaId != null && !categoriaId.isEmpty()) q = q.whereEqualTo("categoria_id", categoriaId);
-        if (filtroTipo  != null && !filtroTipo.isEmpty())  q = q.whereEqualTo("tipo", filtroTipo);
-        if (ultimoDoc   != null)                           q = q.startAfter(ultimoDoc);
+        if (categoriaIds != null && !categoriaIds.isEmpty()) {
+            if (categoriaIds.size() == 1) q = q.whereEqualTo("categoria_id", categoriaIds.get(0));
+            else                          q = q.whereIn("categoria_id", categoriaIds);
+        }
+        if (filtroTipo != null && !filtroTipo.isEmpty()) q = q.whereEqualTo("tipo", filtroTipo);
+        if (ultimoDoc  != null)                          q = q.startAfter(ultimoDoc);
 
         q.get()
                 .addOnSuccessListener(s -> {
@@ -115,16 +118,19 @@ public class MovimentacaoRepository {
      * Mesma lógica de recuperarHistoricoPaginado — veja Javadoc acima.
      */
     public void recuperarContasFuturasPaginado(Date dataReferencia, DocumentSnapshot ultimoDoc,
-                                               String categoriaId, String filtroTipo,
+                                               List<String> categoriaIds, String filtroTipo,
                                                DadosPaginadosCallback callback) {
         Query q = FirestoreSchema.contasMovimentacoesCol()
                 .whereEqualTo(MovimentacaoModel.CAMPO_PAGO, false)
                 .orderBy(MovimentacaoModel.CAMPO_DATA_MOVIMENTACAO, Query.Direction.ASCENDING)
                 .limit(100);
 
-        if (categoriaId != null && !categoriaId.isEmpty()) q = q.whereEqualTo("categoria_id", categoriaId);
-        if (filtroTipo  != null && !filtroTipo.isEmpty())  q = q.whereEqualTo("tipo", filtroTipo);
-        if (ultimoDoc   != null)                           q = q.startAfter(ultimoDoc);
+        if (categoriaIds != null && !categoriaIds.isEmpty()) {
+            if (categoriaIds.size() == 1) q = q.whereEqualTo("categoria_id", categoriaIds.get(0));
+            else                          q = q.whereIn("categoria_id", categoriaIds);
+        }
+        if (filtroTipo != null && !filtroTipo.isEmpty()) q = q.whereEqualTo("tipo", filtroTipo);
+        if (ultimoDoc  != null)                          q = q.startAfter(ultimoDoc);
 
         q.get()
                 .addOnSuccessListener(s -> {

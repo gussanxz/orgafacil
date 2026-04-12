@@ -40,10 +40,10 @@ public class ContasFiltroEngine {
                              List<MovimentacaoModel> cacheFuturo,
                              String query, Date inicio, Date fim,
                              TipoCategoriaContas filtroTipo,
-                             String filtroCategoriaId,
+                             List<String> filtroCategoriaIds,
                              FiltroCallback callback) {
         filtrarAsync(cacheHistorico, cacheFuturo, query, inicio, fim,
-                filtroTipo, filtroCategoriaId, -1L, -1L, callback);
+                filtroTipo, filtroCategoriaIds, -1L, -1L, callback);
     }
 
     /**
@@ -61,7 +61,7 @@ public class ContasFiltroEngine {
                              List<MovimentacaoModel> cacheFuturo,
                              String query, Date inicio, Date fim,
                              TipoCategoriaContas filtroTipo,
-                             String filtroCategoriaId,
+                             List<String> filtroCategoriaIds,
                              long valorMinCentavos, long valorMaxCentavos,
                              FiltroCallback callback) {
 
@@ -86,14 +86,14 @@ public class ContasFiltroEngine {
 
                 List<MovimentacaoModel> resHistorico = filtrarListaGenerica(
                         cacheHistorico, queryFinal, inicio, fim,
-                        false, filtroTipo, filtroCategoriaId,
+                        false, filtroTipo, filtroCategoriaIds,
                         valorMinCentavos, valorMaxCentavos, minhaGeracao);
 
                 if (resHistorico == null || estaObsoleta(minhaGeracao)) return;
 
                 List<MovimentacaoModel> resFuturo = filtrarListaGenerica(
                         cacheFuturo, queryFinal, inicio, fim,
-                        true, filtroTipo, filtroCategoriaId,
+                        true, filtroTipo, filtroCategoriaIds,
                         valorMinCentavos, valorMaxCentavos, minhaGeracao);
 
                 if (resFuturo == null || estaObsoleta(minhaGeracao)) return;
@@ -146,7 +146,7 @@ public class ContasFiltroEngine {
             String query, Date inicioOrig, Date fimOrig,
             boolean isModoFuturo,
             TipoCategoriaContas filtroTipo,
-            String filtroCategoriaId,
+            List<String> filtroCategoriaIds,
             long valorMinCentavos, long valorMaxCentavos,
             long minhaGeracao) throws InterruptedException {
 
@@ -180,8 +180,8 @@ public class ContasFiltroEngine {
             if (!isModoFuturo && !m.isPago()) continue;
             if (filtroTipo != null && m.getTipoEnum() != filtroTipo) continue;
 
-            if (filtroCategoriaId != null
-                    && !filtroCategoriaId.equals(m.getCategoria_id())) continue;
+            if (filtroCategoriaIds != null && !filtroCategoriaIds.isEmpty()
+                    && !filtroCategoriaIds.contains(m.getCategoria_id())) continue;
 
             // ── Filtro de intervalo de valor (RangeSlider) ───────────────────
             long valorAbs = Math.abs(m.getValor());

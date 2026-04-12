@@ -98,12 +98,8 @@ public class ContasActivity extends AppCompatActivity {
     private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
     private ListenerRegistration listenerResumo;
     private ImageView imgFiltroCategoria;
-    private String categoriaIdFiltro = null;
-
-    // Guarda o nome da categoria selecionada para reconstruir o label
-    // sem precisar resolver o ID a cada chamada. Declarado junto com
-    // categoriaIdFiltro pois os dois sempre andam juntos.
-    private String categoriaNomeFiltro = null;
+    // ID → nome das categorias selecionadas no filtro (ordem de inserção preservada).
+    private final java.util.LinkedHashMap<String, String> categoriasFiltroSelecionadas = new java.util.LinkedHashMap<>();
 
     private static final int LIMIAR_PAGINACAO_PROATIVA = 50;
 
@@ -378,7 +374,8 @@ public class ContasActivity extends AppCompatActivity {
     // --- FILTROS ---
 
     private void aplicarFiltros() {
-        viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro, categoriaIdFiltro);
+        viewModel.aplicarFiltros(searchView.getQuery().toString(), dataInicialFiltro, dataFinalFiltro,
+                new java.util.ArrayList<>(categoriasFiltroSelecionadas.keySet()));
     }
 
     // Lê os thumbs do RangeSlider, converte para centavos e passa ao ViewModel.
@@ -622,8 +619,7 @@ public class ContasActivity extends AppCompatActivity {
             editDataFinal.setText("");
             dataInicialFiltro = null;
             dataFinalFiltro = null;
-            categoriaIdFiltro = null;
-            categoriaNomeFiltro = null;
+            categoriasFiltroSelecionadas.clear();
             searchView.setQuery("", false);
             searchView.clearFocus();
             chipGroupFiltroTipo.check(R.id.chipTodos);
@@ -878,25 +874,30 @@ public class ContasActivity extends AppCompatActivity {
                 RecyclerView recycler = dialog.findViewById(R.id.recyclerCategoriasDialog);
                 recycler.setLayoutManager(new LinearLayoutManager(ContasActivity.this));
 
-                DialogCategoriaAdapter adapter = new DialogCategoriaAdapter(cat -> {
-                    categoriaIdFiltro = cat.getId();
-                    // Guarda o nome para que atualizarVisualFiltroCategoria() e
-                    // obterNomeCategoriaAtiva() possam reconstruir o label sem
-                    // nova query — o nome já está disponível aqui no clique.
-                    categoriaNomeFiltro = cat.getNome();
-                    // Atualiza ícone (tint laranja) e label com o nome da categoria.
-                    atualizarVisualFiltroCategoria(cat.getNome());
-                    Toast.makeText(ContasActivity.this,
-                            "Filtrando: " + cat.getNome(), Toast.LENGTH_SHORT).show();
-                    aplicarFiltros();
-                    dialog.dismiss();
-                });
+                // Cópia mutável das seleções atuais para o dialog — descartada se cancelar.
+                java.util.LinkedHashMap<String, String> selecaoDialog =
+                        new java.util.LinkedHashMap<>(categoriasFiltroSelecionadas);
+
+                DialogCategoriaAdapter adapter = new DialogCategoriaAdapter(
+                        selecaoDialog,
+                        (cat, selecionada) -> {
+                            if (selecionada) selecaoDialog.put(cat.getId(), cat.getNome());
+                            else             selecaoDialog.remove(cat.getId());
+                        });
 
                 recycler.setAdapter(adapter);
                 adapter.submitList(listaCategorias);
 
                 dialog.findViewById(R.id.btnCancelarDialog)
                         .setOnClickListener(v -> dialog.dismiss());
+
+                dialog.findViewById(R.id.btnAplicarFiltro).setOnClickListener(v -> {
+                    categoriasFiltroSelecionadas.clear();
+                    categoriasFiltroSelecionadas.putAll(selecaoDialog);
+                    atualizarVisualFiltroCategoria(obterNomeCategoriaAtiva());
+                    aplicarFiltros();
+                    dialog.dismiss();
+                });
 
                 dialog.show();
             }
@@ -935,11 +936,13 @@ public class ContasActivity extends AppCompatActivity {
 
     // ── Auxiliar: nome da categoria ativa para reconstrução do label ──────────
     //
-    // Retorna categoriaNomeFiltro se há filtro de categoria ativo, null caso
-    // contrário. Usado por abrirDataPicker() para compor o label sem fazer
-    // nova query ao Firestore — o nome já foi salvo no momento do clique.
+    // Retorna o label das categorias ativas ("Nome", "N categorias") ou null.
+    // Usado por abrirDataPicker() para compor o label sem nova query ao Firestore.
     private String obterNomeCategoriaAtiva() {
-        return (categoriaIdFiltro != null) ? categoriaNomeFiltro : null;
+        if (categoriasFiltroSelecionadas.isEmpty()) return null;
+        int qtd = categoriasFiltroSelecionadas.size();
+        if (qtd == 1) return categoriasFiltroSelecionadas.values().iterator().next();
+        return qtd + " categorias";
     }
 
     // ── Visual do filtro de categoria ────────────────────────────────────────
@@ -1029,8 +1032,8 @@ public class ContasActivity extends AppCompatActivity {
     private static final class DialogCategoriaAdapter
             extends ListAdapter<ContasCategoriaModel, DialogCategoriaAdapter.CategoriaViewHolder> {
 
-        interface OnCategoriaClickListener {
-            void onCategoriaClick(ContasCategoriaModel categoria);
+        interface OnToggleListener {
+            void onToggle(ContasCategoriaModel categoria, boolean selecionada);
         }
 
         private static final DiffUtil.ItemCallback<ContasCategoriaModel> DIFF_CALLBACK =
@@ -1048,12 +1051,15 @@ public class ContasActivity extends AppCompatActivity {
                     }
                 };
 
-        @NonNull
-        private final OnCategoriaClickListener clickListener;
+        // Referência ao mapa vivo de seleções do dialog — alterado diretamente no toggle.
+        @NonNull private final java.util.LinkedHashMap<String, String> selecaoAtual;
+        @NonNull private final OnToggleListener toggleListener;
 
-        DialogCategoriaAdapter(@NonNull OnCategoriaClickListener clickListener) {
+        DialogCategoriaAdapter(@NonNull java.util.LinkedHashMap<String, String> selecaoAtual,
+                               @NonNull OnToggleListener toggleListener) {
             super(DIFF_CALLBACK);
-            this.clickListener = clickListener;
+            this.selecaoAtual   = selecaoAtual;
+            this.toggleListener = toggleListener;
         }
 
         @NonNull
@@ -1066,21 +1072,32 @@ public class ContasActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull CategoriaViewHolder holder, int position) {
-            holder.bind(getItem(position), clickListener);
+            holder.bind(getItem(position), selecaoAtual, toggleListener);
         }
 
         static final class CategoriaViewHolder extends RecyclerView.ViewHolder {
 
             private final TextView textNome;
+            private final android.widget.CheckBox checkbox;
 
             CategoriaViewHolder(@NonNull android.view.View itemView) {
                 super(itemView);
                 textNome = itemView.findViewById(R.id.textNomeCategoria);
+                checkbox = itemView.findViewById(R.id.checkboxCategoria);
             }
 
-            void bind(ContasCategoriaModel categoria, OnCategoriaClickListener listener) {
+            void bind(ContasCategoriaModel categoria,
+                      java.util.LinkedHashMap<String, String> selecaoAtual,
+                      OnToggleListener listener) {
                 textNome.setText(categoria.getNome());
-                itemView.setOnClickListener(v -> listener.onCategoriaClick(categoria));
+                // Desabilita o listener antes de setar o estado para evitar loop.
+                checkbox.setOnCheckedChangeListener(null);
+                checkbox.setChecked(selecaoAtual.containsKey(categoria.getId()));
+                itemView.setOnClickListener(v -> {
+                    boolean novoEstado = !checkbox.isChecked();
+                    checkbox.setChecked(novoEstado);
+                    listener.onToggle(categoria, novoEstado);
+                });
             }
         }
     }
