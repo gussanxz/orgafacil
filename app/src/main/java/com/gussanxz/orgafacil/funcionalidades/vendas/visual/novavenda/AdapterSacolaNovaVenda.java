@@ -14,10 +14,16 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaV
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-public class AdapterSacolaNovaVenda extends RecyclerView.Adapter<AdapterSacolaNovaVenda.SacolaViewHolder> {
+public class AdapterSacolaNovaVenda extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final int TYPE_HEADER = 0;
+    private static final int TYPE_ITEM   = 1;
 
     public interface OnSacolaActionListener {
         void onSomar(ItemSacolaVendaModel item);
@@ -25,69 +31,114 @@ public class AdapterSacolaNovaVenda extends RecyclerView.Adapter<AdapterSacolaNo
         void onRemover(ItemSacolaVendaModel item);
     }
 
-    private List<ItemSacolaVendaModel> listaItens;
+    // Lista plana mista: String = cabeçalho de categoria, ItemSacolaVendaModel = item
+    private List<Object> listaFlat = new ArrayList<>();
     private final OnSacolaActionListener listener;
-    private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    public AdapterSacolaNovaVenda(List<ItemSacolaVendaModel> listaItens, OnSacolaActionListener listener) {
-        this.listaItens = listaItens;
+    public AdapterSacolaNovaVenda(List<ItemSacolaVendaModel> itens, OnSacolaActionListener listener) {
         this.listener = listener;
+        listaFlat = agrupar(itens);
     }
 
+    /** Recebe a lista plana de itens e reconstrói com cabeçalhos de categoria. */
     public void atualizarLista(List<ItemSacolaVendaModel> novaLista) {
-        this.listaItens = novaLista;
+        listaFlat = agrupar(novaLista);
         notifyDataSetChanged();
     }
 
-    @NonNull
-    @Override
-    public SacolaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_sacola_nova_venda, parent, false);
-        return new SacolaViewHolder(view);
+    // ── Agrupamento ───────────────────────────────────────────────────────────
+
+    private static List<Object> agrupar(List<ItemSacolaVendaModel> itens) {
+        // Agrupa preservando a ordem de inserção (LinkedHashMap)
+        LinkedHashMap<String, List<ItemSacolaVendaModel>> grupos = new LinkedHashMap<>();
+
+        for (ItemSacolaVendaModel item : itens) {
+            String cat = item.getCategoria();
+            if (cat == null || cat.isEmpty()) cat = "Sem categoria";
+            if (!grupos.containsKey(cat)) grupos.put(cat, new ArrayList<>());
+            grupos.get(cat).add(item);
+        }
+
+        List<Object> flat = new ArrayList<>();
+        for (Map.Entry<String, List<ItemSacolaVendaModel>> entry : grupos.entrySet()) {
+            flat.add(entry.getKey());           // String → cabeçalho
+            flat.addAll(entry.getValue());      // itens do grupo
+        }
+        return flat;
     }
 
+    // ── Adapter ───────────────────────────────────────────────────────────────
+
     @Override
-    public void onBindViewHolder(@NonNull SacolaViewHolder holder, int position) {
-        holder.bind(listaItens.get(position));
+    public int getItemViewType(int position) {
+        return listaFlat.get(position) instanceof String ? TYPE_HEADER : TYPE_ITEM;
     }
 
     @Override
     public int getItemCount() {
-        return listaItens != null ? listaItens.size() : 0;
+        return listaFlat.size();
     }
 
-    class SacolaViewHolder extends RecyclerView.ViewHolder {
+    @NonNull
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_HEADER) {
+            View v = inflater.inflate(R.layout.item_sacola_header_categoria, parent, false);
+            return new HeaderVH(v);
+        } else {
+            View v = inflater.inflate(R.layout.item_sacola_nova_venda, parent, false);
+            return new ItemVH(v);
+        }
+    }
 
-        private final TextView txtNomeItem;
-        private final TextView txtTipoItem;
-        private final TextView txtPrecoUnitario;
-        private final TextView txtQuantidade;
-        private final TextView txtSubtotal;
-        private final ImageButton btnMenos;
-        private final ImageButton btnMais;
-        private final ImageButton btnRemover;
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof HeaderVH) {
+            ((HeaderVH) holder).bind((String) listaFlat.get(position));
+        } else {
+            ((ItemVH) holder).bind((ItemSacolaVendaModel) listaFlat.get(position));
+        }
+    }
 
-        public SacolaViewHolder(@NonNull View itemView) {
+    // ── ViewHolders ───────────────────────────────────────────────────────────
+
+    static class HeaderVH extends RecyclerView.ViewHolder {
+        final TextView txtCategoria;
+
+        HeaderVH(@NonNull View itemView) {
             super(itemView);
-            txtNomeItem = itemView.findViewById(R.id.txtNomeItemSacola);
-            txtTipoItem = itemView.findViewById(R.id.txtTipoItemSacola);
-            txtPrecoUnitario = itemView.findViewById(R.id.txtPrecoUnitarioSacola);
-            txtQuantidade = itemView.findViewById(R.id.txtQuantidadeSacola);
+            txtCategoria = itemView.findViewById(R.id.txtHeaderCategoriaSacola);
+        }
+
+        void bind(String categoria) {
+            txtCategoria.setText(categoria);
+        }
+    }
+
+    class ItemVH extends RecyclerView.ViewHolder {
+        final TextView     txtNome, txtTipo, txtPreco, txtQtd, txtSubtotal;
+        final ImageButton  btnMenos, btnMais, btnRemover;
+
+        ItemVH(@NonNull View itemView) {
+            super(itemView);
+            txtNome     = itemView.findViewById(R.id.txtNomeItemSacola);
+            txtTipo     = itemView.findViewById(R.id.txtTipoItemSacola);
+            txtPreco    = itemView.findViewById(R.id.txtPrecoUnitarioSacola);
+            txtQtd      = itemView.findViewById(R.id.txtQuantidadeSacola);
             txtSubtotal = itemView.findViewById(R.id.txtSubtotalSacola);
-            btnMenos = itemView.findViewById(R.id.btnMenosQuantidade);
-            btnMais = itemView.findViewById(R.id.btnMaisQuantidade);
-            btnRemover = itemView.findViewById(R.id.btnRemoverItemSacola);
+            btnMenos    = itemView.findViewById(R.id.btnMenosQuantidade);
+            btnMais     = itemView.findViewById(R.id.btnMaisQuantidade);
+            btnRemover  = itemView.findViewById(R.id.btnRemoverItemSacola);
         }
 
         void bind(ItemSacolaVendaModel item) {
-            txtNomeItem.setText(item.getNome());
-            txtTipoItem.setText(
-                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço"
-            );
-            txtPrecoUnitario.setText("Unitário: " + formatadorMoeda.format(item.getPrecoUnitario()));
-            txtQuantidade.setText(String.valueOf(item.getQuantidade()));
-            txtSubtotal.setText(formatadorMoeda.format(item.getSubtotal()));
+            txtNome.setText(item.getNome());
+            txtTipo.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço");
+            txtPreco.setText("Unitário: " + fmt.format(item.getPrecoUnitario()));
+            txtQtd.setText(String.valueOf(item.getQuantidade()));
+            txtSubtotal.setText(fmt.format(item.getSubtotal()));
 
             btnMais.setOnClickListener(v -> listener.onSomar(item));
             btnMenos.setOnClickListener(v -> listener.onSubtrair(item));
