@@ -22,7 +22,6 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 
@@ -189,38 +188,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
 
     private void configurarFabMenu() {
         if (fabMain != null) {
-            fabMain.setOnClickListener(v -> {
-                if (!isMenuOpen) abrirMenu();
-                else fecharMenu();
-            });
-        }
-
-        if (overlayBackground != null) {
-            overlayBackground.setOnClickListener(v -> {
-                if (isMenuOpen) fecharMenu();
-            });
-        }
-
-        if (fabNovaVenda != null) {
-            fabNovaVenda.setOnClickListener(v -> {
-                fecharMenu();
-                acessarRegistrarVendasActivity(v);
-            });
-        }
-
-        if (fabNovoOrcamento != null) {
-            // Orçamento ainda não tem tela própria — mantém como Nova Venda por ora
-            fabNovoOrcamento.setOnClickListener(v -> {
-                fecharMenu();
-                acessarRegistrarVendasActivity(v);
-            });
-        }
-
-        if (fabNovoCliente != null) {
-            fabNovoCliente.setOnClickListener(v -> {
-                fecharMenu();
-                startActivity(new Intent(this, CadastroClienteActivity.class));
-            });
+            fabMain.setOnClickListener(v -> acessarRegistrarVendasActivity(v));
         }
     }
 
@@ -326,13 +294,6 @@ public class ResumoVendasActivity extends AppCompatActivity {
     public void acessarRegistrarVendasActivity(View view) {
         startActivity(new Intent(this, RegistrarVendasActivity.class));
         Log.i(TAG, "Acessou RegistrarVendasActivity");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Garante que o menu flutuante esteja fechado ao retornar de outra tela
-        if (isMenuOpen) fecharMenu();
     }
 
     @Override
