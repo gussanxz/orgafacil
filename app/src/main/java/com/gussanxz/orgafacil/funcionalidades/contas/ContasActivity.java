@@ -528,6 +528,9 @@ public class ContasActivity extends AppCompatActivity {
             @Override public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) {
                 exibirPopupResumoDia(tituloDia, movsDoDia);
             }
+            @Override public void onItemClick(MovimentacaoModel m) {
+                abrirTelaEdicao(m, false);  // usa o launcher já existente
+            }
         });
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);

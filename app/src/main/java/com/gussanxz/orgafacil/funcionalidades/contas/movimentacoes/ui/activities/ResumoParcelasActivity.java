@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -43,6 +46,7 @@ public class ResumoParcelasActivity extends AppCompatActivity {
     private List<MovimentacaoModel> listaBruta = new ArrayList<>();
     // Filtro inicial padrão
     private StatusFiltro filtroAtivo = StatusFiltro.TODOS;
+    private ActivityResultLauncher<Intent> launcherEdicao;
 
     // === CACHE DE SESSÃO ===
     // Guarda a última série carregada para abrir a tela instantaneamente
@@ -98,6 +102,16 @@ public class ResumoParcelasActivity extends AppCompatActivity {
         movRepo = new MovimentacaoRepository();
 
         vincularViews();
+
+        launcherEdicao = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        carregarSerie(false);
+                    }
+                }
+        );
+
         configurarChipsFiltro();
 
         // NOVA LÓGICA DE CACHE:
@@ -439,6 +453,12 @@ public class ResumoParcelasActivity extends AppCompatActivity {
             @Override public void onCheckClick(MovimentacaoModel mov) { confirmarParcela(mov); }
             @Override public void onHeaderSwipeDelete(String dataDia, List<MovimentacaoModel> movsDoDia) { }
             @Override public void onHeaderClick(String tituloDia, List<MovimentacaoModel> movsDoDia) { }
+            @Override
+            public void onItemClick(MovimentacaoModel mov) {
+                Intent intent = new Intent(ResumoParcelasActivity.this, EditarMovimentacaoActivity.class);
+                intent.putExtra("movimentacaoSelecionada", mov);
+                launcherEdicao.launch(intent);
+            }
         }, true /* modoParcelasResumidas: pagos exibidos em cinza somente nesta tela */);
 
         adapter.submitList(itens);
