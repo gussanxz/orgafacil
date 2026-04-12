@@ -236,49 +236,6 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Título Top 5 com abas -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Top 5 mais vendidos"
-                android:textColor="@color/cor_texto"
-                android:textSize="14sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/btnRelVendasAbaProdutos"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Produtos"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:background="@drawable/bg_rounded_dark"/>
-
-            <TextView
-                android:id="@+id/btnRelVendasAbaCategorias"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Categorias"
-                android:textColor="#9E9E9E"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"/>
-        </LinearLayout>
-
         <!-- Estado vazio -->
         <LinearLayout
             android:id="@+id/layoutRelVendasVazio"
@@ -298,19 +255,130 @@
                 android:gravity="center"/>
         </LinearLayout>
 
-        <!-- Lista Top 5 -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerRelVendasTopProdutos"
+        <!-- Card Top 5 mais vendidos -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTop5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"/>
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/cor_superficie"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Cabeçalho com abas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Top 5 mais vendidos"
+                        android:textColor="@color/cor_texto"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/btnRelVendasAbaProdutos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Produtos"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:background="@drawable/bg_rounded_dark"/>
+
+                    <TextView
+                        android:id="@+id/btnRelVendasAbaCategorias"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Categorias"
+                        android:textColor="#9E9E9E"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#EEEEEE"
+                    android:layout_marginHorizontal="16dp"/>
+
+                <!-- Cabeçalho de colunas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/txtTop5ColunaLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Produto"
+                        android:textColor="@color/cor_texto_secundario"
+                        android:textSize="11sp"
+                        android:textAllCaps="true"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="36dp"
+                        android:gravity="end"
+                        android:text="Qtd"
+                        android:textColor="@color/cor_texto_secundario"
+                        android:textSize="11sp"
+                        android:textAllCaps="true"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:minWidth="80dp"
+                        android:gravity="end"
+                        android:text="Total"
+                        android:textColor="@color/cor_texto_secundario"
+                        android:textSize="11sp"
+                        android:textAllCaps="true"/>
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerRelVendasTopProdutos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:paddingBottom="8dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Seção unificada: Todos os produtos / Todas as categorias -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardListaCompleta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="0dp"
             android:visibility="gone"
             app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/cor_superficie"

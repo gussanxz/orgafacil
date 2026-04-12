@@ -53,6 +53,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private MaterialCardView cardPagamentosResumo;
     private ImageView btnMesAnterior, btnMesProximo;
     private TextView txtMesAtual;
+    private View cardTop5;
+    private TextView txtTop5ColunaLabel;
     private RecyclerView recyclerTopProdutos;
     private TopProdutosVendasAdapter topAdapter;
     private View layoutVazio;
@@ -103,8 +105,10 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         cardPagamentosResumo.setOnClickListener(v -> mostrarDialogPagamentos());
         btnMesProximo     = view.findViewById(R.id.btnRelVendasMesProximo);
         txtMesAtual       = view.findViewById(R.id.txtRelVendasMesAtual);
-        layoutVazio       = view.findViewById(R.id.layoutRelVendasVazio);
-        recyclerTopProdutos = view.findViewById(R.id.recyclerRelVendasTopProdutos);
+        layoutVazio          = view.findViewById(R.id.layoutRelVendasVazio);
+        cardTop5             = view.findViewById(R.id.cardTop5);
+        txtTop5ColunaLabel   = view.findViewById(R.id.txtTop5ColunaLabel);
+        recyclerTopProdutos  = view.findViewById(R.id.recyclerRelVendasTopProdutos);
 
         recyclerTopProdutos.setLayoutManager(new LinearLayoutManager(requireContext()));
         topAdapter = new TopProdutosVendasAdapter();
@@ -272,7 +276,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
         boolean vazio = doMes.isEmpty();
         layoutVazio.setVisibility(vazio ? View.VISIBLE : View.GONE);
-        recyclerTopProdutos.setVisibility(vazio ? View.GONE : View.VISIBLE);
+        cardTop5.setVisibility(vazio ? View.GONE : View.VISIBLE);
         cardListaCompleta.setVisibility(vazio ? View.GONE : View.VISIBLE);
 
         if (vazio) {
@@ -405,11 +409,13 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             btnAbaProdutos.setTextColor(Color.WHITE);
             btnAbaCategorias.setBackgroundResource(0);
             btnAbaCategorias.setTextColor(Color.parseColor("#9E9E9E"));
+            txtTop5ColunaLabel.setText("Produto");
         } else {
             btnAbaCategorias.setBackgroundResource(R.drawable.bg_rounded_dark);
             btnAbaCategorias.setTextColor(Color.WHITE);
             btnAbaProdutos.setBackgroundResource(0);
             btnAbaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
+            txtTop5ColunaLabel.setText("Categoria");
         }
     }
 

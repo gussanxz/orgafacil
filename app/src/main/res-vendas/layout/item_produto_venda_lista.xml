@@ -34,7 +34,7 @@
         android:layout_marginStart="12dp"
         android:minWidth="80dp"
         android:gravity="end"
-        android:textColor="@color/cor_texto"
+        android:textColor="@color/colorPrimary"
         android:textSize="13sp"
         android:textStyle="bold" />
 
