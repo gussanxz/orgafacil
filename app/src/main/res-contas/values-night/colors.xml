@@ -8,4 +8,6 @@
     <color name="cor_fundo_header_resumo_contas">#00b2bc</color>
 
     <color name="cor_texto_abas_footer_resumo_contas">#000000</color>
+
+    <color name="bg_label_menu">#CC000000</color>
 </resources>

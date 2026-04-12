@@ -18,4 +18,6 @@
     <color name="cor_fundo_header_resumo_contas">#293141</color>
 
     <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
+
+    <color name="bg_label_menu">#CCFFFFFF</color>
 </resources>
