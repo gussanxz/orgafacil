@@ -90,6 +90,14 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/txtRelVendasTotalVariacao"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -124,6 +132,15 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/txtRelVendasQtdVariacao"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/cor_texto_secundario"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -170,13 +187,17 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPagamentosResumo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
+                android:clickable="true"
+                android:focusable="true"
                 app:cardCornerRadius="12dp"
                 app:cardBackgroundColor="@color/cor_superficie"
-                app:cardElevation="2dp">
+                app:cardElevation="2dp"
+                app:rippleColor="?attr/colorControlHighlight">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -184,30 +205,33 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Pagamento principal"
-                        android:textColor="@color/cor_texto_secundario"
-                        android:textSize="11sp"/>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/txtRelVendasPagPrincipal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textColor="@color/cor_texto"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Pagamentos"
+                            android:textColor="@color/cor_texto_secundario"
+                            android:textSize="11sp"/>
 
-                    <TextView
-                        android:id="@+id/txtRelVendasPagPercentual"
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:src="@drawable/ic_arrow_forward_24"
+                            app:tint="@color/cor_texto_secundario"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutPagamentos"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textColor="@color/cor_texto_secundario"
-                        android:textSize="11sp"/>
+                        android:orientation="vertical"
+                        android:layout_marginTop="6dp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

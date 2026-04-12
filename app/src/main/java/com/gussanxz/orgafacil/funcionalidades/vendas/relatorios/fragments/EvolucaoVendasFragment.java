@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class EvolucaoVendasFragment extends Fragment {
@@ -37,6 +38,7 @@ public class EvolucaoVendasFragment extends Fragment {
     private BarChart barChartEvolucao;
     private ChipGroup chipGroupMeses;
     private TextView txtEvolucaoMelhorMes, txtEvolucaoMelhorValor;
+    private TextView txtEvTotalPeriodo, txtEvTotalVendas, txtEvMediaMensal;
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
     private List<VendaModel> listaCompleta = new ArrayList<>();
@@ -55,10 +57,13 @@ public class EvolucaoVendasFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        barChartEvolucao      = view.findViewById(R.id.barChartEvolucaoVendas);
-        chipGroupMeses        = view.findViewById(R.id.chipGroupEvolucaoVendas);
-        txtEvolucaoMelhorMes  = view.findViewById(R.id.txtEvolucaoMelhorMes);
+        barChartEvolucao       = view.findViewById(R.id.barChartEvolucaoVendas);
+        chipGroupMeses         = view.findViewById(R.id.chipGroupEvolucaoVendas);
+        txtEvolucaoMelhorMes   = view.findViewById(R.id.txtEvolucaoMelhorMes);
         txtEvolucaoMelhorValor = view.findViewById(R.id.txtEvolucaoMelhorValor);
+        txtEvTotalPeriodo      = view.findViewById(R.id.txtEvTotalPeriodo);
+        txtEvTotalVendas       = view.findViewById(R.id.txtEvTotalVendas);
+        txtEvMediaMensal       = view.findViewById(R.id.txtEvMediaMensal);
         vendaRepository = new VendaRepository();
 
         chipGroupMeses.setOnCheckedStateChangeListener((group, checkedIds) -> {
@@ -124,6 +129,7 @@ public class EvolucaoVendasFragment extends Fragment {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat fmtLabel = new SimpleDateFormat("MMM", new Locale("pt", "BR"));
         TreeMap<String, Double> mapa = new TreeMap<>();
+        TreeMap<String, Integer> mapaQtd = new TreeMap<>();
         String[] labels = new String[mesesFiltro];
 
         for (int i = mesesFiltro - 1; i >= 0; i--) {
@@ -132,35 +138,62 @@ public class EvolucaoVendasFragment extends Fragment {
             String chave = ref.get(Calendar.YEAR) + "-" + String.format("%02d", ref.get(Calendar.MONTH));
             labels[mesesFiltro - 1 - i] = fmtLabel.format(ref.getTime());
             mapa.put(chave, 0.0);
+            mapaQtd.put(chave, 0);
         }
 
         for (VendaModel v : listaCompleta) {
             if (!VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) continue;
-            long ts = v.getDataHoraFechamentoMillis() > 0 ? v.getDataHoraFechamentoMillis() : v.getDataHoraAberturaMillis();
+            long ts = v.getDataHoraFechamentoMillis() > 0
+                    ? v.getDataHoraFechamentoMillis()
+                    : v.getDataHoraAberturaMillis();
             Calendar vc = Calendar.getInstance();
             vc.setTimeInMillis(ts);
             String chave = vc.get(Calendar.YEAR) + "-" + String.format("%02d", vc.get(Calendar.MONTH));
-            if (mapa.containsKey(chave)) mapa.put(chave, mapa.get(chave) + v.getValorTotal());
+            if (mapa.containsKey(chave)) {
+                mapa.put(chave, mapa.get(chave) + v.getValorTotal());
+                mapaQtd.put(chave, mapaQtd.get(chave) + 1);
+            }
         }
 
         List<BarEntry> entries = new ArrayList<>();
         int idx = 0;
         double melhorValor = 0;
         int melhorIdx = 0;
-        for (Double valor : mapa.values()) {
-            entries.add(new BarEntry(idx, valor.floatValue()));
+        double totalPeriodo = 0;
+        int totalVendasPeriodo = 0;
+        int mesesComDados = 0;
+
+        for (Map.Entry<String, Double> entry : mapa.entrySet()) {
+            double valor = entry.getValue();
+            entries.add(new BarEntry(idx, (float) valor));
+            totalPeriodo += valor;
+            int qtd = mapaQtd.getOrDefault(entry.getKey(), 0);
+            totalVendasPeriodo += qtd;
+            if (valor > 0) mesesComDados++;
             if (valor > melhorValor) { melhorValor = valor; melhorIdx = idx; }
             idx++;
         }
 
+        int corPrimaria = requireContext().getColor(R.color.colorPrimary);
         BarDataSet dataSet = new BarDataSet(entries, "Vendas");
-        dataSet.setColor(requireContext().getColor(R.color.colorPrimary));
-        dataSet.setDrawValues(false);
+        dataSet.setColor(corPrimaria);
+        dataSet.setDrawValues(mesesFiltro <= 6);
+        if (mesesFiltro <= 6) {
+            dataSet.setValueTextSize(9f);
+            dataSet.setValueFormatter(new ValueFormatter() {
+                @Override
+                public String getFormattedValue(float value) {
+                    if (value <= 0) return "";
+                    return value >= 1000
+                            ? String.format(Locale.ROOT, "%.1fk", value / 1000)
+                            : String.format(Locale.ROOT, "%.0f", value);
+                }
+            });
+        }
 
         BarData data = new BarData(dataSet);
         data.setBarWidth(0.6f);
         barChartEvolucao.setData(data);
-
         barChartEvolucao.getXAxis().setValueFormatter(new IndexAxisValueFormatter(labels));
         barChartEvolucao.getXAxis().setLabelCount(mesesFiltro);
         barChartEvolucao.invalidate();
@@ -173,5 +206,11 @@ public class EvolucaoVendasFragment extends Fragment {
             txtEvolucaoMelhorMes.setText("Sem dados no período");
             txtEvolucaoMelhorValor.setText("");
         }
+
+        // Resumo do período
+        txtEvTotalPeriodo.setText(fmt.format(totalPeriodo));
+        txtEvTotalVendas.setText(totalVendasPeriodo + (totalVendasPeriodo == 1 ? " venda" : " vendas"));
+        double mediaMensal = mesesComDados > 0 ? totalPeriodo / mesesComDados : 0;
+        txtEvMediaMensal.setText(fmt.format(mediaMensal));
     }
 }
