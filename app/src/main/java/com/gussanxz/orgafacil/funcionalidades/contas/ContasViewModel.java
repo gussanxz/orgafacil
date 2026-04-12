@@ -67,7 +67,7 @@ public class ContasViewModel extends ViewModel {
     private Date               lastInicio     = null;
     private Date               lastFim        = null;
     private TipoCategoriaContas lastFiltroTipo = null;
-    private String             lastCategoriaId = null;
+    private List<String>       lastCategoriaIds = new ArrayList<>();
 
     // Versão String do filtroTipo para passar diretamente ao Firestore.
     // Mantemos os dois porque lastFiltroTipo é usado pela ContasFiltroEngine (local)
@@ -300,7 +300,7 @@ public class ContasViewModel extends ViewModel {
         // com a query original. Sem isso, paginar com categoriaId ou filtroTipo
         // ativos retornaria docs de todas as categorias/tipos a partir do cursor.
         repo.recuperarHistoricoPaginado(new Date(), ultimoDocumentoVisivelHistorico,
-                lastCategoriaId, lastFiltroTipoFirestore,
+                lastCategoriaIds, lastFiltroTipoFirestore,
                 new MovimentacaoRepository.DadosPaginadosCallback() {
                     @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
                         if (novaLista.isEmpty()) isUltimaPaginaHistorico = true;
@@ -323,7 +323,7 @@ public class ContasViewModel extends ViewModel {
         _carregandoPaginacao.setValue(true);
 
         repo.recuperarContasFuturasPaginado(new Date(), ultimoDocumentoVisivelFuturo,
-                lastCategoriaId, lastFiltroTipoFirestore,
+                lastCategoriaIds, lastFiltroTipoFirestore,
                 new MovimentacaoRepository.DadosPaginadosCallback() {
                     @Override public void onSucesso(List<MovimentacaoModel> novaLista, DocumentSnapshot novoUltimoDoc) {
                         if (novaLista.isEmpty()) isUltimaPaginaFuturo = true;
@@ -343,23 +343,24 @@ public class ContasViewModel extends ViewModel {
     // ── Filtros — API pública e Integração com a Engine ──────────────────────
 
     // NOVO: Parâmetro categoriaId adicionado
-    public void aplicarFiltros(String query, Date inicio, Date fim, String categoriaId) {
+    public void aplicarFiltros(String query, Date inicio, Date fim, List<String> categoriaIds) {
         // Detecta mudança nos filtros que o Firestore consegue aplicar na query.
         // Quando mudam, o cursor da paginação aponta para uma query diferente —
         // continuar paginando com ele retornaria documentos errados ou duplicados.
         // Solução: zerar os cursores e recarregar a primeira página com os novos filtros.
         //
-        // Filtros que afetam o Firestore: categoriaId (whereEqualTo "categoria_id")
+        // Filtros que afetam o Firestore: categoriaIds (whereEqualTo/whereIn "categoria_id")
         // Filtros que NÃO afetam o Firestore: query (texto), inicio, fim — aplicados
         // localmente pela ContasFiltroEngine, portanto não invalidam o cursor.
-        boolean categoriaIdMudou = !java.util.Objects.equals(this.lastCategoriaId, categoriaId);
+        boolean categoriaIdsMudou = !this.lastCategoriaIds.equals(
+                categoriaIds != null ? categoriaIds : new ArrayList<>());
 
-        this.lastQuery      = query;
-        this.lastInicio     = inicio;
-        this.lastFim        = fim;
-        this.lastCategoriaId = categoriaId;
+        this.lastQuery       = query;
+        this.lastInicio      = inicio;
+        this.lastFim         = fim;
+        this.lastCategoriaIds = categoriaIds != null ? new ArrayList<>(categoriaIds) : new ArrayList<>();
 
-        if (categoriaIdMudou) {
+        if (categoriaIdsMudou) {
             resetarCursoresPaginacao();
             iniciarBuscaPaginada(abaAtualEhFuturo, null);
             return; // iniciarBuscaPaginada chama agendarFiltro() via finalizarCarregamento()
@@ -409,7 +410,7 @@ public class ContasViewModel extends ViewModel {
         filtroRunnable = () -> filtroEngine.filtrarAsync(
                 new ArrayList<>(cacheHistorico),
                 new ArrayList<>(cacheFuturo),
-                lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaId,
+                lastQuery, lastInicio, lastFim, lastFiltroTipo, lastCategoriaIds,
                 lastValorMinCentavos, lastValorMaxCentavos,
 
                 (resHistorico, resFuturo, saldoHist, saldoFut) -> {

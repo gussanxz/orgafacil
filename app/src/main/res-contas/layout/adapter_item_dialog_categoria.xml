@@ -7,15 +7,31 @@
     android:clickable="true"
     android:focusable="true">
 
-    <TextView
-        android:id="@+id/textNomeCategoria"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="16dp"
-        android:textSize="16sp"
-        android:textColor="#424242"
-        android:background="@android:color/transparent" />
+        android:paddingVertical="14dp">
+
+        <TextView
+            android:id="@+id/textNomeCategoria"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="16sp"
+            android:textColor="#424242" />
+
+        <CheckBox
+            android:id="@+id/checkboxCategoria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:focusable="false"
+            android:buttonTint="#FF7043" />
+
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
