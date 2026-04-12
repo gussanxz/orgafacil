@@ -12,9 +12,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
-//import com.gussanxz.orgafacil.activity.main.vendas.operacoesdiarias.cadastros.produtos.categoria.CadastroCategoriaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.categoria.ListaCategoriasCatalogoActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.combo.CadastroComboActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.modificador.CadastroModificadorActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.pessoas.cliente.CadastroClienteActivity;
 
 public class VendasCadastrosActivity extends AppCompatActivity {
 
@@ -37,6 +39,21 @@ public class VendasCadastrosActivity extends AppCompatActivity {
 
         // Chamada do método para configurar os bloqueios
         configurarBotoesBloqueados();
+        // Remover overlays das funcionalidades já disponíveis
+        ocultarOverlay(R.id.overlayClientes);
+        ocultarOverlay(R.id.overlayCombos);
+        ocultarOverlay(R.id.overlayModificadores);
+
+        // Wiring manual do item Clientes (sem android:onClick no XML)
+        View itemClientes = findViewById(R.id.itemClientes);
+        if (itemClientes != null) {
+            itemClientes.setOnClickListener(v -> exibirCadastroClientes(v));
+        }
+    }
+
+    private void ocultarOverlay(int viewId) {
+        View overlay = findViewById(viewId);
+        if (overlay != null) overlay.setVisibility(View.GONE);
     }
 
     private void configurarBotoesBloqueados() {
@@ -45,13 +62,10 @@ public class VendasCadastrosActivity extends AppCompatActivity {
             Toast.makeText(VendasCadastrosActivity.this, "Funcionalidade futura", Toast.LENGTH_SHORT).show();
         };
 
-        // IDs dos overlays definidos no seu XML
+        // IDs dos overlays ainda sem implementação
         int[] idsBloqueados = {
-                R.id.overlayClientes,
                 R.id.overlayFornecedores,
                 R.id.overlayVendedores,
-                R.id.overlayCombos,
-                R.id.overlayModificadores
         };
 
         // Loop para aplicar o listener em todos
@@ -64,23 +78,23 @@ public class VendasCadastrosActivity extends AppCompatActivity {
     }
 
     public void exibirCadastroCategorias(View view) {
-        Intent intent = new Intent(this, ListaCategoriasCatalogoActivity.class);
-        startActivity(intent);
+        startActivity(new Intent(this, ListaCategoriasCatalogoActivity.class));
     }
 
     public void exibirListaProdutosServicos(View view) {
-        Intent intent = new Intent(this, ListaProdutosEServicosActivity.class);
-        startActivity(intent);
+        startActivity(new Intent(this, ListaProdutosEServicosActivity.class));
     }
 
-//    public void exibirCadastroCombos(View view) {
-//        Intent intent = new Intent(this, CadastroComboActivity.class);
-//        startActivity(intent);
-//    }
-//
-//    public void exibirCadastroModificadores(View view) {
-//        Intent intent = new Intent(this, CadastroModificadorActivity.class);
-//        startActivity(intent);
-//    }
+    public void exibirCadastroClientes(View view) {
+        startActivity(new Intent(this, CadastroClienteActivity.class));
+    }
+
+    public void exibirCadastroCombos(View view) {
+        startActivity(new Intent(this, CadastroComboActivity.class));
+    }
+
+    public void exibirCadastroModificadores(View view) {
+        startActivity(new Intent(this, CadastroModificadorActivity.class));
+    }
 
 }

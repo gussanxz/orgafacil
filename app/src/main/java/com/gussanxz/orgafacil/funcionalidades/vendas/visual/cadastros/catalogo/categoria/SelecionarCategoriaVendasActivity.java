@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -102,7 +104,7 @@ public class SelecionarCategoriaVendasActivity extends AppCompatActivity impleme
     }
 
     public void acessarCadastroCategoria(View view) {
-        Toast.makeText(this, "Para cadastrar, use a tela de categorias.", Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, CadastroCategoriaCatalogoActivity.class));
     }
 }
 
