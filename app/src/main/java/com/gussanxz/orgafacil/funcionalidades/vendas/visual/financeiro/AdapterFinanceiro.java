@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -28,12 +29,18 @@ public class AdapterFinanceiro extends RecyclerView.Adapter<RecyclerView.ViewHol
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat fmtHora = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
 
-    public interface OnVendaClickListener { void onVendaClick(VendaModel venda); }
-    private OnVendaClickListener clickListener;
+    public interface OnVendaClickListener  { void onVendaClick(VendaModel venda); }
+    public interface OnResumoDiaListener   { void onResumoDia(HeaderDiaVenda header); }
 
-    public AdapterFinanceiro(List<Object> listaItens, OnVendaClickListener listener) {
-        this.listaItens   = listaItens;
-        this.clickListener = listener;
+    private OnVendaClickListener clickListener;
+    private OnResumoDiaListener  resumoDiaListener;
+
+    public AdapterFinanceiro(List<Object> listaItens,
+                             OnVendaClickListener clickListener,
+                             OnResumoDiaListener resumoDiaListener) {
+        this.listaItens        = listaItens;
+        this.clickListener     = clickListener;
+        this.resumoDiaListener = resumoDiaListener;
     }
 
     public void atualizarLista(List<Object> novaLista) {
@@ -73,19 +80,23 @@ public class AdapterFinanceiro extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     // ── Header ViewHolder ──────────────────────────────────────────
-    static class HeaderViewHolder extends RecyclerView.ViewHolder {
-        final TextView txtDia, txtTotalDia;
+    class HeaderViewHolder extends RecyclerView.ViewHolder {
+        final TextView    txtDia;
+        final ImageButton btnResumoDia;
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtDia      = itemView.findViewById(R.id.txtFinHeaderDia);
-            txtTotalDia = itemView.findViewById(R.id.txtFinHeaderTotal);
+            txtDia       = itemView.findViewById(R.id.txtFinHeaderDia);
+            btnResumoDia = itemView.findViewById(R.id.btnResumoDia);
         }
 
         void bind(HeaderDiaVenda header) {
-            NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
             txtDia.setText(header.titulo);
-            txtTotalDia.setText(fmt.format(header.totalDia));
+            if (btnResumoDia != null) {
+                btnResumoDia.setOnClickListener(v -> {
+                    if (resumoDiaListener != null) resumoDiaListener.onResumoDia(header);
+                });
+            }
         }
     }
 

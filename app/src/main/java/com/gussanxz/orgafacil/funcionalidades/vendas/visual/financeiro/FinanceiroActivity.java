@@ -2,7 +2,10 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -11,6 +14,8 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -49,7 +54,9 @@ public class FinanceiroActivity extends AppCompatActivity {
     private TextView btnDataInicial, btnDataFinal;
     private ImageButton btnLimparFiltros;
     private androidx.cardview.widget.CardView cardHeaderDiaCongelado;
-    private TextView txtHeaderDiaCongelado, txtTotalDiaCongelado;
+    private TextView    txtHeaderDiaCongelado;
+    private ImageButton btnResumoDiaCongelado;
+    private HeaderDiaVenda headerCongeladoAtual;
     private RecyclerView rvFinanceiro;
     private View layoutEstadoVazio;
     private ImageButton btnToggleFiltros, btnToggleDatas;
@@ -133,7 +140,7 @@ public class FinanceiroActivity extends AppCompatActivity {
         btnLimparFiltros        = findViewById(R.id.btnLimparFiltros);
         cardHeaderDiaCongelado  = findViewById(R.id.cardHeaderDiaCongelado);
         txtHeaderDiaCongelado   = findViewById(R.id.txtHeaderDiaCongelado);
-        txtTotalDiaCongelado    = findViewById(R.id.txtTotalDiaCongelado);
+        btnResumoDiaCongelado   = findViewById(R.id.btnResumoDiaCongelado);
         rvFinanceiro            = findViewById(R.id.rvFinanceiro);
         layoutEstadoVazio       = findViewById(R.id.layoutEstadoVazioFinanceiro);
         btnToggleFiltros       = findViewById(R.id.btnToggleFiltros);
@@ -184,7 +191,9 @@ public class FinanceiroActivity extends AppCompatActivity {
 
     private void configurarRecyclerView() {
         rvFinanceiro.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AdapterFinanceiro(listaItens, venda -> abrirVenda(venda));
+        adapter = new AdapterFinanceiro(listaItens,
+                venda -> abrirVenda(venda),
+                header -> exibirResumoDia(header));
         rvFinanceiro.setAdapter(adapter);
     }
 
@@ -255,10 +264,12 @@ public class FinanceiroActivity extends AppCompatActivity {
         for (int i = firstVisible - 1; i >= 0; i--) {
             if (listaItens.get(i) instanceof HeaderDiaVenda) {
                 HeaderDiaVenda h = (HeaderDiaVenda) listaItens.get(i);
-                // Só atualiza o texto se mudou, evita relayout desnecessário
                 if (!h.titulo.equals(txtHeaderDiaCongelado.getText().toString())) {
                     txtHeaderDiaCongelado.setText(h.titulo);
-                    txtTotalDiaCongelado.setText(fmt.format(h.totalDia));
+                }
+                headerCongeladoAtual = h;
+                if (btnResumoDiaCongelado != null) {
+                    btnResumoDiaCongelado.setOnClickListener(v -> exibirResumoDia(headerCongeladoAtual));
                 }
                 cardHeaderDiaCongelado.setVisibility(View.VISIBLE);
                 return;
@@ -412,6 +423,33 @@ public class FinanceiroActivity extends AppCompatActivity {
         adapter.atualizarLista(listaItens);
         atualizarEstadoTela();
         atualizarHeaderCongelado();
+    }
+
+    private void exibirResumoDia(HeaderDiaVenda header) {
+        NumberFormat fmtLocal = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_resumo_dia_vendas, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        ((TextView) view.findViewById(R.id.txtResumoDiaTitulo))
+                .setText("Resumo: " + header.titulo);
+        ((TextView) view.findViewById(R.id.txtResumoQtdFinalizadas))
+                .setText(String.valueOf(header.qtdVendasFinalizadas));
+        ((TextView) view.findViewById(R.id.txtResumoQtdCanceladas))
+                .setText(String.valueOf(header.qtdCanceladas));
+        ((TextView) view.findViewById(R.id.txtResumoTotalDia))
+                .setText(fmtLocal.format(header.totalDia));
+
+        view.findViewById(R.id.btnFecharResumoDia).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     private void atualizarEstadoTela() {

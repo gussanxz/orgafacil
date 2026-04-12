@@ -323,13 +323,14 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/txtTotalDiaCongelado"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="#CCFFFFFF"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/btnResumoDiaCongelado"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Ver resumo do dia"
+                        android:src="@drawable/ic_info_24"
+                        android:tint="#CCFFFFFF" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

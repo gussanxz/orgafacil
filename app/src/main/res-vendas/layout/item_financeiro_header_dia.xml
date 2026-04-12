@@ -13,30 +13,44 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="10dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/txtFinHeaderDia"
-            android:layout_width="0dp"
+        <!-- Faixa colorida com data e total -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Hoje"
-            android:textColor="@color/white"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:background="@color/colorPrimary"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="10dp">
 
-        <TextView
-            android:id="@+id/txtFinHeaderTotal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="R$ 0,00"
-            android:textColor="#CCFFFFFF"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            <TextView
+                android:id="@+id/txtFinHeaderDia"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Hoje"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnResumoDia"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Ver resumo do dia"
+                android:src="@drawable/ic_info_24"
+                android:tint="#CCFFFFFF" />
+
+        </LinearLayout>
+
+        <!-- Linha separadora -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/cor_divisor" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>
