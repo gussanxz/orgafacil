@@ -1,7 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments;
 
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,9 +14,14 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -40,7 +48,9 @@ import java.util.Map;
 public class ResumoVendasRelatorioFragment extends Fragment {
 
     private TextView txtTotalVendido, txtQtdVendas, txtTicketMedio;
-    private TextView txtPagPrincipal, txtPagPercentual;
+    private TextView txtRelVendasTotalVariacao, txtRelVendasQtdVariacao;
+    private LinearLayout layoutPagamentos;
+    private MaterialCardView cardPagamentosResumo;
     private ImageView btnMesAnterior, btnMesProximo;
     private TextView txtMesAtual;
     private RecyclerView recyclerTopProdutos;
@@ -82,12 +92,15 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        txtTotalVendido   = view.findViewById(R.id.txtRelVendasTotal);
-        txtQtdVendas      = view.findViewById(R.id.txtRelVendasQtd);
-        txtTicketMedio    = view.findViewById(R.id.txtRelVendasTicket);
-        txtPagPrincipal   = view.findViewById(R.id.txtRelVendasPagPrincipal);
-        txtPagPercentual  = view.findViewById(R.id.txtRelVendasPagPercentual);
-        btnMesAnterior    = view.findViewById(R.id.btnRelVendasMesAnterior);
+        txtTotalVendido           = view.findViewById(R.id.txtRelVendasTotal);
+        txtRelVendasTotalVariacao = view.findViewById(R.id.txtRelVendasTotalVariacao);
+        txtQtdVendas              = view.findViewById(R.id.txtRelVendasQtd);
+        txtRelVendasQtdVariacao   = view.findViewById(R.id.txtRelVendasQtdVariacao);
+        txtTicketMedio            = view.findViewById(R.id.txtRelVendasTicket);
+        layoutPagamentos          = view.findViewById(R.id.layoutPagamentos);
+        cardPagamentosResumo      = view.findViewById(R.id.cardPagamentosResumo);
+        btnMesAnterior            = view.findViewById(R.id.btnRelVendasMesAnterior);
+        cardPagamentosResumo.setOnClickListener(v -> mostrarDialogPagamentos());
         btnMesProximo     = view.findViewById(R.id.btnRelVendasMesProximo);
         txtMesAtual       = view.findViewById(R.id.txtRelVendasMesAtual);
         layoutVazio       = view.findViewById(R.id.layoutRelVendasVazio);
@@ -235,7 +248,15 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         int anoFiltro = mesSelecionado.get(Calendar.YEAR);
         int mesFiltro = mesSelecionado.get(Calendar.MONTH);
 
+        // Mês anterior para comparativo
+        Calendar mesAnteriorCal = (Calendar) mesSelecionado.clone();
+        mesAnteriorCal.add(Calendar.MONTH, -1);
+        int anoAnterior = mesAnteriorCal.get(Calendar.YEAR);
+        int mesAnterior = mesAnteriorCal.get(Calendar.MONTH);
+
         List<VendaModel> doMes = new ArrayList<>();
+        List<VendaModel> doMesAnterior = new ArrayList<>();
+
         for (VendaModel v : listaCompleta) {
             if (!VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) continue;
             Calendar cal = Calendar.getInstance();
@@ -243,9 +264,10 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     ? v.getDataHoraFechamentoMillis()
                     : v.getDataHoraAberturaMillis();
             cal.setTimeInMillis(ts);
-            if (cal.get(Calendar.YEAR) == anoFiltro && cal.get(Calendar.MONTH) == mesFiltro) {
-                doMes.add(v);
-            }
+            int a = cal.get(Calendar.YEAR);
+            int m = cal.get(Calendar.MONTH);
+            if (a == anoFiltro && m == mesFiltro)       doMes.add(v);
+            else if (a == anoAnterior && m == mesAnterior) doMesAnterior.add(v);
         }
 
         boolean vazio = doMes.isEmpty();
@@ -257,8 +279,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             txtTotalVendido.setText(fmt.format(0));
             txtQtdVendas.setText("0 vendas");
             txtTicketMedio.setText(fmt.format(0));
-            txtPagPrincipal.setText("—");
-            txtPagPercentual.setText("");
+            txtRelVendasTotalVariacao.setVisibility(View.GONE);
+            txtRelVendasQtdVariacao.setVisibility(View.GONE);
+            layoutPagamentos.removeAllViews();
             topAdapter.atualizar(new ArrayList<>());
             listaCompletaAdapter.atualizar(new ArrayList<>());
             return;
@@ -273,25 +296,107 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtQtdVendas.setText(doMes.size() + (doMes.size() == 1 ? " venda" : " vendas"));
         txtTicketMedio.setText(fmt.format(ticket));
 
-        // Forma de pagamento mais usada
-        Map<String, Integer> contagemPag = new HashMap<>();
+        // Comparativo com mês anterior — Total
+        double totalAnterior = 0;
+        for (VendaModel v : doMesAnterior) totalAnterior += v.getValorTotal();
+        exibirVariacaoTotal(total, totalAnterior);
+
+        // Comparativo com mês anterior — Qtd de vendas
+        exibirVariacaoQtd(doMes.size(), doMesAnterior.size());
+
+        // Breakdown de formas de pagamento
+        Map<String, Integer> contagemPag = new LinkedHashMap<>();
         for (VendaModel v : doMes) {
             String pag = v.getFormaPagamento();
-            if (pag != null) contagemPag.put(pag, contagemPag.getOrDefault(pag, 0) + 1);
+            if (pag != null && !pag.isEmpty())
+                contagemPag.put(pag, contagemPag.getOrDefault(pag, 0) + 1);
         }
-        String pagTop = "";
-        int maxPag = 0;
-        for (Map.Entry<String, Integer> e : contagemPag.entrySet()) {
-            if (e.getValue() > maxPag) { maxPag = e.getValue(); pagTop = e.getKey(); }
-        }
-        int pct = doMes.size() > 0 ? (maxPag * 100) / doMes.size() : 0;
-        txtPagPrincipal.setText(pagTop.isEmpty() ? "—" : pagTop);
-        txtPagPercentual.setText(pagTop.isEmpty() ? "" : pct + "% das vendas");
+        renderizarPagamentos(contagemPag, doMes.size());
 
         // Salva cache e renderiza conforme aba ativa
         doMesCache = doMes;
         renderizarTop5(doMes);
         renderizarListaCompleta(doMes);
+    }
+
+    private void exibirVariacaoTotal(double atual, double anterior) {
+        if (anterior <= 0) {
+            txtRelVendasTotalVariacao.setVisibility(View.GONE);
+            return;
+        }
+        double variacao = ((atual - anterior) / anterior) * 100;
+        boolean positivo = variacao >= 0;
+        String sinal = positivo ? "↑" : "↓";
+        txtRelVendasTotalVariacao.setText(
+                String.format(Locale.ROOT, "%s %.0f%% vs mês ant.", sinal, Math.abs(variacao)));
+        txtRelVendasTotalVariacao.setTextColor(
+                positivo ? Color.parseColor("#A5D6A7") : Color.parseColor("#EF9A9A"));
+        txtRelVendasTotalVariacao.setVisibility(View.VISIBLE);
+    }
+
+    private void exibirVariacaoQtd(int atual, int anterior) {
+        if (anterior <= 0) {
+            txtRelVendasQtdVariacao.setVisibility(View.GONE);
+            return;
+        }
+        int diff = atual - anterior;
+        boolean positivo = diff >= 0;
+        String sinal = positivo ? "+" : "";
+        txtRelVendasQtdVariacao.setText(
+                String.format(Locale.ROOT, "%s%d vs mês anterior", sinal, diff));
+        txtRelVendasQtdVariacao.setTextColor(
+                positivo ? Color.parseColor("#4CAF50") : Color.parseColor("#F44336"));
+        txtRelVendasQtdVariacao.setVisibility(View.VISIBLE);
+    }
+
+    private void renderizarPagamentos(Map<String, Integer> contagem, int totalVendas) {
+        layoutPagamentos.removeAllViews();
+        if (contagem.isEmpty()) return;
+
+        // Ordena por contagem decrescente
+        List<Map.Entry<String, Integer>> entries = new ArrayList<>(contagem.entrySet());
+        entries.sort((a, b) -> b.getValue() - a.getValue());
+
+        int corTexto = ContextCompat.getColor(requireContext(), R.color.cor_texto);
+        int corSecundario = ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario);
+
+        for (int i = 0; i < Math.min(entries.size(), 3); i++) {
+            Map.Entry<String, Integer> e = entries.get(i);
+            int pct = totalVendas > 0 ? (e.getValue() * 100) / totalVendas : 0;
+
+            LinearLayout linha = new LinearLayout(requireContext());
+            linha.setOrientation(LinearLayout.HORIZONTAL);
+
+            LinearLayout.LayoutParams paramsNome =
+                    new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            TextView txtMetodo = new TextView(requireContext());
+            txtMetodo.setLayoutParams(paramsNome);
+            txtMetodo.setText(e.getKey());
+            txtMetodo.setTextSize(12f);
+            txtMetodo.setTextColor(corTexto);
+            txtMetodo.setMaxLines(1);
+            txtMetodo.setEllipsize(android.text.TextUtils.TruncateAt.END);
+
+            TextView txtPct = new TextView(requireContext());
+            txtPct.setText(pct + "%");
+            txtPct.setTextSize(12f);
+            txtPct.setTextColor(corSecundario);
+            txtPct.setTypeface(null, Typeface.BOLD);
+
+            linha.addView(txtMetodo);
+            linha.addView(txtPct);
+
+            if (i > 0) {
+                int dp4 = (int) (4 * requireContext().getResources().getDisplayMetrics().density);
+                LinearLayout.LayoutParams rowParams =
+                        new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT);
+                rowParams.topMargin = dp4;
+                linha.setLayoutParams(rowParams);
+            }
+            layoutPagamentos.addView(linha);
+        }
     }
 
     private void atualizarVisualAbas() {
@@ -398,6 +503,128 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     i + 1, e.getKey(), (int) e.getValue()[0], e.getValue()[1], pctItem));
         }
         topAdapter.atualizar(topItens);
+    }
+
+    private void mostrarDialogPagamentos() {
+        if (doMesCache == null || doMesCache.isEmpty()) return;
+
+        // Agrega por forma de pagamento: contagem e valor total
+        Map<String, Integer> contagemPag = new LinkedHashMap<>();
+        Map<String, Double> valorPag = new LinkedHashMap<>();
+        for (VendaModel v : doMesCache) {
+            String pag = v.getFormaPagamento();
+            if (pag == null || pag.isEmpty()) pag = "Não informado";
+            contagemPag.put(pag, contagemPag.getOrDefault(pag, 0) + 1);
+            valorPag.put(pag, valorPag.getOrDefault(pag, 0.0) + v.getValorTotal());
+        }
+
+        // Ordena do maior para o menor (por contagem)
+        List<String> metodos = new ArrayList<>(contagemPag.keySet());
+        metodos.sort((a, b) -> contagemPag.get(b) - contagemPag.get(a));
+
+        int totalQtd = doMesCache.size();
+        double totalValor = 0;
+        for (double v : valorPag.values()) totalValor += v;
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_pagamentos_mes_vendas, null);
+
+        TextView txtMes            = dialogView.findViewById(R.id.txtPagDialogMes);
+        LinearLayout layoutItens   = dialogView.findViewById(R.id.layoutPagamentosDialogItens);
+        TextView txtTotalQtd       = dialogView.findViewById(R.id.txtPagDialogTotalQtd);
+        TextView txtTotalValor     = dialogView.findViewById(R.id.txtPagDialogTotalValor);
+        MaterialButton btnFechar   = dialogView.findViewById(R.id.btnFecharDialogPagamentos);
+
+        txtMes.setText(fmtMes.format(mesSelecionado.getTime()).toUpperCase(new Locale("pt", "BR")));
+        txtTotalQtd.setText(String.valueOf(totalQtd));
+        txtTotalValor.setText(fmt.format(totalValor));
+
+        for (String metodo : metodos) {
+            int count = contagemPag.get(metodo);
+            double valor = valorPag.get(metodo);
+            int pct = totalQtd > 0 ? (count * 100) / totalQtd : 0;
+            layoutItens.addView(criarLinhaPagamentoDialog(metodo, count, pct, valor));
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        btnFechar.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private View criarLinhaPagamentoDialog(String metodo, int count, int pct, double valor) {
+        float density = requireContext().getResources().getDisplayMetrics().density;
+        int dp8 = (int) (8 * density);
+        int dp10 = (int) (10 * density);
+
+        LinearLayout linha = new LinearLayout(requireContext());
+        linha.setOrientation(LinearLayout.HORIZONTAL);
+        linha.setGravity(Gravity.CENTER_VERTICAL);
+        linha.setPadding(0, dp10, 0, dp10);
+
+        // Nome da forma de pagamento
+        TextView txtMetodo = new TextView(requireContext());
+        LinearLayout.LayoutParams pNome =
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        txtMetodo.setLayoutParams(pNome);
+        txtMetodo.setText(metodo);
+        txtMetodo.setTextSize(14f);
+        txtMetodo.setTextColor(ContextCompat.getColor(requireContext(), R.color.cor_texto));
+        txtMetodo.setMaxLines(1);
+        txtMetodo.setEllipsize(TextUtils.TruncateAt.END);
+
+        // Quantidade
+        TextView txtCount = new TextView(requireContext());
+        LinearLayout.LayoutParams pCount =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        pCount.leftMargin = dp8;
+        txtCount.setLayoutParams(pCount);
+        txtCount.setText(String.valueOf(count));
+        txtCount.setTextSize(14f);
+        txtCount.setTextColor(ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario));
+        txtCount.setMinWidth((int) (32 * density));
+        txtCount.setGravity(Gravity.END);
+
+        // Percentual
+        TextView txtPct = new TextView(requireContext());
+        LinearLayout.LayoutParams pPct =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        pPct.leftMargin = dp8;
+        txtPct.setLayoutParams(pPct);
+        txtPct.setText(pct + "%");
+        txtPct.setTextSize(13f);
+        txtPct.setTextColor(ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario));
+        txtPct.setMinWidth((int) (36 * density));
+        txtPct.setGravity(Gravity.END);
+
+        // Valor total
+        TextView txtValor = new TextView(requireContext());
+        LinearLayout.LayoutParams pValor =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        pValor.leftMargin = dp8;
+        txtValor.setLayoutParams(pValor);
+        txtValor.setText(fmt.format(valor));
+        txtValor.setTextSize(14f);
+        txtValor.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
+        txtValor.setTypeface(null, Typeface.BOLD);
+        txtValor.setMinWidth((int) (88 * density));
+        txtValor.setGravity(Gravity.END);
+
+        linha.addView(txtMetodo);
+        linha.addView(txtCount);
+        linha.addView(txtPct);
+        linha.addView(txtValor);
+        return linha;
     }
 
     private String resolverNome(ItemVendaRegistradaModel item) {
