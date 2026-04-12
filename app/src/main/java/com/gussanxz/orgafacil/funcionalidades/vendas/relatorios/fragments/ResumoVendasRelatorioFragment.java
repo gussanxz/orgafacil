@@ -46,10 +46,12 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private boolean exibindoProdutos = true;
     private List<VendaModel> doMesCache = new ArrayList<>();
 
-    private View cardTodosProdutos;
-    private TextView txtTodosProdutosContagem;
-    private RecyclerView recyclerTodosProdutos;
-    private TodosProdutosVendasAdapter todosAdapter;
+    private View cardListaCompleta;
+    private TextView txtListaCompletaTitulo, txtListaCompletaContagem, txtListaCompletaColunaLabel;
+    private TextView btnListaCompletaProdutos, btnListaCompletaCategorias;
+    private RecyclerView recyclerListaCompleta;
+    private TodosProdutosVendasAdapter listaCompletaAdapter;
+    private boolean listaExibindoProdutos = true;
 
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
@@ -86,12 +88,27 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         topAdapter = new TopProdutosVendasAdapter();
         recyclerTopProdutos.setAdapter(topAdapter);
 
-        cardTodosProdutos        = view.findViewById(R.id.cardTodosProdutos);
-        txtTodosProdutosContagem = view.findViewById(R.id.txtTodosProdutosContagem);
-        recyclerTodosProdutos    = view.findViewById(R.id.recyclerTodosProdutos);
-        recyclerTodosProdutos.setLayoutManager(new LinearLayoutManager(requireContext()));
-        todosAdapter = new TodosProdutosVendasAdapter();
-        recyclerTodosProdutos.setAdapter(todosAdapter);
+        cardListaCompleta          = view.findViewById(R.id.cardListaCompleta);
+        txtListaCompletaTitulo     = view.findViewById(R.id.txtListaCompletaTitulo);
+        txtListaCompletaContagem   = view.findViewById(R.id.txtListaCompletaContagem);
+        txtListaCompletaColunaLabel= view.findViewById(R.id.txtListaCompletaColunaLabel);
+        btnListaCompletaProdutos   = view.findViewById(R.id.btnListaCompletaProdutos);
+        btnListaCompletaCategorias = view.findViewById(R.id.btnListaCompletaCategorias);
+        recyclerListaCompleta      = view.findViewById(R.id.recyclerListaCompleta);
+        recyclerListaCompleta.setLayoutManager(new LinearLayoutManager(requireContext()));
+        listaCompletaAdapter = new TodosProdutosVendasAdapter();
+        recyclerListaCompleta.setAdapter(listaCompletaAdapter);
+
+        btnListaCompletaProdutos.setOnClickListener(v -> {
+            listaExibindoProdutos = true;
+            atualizarVisualToggleLista();
+            renderizarListaCompleta(doMesCache);
+        });
+        btnListaCompletaCategorias.setOnClickListener(v -> {
+            listaExibindoProdutos = false;
+            atualizarVisualToggleLista();
+            renderizarListaCompleta(doMesCache);
+        });
 
         btnAbaProdutos   = view.findViewById(R.id.btnRelVendasAbaProdutos);
         btnAbaCategorias = view.findViewById(R.id.btnRelVendasAbaCategorias);
@@ -172,7 +189,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         boolean vazio = doMes.isEmpty();
         layoutVazio.setVisibility(vazio ? View.VISIBLE : View.GONE);
         recyclerTopProdutos.setVisibility(vazio ? View.GONE : View.VISIBLE);
-        cardTodosProdutos.setVisibility(vazio ? View.GONE : View.VISIBLE);
+        cardListaCompleta.setVisibility(vazio ? View.GONE : View.VISIBLE);
 
         if (vazio) {
             txtTotalVendido.setText(fmt.format(0));
@@ -181,7 +198,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             txtPagPrincipal.setText("—");
             txtPagPercentual.setText("");
             topAdapter.atualizar(new ArrayList<>());
-            todosAdapter.atualizar(new ArrayList<>());
+            listaCompletaAdapter.atualizar(new ArrayList<>());
             return;
         }
 
@@ -212,7 +229,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         // Salva cache e renderiza conforme aba ativa
         doMesCache = doMes;
         renderizarTop5(doMes);
-        renderizarTodosProdutos(doMes);
+        renderizarListaCompleta(doMes);
     }
 
     private void atualizarVisualAbas() {
@@ -229,22 +246,27 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         }
     }
 
-    private void renderizarTodosProdutos(List<VendaModel> doMes) {
-        // Agrega todos os itens por nome de produto (sem limite)
-        Map<String, double[]> mapaItens = new LinkedHashMap<>();
+    private void renderizarListaCompleta(List<VendaModel> doMes) {
+        Map<String, double[]> mapa = new LinkedHashMap<>();
         for (VendaModel v : doMes) {
             if (v.getItens() == null) continue;
             for (ItemVendaRegistradaModel item : v.getItens()) {
-                String chave = item.getNome();
-                if (chave == null || chave.isEmpty()) continue;
-                double[] dados = mapaItens.getOrDefault(chave, new double[]{0, 0});
+                String chave;
+                if (listaExibindoProdutos) {
+                    chave = item.getNome();
+                    if (chave == null || chave.isEmpty()) continue;
+                } else {
+                    chave = item.getCategoria();
+                    if (chave == null || chave.isEmpty()) chave = "Sem categoria";
+                }
+                double[] dados = mapa.getOrDefault(chave, new double[]{0, 0});
                 dados[0] += item.getQuantidade();
                 dados[1] += item.getPrecoUnitario() * item.getQuantidade();
-                mapaItens.put(chave, dados);
+                mapa.put(chave, dados);
             }
         }
 
-        List<Map.Entry<String, double[]>> entries = new ArrayList<>(mapaItens.entrySet());
+        List<Map.Entry<String, double[]>> entries = new ArrayList<>(mapa.entrySet());
         entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
 
         List<TodosProdutosVendasAdapter.ProdutoItem> itens = new ArrayList<>();
@@ -253,8 +275,31 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     e.getKey(), (int) e.getValue()[0], e.getValue()[1]));
         }
 
-        todosAdapter.atualizar(itens);
-        txtTodosProdutosContagem.setText(itens.size() + (itens.size() == 1 ? " produto" : " produtos"));
+        listaCompletaAdapter.atualizar(itens);
+
+        if (listaExibindoProdutos) {
+            txtListaCompletaTitulo.setText("Todos os produtos");
+            txtListaCompletaColunaLabel.setText("Produto");
+            txtListaCompletaContagem.setText(itens.size() + (itens.size() == 1 ? " produto" : " produtos"));
+        } else {
+            txtListaCompletaTitulo.setText("Todas as categorias");
+            txtListaCompletaColunaLabel.setText("Categoria");
+            txtListaCompletaContagem.setText(itens.size() + (itens.size() == 1 ? " categoria" : " categorias"));
+        }
+    }
+
+    private void atualizarVisualToggleLista() {
+        if (listaExibindoProdutos) {
+            btnListaCompletaProdutos.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnListaCompletaProdutos.setTextColor(Color.WHITE);
+            btnListaCompletaCategorias.setBackgroundResource(0);
+            btnListaCompletaCategorias.setTextColor(Color.parseColor("#9E9E9E"));
+        } else {
+            btnListaCompletaCategorias.setBackgroundResource(R.drawable.bg_rounded_dark);
+            btnListaCompletaCategorias.setTextColor(Color.WHITE);
+            btnListaCompletaProdutos.setBackgroundResource(0);
+            btnListaCompletaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
+        }
     }
 
     private void renderizarTop5(List<VendaModel> doMes) {
