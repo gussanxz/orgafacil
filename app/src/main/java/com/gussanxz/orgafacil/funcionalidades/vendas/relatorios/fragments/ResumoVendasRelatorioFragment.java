@@ -46,6 +46,11 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private boolean exibindoProdutos = true;
     private List<VendaModel> doMesCache = new ArrayList<>();
 
+    private View cardTodosProdutos;
+    private TextView txtTodosProdutosContagem;
+    private RecyclerView recyclerTodosProdutos;
+    private TodosProdutosVendasAdapter todosAdapter;
+
     private VendaRepository vendaRepository;
     private ListenerRegistration listenerRegistration;
     private List<VendaModel> listaCompleta = new ArrayList<>();
@@ -80,6 +85,13 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         recyclerTopProdutos.setLayoutManager(new LinearLayoutManager(requireContext()));
         topAdapter = new TopProdutosVendasAdapter();
         recyclerTopProdutos.setAdapter(topAdapter);
+
+        cardTodosProdutos        = view.findViewById(R.id.cardTodosProdutos);
+        txtTodosProdutosContagem = view.findViewById(R.id.txtTodosProdutosContagem);
+        recyclerTodosProdutos    = view.findViewById(R.id.recyclerTodosProdutos);
+        recyclerTodosProdutos.setLayoutManager(new LinearLayoutManager(requireContext()));
+        todosAdapter = new TodosProdutosVendasAdapter();
+        recyclerTodosProdutos.setAdapter(todosAdapter);
 
         btnAbaProdutos   = view.findViewById(R.id.btnRelVendasAbaProdutos);
         btnAbaCategorias = view.findViewById(R.id.btnRelVendasAbaCategorias);
@@ -160,6 +172,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         boolean vazio = doMes.isEmpty();
         layoutVazio.setVisibility(vazio ? View.VISIBLE : View.GONE);
         recyclerTopProdutos.setVisibility(vazio ? View.GONE : View.VISIBLE);
+        cardTodosProdutos.setVisibility(vazio ? View.GONE : View.VISIBLE);
 
         if (vazio) {
             txtTotalVendido.setText(fmt.format(0));
@@ -168,6 +181,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             txtPagPrincipal.setText("—");
             txtPagPercentual.setText("");
             topAdapter.atualizar(new ArrayList<>());
+            todosAdapter.atualizar(new ArrayList<>());
             return;
         }
 
@@ -198,6 +212,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         // Salva cache e renderiza conforme aba ativa
         doMesCache = doMes;
         renderizarTop5(doMes);
+        renderizarTodosProdutos(doMes);
     }
 
     private void atualizarVisualAbas() {
@@ -212,6 +227,34 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             btnAbaProdutos.setBackgroundResource(0);
             btnAbaProdutos.setTextColor(Color.parseColor("#9E9E9E"));
         }
+    }
+
+    private void renderizarTodosProdutos(List<VendaModel> doMes) {
+        // Agrega todos os itens por nome de produto (sem limite)
+        Map<String, double[]> mapaItens = new LinkedHashMap<>();
+        for (VendaModel v : doMes) {
+            if (v.getItens() == null) continue;
+            for (ItemVendaRegistradaModel item : v.getItens()) {
+                String chave = item.getNome();
+                if (chave == null || chave.isEmpty()) continue;
+                double[] dados = mapaItens.getOrDefault(chave, new double[]{0, 0});
+                dados[0] += item.getQuantidade();
+                dados[1] += item.getPrecoUnitario() * item.getQuantidade();
+                mapaItens.put(chave, dados);
+            }
+        }
+
+        List<Map.Entry<String, double[]>> entries = new ArrayList<>(mapaItens.entrySet());
+        entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
+
+        List<TodosProdutosVendasAdapter.ProdutoItem> itens = new ArrayList<>();
+        for (Map.Entry<String, double[]> e : entries) {
+            itens.add(new TodosProdutosVendasAdapter.ProdutoItem(
+                    e.getKey(), (int) e.getValue()[0], e.getValue()[1]));
+        }
+
+        todosAdapter.atualizar(itens);
+        txtTodosProdutosContagem.setText(itens.size() + (itens.size() == 1 ? " produto" : " produtos"));
     }
 
     private void renderizarTop5(List<VendaModel> doMes) {
