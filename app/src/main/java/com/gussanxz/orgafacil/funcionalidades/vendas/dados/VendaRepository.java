@@ -1,11 +1,15 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import androidx.annotation.NonNull;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.funcionalidades.main.OrgaFacilApp;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
@@ -25,6 +29,11 @@ public class VendaRepository {
 
     public interface ListaCallback {
         void onNovosDados(List<VendaModel> lista);
+        void onErro(String erro);
+    }
+
+    public interface TotaisCallback {
+        void onTotais(int qtd, double total);
         void onErro(String erro);
     }
 
@@ -77,15 +86,40 @@ public class VendaRepository {
     }
 
     // -----------------------------------------------------------
-    // NUMERAÇÃO SEQUENCIAL
+    // NUMERAÇÃO SEQUENCIAL  (com fallback offline)
     // -----------------------------------------------------------
 
+    private static final String PREFS_VENDA     = "venda_prefs";
+    private static final String KEY_ULTIMO_NUM  = "ultimo_numero_local";
+
+    /**
+     * Gera o próximo número de venda de forma resiliente a falhas de rede.
+     *
+     * Estratégia:
+     *  1. Lê o último número local salvo nas SharedPreferences como fallback imediato.
+     *  2. Tenta executar a transação Firestore (incremento atômico no servidor).
+     *  3. Se a transação falha (offline / alta latência):
+     *     – usa o fallback local (último número conhecido + 1);
+     *     – persiste o fallback localmente para evitar duplicatas em reaberturas;
+     *     – enfileira um set() no contador remoto (será sincronizado ao reconnectar).
+     *  4. Se a transação tem sucesso, atualiza as SharedPreferences com o valor do servidor.
+     *
+     * Efeito: a venda é sempre salva, mesmo sem conexão.
+     * Gaps numéricos podem ocorrer em cenários de conflito multi-dispositivo,
+     * o que é aceitável para uso individual.
+     */
     private void gerarProximoNumero(@NonNull NumeroCallback callback) {
         try {
             // Contador em: vendas/resumo_geral/config/sequencia → { ultimoNumero: N }
             DocumentReference contadorRef = FirestoreSchema.vendasResumoDoc()
                     .collection("config")
                     .document("sequencia");
+
+            // Calcula fallback local antes de tentar o servidor
+            SharedPreferences prefs = OrgaFacilApp.instance()
+                    .getSharedPreferences(PREFS_VENDA, android.content.Context.MODE_PRIVATE);
+            int ultimoLocal  = prefs.getInt(KEY_ULTIMO_NUM, 0);
+            int fallbackLocal = ultimoLocal + 1;
 
             FirestoreSchema.vendasResumoDoc()
                     .getFirestore()
@@ -102,10 +136,21 @@ public class VendaRepository {
                         );
                         return proximo;
                     })
-                    .addOnSuccessListener(numero -> callback.onNumero((int)(long) numero))
-                    .addOnFailureListener(e -> callback.onErro(
-                            e.getMessage() != null ? e.getMessage() : "Erro ao gerar número da venda."
-                    ));
+                    .addOnSuccessListener(numero -> {
+                        // Sincroniza o contador local com o valor oficial do servidor
+                        prefs.edit().putInt(KEY_ULTIMO_NUM, (int)(long) numero).apply();
+                        callback.onNumero((int)(long) numero);
+                    })
+                    .addOnFailureListener(e -> {
+                        // Offline ou falha de rede: usa número local como fallback
+                        prefs.edit().putInt(KEY_ULTIMO_NUM, fallbackLocal).apply();
+                        // Enfileira a atualização do contador remoto para sync posterior
+                        contadorRef.set(
+                                Collections.singletonMap("ultimoNumero", (long) fallbackLocal),
+                                SetOptions.merge()
+                        );
+                        callback.onNumero(fallbackLocal);
+                    });
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }
@@ -277,6 +322,86 @@ public class VendaRepository {
                             }
                         }
                         callback.onNovosDados(hoje);
+                    });
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+            return null;
+        }
+    }
+
+    /** Escuta em tempo real todas as vendas de um caixa específico. */
+    /** Busca uma vez os totais (qtd + soma) das vendas FINALIZADAS de um caixa específico. */
+    public void buscarTotaisFinalizadasDoCaixa(@NonNull String caixaId,
+                                               @NonNull TotaisCallback callback) {
+        try {
+            // Filtro único (evita índice composto); status verificado em memória.
+            FirestoreSchema.vendasVendasCol()
+                    .whereEqualTo("caixaId", caixaId)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        int    qtd   = 0;
+                        double total = 0;
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            VendaModel v = doc.toObject(VendaModel.class);
+                            if (v != null && VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
+                                qtd++;
+                                total += v.getValorTotal();
+                            }
+                        }
+                        callback.onTotais(qtd, total);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao calcular totais."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    /**
+     * Calcula totais das vendas FINALIZADAS que pertencem ao caixa legado:
+     * inclui vendas sem caixaId (campo ausente) E vendas com caixaId = "caixa_0".
+     * Toda a filtragem é feita em memória para evitar restrições de índice do Firestore.
+     */
+    public void buscarTotaisVendasLegadas(@NonNull TotaisCallback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        int    qtd   = 0;
+                        double total = 0;
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            Object caixaId = doc.get("caixaId");
+                            boolean legado = caixaId == null
+                                    || "caixa_0".equals(caixaId);
+                            if (!legado) continue;
+                            VendaModel v = doc.toObject(VendaModel.class);
+                            if (v != null && VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
+                                qtd++;
+                                total += v.getValorTotal();
+                            }
+                        }
+                        callback.onTotais(qtd, total);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao calcular totais legados."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    public ListenerRegistration escutarVendasDoCaixa(@NonNull String caixaId,
+                                                     @NonNull ListaCallback callback) {
+        try {
+            return FirestoreSchema.vendasVendasCol()
+                    .whereEqualTo("caixaId", caixaId)
+                    .orderBy("dataHoraAberturaMillis", Query.Direction.DESCENDING)
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (error != null) {
+                            callback.onErro(error.getMessage() != null
+                                    ? error.getMessage() : "Erro ao carregar vendas do caixa.");
+                            return;
+                        }
+                        callback.onNovosDados(extrairLista(snapshot));
                     });
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");

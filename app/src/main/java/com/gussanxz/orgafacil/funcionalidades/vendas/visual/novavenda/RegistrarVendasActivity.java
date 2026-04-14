@@ -39,6 +39,9 @@ import java.util.Map;
 
 public class RegistrarVendasActivity extends AppCompatActivity {
 
+    /** ID do caixa aberto passado por quem iniciou esta Activity. */
+    public static final String EXTRA_CAIXA_ID = "caixaId";
+
     private RecyclerView rvCategorias;
     private AdapterFiltroCategoriasNovaVenda adapterFiltro;
     private final List<Categoria> listaCategorias = new ArrayList<>();
@@ -73,6 +76,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private RecyclerView rvGridCategorias;
     private AdapterGradeCategoriasNovaVenda adapterGridCategorias;
     private String vendaIdEdicao = null;
+    /** ID do caixa aberto recebido de ResumoVendasActivity. */
+    private String caixaId = null;
 
     // Extras de edição retroativa — preservados para repassar ao FechamentoVendaActivity
     private long   dataHoraOriginalEdicao       = 0L;
@@ -426,6 +431,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         intent.putExtra("itensSacola",     new ArrayList<>(sacolaMap.values()));
         intent.putExtra("quantidadeTotal", getQuantidadeTotalSacola());
         intent.putExtra("valorTotal",      getValorTotalSacola());
+        if (caixaId != null)
+            intent.putExtra(FechamentoVendaActivity.EXTRA_CAIXA_ID, caixaId);
         if (vendaIdEdicao != null) {
             intent.putExtra("vendaId", vendaIdEdicao);
             if (dataHoraOriginalEdicao > 0)
@@ -629,6 +636,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
     @SuppressWarnings("unchecked")
     private void restaurarSacolaSeEdicao() {
+        caixaId                      = getIntent().getStringExtra(EXTRA_CAIXA_ID);
         vendaIdEdicao                = getIntent().getStringExtra("vendaId");
         dataHoraOriginalEdicao       = getIntent().getLongExtra("dataHoraOriginal", 0L);
         formaPagamentoOriginalEdicao = getIntent().getStringExtra("formaPagamentoOriginal");

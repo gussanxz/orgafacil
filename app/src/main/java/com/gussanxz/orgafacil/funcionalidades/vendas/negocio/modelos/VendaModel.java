@@ -17,6 +17,11 @@ public class VendaModel implements Serializable {
     public static final String PAGAMENTO_DEBITO   = "Débito";
     private String diaKey;
     private String id;
+    /**
+     * ID do caixa ao qual esta venda pertence.
+     * null → venda legada (anterior ao fluxo de caixa), tratada como "caixa_0".
+     */
+    private String caixaId;
     private int numeroVenda;
     private long dataHoraAberturaMillis;
     private long dataHoraFechamentoMillis;
@@ -111,4 +116,6 @@ public class VendaModel implements Serializable {
     public String getDiaKey() { return diaKey; }
     public void setDiaKey(String diaKey) { this.diaKey = diaKey; }
 
+    public String getCaixaId() { return caixaId; }
+    public void setCaixaId(String caixaId) { this.caixaId = caixaId; }
 }

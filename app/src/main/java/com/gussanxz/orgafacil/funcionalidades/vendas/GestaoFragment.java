@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa.FecharCaixaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.financeiro.FinanceiroActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HistoricoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.RelatoriosVendasActivity;
@@ -49,21 +50,29 @@ public class GestaoFragment extends Fragment {
                     startActivity(new Intent(requireContext(), FinanceiroActivity.class)));
         }
 
+        // Controle de Caixa — agora disponível
+        View overlayControleCaixa = view.findViewById(R.id.overlayControleCaixa);
+        if (overlayControleCaixa != null) {
+            overlayControleCaixa.setVisibility(android.view.View.GONE);
+        }
+        View cardControleCaixa = view.findViewById(R.id.cardControleCaixa);
+        if (cardControleCaixa != null) {
+            cardControleCaixa.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), FecharCaixaActivity.class)));
+        }
+
         // 2. Configurar os botões com cadeado (Funcionalidade futura)
         configurarBotoesBloqueados(view);
     }
 
     private void configurarBotoesBloqueados(View parentView) {
-        // Listener único para otimizar memória (mesma lógica excelente do seu código antigo)
-        View.OnClickListener listenerBloqueio = v -> {
-            Toast.makeText(requireContext(), "Funcionalidade futura", Toast.LENGTH_SHORT).show();
-        };
+        View.OnClickListener listenerBloqueio = v ->
+                Toast.makeText(requireContext(), "Funcionalidade futura", Toast.LENGTH_SHORT).show();
 
-        // overlayRelatorios removido — funcionalidade agora disponível
+        // overlayRelatorios e overlayControleCaixa removidos — funcionalidades disponíveis
         int[] idsBloqueados = {
                 R.id.overlayEstoque,
                 R.id.overlayDevolucoes,
-                R.id.overlayControleCaixa,
         };
 
         // Aplica o clique em cada um

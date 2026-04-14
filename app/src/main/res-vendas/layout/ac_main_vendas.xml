@@ -91,15 +91,19 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/layoutStatusCaixa"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="8dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Status:"
+                        android:text="Caixa"
                         android:textColor="#CCFFFFFF"
                         android:textSize="12sp" />
 
@@ -114,7 +118,7 @@
                             android:id="@+id/textStatusCaixa"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Aberto"
+                            android:text="Fechado"
                             android:textColor="@android:color/white"
                             android:textStyle="bold"
                             android:textSize="14sp" />
@@ -124,9 +128,16 @@
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:layout_marginStart="4dp"
-                            android:src="@drawable/ic_lock_open_28"
+                            android:src="@drawable/ic_lock_24"
                             app:tint="#FFD54F" />
                     </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="toque para gerenciar"
+                        android:textColor="#99FFFFFF"
+                        android:textSize="10sp"
+                        android:layout_marginTop="2dp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
