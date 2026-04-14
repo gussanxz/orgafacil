@@ -9,8 +9,16 @@ import com.google.firebase.appcheck.FirebaseAppCheck;
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory;
 
 public class OrgaFacilApp extends Application {
+
+    private static OrgaFacilApp sInstance;
+
+    public static OrgaFacilApp instance() {
+        return sInstance;
+    }
+
     @Override
     public void onCreate() {
+        sInstance = this;
         super.onCreate();
         FirebaseApp.initializeApp(this);
 

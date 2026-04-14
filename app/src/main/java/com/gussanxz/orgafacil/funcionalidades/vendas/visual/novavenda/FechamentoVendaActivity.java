@@ -34,6 +34,8 @@ import java.util.Locale;
 
 public class FechamentoVendaActivity extends AppCompatActivity {
 
+    public static final String EXTRA_CAIXA_ID = "caixaId";
+
     private ImageButton  btnVoltarFechamento;
     private TextView     txtQuantidadeResumo;
     private TextView     txtTotalResumo;
@@ -67,6 +69,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private String  vendaIdEdicao             = null;
     private boolean modoEdicao                = false;
     private int     numeroVendaEdicao         = 0;
+    /** ID do caixa ao qual esta venda será associada. */
+    private String  caixaId                   = null;
     private VendaRepository vendaRepository;
     private boolean salvandoVenda = false;
 
@@ -148,6 +152,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");
 
         vendaIdEdicao   = getIntent().getStringExtra("vendaId");
+        caixaId         = getIntent().getStringExtra(EXTRA_CAIXA_ID);
         quantidadeTotal = getIntent().getIntExtra("quantidadeTotal", 0);
         valorTotal      = getIntent().getDoubleExtra("valorTotal", 0.0);
 
@@ -356,6 +361,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setValorTotal(valorTotal);
         venda.setStatus(VendaModel.STATUS_FINALIZADA);
         venda.setItens(converterItensParaVenda(listaItens));
+        venda.setCaixaId(caixaId); // associa ao caixa aberto (null = legado)
 
         return venda;
     }
@@ -387,6 +393,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setValorTotal(valorTotal);
         venda.setStatus(VendaModel.STATUS_EM_ABERTO);
         venda.setItens(converterItensParaVenda(listaItens));
+        venda.setCaixaId(caixaId);
 
         vendaRepository.salvar(venda, new VendaRepository.Callback() {
             @Override

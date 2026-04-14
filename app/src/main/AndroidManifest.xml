@@ -76,6 +76,12 @@
         <activity
             android:name=".funcionalidades.vendas.ResumoVendasActivity"
             android:exported="false" />
+        <activity
+            android:name=".funcionalidades.vendas.visual.caixa.AbrirCaixaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".funcionalidades.vendas.visual.caixa.FecharCaixaActivity"
+            android:exported="false" />
         <activity android:name=".funcionalidades.vendas.visual.financeiro.FinanceiroActivity" />
         <activity android:name=".funcionalidades.vendas.visual.historico.HistoricoVendasActivity" />
         <activity
