@@ -29,8 +29,10 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
+
+import java.util.Locale;
 
 public class CadastroProdutoActivity extends AppCompatActivity {
 
@@ -158,8 +160,19 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         }
 
         if (textInputPreco.getEditText() != null) {
-            double preco = dados.getDouble("preco", 0.0);
-            textInputPreco.getEditText().setText(String.valueOf(preco));
+            Object precoObjeto = dados.get("preco");
+            double precoParaExibir = 0;
+
+            if (precoObjeto instanceof Integer) {
+                // Novo padrão: Centavos (int) -> Converte para Reais (double) para exibir
+                precoParaExibir = ((Integer) precoObjeto) / 100.0;
+            } else if (precoObjeto instanceof Double) {
+                // Padrão antigo: Reais (double) -> Usa direto
+                precoParaExibir = (Double) precoObjeto;
+            }
+
+            // Exibe formatado com ponto ou vírgula conforme o sistema
+            textInputPreco.getEditText().setText(String.format(Locale.US, "%.2f", precoParaExibir));
         }
 
         switchStatusAtivo.setChecked(dados.getBoolean("statusAtivo", true));
@@ -188,9 +201,15 @@ public class CadastroProdutoActivity extends AppCompatActivity {
             return;
         }
 
-        double preco;
+        // --- CONVERSÃO PARA INTEIRO (CENTAVOS) ---
+        int precoCentavos = 0;
         try {
-            preco = Double.parseDouble(precoStr.replace(",", "."));
+            // Remove espaços e troca vírgula por ponto para o parse funcionar
+            String precoLimpo = precoStr.replace(" ", "").replace(",", ".");
+            double precoTemp = Double.parseDouble(precoLimpo);
+
+            // O segredo do sucesso: arredondar após multiplicar por 100
+            precoCentavos = (int) Math.round(precoTemp * 100);
         } catch (NumberFormatException e) {
             textInputPreco.setError("Preço inválido");
             return;
@@ -202,7 +221,10 @@ public class CadastroProdutoActivity extends AppCompatActivity {
         produtoModel.setId(idEmEdicao);
         produtoModel.setNome(nome);
         produtoModel.setDescricao(descricao);
-        produtoModel.setPreco(preco);
+
+        // Agora setamos o int, que é a nova regra do modelo!
+        produtoModel.setPreco(precoCentavos);
+
         produtoModel.setStatusAtivo(switchStatusAtivo.isChecked());
         produtoModel.setIconeIndex(iconeSelecionado);
         produtoModel.setTipo(CatalogoModel.TIPO_STR_PRODUTO);

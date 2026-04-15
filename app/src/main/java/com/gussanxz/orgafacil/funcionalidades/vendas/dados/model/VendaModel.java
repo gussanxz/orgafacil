@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ public class VendaModel implements Serializable {
     public static final String PAGAMENTO_DINHEIRO = "Dinheiro";
     public static final String PAGAMENTO_CREDITO  = "Crédito";
     public static final String PAGAMENTO_DEBITO   = "Débito";
+
     private String diaKey;
     private String id;
     /**
@@ -27,9 +28,12 @@ public class VendaModel implements Serializable {
     private long dataHoraFechamentoMillis;
     private String formaPagamento;
     private int quantidadeTotal;
-    private double valorTotal;
-    private double acrescimo = 0.0;
-    private double desconto = 0.0;
+
+    // Atualizado para int (centavos)
+    private int valorTotal;
+    private int acrescimo = 0;
+    private int desconto = 0;
+
     private String status;
     private List<ItemVendaRegistradaModel> itens = new ArrayList<>();
 
@@ -84,11 +88,13 @@ public class VendaModel implements Serializable {
         this.quantidadeTotal = quantidadeTotal;
     }
 
-    public double getValorTotal() {
+    // Atualizado para int
+    public int getValorTotal() {
         return valorTotal;
     }
 
-    public void setValorTotal(double valorTotal) {
+    // Atualizado para int
+    public void setValorTotal(int valorTotal) {
         this.valorTotal = valorTotal;
     }
 
@@ -108,11 +114,14 @@ public class VendaModel implements Serializable {
         this.itens = itens;
     }
 
-    public double getAcrescimo() { return acrescimo; }
-    public void setAcrescimo(double acrescimo) { this.acrescimo = acrescimo; }
+    // Atualizado para int
+    public int getAcrescimo() { return acrescimo; }
+    public void setAcrescimo(int acrescimo) { this.acrescimo = acrescimo; }
 
-    public double getDesconto() { return desconto; }
-    public void setDesconto(double desconto) { this.desconto = desconto; }
+    // Atualizado para int
+    public int getDesconto() { return desconto; }
+    public void setDesconto(int desconto) { this.desconto = desconto; }
+
     public String getDiaKey() { return diaKey; }
     public void setDiaKey(String diaKey) { this.diaKey = diaKey; }
 

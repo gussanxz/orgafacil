@@ -9,8 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
 
 import java.text.NumberFormat;
 import java.util.HashMap;
@@ -67,8 +67,8 @@ public class AdapterItensComprovante extends RecyclerView.Adapter<AdapterItensCo
                     : item.getNome();
             txtNome.setText(nome);
             txtTipo.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço");
-            txtQtdUnitario.setText(item.getQuantidade() + "x  " + fmt.format(item.getPrecoUnitario()));
-            txtSubtotalItem.setText(fmt.format(item.getSubtotal()));
+            txtQtdUnitario.setText(item.getQuantidade() + "x  " + fmt.format(item.getPrecoUnitario() / 100.0));
+            txtSubtotalItem.setText(fmt.format(item.getSubtotal() / 100.0));
         }
     }
 }

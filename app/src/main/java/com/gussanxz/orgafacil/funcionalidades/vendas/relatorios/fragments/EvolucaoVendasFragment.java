@@ -21,8 +21,8 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -128,7 +128,9 @@ public class EvolucaoVendasFragment extends Fragment {
     private void atualizarGrafico() {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat fmtLabel = new SimpleDateFormat("MMM", new Locale("pt", "BR"));
-        TreeMap<String, Double> mapa = new TreeMap<>();
+
+        // ATUALIZADO: Usando Integer para acumular os centavos
+        TreeMap<String, Integer> mapa = new TreeMap<>();
         TreeMap<String, Integer> mapaQtd = new TreeMap<>();
         String[] labels = new String[mesesFiltro];
 
@@ -137,7 +139,7 @@ public class EvolucaoVendasFragment extends Fragment {
             ref.add(Calendar.MONTH, -i);
             String chave = ref.get(Calendar.YEAR) + "-" + String.format("%02d", ref.get(Calendar.MONTH));
             labels[mesesFiltro - 1 - i] = fmtLabel.format(ref.getTime());
-            mapa.put(chave, 0.0);
+            mapa.put(chave, 0); // Começa em 0 centavos
             mapaQtd.put(chave, 0);
         }
 
@@ -150,6 +152,7 @@ public class EvolucaoVendasFragment extends Fragment {
             vc.setTimeInMillis(ts);
             String chave = vc.get(Calendar.YEAR) + "-" + String.format("%02d", vc.get(Calendar.MONTH));
             if (mapa.containsKey(chave)) {
+                // Soma em centavos
                 mapa.put(chave, mapa.get(chave) + v.getValorTotal());
                 mapaQtd.put(chave, mapaQtd.get(chave) + 1);
             }
@@ -157,20 +160,25 @@ public class EvolucaoVendasFragment extends Fragment {
 
         List<BarEntry> entries = new ArrayList<>();
         int idx = 0;
-        double melhorValor = 0;
+
+        // ATUALIZADO: Variáveis de controle em int
+        int melhorValorCentavos = 0;
         int melhorIdx = 0;
-        double totalPeriodo = 0;
+        int totalPeriodoCentavos = 0;
         int totalVendasPeriodo = 0;
         int mesesComDados = 0;
 
-        for (Map.Entry<String, Double> entry : mapa.entrySet()) {
-            double valor = entry.getValue();
-            entries.add(new BarEntry(idx, (float) valor));
-            totalPeriodo += valor;
+        for (Map.Entry<String, Integer> entry : mapa.entrySet()) {
+            int valorCentavos = entry.getValue();
+
+            // O gráfico (BarEntry) precisa do float convertido (R$) pra escalar a legenda direito
+            entries.add(new BarEntry(idx, (float) (valorCentavos / 100.0)));
+
+            totalPeriodoCentavos += valorCentavos;
             int qtd = mapaQtd.getOrDefault(entry.getKey(), 0);
             totalVendasPeriodo += qtd;
-            if (valor > 0) mesesComDados++;
-            if (valor > melhorValor) { melhorValor = valor; melhorIdx = idx; }
+            if (valorCentavos > 0) mesesComDados++;
+            if (valorCentavos > melhorValorCentavos) { melhorValorCentavos = valorCentavos; melhorIdx = idx; }
             idx++;
         }
 
@@ -198,19 +206,21 @@ public class EvolucaoVendasFragment extends Fragment {
         barChartEvolucao.getXAxis().setLabelCount(mesesFiltro);
         barChartEvolucao.invalidate();
 
-        // Melhor mês
-        if (melhorValor > 0 && labels.length > melhorIdx) {
+        // Melhor mês (divide por 100.0 pra formatar na tela)
+        if (melhorValorCentavos > 0 && labels.length > melhorIdx) {
             txtEvolucaoMelhorMes.setText("Melhor mês: " + labels[melhorIdx]);
-            txtEvolucaoMelhorValor.setText(fmt.format(melhorValor));
+            txtEvolucaoMelhorValor.setText(fmt.format(melhorValorCentavos / 100.0));
         } else {
             txtEvolucaoMelhorMes.setText("Sem dados no período");
             txtEvolucaoMelhorValor.setText("");
         }
 
-        // Resumo do período
-        txtEvTotalPeriodo.setText(fmt.format(totalPeriodo));
+        // Resumo do período (divide por 100.0 pra formatar na tela)
+        txtEvTotalPeriodo.setText(fmt.format(totalPeriodoCentavos / 100.0));
         txtEvTotalVendas.setText(totalVendasPeriodo + (totalVendasPeriodo == 1 ? " venda" : " vendas"));
-        double mediaMensal = mesesComDados > 0 ? totalPeriodo / mesesComDados : 0;
-        txtEvMediaMensal.setText(fmt.format(mediaMensal));
+
+        // Média em Reais
+        double mediaMensalReais = mesesComDados > 0 ? (totalPeriodoCentavos / 100.0) / mesesComDados : 0;
+        txtEvMediaMensal.setText(fmt.format(mediaMensalReais));
     }
 }

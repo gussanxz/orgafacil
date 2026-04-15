@@ -2,7 +2,6 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -17,7 +16,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CaixaRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

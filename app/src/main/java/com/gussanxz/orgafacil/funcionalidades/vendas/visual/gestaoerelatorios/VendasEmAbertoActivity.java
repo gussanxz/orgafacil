@@ -18,12 +18,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.util.ArrayList;

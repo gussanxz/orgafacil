@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 // IMPORTANTE: Usando o Repository novo de Catálogo (Vendas)
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CategoriaCatalogoRepository;
 
 public class CadastroCategoriaVendasViewModel extends ViewModel {
 

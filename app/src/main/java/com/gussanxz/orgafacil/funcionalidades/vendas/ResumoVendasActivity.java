@@ -26,10 +26,10 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CaixaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CaixaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa.AbrirCaixaActivity; // usado no FAB launcher
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa.FecharCaixaActivity; // controle de caixa
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
@@ -183,14 +183,15 @@ public class ResumoVendasActivity extends AppCompatActivity {
                 CaixaModel.ID_LEGADO,
                 new VendaRepository.TotaisCallback() {
                     @Override
-                    public void onTotais(int qtd, double total) {
+                    public void onTotais(int qtd, int total) { // Agora recebe int (centavos)
                         caixaRepository.atualizarSnapshotTotais(
                                 CaixaModel.ID_LEGADO, qtd, total,
                                 new CaixaRepository.VoidCallback() {
                                     @Override
-                                    public void onSucesso(String id) {
+                                    public void onSucesso(String id) { // <-- Corrigido para onSucesso
+                                        // Para o log ficar legível, dividimos por 100.0
                                         Log.i(TAG, "Totais do caixa_0 gravados: "
-                                                + qtd + " vendas, R$ " + total);
+                                                + qtd + " vendas, R$ " + (total / 100.0));
                                     }
                                     @Override
                                     public void onErro(String erro) {
@@ -222,11 +223,15 @@ public class ResumoVendasActivity extends AppCompatActivity {
                 new VendaRepository.ListaCallback() {
                     @Override
                     public void onNovosDados(List<VendaModel> lista) {
-                        double totalHoje = 0;
-                        for (VendaModel v : lista) totalHoje += v.getValorTotal();
+                        // Acumulador em int (centavos)
+                        int totalHojeCentavos = 0;
+                        for (VendaModel v : lista) {
+                            totalHojeCentavos += v.getValorTotal();
+                        }
 
+                        // Formata dividindo por 100.0 para exibir os centavos corretamente
                         NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-                        ultimoValorVendas = fmt.format(totalHoje);
+                        ultimoValorVendas = fmt.format(totalHojeCentavos / 100.0);
 
                         if (textQtdVendas != null)
                             textQtdVendas.setText(String.valueOf(lista.size()));

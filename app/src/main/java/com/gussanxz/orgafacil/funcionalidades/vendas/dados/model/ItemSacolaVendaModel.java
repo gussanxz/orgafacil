@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.model;
 
 public class ItemSacolaVendaModel implements java.io.Serializable {
 
@@ -7,7 +7,10 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
     private final String nome;
     private final String categoria;
     private final int tipo;
-    private final double precoUnitario;
+
+    // Atualizado para int (centavos)
+    private final int precoUnitario;
+
     private int quantidade;
 
     // Construtor 1: para adicionar item novo na sacola (vem da interface ItemVendaModel)
@@ -16,7 +19,10 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
         this.itemId = item.getId();
         this.nome = item.getNome();
         this.tipo = item.getTipo();
+
+        // ItemVendaModel já foi atualizado para retornar int no getPreco()
         this.precoUnitario = item.getPreco();
+
         this.quantidade = 1;
         this.categoria = (item instanceof CatalogoModel) ? ((CatalogoModel) item).getCategoria() : null;
     }
@@ -27,7 +33,10 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
         this.itemId = item.getItemId();
         this.nome = item.getNome();
         this.tipo = item.getTipo();
-        this.precoUnitario = item.getPrecoUnitario();
+
+        // Cast para (int) mantido temporariamente até atualizarmos o ItemVendaRegistradaModel
+        this.precoUnitario = (int) item.getPrecoUnitario();
+
         this.quantidade = item.getQuantidade();
         this.categoria = categoria;
     }
@@ -62,7 +71,8 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
         return tipo;
     }
 
-    public double getPrecoUnitario() {
+    // Atualizado para retornar int
+    public int getPrecoUnitario() {
         return precoUnitario;
     }
 
@@ -70,7 +80,8 @@ public class ItemSacolaVendaModel implements java.io.Serializable {
         return quantidade;
     }
 
-    public double getSubtotal() {
+    // Atualizado para retornar int
+    public int getSubtotal() {
         return precoUnitario * quantidade;
     }
 

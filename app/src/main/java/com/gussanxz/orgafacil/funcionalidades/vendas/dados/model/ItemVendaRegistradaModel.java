@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.model;
 
 import java.io.Serializable;
 
@@ -8,9 +8,14 @@ public class ItemVendaRegistradaModel implements Serializable {
     private String itemId;
     private String nome;
     private int tipo;
-    private double precoUnitario;
+
+    // Atualizado para int (centavos)
+    private int precoUnitario;
     private int quantidade;
-    private double subtotal;
+
+    // Atualizado para int (centavos)
+    private int subtotal;
+
     private String categoria;
 
     public ItemVendaRegistradaModel() {
@@ -20,10 +25,10 @@ public class ItemVendaRegistradaModel implements Serializable {
         this.itemId = itemSacola.getItemId();
         this.nome = itemSacola.getNome();
         this.tipo = itemSacola.getTipo();
-        this.precoUnitario = itemSacola.getPrecoUnitario();
+        this.precoUnitario = itemSacola.getPrecoUnitario(); // Agora já puxa int
         this.quantidade = itemSacola.getQuantidade();
-        this.subtotal = itemSacola.getSubtotal();
-        this.categoria = itemSacola.getCategoria();  // NOVO
+        this.subtotal = itemSacola.getSubtotal(); // Agora já puxa int
+        this.categoria = itemSacola.getCategoria();
     }
 
     public String getItemId() {
@@ -50,11 +55,13 @@ public class ItemVendaRegistradaModel implements Serializable {
         this.tipo = tipo;
     }
 
-    public double getPrecoUnitario() {
+    // Atualizado para retornar int
+    public int getPrecoUnitario() {
         return precoUnitario;
     }
 
-    public void setPrecoUnitario(double precoUnitario) {
+    // Atualizado para receber int
+    public void setPrecoUnitario(int precoUnitario) {
         this.precoUnitario = precoUnitario;
     }
 
@@ -66,11 +73,13 @@ public class ItemVendaRegistradaModel implements Serializable {
         this.quantidade = quantidade;
     }
 
-    public double getSubtotal() {
+    // Atualizado para retornar int
+    public int getSubtotal() {
         return subtotal;
     }
 
-    public void setSubtotal(double subtotal) {
+    // Atualizado para receber int
+    public void setSubtotal(int subtotal) {
         this.subtotal = subtotal;
     }
 

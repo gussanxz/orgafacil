@@ -10,8 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -136,9 +136,9 @@ public class AdapterSacolaNovaVenda extends RecyclerView.Adapter<RecyclerView.Vi
         void bind(ItemSacolaVendaModel item) {
             txtNome.setText(item.getNome());
             txtTipo.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço");
-            txtPreco.setText("Unitário: " + fmt.format(item.getPrecoUnitario()));
+            txtPreco.setText("Unitário: " + fmt.format(item.getPrecoUnitario() / 100.0));
             txtQtd.setText(String.valueOf(item.getQuantidade()));
-            txtSubtotal.setText(fmt.format(item.getSubtotal()));
+            txtSubtotal.setText(fmt.format(item.getSubtotal() / 100.0));
 
             btnMais.setOnClickListener(v -> listener.onSomar(item));
             btnMenos.setOnClickListener(v -> listener.onSubtrair(item));

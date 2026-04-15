@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -18,9 +17,9 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.AdapterExibirPSGradeListaNovaVenda;
 
 import java.util.ArrayList;

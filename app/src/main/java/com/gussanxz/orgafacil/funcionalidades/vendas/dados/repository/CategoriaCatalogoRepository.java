@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository;
 
 import android.net.Uri;
 import androidx.annotation.NonNull;
@@ -15,7 +15,6 @@ import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * CategoriaCatalogoRepository

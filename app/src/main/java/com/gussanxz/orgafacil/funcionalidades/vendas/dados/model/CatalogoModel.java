@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.model;
 
 public class CatalogoModel implements ItemVendaModel {
 
@@ -10,7 +10,10 @@ public class CatalogoModel implements ItemVendaModel {
     private String descricao;  // Detalhe adicional (opcional nos dois casos)
     private String categoriaId;
     private String categoria;
-    private double preco;
+
+    // Atualizado para int (centavos)
+    private int preco;
+
     private boolean statusAtivo = true;
     private int iconeIndex = 7;
     private String urlFoto = null;
@@ -25,7 +28,10 @@ public class CatalogoModel implements ItemVendaModel {
         if (descricao != null && !descricao.trim().isEmpty()) return descricao;
         return categoria != null ? categoria : "";
     }
-    @Override public double getPreco()    { return preco; }
+
+    // Atualizado para retornar int
+    @Override public int getPreco()    { return preco; }
+
     @com.google.firebase.firestore.Exclude
     @Override public int getTipo() {
         return TIPO_STR_SERVICO.equals(tipo)
@@ -41,7 +47,10 @@ public class CatalogoModel implements ItemVendaModel {
     public void setCategoriaId(String categoriaId) { this.categoriaId = categoriaId; }
     public String getCategoria()                   { return categoria; }
     public void setCategoria(String categoria)     { this.categoria = categoria; }
-    public void setPreco(double preco)             { this.preco = preco; }
+
+    // Atualizado para receber int
+    public void setPreco(int preco)                { this.preco = preco; }
+
     public boolean isStatusAtivo()                 { return statusAtivo; }
     public void setStatusAtivo(boolean statusAtivo){ this.statusAtivo = statusAtivo; }
     public int getIconeIndex()                     { return iconeIndex; }

@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.historico.HeaderDiaVenda;
 
 import java.text.NumberFormat;
@@ -134,7 +134,7 @@ public class AdapterFinanceiro extends RecyclerView.Adapter<RecyclerView.ViewHol
             txtStatus.setTextColor(android.graphics.Color.parseColor(
                     finalizada ? "#2E7D32" : "#C62828"));
 
-            txtTotal.setText(fmt.format(venda.getValorTotal()));
+            txtTotal.setText(fmt.format(venda.getValorTotal() / 100.0));
             txtTotal.setTextColor(android.graphics.Color.parseColor(
                     finalizada ? "#1B5E20" : "#9E9E9E"));
             itemView.setOnClickListener(v -> {

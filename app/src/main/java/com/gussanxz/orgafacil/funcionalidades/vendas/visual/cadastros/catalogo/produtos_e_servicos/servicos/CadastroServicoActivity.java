@@ -12,7 +12,6 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -23,9 +22,9 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,8 +132,22 @@ public class CadastroServicoActivity extends AppCompatActivity {
         if(textInputCategoria.getEditText() != null)
             textInputCategoria.getEditText().setText(dados.getString("categoria"));
 
-        if(textInputValor.getEditText() != null)
-            textInputValor.getEditText().setText(String.valueOf(dados.getDouble("preco"))); // ou "valor"
+        if(textInputValor.getEditText() != null) {
+            // Busca o objeto bruto para verificar se é Integer ou Double
+            Object precoObj = dados.get("preco");
+            double precoParaExibir = 0.0;
+
+            if (precoObj instanceof Integer) {
+                // Novo padrão: Centavos (int) -> Divide por 100 para exibir R$
+                precoParaExibir = ((Integer) precoObj) / 100.0;
+            } else if (precoObj instanceof Double) {
+                // Padrão antigo: Reais (double) -> Usa direto
+                precoParaExibir = (Double) precoObj;
+            }
+
+            // Formata com 2 casas decimais para manter o padrão visual de moeda
+            textInputValor.getEditText().setText(String.format(java.util.Locale.US, "%.2f", precoParaExibir));
+        }
 
         if (textInputCategoria != null && textInputCategoria.getEditText() != null)
             textInputCategoria.getEditText().setText(categoriaSelecionadaNome);
@@ -155,20 +168,21 @@ public class CadastroServicoActivity extends AppCompatActivity {
         if (valorStr.isEmpty()) { textInputValor.setError("Valor obrigatório"); return; }
 
         // 3. Conversão de valor
-        double valor = 0.0;
+        int valorCentavos = 0;
         try {
-            valor = Double.parseDouble(valorStr.replace(",", "."));
+            double valorTemp = Double.parseDouble(valorStr.replace(",", "."));
+            valorCentavos = (int) Math.round(valorTemp * 100);
         } catch (NumberFormatException e) {
             textInputValor.setError("Valor inválido");
             return;
         }
 
-// 4. Cria Objeto
+        // 4. Cria Objeto
         CatalogoModel servicoModel = new CatalogoModel();
         servicoModel.setId(idEmEdicao);
         servicoModel.setTipo(CatalogoModel.TIPO_STR_SERVICO);
         servicoModel.setNome(descricao);
-        servicoModel.setPreco(valor);
+        servicoModel.setPreco(valorCentavos);
         servicoModel.setCategoriaId(categoriaSelecionadaId);
         servicoModel.setCategoria(categoriaSelecionadaNome);
         servicoModel.setStatusAtivo(true);

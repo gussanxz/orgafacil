@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -167,7 +167,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
                     break;
             }
 
-            txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal()));
+            txtVendaTotal.setText(formatadorMoeda.format(venda.getValorTotal() / 100.0));
 
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) clickListener.onVendaClick(venda);

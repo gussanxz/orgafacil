@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.model;
 
 import com.google.firebase.firestore.PropertyName;
 
@@ -22,8 +22,10 @@ public class CaixaModel implements Serializable {
     private boolean permiteLancamentoTardio;
     /** Snapshot salvo no fechamento: quantidade de vendas finalizadas. */
     private int    qtdVendasFechamento;
-    /** Snapshot salvo no fechamento: valor total das vendas finalizadas (R$). */
-    private double valorTotalFechamento;
+
+    // Atualizado: agora armazena os centavos
+    /** Snapshot salvo no fechamento: valor total das vendas finalizadas (em centavos). */
+    private int valorTotalFechamento;
 
     public CaixaModel() {}
 
@@ -60,8 +62,10 @@ public class CaixaModel implements Serializable {
     public int    getQtdVendasFechamento()  { return qtdVendasFechamento; }
     public void   setQtdVendasFechamento(int qtdVendasFechamento) { this.qtdVendasFechamento = qtdVendasFechamento; }
 
-    public double getValorTotalFechamento() { return valorTotalFechamento; }
-    public void   setValorTotalFechamento(double valorTotalFechamento) { this.valorTotalFechamento = valorTotalFechamento; }
+    // Atualizado: retorna int
+    public int getValorTotalFechamento() { return valorTotalFechamento; }
+    // Atualizado: recebe int
+    public void setValorTotalFechamento(int valorTotalFechamento) { this.valorTotalFechamento = valorTotalFechamento; }
 
     // ── Helpers ────────────────────────────────────────────────────────
 

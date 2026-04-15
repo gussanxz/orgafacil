@@ -13,8 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.List;

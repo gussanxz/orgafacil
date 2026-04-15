@@ -1,19 +1,17 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.main.OrgaFacilApp;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,8 +30,9 @@ public class VendaRepository {
         void onErro(String erro);
     }
 
+    // --- ATUALIZADO: total agora é int ---
     public interface TotaisCallback {
-        void onTotais(int qtd, double total);
+        void onTotais(int qtd, int total);
         void onErro(String erro);
     }
 
@@ -50,7 +49,6 @@ public class VendaRepository {
         boolean isNova = venda.getId() == null || venda.getId().trim().isEmpty();
 
         if (isNova) {
-            // Venda nova: gera número sequencial antes de salvar
             gerarProximoNumero(new NumeroCallback() {
                 @Override
                 public void onNumero(int numero) {
@@ -66,7 +64,6 @@ public class VendaRepository {
                 }
             });
         } else {
-            // Atualização de venda existente — mantém o número que já tem
             salvarNoFirestore(venda, callback);
         }
     }
@@ -86,36 +83,18 @@ public class VendaRepository {
     }
 
     // -----------------------------------------------------------
-    // NUMERAÇÃO SEQUENCIAL  (com fallback offline)
+    // NUMERAÇÃO SEQUENCIAL
     // -----------------------------------------------------------
 
     private static final String PREFS_VENDA     = "venda_prefs";
     private static final String KEY_ULTIMO_NUM  = "ultimo_numero_local";
 
-    /**
-     * Gera o próximo número de venda de forma resiliente a falhas de rede.
-     *
-     * Estratégia:
-     *  1. Lê o último número local salvo nas SharedPreferences como fallback imediato.
-     *  2. Tenta executar a transação Firestore (incremento atômico no servidor).
-     *  3. Se a transação falha (offline / alta latência):
-     *     – usa o fallback local (último número conhecido + 1);
-     *     – persiste o fallback localmente para evitar duplicatas em reaberturas;
-     *     – enfileira um set() no contador remoto (será sincronizado ao reconnectar).
-     *  4. Se a transação tem sucesso, atualiza as SharedPreferences com o valor do servidor.
-     *
-     * Efeito: a venda é sempre salva, mesmo sem conexão.
-     * Gaps numéricos podem ocorrer em cenários de conflito multi-dispositivo,
-     * o que é aceitável para uso individual.
-     */
     private void gerarProximoNumero(@NonNull NumeroCallback callback) {
         try {
-            // Contador em: vendas/resumo_geral/config/sequencia → { ultimoNumero: N }
             DocumentReference contadorRef = FirestoreSchema.vendasResumoDoc()
                     .collection("config")
                     .document("sequencia");
 
-            // Calcula fallback local antes de tentar o servidor
             SharedPreferences prefs = OrgaFacilApp.instance()
                     .getSharedPreferences(PREFS_VENDA, android.content.Context.MODE_PRIVATE);
             int ultimoLocal  = prefs.getInt(KEY_ULTIMO_NUM, 0);
@@ -137,14 +116,11 @@ public class VendaRepository {
                         return proximo;
                     })
                     .addOnSuccessListener(numero -> {
-                        // Sincroniza o contador local com o valor oficial do servidor
                         prefs.edit().putInt(KEY_ULTIMO_NUM, (int)(long) numero).apply();
                         callback.onNumero((int)(long) numero);
                     })
                     .addOnFailureListener(e -> {
-                        // Offline ou falha de rede: usa número local como fallback
                         prefs.edit().putInt(KEY_ULTIMO_NUM, fallbackLocal).apply();
-                        // Enfileira a atualização do contador remoto para sync posterior
                         contadorRef.set(
                                 Collections.singletonMap("ultimoNumero", (long) fallbackLocal),
                                 SetOptions.merge()
@@ -216,6 +192,7 @@ public class VendaRepository {
             callback.onErro("Usuário não logado");
         }
     }
+
     public void alternarStatus(@NonNull VendaModel venda, @NonNull Callback callback) {
         String statusAtual = venda.getStatus();
 
@@ -224,13 +201,12 @@ public class VendaRepository {
         } else if (VendaModel.STATUS_CANCELADA.equals(statusAtual)) {
             atualizarStatus(venda.getId(), VendaModel.STATUS_FINALIZADA, callback);
         } else {
-            // Venda EM_ABERTO ou status desconhecido não pode ser alternado por esse fluxo
             callback.onErro("Operação inválida: apenas vendas finalizadas ou canceladas podem ter o status alternado.");
         }
     }
 
     // -----------------------------------------------------------
-    // HELPER PRIVADO
+    // HELPER PRIVADO E BUSCAS
     // -----------------------------------------------------------
 
     private List<VendaModel> extrairLista(
@@ -268,7 +244,6 @@ public class VendaRepository {
         }
     }
 
-    // Novo callback que retorna o objeto VendaModel completo
     public interface VendaCallback {
         void onVenda(VendaModel venda);
         void onErro(String erro);
@@ -300,7 +275,6 @@ public class VendaRepository {
         }
     }
 
-    // Novo método: escuta em tempo real as vendas finalizadas hoje
     public ListenerRegistration escutarVendasFinalizadasHoje(@NonNull ListaCallback callback) {
         try {
             return FirestoreSchema.vendasVendasCol()
@@ -311,7 +285,6 @@ public class VendaRepository {
                                     ? error.getMessage() : "Erro ao carregar vendas do dia.");
                             return;
                         }
-                        // Filtra localmente pelo dia de hoje
                         List<VendaModel> todas = extrairLista(snapshot);
                         List<VendaModel> hoje = new ArrayList<>();
                         String diaHoje = FirestoreSchema.diaKey(new Date());
@@ -329,26 +302,31 @@ public class VendaRepository {
         }
     }
 
-    /** Escuta em tempo real todas as vendas de um caixa específico. */
-    /** Busca uma vez os totais (qtd + soma) das vendas FINALIZADAS de um caixa específico. */
+    /** ATUALIZADO: Soma em int com compatibilidade para Double legado */
     public void buscarTotaisFinalizadasDoCaixa(@NonNull String caixaId,
                                                @NonNull TotaisCallback callback) {
         try {
-            // Filtro único (evita índice composto); status verificado em memória.
             FirestoreSchema.vendasVendasCol()
                     .whereEqualTo("caixaId", caixaId)
                     .get()
                     .addOnSuccessListener(snapshot -> {
-                        int    qtd   = 0;
-                        double total = 0;
+                        int qtd = 0;
+                        int totalCentavos = 0;
                         for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                            VendaModel v = doc.toObject(VendaModel.class);
-                            if (v != null && VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
+                            if (VendaModel.STATUS_FINALIZADA.equals(doc.getString("status"))) {
                                 qtd++;
-                                total += v.getValorTotal();
+                                // Tenta ler como Long (padrão int centavos)
+                                Long vLong = doc.getLong("valorTotal");
+                                if (vLong != null) {
+                                    totalCentavos += vLong.intValue();
+                                } else {
+                                    // Fallback: tenta ler como Double legado e converte
+                                    Double vDouble = doc.getDouble("valorTotal");
+                                    if (vDouble != null) totalCentavos += (int) Math.round(vDouble * 100);
+                                }
                             }
                         }
-                        callback.onTotais(qtd, total);
+                        callback.onTotais(qtd, totalCentavos);
                     })
                     .addOnFailureListener(e -> callback.onErro(
                             e.getMessage() != null ? e.getMessage() : "Erro ao calcular totais."));
@@ -357,30 +335,31 @@ public class VendaRepository {
         }
     }
 
-    /**
-     * Calcula totais das vendas FINALIZADAS que pertencem ao caixa legado:
-     * inclui vendas sem caixaId (campo ausente) E vendas com caixaId = "caixa_0".
-     * Toda a filtragem é feita em memória para evitar restrições de índice do Firestore.
-     */
+    /** ATUALIZADO: Soma em int com compatibilidade para Double legado */
     public void buscarTotaisVendasLegadas(@NonNull TotaisCallback callback) {
         try {
             FirestoreSchema.vendasVendasCol()
                     .get()
                     .addOnSuccessListener(snapshot -> {
-                        int    qtd   = 0;
-                        double total = 0;
+                        int qtd = 0;
+                        int totalCentavos = 0;
                         for (DocumentSnapshot doc : snapshot.getDocuments()) {
                             Object caixaId = doc.get("caixaId");
-                            boolean legado = caixaId == null
-                                    || "caixa_0".equals(caixaId);
+                            boolean legado = caixaId == null || "caixa_0".equals(caixaId);
                             if (!legado) continue;
-                            VendaModel v = doc.toObject(VendaModel.class);
-                            if (v != null && VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
+
+                            if (VendaModel.STATUS_FINALIZADA.equals(doc.getString("status"))) {
                                 qtd++;
-                                total += v.getValorTotal();
+                                Long vLong = doc.getLong("valorTotal");
+                                if (vLong != null) {
+                                    totalCentavos += vLong.intValue();
+                                } else {
+                                    Double vDouble = doc.getDouble("valorTotal");
+                                    if (vDouble != null) totalCentavos += (int) Math.round(vDouble * 100);
+                                }
                             }
                         }
-                        callback.onTotais(qtd, total);
+                        callback.onTotais(qtd, totalCentavos);
                     })
                     .addOnFailureListener(e -> callback.onErro(
                             e.getMessage() != null ? e.getMessage() : "Erro ao calcular totais legados."));
@@ -409,7 +388,6 @@ public class VendaRepository {
         }
     }
 
-    // Novo método: escuta em tempo real as vendas em aberto (para contagem no resumo)
     public ListenerRegistration escutarVendasEmAberto(@NonNull ListaCallback callback) {
         try {
             return FirestoreSchema.vendasVendasCol()
@@ -427,5 +405,4 @@ public class VendaRepository {
             return null;
         }
     }
-
 }

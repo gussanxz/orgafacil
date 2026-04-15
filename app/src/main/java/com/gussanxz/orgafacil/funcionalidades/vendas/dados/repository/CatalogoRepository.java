@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository;
 
 import android.net.Uri;
 
@@ -13,7 +13,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirebaseSession;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -195,10 +195,10 @@ public class CatalogoRepository {
 
     /**
      * Converte o valor bruto do campo "tipo" para a String correta.
-     *   - Long 0  → "produto"
-     *   - Long 1  → "servico"
-     *   - String  → usa diretamente (valida se é um dos dois valores conhecidos)
-     *   - null    → "produto" (default seguro)
+     * - Long 0  → "produto"
+     * - Long 1  → "servico"
+     * - String  → usa diretamente (valida se é um dos dois valores conhecidos)
+     * - null    → "produto" (default seguro)
      */
     private String resolverTipo(Object tipoRaw) {
         if (tipoRaw instanceof String) {
@@ -240,10 +240,17 @@ public class CatalogoRepository {
         String categoria = doc.getString("categoria");
         m.setCategoria(categoria != null ? categoria : CategoriaCatalogoRepository.NOME_CATEGORIA_PADRAO);
 
+        // --- CONVERSÃO DE LEGADO (Double) PARA NOVO (int) ---
         // Preço: campo pode ser "preco" (novo) ou "valor" (legado ServicoModel)
-        Double preco = doc.getDouble("preco");
-        if (preco == null) preco = doc.getDouble("valor");
-        m.setPreco(preco != null ? preco : 0.0);
+        Double precoDb = doc.getDouble("preco");
+        if (precoDb == null) precoDb = doc.getDouble("valor");
+
+        int precoCentavos = 0;
+        if (precoDb != null) {
+            precoCentavos = (int) Math.round(precoDb * 100);
+        }
+        m.setPreco(precoCentavos);
+        // ----------------------------------------------------
 
         Boolean statusAtivo = doc.getBoolean("statusAtivo");
         m.setStatusAtivo(statusAtivo != null ? statusAtivo : true);
@@ -271,12 +278,12 @@ public class CatalogoRepository {
     private void uploadImagem(Uri uri, String itemId, BiConsumer<String, String> callback) {
         String nomeArquivo = itemId + ".jpg";
         StorageReference fotoRef = storageRef
-                        .child("images")
-                        .child("users")
-                        .child(FirebaseSession.getUserId())
-                        .child("vendas")
-                        .child("catalogo")
-                        .child(nomeArquivo);
+                .child("images")
+                .child("users")
+                .child(FirebaseSession.getUserId())
+                .child("vendas")
+                .child("catalogo")
+                .child(nomeArquivo);
 
         // Tenta deletar a anterior (ignora erro se não existir)
         fotoRef.delete()

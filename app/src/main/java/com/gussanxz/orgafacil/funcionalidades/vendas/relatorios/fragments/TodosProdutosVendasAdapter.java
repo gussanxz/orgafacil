@@ -21,12 +21,12 @@ public class TodosProdutosVendasAdapter
     public static class ProdutoItem {
         public final String nome;
         public final int    quantidade;
-        public final double valorTotal;
+        public final int    valorTotalCentavos; // Alterado para int
 
-        public ProdutoItem(String nome, int quantidade, double valorTotal) {
+        public ProdutoItem(String nome, int quantidade, int valorTotalCentavos) {
             this.nome       = nome;
             this.quantidade = quantidade;
-            this.valorTotal = valorTotal;
+            this.valorTotalCentavos = valorTotalCentavos;
         }
     }
 
@@ -52,7 +52,7 @@ public class TodosProdutosVendasAdapter
         ProdutoItem item = lista.get(position);
         holder.nome.setText(item.nome);
         holder.qtd.setText(item.quantidade + "x");
-        holder.valor.setText(fmt.format(item.valorTotal));
+        holder.valor.setText(fmt.format(item.valorTotalCentavos / 100.0));
     }
 
     @Override

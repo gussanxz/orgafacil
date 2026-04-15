@@ -20,12 +20,12 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendasRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -189,15 +189,15 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
 
         // subtotal = soma bruta dos itens (valorTotal já carrega esse valor quando não há ajustes)
         // valorTotal = subtotal + acrescimo - desconto
-        double subtotal = venda.getValorTotal();
-        double valorFinal = subtotal + venda.getAcrescimo() - venda.getDesconto();
-        txtSubtotal.setText(formatadorMoeda.format(subtotal));
-        txtValorTotal.setText(formatadorMoeda.format(valorFinal));
+        int subtotalCentavos = venda.getValorTotal();
+        int valorFinalCentavos = subtotalCentavos + venda.getAcrescimo() - venda.getDesconto();
+        txtSubtotal.setText(formatadorMoeda.format(subtotalCentavos / 100.0));
+        txtValorTotal.setText(formatadorMoeda.format(valorFinalCentavos / 100.0));
 
         // Acréscimo — só exibe a linha se for > 0
         if (venda.getAcrescimo() > 0) {
             rowAcrescimo.setVisibility(View.VISIBLE);
-            txtAcrescimo.setText("+ " + formatadorMoeda.format(venda.getAcrescimo()));
+            txtAcrescimo.setText("+ " + formatadorMoeda.format(venda.getAcrescimo() / 100.0)); // ✅
         } else {
             rowAcrescimo.setVisibility(View.GONE);
         }
@@ -205,7 +205,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         // Desconto — só exibe a linha se for > 0
         if (venda.getDesconto() > 0) {
             rowDesconto.setVisibility(View.VISIBLE);
-            txtDesconto.setText("- " + formatadorMoeda.format(venda.getDesconto()));
+            txtDesconto.setText("-  " + formatadorMoeda.format(venda.getDesconto() / 100.0));  // ✅
         } else {
             rowDesconto.setVisibility(View.GONE);
         }

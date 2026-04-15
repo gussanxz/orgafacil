@@ -21,10 +21,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CaixaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CaixaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -81,7 +81,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     /** Totais atuais das vendas (usados para snapshot ao fechar). */
     private int    qtdVendasAtual  = 0;
-    private double totalVendasAtual = 0.0;
+    private int    totalVendasAtual = 0;
 
     private final SimpleDateFormat fmtHora  = new SimpleDateFormat(
             "HH:mm 'de' dd/MM/yyyy", new Locale("pt", "BR"));
@@ -285,22 +285,23 @@ public class FecharCaixaActivity extends AppCompatActivity {
                 new VendaRepository.ListaCallback() {
                     @Override
                     public void onNovosDados(List<VendaModel> lista) {
-                        int    qtd = 0;
-                        double tot = 0;
+                        int qtd = 0;
+                        int totCentavos = 0; // Acumulador em centavos
                         for (VendaModel v : lista) {
                             if (VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
                                 qtd++;
-                                tot += v.getValorTotal();
+                                totCentavos += v.getValorTotal(); // Agora é int
                             }
                         }
                         // Guarda para uso no fechamento
                         qtdVendasAtual  = qtd;
-                        totalVendasAtual = tot;
+                        totalVendasAtual = totCentavos;
 
                         if (txtQtdVendasCaixa != null)
                             txtQtdVendasCaixa.setText(String.valueOf(qtd));
                         if (txtTotalCaixa != null)
-                            txtTotalCaixa.setText(fmtMoeda.format(tot));
+                            // Formata com divisão por 100.0 para exibir R$ corretamente
+                            txtTotalCaixa.setText(fmtMoeda.format(totCentavos / 100.0));
                     }
 
                     @Override

@@ -5,9 +5,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.categoria.CadastroCategoriaCatalogoActivity;
-
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gussanxz.orgafacil.R;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CategoriaCatalogoRepository;
 
 import java.util.ArrayList;
 import java.util.List;

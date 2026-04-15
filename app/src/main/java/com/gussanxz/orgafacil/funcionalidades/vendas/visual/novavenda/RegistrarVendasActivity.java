@@ -24,11 +24,11 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -384,7 +384,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
             if (quantidadeTotal == 0) {
                 txtSacolaSubtotal.setText("Toque para ver os itens");
             } else {
-                txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal));
+                txtSacolaSubtotal.setText(formatadorMoeda.format(valorTotal / 100.0));
             }
         }
 
@@ -414,8 +414,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         return total;
     }
 
-    private double getValorTotalSacola() {
-        double total = 0.0;
+    private int getValorTotalSacola() {
+        int total = 0;
         for (ItemSacolaVendaModel item : sacolaMap.values()) total += item.getSubtotal();
         return total;
     }
@@ -430,7 +430,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         Intent intent = new Intent(this, FechamentoVendaActivity.class);
         intent.putExtra("itensSacola",     new ArrayList<>(sacolaMap.values()));
         intent.putExtra("quantidadeTotal", getQuantidadeTotalSacola());
-        intent.putExtra("valorTotal",      getValorTotalSacola());
+        //intent.putExtra("valorTotal",      getValorTotalSacola()); -> esta sendo recalculado no adapter
+
         if (caixaId != null)
             intent.putExtra(FechamentoVendaActivity.EXTRA_CAIXA_ID, caixaId);
         if (vendaIdEdicao != null) {
@@ -612,16 +613,16 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         adapter.atualizarLista(itens);
 
         int    quantidade = getQuantidadeTotalSacola();
-        double total      = getValorTotalSacola();
+        int total      = getValorTotalSacola();
 
         if (txtQtdItens != null)
             txtQtdItens.setText(quantidade + (quantidade == 1 ? " item" : " itens"));
 
         if (txtTotalBottom != null)
-            txtTotalBottom.setText(formatadorMoeda.format(total));
+            txtTotalBottom.setText(formatadorMoeda.format(total / 100.0));
 
         if (txtCobrarTotal != null)
-            txtCobrarTotal.setText(formatadorMoeda.format(total));
+            txtCobrarTotal.setText(formatadorMoeda.format(total / 100.0));
 
         if (txtEstadoVazio != null) {
             boolean vazio = itens.isEmpty();

@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository;
 
 import androidx.annotation.NonNull;
 

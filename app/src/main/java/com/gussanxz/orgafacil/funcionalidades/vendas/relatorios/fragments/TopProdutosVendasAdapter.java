@@ -40,11 +40,13 @@ public class TopProdutosVendasAdapter extends RecyclerView.Adapter<TopProdutosVe
         public int posicao;
         public String nome;
         public int quantidade;
-        public double valorTotal;
+        public int valorTotal; // Alterado para int (centavos)
 
-        public TopItemVenda(int posicao, String nome, int quantidade, double valorTotal, int percentual) {
-            this.posicao = posicao; this.nome = nome;
-            this.quantidade = quantidade; this.valorTotal = valorTotal;
+        public TopItemVenda(int posicao, String nome, int quantidade, int valorTotal, int percentual) {
+            this.posicao = posicao;
+            this.nome = nome;
+            this.quantidade = quantidade;
+            this.valorTotal = valorTotal;
         }
     }
 
@@ -74,7 +76,7 @@ public class TopProdutosVendasAdapter extends RecyclerView.Adapter<TopProdutosVe
         h.txtNome.setText(ss);
 
         h.txtQtd.setText(item.quantidade + "x");
-        h.txtValor.setText(fmt.format(item.valorTotal));
+        h.txtValor.setText(fmt.format(item.valorTotal / 100.0));
     }
 
     @Override

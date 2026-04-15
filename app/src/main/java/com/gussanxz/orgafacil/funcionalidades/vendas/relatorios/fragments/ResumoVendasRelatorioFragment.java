@@ -28,17 +28,15 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments.TopProdutosVendasAdapter;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendasRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -171,8 +169,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Carrega todos os itens do catálogo (ativos e inativos) para resolver
-        // nomes e categorias atuais nas vendas históricas.
         vendasRepository.listarTodoCatalogo(new RepoCallback<QuerySnapshot>() {
             @Override
             public void onSuccess(QuerySnapshot snap) {
@@ -193,7 +189,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                         catalogoNomesMap.put(doc.getId(), nome);
                     }
                 }
-                // Após o catálogo, carrega as categorias para resolver nomes atuais pelo ID.
                 vendasRepository.listarTodasCategorias(new RepoCallback<QuerySnapshot>() {
                     @Override
                     public void onSuccess(QuerySnapshot catSnap) {
@@ -252,7 +247,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         int anoFiltro = mesSelecionado.get(Calendar.YEAR);
         int mesFiltro = mesSelecionado.get(Calendar.MONTH);
 
-        // Mês anterior para comparativo
         Calendar mesAnteriorCal = (Calendar) mesSelecionado.clone();
         mesAnteriorCal.add(Calendar.MONTH, -1);
         int anoAnterior = mesAnteriorCal.get(Calendar.YEAR);
@@ -291,19 +285,19 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             return;
         }
 
-        // Total e ticket médio
-        double total = 0;
-        for (VendaModel v : doMes) total += v.getValorTotal();
-        double ticket = total / doMes.size();
+        // Total e ticket médio (AGORA EM INT)
+        int totalCentavos = 0;
+        for (VendaModel v : doMes) totalCentavos += v.getValorTotal();
+        double ticketCentavos = (doMes.size() > 0) ? (double) totalCentavos / doMes.size() : 0;
 
-        txtTotalVendido.setText(fmt.format(total));
+        txtTotalVendido.setText(fmt.format(totalCentavos / 100.0));
         txtQtdVendas.setText(doMes.size() + (doMes.size() == 1 ? " venda" : " vendas"));
-        txtTicketMedio.setText(fmt.format(ticket));
+        txtTicketMedio.setText(fmt.format(ticketCentavos / 100.0));
 
-        // Comparativo com mês anterior — Total
-        double totalAnterior = 0;
-        for (VendaModel v : doMesAnterior) totalAnterior += v.getValorTotal();
-        exibirVariacaoTotal(total, totalAnterior);
+        // Comparativo com mês anterior
+        int totalAnteriorCentavos = 0;
+        for (VendaModel v : doMesAnterior) totalAnteriorCentavos += v.getValorTotal();
+        exibirVariacaoTotal(totalCentavos, totalAnteriorCentavos);
 
         // Comparativo com mês anterior — Qtd de vendas
         exibirVariacaoQtd(doMes.size(), doMesAnterior.size());
@@ -317,23 +311,21 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         }
         renderizarPagamentos(contagemPag, doMes.size());
 
-        // Salva cache e renderiza conforme aba ativa
         doMesCache = doMes;
         renderizarTop5(doMes);
         renderizarListaCompleta(doMes);
     }
 
-    private void exibirVariacaoTotal(double atual, double anterior) {
+    private void exibirVariacaoTotal(int atual, int anterior) {
         if (anterior <= 0) {
             txtRelVendasTotalVariacao.setVisibility(View.GONE);
             return;
         }
-        double variacao = ((atual - anterior) / anterior) * 100;
+        double variacao = (((double) atual - anterior) / anterior) * 100;
         boolean positivo = variacao >= 0;
         String sinal = positivo ? "↑" : "↓";
         txtRelVendasTotalVariacao.setText(
                 String.format(Locale.ROOT, "%s %.0f%% vs mês ant.", sinal, Math.abs(variacao)));
-        // Cores com alto contraste sobre fundo colorPrimary
         txtRelVendasTotalVariacao.setTextColor(
                 positivo ? Color.parseColor("#B9F6CA") : Color.parseColor("#FF8A80"));
         txtRelVendasTotalVariacao.setVisibility(View.VISIBLE);
@@ -358,7 +350,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         layoutPagamentos.removeAllViews();
         if (contagem.isEmpty()) return;
 
-        // Ordena por contagem decrescente
         List<Map.Entry<String, Integer>> entries = new ArrayList<>(contagem.entrySet());
         entries.sort((a, b) -> b.getValue() - a.getValue());
 
@@ -422,7 +413,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     private void renderizarListaCompleta(List<VendaModel> doMes) {
-        Map<String, double[]> mapa = new LinkedHashMap<>();
+        // AGORA É int[] -> 0: qtd, 1: total centavos
+        Map<String, int[]> mapa = new LinkedHashMap<>();
         for (VendaModel v : doMes) {
             if (v.getItens() == null) continue;
             for (ItemVendaRegistradaModel item : v.getItens()) {
@@ -433,20 +425,21 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                 } else {
                     chave = resolverCategoria(item);
                 }
-                double[] dados = mapa.getOrDefault(chave, new double[]{0, 0});
+                int[] dados = mapa.getOrDefault(chave, new int[]{0, 0});
                 dados[0] += item.getQuantidade();
                 dados[1] += item.getPrecoUnitario() * item.getQuantidade();
                 mapa.put(chave, dados);
             }
         }
 
-        List<Map.Entry<String, double[]>> entries = new ArrayList<>(mapa.entrySet());
-        entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
+        List<Map.Entry<String, int[]>> entries = new ArrayList<>(mapa.entrySet());
+        entries.sort((a, b) -> Integer.compare(b.getValue()[1], a.getValue()[1]));
 
         List<TodosProdutosVendasAdapter.ProdutoItem> itens = new ArrayList<>();
-        for (Map.Entry<String, double[]> e : entries) {
+        for (Map.Entry<String, int[]> e : entries) {
+            // Divide por 100.0 para manter o Adapter compatível
             itens.add(new TodosProdutosVendasAdapter.ProdutoItem(
-                    e.getKey(), (int) e.getValue()[0], e.getValue()[1]));
+                    e.getKey(), e.getValue()[0], e.getValue()[1]));
         }
 
         listaCompletaAdapter.atualizar(itens);
@@ -478,11 +471,11 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     }
 
     private void renderizarTop5(List<VendaModel> doMes) {
-        Map<String, double[]> rankMap = new LinkedHashMap<>();
+        // AGORA É int[] -> 0: qtd, 1: total centavos
+        Map<String, int[]> rankMap = new LinkedHashMap<>();
         for (VendaModel v : doMes) {
             if (v.getItens() == null) continue;
             for (ItemVendaRegistradaModel item : v.getItens()) {
-                // Chave: nome do produto OU categoria, conforme aba ativa
                 String chave;
                 if (exibindoProdutos) {
                     chave = resolverNome(item);
@@ -490,26 +483,27 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     chave = resolverCategoria(item);
                 }
                 if (chave == null) continue;
-                double[] dados = rankMap.getOrDefault(chave, new double[]{0, 0});
+                int[] dados = rankMap.getOrDefault(chave, new int[]{0, 0});
                 dados[0] += item.getQuantidade();
                 dados[1] += item.getPrecoUnitario() * item.getQuantidade();
                 rankMap.put(chave, dados);
             }
         }
 
-        List<Map.Entry<String, double[]>> entries = new ArrayList<>(rankMap.entrySet());
-        entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
+        List<Map.Entry<String, int[]>> entries = new ArrayList<>(rankMap.entrySet());
+        entries.sort((a, b) -> Integer.compare(b.getValue()[1], a.getValue()[1]));
         if (entries.size() > 5) entries = entries.subList(0, 5);
 
-        double totalItens = 0;
-        for (Map.Entry<String, double[]> e : entries) totalItens += e.getValue()[1];
+        int totalItensCentavos = 0;
+        for (Map.Entry<String, int[]> e : entries) totalItensCentavos += e.getValue()[1];
 
         List<TopProdutosVendasAdapter.TopItemVenda> topItens = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
-            Map.Entry<String, double[]> e = entries.get(i);
-            int pctItem = totalItens > 0 ? (int) ((e.getValue()[1] / totalItens) * 100) : 0;
+            Map.Entry<String, int[]> e = entries.get(i);
+            int pctItem = totalItensCentavos > 0 ? (int) (((double)e.getValue()[1] / totalItensCentavos) * 100) : 0;
+            // Divide por 100.0 para manter o Adapter compatível
             topItens.add(new TopProdutosVendasAdapter.TopItemVenda(
-                    i + 1, e.getKey(), (int) e.getValue()[0], e.getValue()[1], pctItem));
+                    i + 1, e.getKey(), e.getValue()[0], e.getValue()[1] , pctItem));
         }
         topAdapter.atualizar(topItens);
     }
@@ -517,23 +511,21 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private void mostrarDialogPagamentos() {
         if (doMesCache == null || doMesCache.isEmpty()) return;
 
-        // Agrega por forma de pagamento: contagem e valor total
         Map<String, Integer> contagemPag = new LinkedHashMap<>();
-        Map<String, Double> valorPag = new LinkedHashMap<>();
+        Map<String, Integer> valorPag = new LinkedHashMap<>(); // AGORA É Integer
         for (VendaModel v : doMesCache) {
             String pag = v.getFormaPagamento();
             if (pag == null || pag.isEmpty()) pag = "Não informado";
             contagemPag.put(pag, contagemPag.getOrDefault(pag, 0) + 1);
-            valorPag.put(pag, valorPag.getOrDefault(pag, 0.0) + v.getValorTotal());
+            valorPag.put(pag, valorPag.getOrDefault(pag, 0) + v.getValorTotal());
         }
 
-        // Ordena do maior para o menor (por contagem)
         List<String> metodos = new ArrayList<>(contagemPag.keySet());
         metodos.sort((a, b) -> contagemPag.get(b) - contagemPag.get(a));
 
         int totalQtd = doMesCache.size();
-        double totalValor = 0;
-        for (double v : valorPag.values()) totalValor += v;
+        int totalValorCentavos = 0;
+        for (int v : valorPag.values()) totalValorCentavos += v;
 
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_pagamentos_mes_vendas, null);
@@ -546,13 +538,13 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
         txtMes.setText(fmtMes.format(mesSelecionado.getTime()).toUpperCase(new Locale("pt", "BR")));
         txtTotalQtd.setText(String.valueOf(totalQtd));
-        txtTotalValor.setText(fmt.format(totalValor));
+        txtTotalValor.setText(fmt.format(totalValorCentavos / 100.0));
 
         for (String metodo : metodos) {
             int count = contagemPag.get(metodo);
-            double valor = valorPag.get(metodo);
+            int valorCentavos = valorPag.get(metodo);
             int pct = totalQtd > 0 ? (count * 100) / totalQtd : 0;
-            layoutItens.addView(criarLinhaPagamentoDialog(metodo, count, pct, valor));
+            layoutItens.addView(criarLinhaPagamentoDialog(metodo, count, pct, valorCentavos));
         }
 
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
@@ -565,7 +557,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         dialog.show();
     }
 
-    private View criarLinhaPagamentoDialog(String metodo, int count, int pct, double valor) {
+    private View criarLinhaPagamentoDialog(String metodo, int count, int pct, int valorCentavos) {
         float density = requireContext().getResources().getDisplayMetrics().density;
         int dp8 = (int) (8 * density);
         int dp10 = (int) (10 * density);
@@ -575,7 +567,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         linha.setGravity(Gravity.CENTER_VERTICAL);
         linha.setPadding(0, dp10, 0, dp10);
 
-        // Nome da forma de pagamento
         TextView txtMetodo = new TextView(requireContext());
         LinearLayout.LayoutParams pNome =
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
@@ -586,7 +577,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtMetodo.setMaxLines(1);
         txtMetodo.setEllipsize(TextUtils.TruncateAt.END);
 
-        // Quantidade
         TextView txtCount = new TextView(requireContext());
         LinearLayout.LayoutParams pCount =
                 new LinearLayout.LayoutParams(
@@ -600,7 +590,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtCount.setMinWidth((int) (32 * density));
         txtCount.setGravity(Gravity.END);
 
-        // Percentual
         TextView txtPct = new TextView(requireContext());
         LinearLayout.LayoutParams pPct =
                 new LinearLayout.LayoutParams(
@@ -614,7 +603,6 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtPct.setMinWidth((int) (36 * density));
         txtPct.setGravity(Gravity.END);
 
-        // Valor total
         TextView txtValor = new TextView(requireContext());
         LinearLayout.LayoutParams pValor =
                 new LinearLayout.LayoutParams(
@@ -622,7 +610,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                         LinearLayout.LayoutParams.WRAP_CONTENT);
         pValor.leftMargin = dp8;
         txtValor.setLayoutParams(pValor);
-        txtValor.setText(fmt.format(valor));
+        txtValor.setText(fmt.format(valorCentavos / 100.0));
         txtValor.setTextSize(14f);
         txtValor.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary));
         txtValor.setTypeface(null, Typeface.BOLD);
@@ -647,13 +635,11 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
     private String resolverCategoria(ItemVendaRegistradaModel item) {
         if (item.getItemId() != null) {
-            // 1ª opção: categoriaId do produto → nome atual da entidade categoria
             String catId = catalogoCategoriasIdMap.get(item.getItemId());
             if (catId != null) {
                 String catNome = categoriaNomesMap.get(catId);
                 if (catNome != null && !catNome.isEmpty()) return catNome;
             }
-            // 2ª opção: nome de categoria salvo no próprio documento do produto
             String cat = catalogoCategoriasMap.get(item.getItemId());
             if (cat != null && !cat.isEmpty()) return cat;
         }

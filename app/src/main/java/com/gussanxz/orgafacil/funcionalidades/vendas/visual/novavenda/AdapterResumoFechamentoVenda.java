@@ -9,8 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -69,7 +69,6 @@ public class AdapterResumoFechamentoVenda extends RecyclerView.Adapter<AdapterRe
                     item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço"
             );
             txtQuantidadeItem.setText("Qtd: " + item.getQuantidade());
-            txtSubtotalItem.setText(formatadorMoeda.format(item.getSubtotal()));
-        }
+            txtSubtotalItem.setText(formatadorMoeda.format(item.getSubtotal() / 100.0));        }
     }
 }

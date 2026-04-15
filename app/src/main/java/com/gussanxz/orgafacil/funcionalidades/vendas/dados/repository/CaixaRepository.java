@@ -1,4 +1,4 @@
-package com.gussanxz.orgafacil.funcionalidades.vendas.dados;
+package com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -11,9 +11,8 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CaixaModel;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -140,18 +139,18 @@ public class CaixaRepository {
      * Fecha o caixa, gravando um snapshot de totais para exibição no histórico.
      *
      * @param qtdVendas  quantidade de vendas finalizadas no período
-     * @param valorTotal soma dos valores finalizados
+     * @param valorTotal soma dos valores finalizados (EM CENTAVOS)
      */
     public void fecharCaixa(@NonNull String caixaId,
                             int qtdVendas,
-                            double valorTotal,
+                            int valorTotal, // Mudou de double para int
                             @NonNull VoidCallback callback) {
         try {
             Map<String, Object> patch = new HashMap<>();
             patch.put("status",                 CaixaModel.STATUS_FECHADO);
             patch.put("fechadoEmMillis",         System.currentTimeMillis());
             patch.put("qtdVendasFechamento",     qtdVendas);
-            patch.put("valorTotalFechamento",    valorTotal);
+            patch.put("valorTotalFechamento",    valorTotal); // Salva como inteiro
 
             FirestoreSchema.vendasCaixaDoc(caixaId)
                     .set(patch, SetOptions.merge())
@@ -273,12 +272,12 @@ public class CaixaRepository {
     /** Atualiza os campos de snapshot (qtdVendasFechamento / valorTotalFechamento) de qualquer caixa. */
     public void atualizarSnapshotTotais(@NonNull String caixaId,
                                         int qtdVendas,
-                                        double valorTotal,
+                                        int valorTotal, // Mudou de double para int
                                         @NonNull VoidCallback callback) {
         try {
             java.util.Map<String, Object> patch = new java.util.HashMap<>();
             patch.put("qtdVendasFechamento",  qtdVendas);
-            patch.put("valorTotalFechamento", valorTotal);
+            patch.put("valorTotalFechamento", valorTotal); // Salva como inteiro
 
             FirestoreSchema.vendasCaixaDoc(caixaId)
                     .set(patch, SetOptions.merge())

@@ -21,11 +21,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
@@ -188,12 +188,13 @@ public class HistoricoVendasActivity extends AppCompatActivity {
             String chave = entrada.getKey();
             List<VendaModel> vendasDoDia = entrada.getValue();
 
-            double totalDia = 0;
+            int totalDia = 0;
             int qtdDia = 0;
             int qtdCanceladas = 0;
+
             for (VendaModel v : vendasDoDia) {
                 if (VendaModel.STATUS_FINALIZADA.equals(v.getStatus())) {
-                    totalDia += v.getValorTotal();
+                    totalDia += v.getValorTotal(); // Agora é INT + INT
                     qtdDia++;
                 } else if (VendaModel.STATUS_CANCELADA.equals(v.getStatus())) {
                     qtdCanceladas++;
@@ -294,7 +295,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         ((TextView) view.findViewById(R.id.txtResumoQtdCanceladas))
                 .setText(String.valueOf(header.qtdCanceladas));
         ((TextView) view.findViewById(R.id.txtResumoTotalDia))
-                .setText(fmt.format(header.totalDia));
+                .setText(fmt.format(header.totalDia / 100.0));
 
         view.findViewById(R.id.btnFecharResumoDia).setOnClickListener(v -> dialog.dismiss());
 

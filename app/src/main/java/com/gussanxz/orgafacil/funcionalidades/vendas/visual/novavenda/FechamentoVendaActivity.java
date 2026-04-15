@@ -19,10 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemSacolaVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaRegistradaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.VendaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -65,7 +65,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     private String  formaPagamentoSelecionada = null;
     private int     quantidadeTotal           = 0;
-    private double  valorTotal                = 0.0;
+
+    // Atualizado: Usando int para armazenar os centavos
+    private int     valorTotal                = 0;
+
     private String  vendaIdEdicao             = null;
     private boolean modoEdicao                = false;
     private int     numeroVendaEdicao         = 0;
@@ -153,8 +156,6 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         vendaIdEdicao   = getIntent().getStringExtra("vendaId");
         caixaId         = getIntent().getStringExtra(EXTRA_CAIXA_ID);
-        quantidadeTotal = getIntent().getIntExtra("quantidadeTotal", 0);
-        valorTotal      = getIntent().getDoubleExtra("valorTotal", 0.0);
 
         long   dataHoraOriginal       = getIntent().getLongExtra("dataHoraOriginal", 0L);
         String formaPagamentoOriginal = getIntent().getStringExtra("formaPagamentoOriginal");
@@ -166,10 +167,16 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         if (itensRecebidos != null) listaItens.addAll(itensRecebidos);
         adapter.atualizarLista(listaItens);
 
+        // Recalcula totais a partir dos itens recebidos — nunca confia nos valores da Intent
+        quantidadeTotal = recalcularQuantidadeTotal(listaItens);
+        valorTotal      = recalcularValorTotal(listaItens);
+
         if (txtQuantidadeResumo != null)
             txtQuantidadeResumo.setText(quantidadeTotal + (quantidadeTotal == 1 ? " item" : " itens"));
+
+        // Atualizado: Dividindo por 100.0 APENAS na hora de exibir na tela
         if (txtTotalResumo != null)
-            txtTotalResumo.setText(formatadorMoeda.format(valorTotal));
+            txtTotalResumo.setText(formatadorMoeda.format(valorTotal / 100.0));
 
         if (formaPagamentoOriginal != null)
             formaPagamentoSelecionada = formaPagamentoOriginal;
@@ -183,11 +190,6 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     // ----------------------------------------------------------------
     // Seletor de data e hora
-    //
-    // O bind dos filhos e feito AQUI, apos setVisibility(VISIBLE),
-    // porque views dentro de layouts GONE podem nao ser encontradas
-    // pelo findViewById da Activity em algumas versoes do Android.
-    // Usar layoutSeletorData.findViewById() como raiz e o mais seguro.
     // ----------------------------------------------------------------
 
     private void configurarSeletorDataHora() {
@@ -357,11 +359,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setDataHoraFechamentoMillis(dataFechamento);
         venda.setDiaKey(FirestoreSchema.diaKey(new Date(dataFechamento)));
         venda.setFormaPagamento(formaPagamentoSelecionada);
-        venda.setQuantidadeTotal(quantidadeTotal);
-        venda.setValorTotal(valorTotal);
+        venda.setQuantidadeTotal(recalcularQuantidadeTotal(listaItens));
+        venda.setValorTotal(recalcularValorTotal(listaItens));
         venda.setStatus(VendaModel.STATUS_FINALIZADA);
         venda.setItens(converterItensParaVenda(listaItens));
-        venda.setCaixaId(caixaId); // associa ao caixa aberto (null = legado)
+        venda.setCaixaId(caixaId);
 
         return venda;
     }
@@ -389,8 +391,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setDataHoraAberturaMillis(System.currentTimeMillis());
         venda.setDataHoraFechamentoMillis(0);
         venda.setFormaPagamento(null);
-        venda.setQuantidadeTotal(quantidadeTotal);
-        venda.setValorTotal(valorTotal);
+        venda.setQuantidadeTotal(recalcularQuantidadeTotal(listaItens));
+        venda.setValorTotal(recalcularValorTotal(listaItens));
         venda.setStatus(VendaModel.STATUS_EM_ABERTO);
         venda.setItens(converterItensParaVenda(listaItens));
         venda.setCaixaId(caixaId);
@@ -423,6 +425,23 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         for (ItemSacolaVendaModel item : itensSacola)
             itensVenda.add(new ItemVendaRegistradaModel(item));
         return itensVenda;
+    }
+
+    /** Atualizado: Retorna int e assume que os itens já trabalham com centavos */
+    private int recalcularValorTotal(List<ItemSacolaVendaModel> itens) {
+        // Coloquei um cast aqui temporariamente caso o seu ItemSacolaVendaModel
+        // ainda esteja retornando double. Assim que mudarmos o modelo, pode tirar o cast!
+        int total = 0;
+        for (ItemSacolaVendaModel item : itens) {
+            total += (int) item.getSubtotal();
+        }
+        return total;
+    }
+
+    private int recalcularQuantidadeTotal(List<ItemSacolaVendaModel> itens) {
+        int total = 0;
+        for (ItemSacolaVendaModel item : itens) total += item.getQuantidade();
+        return total;
     }
 
     private void voltarParaNovaVenda() {

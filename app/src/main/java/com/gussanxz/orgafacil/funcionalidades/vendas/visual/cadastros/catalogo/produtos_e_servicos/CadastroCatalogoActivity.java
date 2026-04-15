@@ -31,11 +31,10 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.repository.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
 import com.gussanxz.orgafacil.util_helper.MascaraMoedaWatcher;
-import com.gussanxz.orgafacil.util_helper.MoedaHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -426,8 +425,21 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             editNome.setText(dados.getString("nome", ""));
         if (editDescricao != null)
             editDescricao.setText(dados.getString("descricao", ""));
-        if (mascaraPreco != null)
-            mascaraPreco.setValorInicial(dados.getDouble("preco", 0.0));
+
+        if (mascaraPreco != null) {
+            Object precoObjeto = dados.get("preco");
+            double precoParaMascara = 0.0;
+
+            if (precoObjeto instanceof Integer) {
+                // Se for o padrão novo (centavos), divide por 100 para a máscara formatar R$ 15,50
+                precoParaMascara = ((Integer) precoObjeto) / 100.0;
+            } else if (precoObjeto instanceof Double) {
+                // Se for o padrão antigo, usa o double direto
+                precoParaMascara = (Double) precoObjeto;
+            }
+
+            mascaraPreco.setValorInicial(precoParaMascara);
+        }
 
         switchStatusAtivo.setChecked(dados.getBoolean("statusAtivo", true));
         if (textInputCategoria != null && textInputCategoria.getEditText() != null)
@@ -463,6 +475,9 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
             return;
         }
 
+        // Conversão de valor para centavos (int)
+        int precoCentavos = (int) Math.round(preco * 100);
+
         exibirLoading(true);
 
         CatalogoModel model = new CatalogoModel();
@@ -472,7 +487,7 @@ public class CadastroCatalogoActivity extends AppCompatActivity {
         model.setDescricao(descricao);
         model.setCategoriaId(categoriaSelecionadaId);
         model.setCategoria(categoriaSelecionadaNome);
-        model.setPreco(preco);
+        model.setPreco(precoCentavos); // Agora passa o int (centavos)
         model.setStatusAtivo(switchStatusAtivo.isChecked());
 
         if (CatalogoModel.TIPO_STR_PRODUTO.equals(tipoAtual)) {

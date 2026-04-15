@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CatalogoModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.ItemVendaModel;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -199,7 +199,10 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         void bind(ItemVendaModel item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
-            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
+
+            // Dividindo por 100.0 para converter centavos (int) em Reais para exibição
+            double precoParaExibir = item.getPreco() / 100.0;
+            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(precoParaExibir));
 
             // Usa o método centralizado
             aplicarEstiloVisual(
@@ -234,7 +237,10 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         void bind(ItemVendaModel item) {
             textNome.setText(item.getNome());
             textDescricao.setText(item.getDescricao());
-            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(item.getPreco()));
+
+            // Dividindo por 100.0 para converter centavos (int) em Reais para exibição
+            double precoParaExibir = item.getPreco() / 100.0;
+            textPreco.setText(NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(precoParaExibir));
 
             // Usa o método centralizado
             aplicarEstiloVisual(

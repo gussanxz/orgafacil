@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.gussanxz.orgafacil.R;
-import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.model.CaixaModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -60,10 +60,11 @@ public class AdapterHistoricoCaixas extends RecyclerView.Adapter<AdapterHistoric
             h.txtLancamentoTardio.setVisibility(View.GONE);
 
             int    qtd   = c.getQtdVendasFechamento();
-            double total = c.getValorTotalFechamento();
+            int    totalCentavos = c.getValorTotalFechamento(); // Agora é int
             if (qtd > 0) {
                 h.txtCaixaQtdVendas.setText(qtd + (qtd == 1 ? " venda" : " vendas"));
-                h.txtCaixaTotal.setText(fmtMoeda.format(total));
+                // Divide por 100.0 pra exibir os centavos certinhos
+                h.txtCaixaTotal.setText(fmtMoeda.format(totalCentavos / 100.0));
             } else {
                 h.txtCaixaQtdVendas.setText("—");
                 h.txtCaixaTotal.setText("—");
@@ -117,7 +118,8 @@ public class AdapterHistoricoCaixas extends RecyclerView.Adapter<AdapterHistoric
         } else {
             int qtd = c.getQtdVendasFechamento();
             h.txtCaixaQtdVendas.setText(qtd + (qtd == 1 ? " venda" : " vendas"));
-            h.txtCaixaTotal.setText(fmtMoeda.format(c.getValorTotalFechamento()));
+            // Pega o int e divide por 100.0
+            h.txtCaixaTotal.setText(fmtMoeda.format(c.getValorTotalFechamento() / 100.0));
         }
     }
 
