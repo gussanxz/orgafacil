@@ -365,7 +365,7 @@ public class CaixaRepository {
         try {
             FirestoreSchema.vendasCaixaCol()
                     .orderBy("abertoEmMillis", Query.Direction.DESCENDING)
-                    .limit(limite + 1L) // +1 para absorver o caixa_0 se vier no topo
+                    .limit(limite + 1L)
                     .get()
                     .addOnSuccessListener(snapshot -> {
                         java.util.List<CaixaModel> lista = new java.util.ArrayList<>();
@@ -382,6 +382,33 @@ public class CaixaRepository {
                     })
                     .addOnFailureListener(e -> callback.onErro(
                             e.getMessage() != null ? e.getMessage() : "Erro ao listar caixas."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    public void listarTodosCaixasHistorico(@NonNull ListaCaixaCallback callback) {
+        try {
+            FirestoreSchema.vendasCaixaCol()
+                    .orderBy("abertoEmMillis", Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        java.util.List<CaixaModel> lista = new java.util.ArrayList<>();
+
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            if (CaixaModel.ID_LEGADO.equals(doc.getId())) continue;
+
+                            CaixaModel c = doc.toObject(CaixaModel.class);
+                            if (c != null) {
+                                c.setId(doc.getId());
+                                lista.add(c);
+                            }
+                        }
+
+                        callback.onCaixas(lista);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao listar histórico de caixas."));
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }

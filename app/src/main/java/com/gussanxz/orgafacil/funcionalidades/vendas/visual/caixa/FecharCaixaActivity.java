@@ -66,10 +66,22 @@ public class FecharCaixaActivity extends AppCompatActivity {
     private LinearLayout btnAbrirCaixa;
 
     // Seção HISTÓRICO
-    private LinearLayout          secaoHistoricoCaixas;
-    private RecyclerView          rvHistoricoCaixas;
-    private TextView              txtHistoricoVazio;
+    private LinearLayout           secaoHistoricoCaixas;
+    private RecyclerView           rvHistoricoCaixas;
+    private TextView               txtHistoricoVazio;
+    private TextView               txtPaginacaoHistorico;
+
+    private TextView               chipHistorico5;
+    private TextView               chipHistorico10;
+    private TextView               chipHistorico20;
+    private TextView               chipHistorico50;
+    private ImageButton            btnPaginaAnteriorHistorico;
+    private ImageButton            btnPaginaProximaHistorico;
     private AdapterHistoricoCaixas adapterHistorico;
+
+    private final List<CaixaModel> historicoCompleto = new ArrayList<>();
+    private int paginaAtualHistorico = 0;
+    private int itensPorPaginaHistorico = 5;
 
     // ── Dados ───────────────────────────────────────────────────────────
 
@@ -141,9 +153,16 @@ public class FecharCaixaActivity extends AppCompatActivity {
         if (btnAbrirCaixa  != null) btnAbrirCaixa.setOnClickListener(v  -> executarAbertura());
         if (btnFecharCaixa != null) btnFecharCaixa.setOnClickListener(v -> confirmarFechamento());
 
-        secaoHistoricoCaixas = findViewById(R.id.secaoHistoricoCaixas);
-        rvHistoricoCaixas    = findViewById(R.id.rvHistoricoCaixas);
-        txtHistoricoVazio    = findViewById(R.id.txtHistoricoVazio);
+        secaoHistoricoCaixas       = findViewById(R.id.secaoHistoricoCaixas);
+        rvHistoricoCaixas          = findViewById(R.id.rvHistoricoCaixas);
+        txtHistoricoVazio          = findViewById(R.id.txtHistoricoVazio);
+        txtPaginacaoHistorico      = findViewById(R.id.txtPaginacaoHistorico);
+        chipHistorico5  = findViewById(R.id.chipHistorico5);
+        chipHistorico10 = findViewById(R.id.chipHistorico10);
+        chipHistorico20 = findViewById(R.id.chipHistorico20);
+        chipHistorico50 = findViewById(R.id.chipHistorico50);
+        btnPaginaAnteriorHistorico = findViewById(R.id.btnPaginaAnteriorHistorico);
+        btnPaginaProximaHistorico  = findViewById(R.id.btnPaginaProximaHistorico);
     }
 
     // ── Histórico de caixas ─────────────────────────────────────────────
@@ -152,59 +171,176 @@ public class FecharCaixaActivity extends AppCompatActivity {
         if (rvHistoricoCaixas == null) return;
         adapterHistorico = new AdapterHistoricoCaixas(new ArrayList<>(), this::abrirDetalhesCaixa);
         rvHistoricoCaixas.setLayoutManager(new LinearLayoutManager(this));
+        rvHistoricoCaixas.setNestedScrollingEnabled(false);
         rvHistoricoCaixas.setAdapter(adapterHistorico);
+
+        if (chipHistorico5  != null) chipHistorico5.setOnClickListener(v -> alterarItensPorPagina(5));
+        if (chipHistorico10 != null) chipHistorico10.setOnClickListener(v -> alterarItensPorPagina(10));
+        if (chipHistorico20 != null) chipHistorico20.setOnClickListener(v -> alterarItensPorPagina(20));
+        if (chipHistorico50 != null) chipHistorico50.setOnClickListener(v -> alterarItensPorPagina(50));
+
+        if (btnPaginaAnteriorHistorico != null) {
+            btnPaginaAnteriorHistorico.setOnClickListener(v -> {
+                if (paginaAtualHistorico > 0) {
+                    paginaAtualHistorico--;
+                    atualizarPaginacaoHistorico();
+                }
+            });
+        }
+
+        if (btnPaginaProximaHistorico != null) {
+            btnPaginaProximaHistorico.setOnClickListener(v -> {
+                int total = historicoCompleto.size();
+                int proximoInicio = (paginaAtualHistorico + 1) * itensPorPaginaHistorico;
+                if (proximoInicio < total) {
+                    paginaAtualHistorico++;
+                    atualizarPaginacaoHistorico();
+                }
+            });
+        }
+
+        atualizarEstiloQuantidadeHistorico();
         carregarHistorico();
     }
 
     private void carregarHistorico() {
-        // 1. Carrega os caixas recentes (excluindo o legado)
-        caixaRepository.listarCaixasRecentes(10, new CaixaRepository.ListaCaixaCallback() {
+        caixaRepository.buscarCaixaLegado(new CaixaRepository.CaixaCallback() {
             @Override
-            public void onCaixas(java.util.List<CaixaModel> recentes) {
-                // 2. Busca o caixa_0 e anexa ao final
-                caixaRepository.buscarCaixaLegado(new CaixaRepository.CaixaCallback() {
+            public void onCaixa(CaixaModel legado) {
+                caixaRepository.listarTodosCaixasHistorico(new CaixaRepository.ListaCaixaCallback() {
                     @Override
-                    public void onCaixa(CaixaModel legado) {
-                        java.util.List<CaixaModel> lista = new ArrayList<>(recentes);
-                        if (legado != null) lista.add(legado);
+                    public void onCaixas(List<CaixaModel> recentes) {
+                        historicoCompleto.clear();
+                        historicoCompleto.addAll(recentes);
+                        android.util.Log.d("HistoricoCaixa", "Qtd caixas carregados: " + recentes.size());
 
-                        if (secaoHistoricoCaixas != null)
-                            secaoHistoricoCaixas.setVisibility(View.VISIBLE);
-                        if (lista.isEmpty()) {
-                            if (rvHistoricoCaixas != null) rvHistoricoCaixas.setVisibility(View.GONE);
-                            if (txtHistoricoVazio != null) txtHistoricoVazio.setVisibility(View.VISIBLE);
-                        } else {
-                            if (rvHistoricoCaixas != null) rvHistoricoCaixas.setVisibility(View.VISIBLE);
-                            if (txtHistoricoVazio != null) txtHistoricoVazio.setVisibility(View.GONE);
-                            if (adapterHistorico  != null) adapterHistorico.atualizar(lista);
+                        if (legado != null) {
+                            historicoCompleto.add(legado);
                         }
+
+                        paginaAtualHistorico = 0;
+                        atualizarPaginacaoHistorico();
                     }
 
                     @Override
                     public void onErro(String erro) {
-                        // caixa_0 não carregou — exibe apenas os recentes
-                        exibirListaHistorico(recentes);
+                        historicoCompleto.clear();
+
+                        if (legado != null) {
+                            historicoCompleto.add(legado);
+                        }
+
+                        paginaAtualHistorico = 0;
+                        atualizarPaginacaoHistorico();
                     }
                 });
             }
 
             @Override
             public void onErro(String erro) {
-                // falha silenciosa — a seção fica oculta
+                caixaRepository.listarTodosCaixasHistorico(new CaixaRepository.ListaCaixaCallback() {
+                    @Override
+                    public void onCaixas(List<CaixaModel> recentes) {
+                        historicoCompleto.clear();
+                        historicoCompleto.addAll(recentes);
+                        paginaAtualHistorico = 0;
+                        atualizarPaginacaoHistorico();
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        historicoCompleto.clear();
+                        paginaAtualHistorico = 0;
+                        atualizarPaginacaoHistorico();
+                    }
+                });
             }
         });
     }
 
-    private void exibirListaHistorico(java.util.List<CaixaModel> lista) {
-        if (secaoHistoricoCaixas != null)
+    private void atualizarPaginacaoHistorico() {
+        if (secaoHistoricoCaixas != null) {
             secaoHistoricoCaixas.setVisibility(View.VISIBLE);
-        if (lista.isEmpty()) {
+        }
+
+        int total = historicoCompleto.size();
+
+        if (total == 0) {
             if (rvHistoricoCaixas != null) rvHistoricoCaixas.setVisibility(View.GONE);
             if (txtHistoricoVazio != null) txtHistoricoVazio.setVisibility(View.VISIBLE);
+            if (txtPaginacaoHistorico != null) txtPaginacaoHistorico.setText("0 de 0");
+            atualizarEstadoBotoesPaginacao(0, 0, 0);
+            return;
+        }
+
+        int inicio = paginaAtualHistorico * itensPorPaginaHistorico;
+        if (inicio >= total) {
+            paginaAtualHistorico = 0;
+            inicio = 0;
+        }
+
+        int fim = Math.min(inicio + itensPorPaginaHistorico, total);
+        List<CaixaModel> pagina = new ArrayList<>(historicoCompleto.subList(inicio, fim));
+
+        if (rvHistoricoCaixas != null) rvHistoricoCaixas.setVisibility(View.VISIBLE);
+        if (txtHistoricoVazio != null) txtHistoricoVazio.setVisibility(View.GONE);
+        if (adapterHistorico != null) adapterHistorico.atualizar(pagina);
+
+        if (rvHistoricoCaixas != null) {
+            rvHistoricoCaixas.post(() -> {
+                rvHistoricoCaixas.requestLayout();
+                rvHistoricoCaixas.invalidateItemDecorations();
+            });
+        }
+
+        if (txtPaginacaoHistorico != null) {
+            txtPaginacaoHistorico.setText((inicio + 1) + "-" + fim + " de " + total);
+        }
+
+        atualizarEstadoBotoesPaginacao(inicio, fim, total);
+    }
+
+    private void atualizarEstadoBotoesPaginacao(int inicio, int fim, int total) {
+        boolean podeVoltar = inicio > 0;
+        boolean podeAvancar = fim < total;
+
+        if (btnPaginaAnteriorHistorico != null) {
+            btnPaginaAnteriorHistorico.setEnabled(podeVoltar);
+            btnPaginaAnteriorHistorico.setAlpha(podeVoltar ? 1f : 0.35f);
+        }
+
+        if (btnPaginaProximaHistorico != null) {
+            btnPaginaProximaHistorico.setEnabled(podeAvancar);
+            btnPaginaProximaHistorico.setAlpha(podeAvancar ? 1f : 0.35f);
+        }
+    }
+
+    private void alterarItensPorPagina(int quantidade) {
+        if (itensPorPaginaHistorico == quantidade) return;
+        itensPorPaginaHistorico = quantidade;
+        paginaAtualHistorico = 0;
+        atualizarEstiloQuantidadeHistorico();
+        atualizarPaginacaoHistorico();
+    }
+
+    private void atualizarEstiloQuantidadeHistorico() {
+        atualizarEstiloChipQuantidade(chipHistorico5,  itensPorPaginaHistorico == 5);
+        atualizarEstiloChipQuantidade(chipHistorico10, itensPorPaginaHistorico == 10);
+        atualizarEstiloChipQuantidade(chipHistorico20, itensPorPaginaHistorico == 20);
+        atualizarEstiloChipQuantidade(chipHistorico50, itensPorPaginaHistorico == 50);
+    }
+
+    private void atualizarEstiloChipQuantidade(TextView chip, boolean selecionado) {
+        if (chip == null) return;
+
+        if (selecionado) {
+            chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.colorPrimary)));
+            chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.white));
         } else {
-            if (rvHistoricoCaixas != null) rvHistoricoCaixas.setVisibility(View.VISIBLE);
-            if (txtHistoricoVazio != null) txtHistoricoVazio.setVisibility(View.GONE);
-            if (adapterHistorico  != null) adapterHistorico.atualizar(lista);
+            chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    androidx.core.content.ContextCompat.getColor(this, android.R.color.white)));
+            chip.setTextColor(android.graphics.Color.parseColor("#757575"));
         }
     }
 
