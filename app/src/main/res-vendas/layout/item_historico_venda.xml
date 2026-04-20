@@ -66,6 +66,16 @@
             android:textColor="@color/cor_texto_secundario"
             android:textSize="13sp" />
 
+        <!-- Linha 4: caixa -->
+        <TextView
+            android:id="@+id/txtVendaCaixa"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Caixa: —"
+            android:textColor="@color/cor_texto_secundario"
+            android:textSize="13sp" />
+
         <!-- Linha 4: qtd + total + botões -->
         <LinearLayout
             android:layout_width="match_parent"

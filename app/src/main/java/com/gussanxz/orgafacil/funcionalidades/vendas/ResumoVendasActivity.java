@@ -32,6 +32,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa.AbrirCaixaActivity; // usado no FAB launcher
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa.FecharCaixaActivity; // controle de caixa
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.text.NumberFormat;
@@ -76,9 +77,9 @@ public class ResumoVendasActivity extends AppCompatActivity {
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            String caixaId = result.getData()
-                                    .getStringExtra(AbrirCaixaActivity.EXTRA_CAIXA_ID);
-                            if (caixaId != null) navegarParaNovaVenda(caixaId);
+                            String caixaId   = result.getData().getStringExtra(AbrirCaixaActivity.EXTRA_CAIXA_ID);
+                            String nomeCaixa = result.getData().getStringExtra(AbrirCaixaActivity.EXTRA_NOME_CAIXA);
+                            if (caixaId != null) navegarParaNovaVenda(caixaId, nomeCaixa);
                         }
                     });
 
@@ -321,7 +322,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
 
     private void verificarCaixaENavegar() {
         if (caixaAtual != null && caixaAtual.isAberto()) {
-            navegarParaNovaVenda(caixaAtual.getId());
+            navegarParaNovaVenda(caixaAtual.getId(), caixaAtual.getNomeCaixa());
         } else {
             // Caixa fechado: pede para abrir, depois vai direto para a venda
             new AlertDialog.Builder(this)
@@ -335,11 +336,13 @@ public class ResumoVendasActivity extends AppCompatActivity {
         }
     }
 
-    private void navegarParaNovaVenda(String caixaId) {
+    private void navegarParaNovaVenda(String caixaId, String nomeCaixa) {
         Intent intent = new Intent(this, RegistrarVendasActivity.class);
         intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, caixaId);
+        if (nomeCaixa != null)
+            intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, nomeCaixa);
         startActivity(intent);
-        Log.i(TAG, "Nova venda, caixaId=" + caixaId);
+        Log.i(TAG, "Nova venda, caixaId=" + caixaId + ", nomeCaixa=" + nomeCaixa);
     }
 
     // ── Animações do Speed-dial ───────────────────────────────────────

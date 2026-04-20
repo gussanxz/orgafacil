@@ -41,6 +41,12 @@ public class CaixaRepository {
         void onErro(String erro);
     }
 
+    /** Callback exclusivo de {@link #abrirCaixa} — entrega id e nome do caixa criado. */
+    public interface AbrirCaixaCallback {
+        void onSucesso(String caixaId, String nomeCaixa);
+        void onErro(String erro);
+    }
+
     // ── Listeners em tempo real ────────────────────────────────────────
 
     /**
@@ -103,32 +109,51 @@ public class CaixaRepository {
 
     /**
      * Abre um novo caixa.
+     * O {@code numeroCaixa} é calculado contando os caixas já criados no mesmo dia.
      *
      * @param observacao              texto opcional do operador
      * @param permiteLancamentoTardio se true, aceita vendas retroativas mesmo após fechado
      */
     public void abrirCaixa(@Nullable String observacao,
                             boolean permiteLancamentoTardio,
-                            @NonNull VoidCallback callback) {
+                            @NonNull AbrirCaixaCallback callback) {
         try {
             String caixaId = FirestoreSchema.vendasCaixaCol().document().getId();
             long agora = System.currentTimeMillis();
+            String diaKeyAtual = FirestoreSchema.diaKey(new Date(agora));
+            String mesKeyAtual = FirestoreSchema.mesKey(new Date(agora));
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("id",                    caixaId);
-            data.put("status",                CaixaModel.STATUS_ABERTO);
-            data.put("abertoEmMillis",         agora);
-            data.put("fechadoEmMillis",        0L);
-            data.put("diaKey",                FirestoreSchema.diaKey(new Date(agora)));
-            data.put("mesKey",                FirestoreSchema.mesKey(new Date(agora)));
-            data.put("observacao",            observacao != null ? observacao : "");
-            data.put("permiteLancamentoTardio", permiteLancamentoTardio);
+            // Conta caixas do dia para definir o numeroCaixa sequencial
+            FirestoreSchema.vendasCaixaCol()
+                    .whereEqualTo("diaKey", diaKeyAtual)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        int count = 0;
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            if (!CaixaModel.ID_LEGADO.equals(doc.getId())) count++;
+                        }
+                        int numeroCaixa = count + 1;
+                        String nomeCaixaGerado = diaKeyAtual.replace("-", "") + "_" + numeroCaixa;
 
-            FirestoreSchema.vendasCaixaDoc(caixaId)
-                    .set(data, SetOptions.merge())
-                    .addOnSuccessListener(v -> callback.onSucesso(caixaId))
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("id",                    caixaId);
+                        data.put("status",                CaixaModel.STATUS_ABERTO);
+                        data.put("abertoEmMillis",         agora);
+                        data.put("fechadoEmMillis",        0L);
+                        data.put("diaKey",                diaKeyAtual);
+                        data.put("mesKey",                mesKeyAtual);
+                        data.put("observacao",            observacao != null ? observacao : "");
+                        data.put("permiteLancamentoTardio", permiteLancamentoTardio);
+                        data.put("numeroCaixa",           numeroCaixa);
+
+                        FirestoreSchema.vendasCaixaDoc(caixaId)
+                                .set(data, SetOptions.merge())
+                                .addOnSuccessListener(v -> callback.onSucesso(caixaId, nomeCaixaGerado))
+                                .addOnFailureListener(e -> callback.onErro(
+                                        e.getMessage() != null ? e.getMessage() : "Erro ao abrir caixa."));
+                    })
                     .addOnFailureListener(e -> callback.onErro(
-                            e.getMessage() != null ? e.getMessage() : "Erro ao abrir caixa."));
+                            e.getMessage() != null ? e.getMessage() : "Erro ao contar caixas do dia."));
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }

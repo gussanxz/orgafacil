@@ -22,6 +22,11 @@ public class VendaModel implements Serializable {
      * null → venda legada (anterior ao fluxo de caixa), tratada como "caixa_0".
      */
     private String caixaId;
+    /**
+     * Nome legível do caixa no formato "yyyyMMdd_N" (ex.: "20260420_1").
+     * Desnormalizado para exibição sem consulta extra.
+     */
+    private String nomeCaixa;
     private int numeroVenda;
     private long dataHoraAberturaMillis;
     private long dataHoraFechamentoMillis;
@@ -118,4 +123,7 @@ public class VendaModel implements Serializable {
 
     public String getCaixaId() { return caixaId; }
     public void setCaixaId(String caixaId) { this.caixaId = caixaId; }
+
+    public String getNomeCaixa() { return nomeCaixa; }
+    public void setNomeCaixa(String nomeCaixa) { this.nomeCaixa = nomeCaixa; }
 }

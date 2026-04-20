@@ -18,6 +18,8 @@ public class CaixaModel implements Serializable {
     private String diaKey;
     private String mesKey;
     private String observacao;
+    /** Número sequencial do caixa no dia (1, 2, 3…). Usado para compor o nome legível. */
+    private int    numeroCaixa;
     /** Quando true, permite adicionar vendas a este caixa mesmo após fechado (lançamento tardio). */
     private boolean permiteLancamentoTardio;
     /** Snapshot salvo no fechamento: quantidade de vendas finalizadas. */
@@ -44,6 +46,9 @@ public class CaixaModel implements Serializable {
     public String getDiaKey() { return diaKey; }
     public void setDiaKey(String diaKey) { this.diaKey = diaKey; }
 
+    public int getNumeroCaixa() { return numeroCaixa; }
+    public void setNumeroCaixa(int numeroCaixa) { this.numeroCaixa = numeroCaixa; }
+
     public String getMesKey() { return mesKey; }
     public void setMesKey(String mesKey) { this.mesKey = mesKey; }
 
@@ -68,4 +73,14 @@ public class CaixaModel implements Serializable {
     public boolean isAberto()  { return STATUS_ABERTO.equals(status); }
     public boolean isFechado() { return STATUS_FECHADO.equals(status); }
     public boolean isLegado()  { return ID_LEGADO.equals(id); }
+
+    /**
+     * Nome legível do caixa no formato "yyyyMMdd_N" (ex.: "20260420_1").
+     * Retorna "legado" para o caixa de vendas antigas.
+     */
+    public String getNomeCaixa() {
+        if (isLegado()) return "legado";
+        if (diaKey == null || diaKey.isEmpty()) return id;
+        return diaKey.replace("-", "") + "_" + numeroCaixa;
+    }
 }

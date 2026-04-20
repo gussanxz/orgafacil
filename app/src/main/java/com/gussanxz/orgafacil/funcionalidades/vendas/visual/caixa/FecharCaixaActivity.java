@@ -321,9 +321,9 @@ public class FecharCaixaActivity extends AppCompatActivity {
                 && cbPermiteLancamentoTardio.isChecked();
 
         caixaRepository.abrirCaixa(obs.isEmpty() ? null : obs, tardio,
-                new CaixaRepository.VoidCallback() {
+                new CaixaRepository.AbrirCaixaCallback() {
                     @Override
-                    public void onSucesso(String caixaId) {
+                    public void onSucesso(String caixaId, String nomeCaixa) {
                         // listener atualiza a UI automaticamente
                         Toast.makeText(FecharCaixaActivity.this,
                                 "Caixa aberto!", Toast.LENGTH_SHORT).show();

@@ -27,6 +27,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaMo
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.ComprovanteVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.text.NumberFormat;
@@ -239,6 +240,10 @@ public class HistoricoVendasActivity extends AppCompatActivity {
                         ? venda.getDataHoraFechamentoMillis()
                         : venda.getDataHoraAberturaMillis());
         intent.putExtra("formaPagamentoOriginal", venda.getFormaPagamento());
+        if (venda.getCaixaId() != null)
+            intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
+        if (venda.getNomeCaixa() != null)
+            intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, venda.getNomeCaixa());
         startActivity(intent);
     }
 

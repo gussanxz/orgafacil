@@ -105,6 +105,10 @@ public class VendasEmAbertoActivity extends AppCompatActivity {
                 converterItensRegistradosParaSacola(venda.getItens())));
         intent.putExtra("vendaId", venda.getId());
         intent.putExtra("numeroVenda", venda.getNumeroVenda());
+        if (venda.getCaixaId() != null)
+            intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
+        if (venda.getNomeCaixa() != null)
+            intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, venda.getNomeCaixa());
         startActivity(intent);
     }
 

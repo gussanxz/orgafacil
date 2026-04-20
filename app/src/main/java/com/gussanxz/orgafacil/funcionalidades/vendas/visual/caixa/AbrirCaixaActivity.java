@@ -26,7 +26,9 @@ import java.util.Locale;
 public class AbrirCaixaActivity extends AppCompatActivity {
 
     /** Extra retornado quando o caixa é aberto com sucesso. */
-    public static final String EXTRA_CAIXA_ID = "caixaId";
+    public static final String EXTRA_CAIXA_ID   = "caixaId";
+    /** Nome legível do caixa (ex.: "20260420_1") retornado junto com o id. */
+    public static final String EXTRA_NOME_CAIXA = "nomeCaixa";
 
     private EditText      etObservacao;
     private CheckBox      cbLancamentoTardio;
@@ -80,11 +82,12 @@ public class AbrirCaixaActivity extends AppCompatActivity {
         boolean tardio  = cbLancamentoTardio != null && cbLancamentoTardio.isChecked();
 
         caixaRepository.abrirCaixa(obs.isEmpty() ? null : obs, tardio,
-                new CaixaRepository.VoidCallback() {
+                new CaixaRepository.AbrirCaixaCallback() {
                     @Override
-                    public void onSucesso(String caixaId) {
+                    public void onSucesso(String caixaId, String nomeCaixa) {
                         Intent result = new Intent();
                         result.putExtra(EXTRA_CAIXA_ID, caixaId);
+                        result.putExtra(EXTRA_NOME_CAIXA, nomeCaixa);
                         setResult(RESULT_OK, result);
                         finish();
                     }
