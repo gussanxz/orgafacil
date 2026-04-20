@@ -11,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -29,6 +30,8 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -147,7 +150,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     private void configurarHistorico() {
         if (rvHistoricoCaixas == null) return;
-        adapterHistorico = new AdapterHistoricoCaixas(new ArrayList<>());
+        adapterHistorico = new AdapterHistoricoCaixas(new ArrayList<>(), this::abrirDetalhesCaixa);
         rvHistoricoCaixas.setLayoutManager(new LinearLayoutManager(this));
         rvHistoricoCaixas.setAdapter(adapterHistorico);
         carregarHistorico();
@@ -306,6 +309,126 @@ public class FecharCaixaActivity extends AppCompatActivity {
                     @Override
                     public void onErro(String erro) { /* silencioso */ }
                 });
+    }
+
+    private void abrirDetalhesCaixa(@NonNull CaixaModel caixa) {
+        vendaRepository.buscarVendasPorNomeCaixa(caixa.getNomeCaixa(), new VendaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<VendaModel> vendas) {
+                exibirDialogDetalhesCaixa(caixa, vendas);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Erro ao carregar detalhes do caixa: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void exibirDialogDetalhesCaixa(@NonNull CaixaModel caixa, List<VendaModel> vendas) {
+        View view = getLayoutInflater().inflate(R.layout.dialog_detalhes_caixa, null);
+
+        TextView txtNomeCaixaDetalhe = view.findViewById(R.id.txtNomeCaixaDetalhe);
+        TextView txtDataCaixaDetalhe = view.findViewById(R.id.txtDataCaixaDetalhe);
+        TextView txtVendasFinalizadasDetalhe = view.findViewById(R.id.txtVendasFinalizadasDetalhe);
+        TextView txtVendasCanceladasDetalhe = view.findViewById(R.id.txtVendasCanceladasDetalhe);
+        TextView txtTotalCaixaDetalhe = view.findViewById(R.id.txtTotalCaixaDetalhe);
+        LinearLayout btnFinalizadasDetalhe = view.findViewById(R.id.btnFinalizadasDetalhe);
+        LinearLayout btnCanceladasDetalhe = view.findViewById(R.id.btnCanceladasDetalhe);
+
+        List<VendaModel> finalizadas = new ArrayList<>();
+        List<VendaModel> canceladas = new ArrayList<>();
+        double totalCaixa = 0.0;
+
+        if (vendas != null) {
+            for (VendaModel venda : vendas) {
+                totalCaixa += venda.getValorTotal();
+
+                if (VendaModel.STATUS_FINALIZADA.equals(venda.getStatus())) {
+                    finalizadas.add(venda);
+                } else if (VendaModel.STATUS_CANCELADA.equals(venda.getStatus())) {
+                    canceladas.add(venda);
+                }
+            }
+        }
+
+        txtNomeCaixaDetalhe.setText(caixa.getNomeCaixa());
+        txtDataCaixaDetalhe.setText(formatarDataCaixa(caixa));
+        txtVendasFinalizadasDetalhe.setText(String.valueOf(finalizadas.size()));
+        txtVendasCanceladasDetalhe.setText(String.valueOf(canceladas.size()));
+        txtTotalCaixaDetalhe.setText(fmtMoeda.format(totalCaixa));
+
+        btnFinalizadasDetalhe.setOnClickListener(v -> {
+            if (!finalizadas.isEmpty()) {
+                exibirDialogListaVendas("Vendas finalizadas • " + caixa.getNomeCaixa(), finalizadas);
+            }
+        });
+        btnCanceladasDetalhe.setOnClickListener(v -> {
+            if (!canceladas.isEmpty()) {
+                exibirDialogListaVendas("Vendas canceladas • " + caixa.getNomeCaixa(), canceladas);
+            }
+        });
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        dialog.show();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        View btnFecharDetalhesCaixa = view.findViewById(R.id.btnFecharDetalhesCaixa);
+        btnFecharDetalhesCaixa.setOnClickListener(v -> dialog.dismiss());
+    }
+
+    private String formatarDataCaixa(@NonNull CaixaModel caixa) {
+        long referencia = caixa.getAbertoEmMillis() > 0
+                ? caixa.getAbertoEmMillis()
+                : caixa.getFechadoEmMillis();
+
+        if (referencia <= 0) {
+            return "—";
+        }
+
+        return new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"))
+                .format(new Date(referencia));
+    }
+
+    private void exibirDialogListaVendas(@NonNull String titulo, @NonNull List<VendaModel> vendas) {
+        List<VendaModel> ordenadas = new ArrayList<>(vendas);
+        Collections.sort(ordenadas, new Comparator<VendaModel>() {
+            @Override
+            public int compare(VendaModel a, VendaModel b) {
+                long dataA = a.getDataHoraFechamentoMillis() > 0
+                        ? a.getDataHoraFechamentoMillis()
+                        : a.getDataHoraAberturaMillis();
+                long dataB = b.getDataHoraFechamentoMillis() > 0
+                        ? b.getDataHoraFechamentoMillis()
+                        : b.getDataHoraAberturaMillis();
+                return Long.compare(dataB, dataA);
+            }
+        });
+
+        List<String> itens = new ArrayList<>();
+        SimpleDateFormat fmtDataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+        for (VendaModel venda : ordenadas) {
+            long dataRef = venda.getDataHoraFechamentoMillis() > 0
+                    ? venda.getDataHoraFechamentoMillis()
+                    : venda.getDataHoraAberturaMillis();
+            String numero = venda.getNumeroVenda() > 0 ? String.valueOf(venda.getNumeroVenda()) : venda.getId();
+            itens.add("Venda #" + numero
+                    + " • " + fmtMoeda.format(venda.getValorTotal())
+                    + "\n" + fmtDataHora.format(new Date(dataRef)));
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(titulo)
+                .setItems(itens.toArray(new String[0]), null)
+                .setPositiveButton("Fechar", null)
+                .show();
     }
 
     // ── Abertura ────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import com.gussanxz.orgafacil.funcionalidades.main.OrgaFacilApp;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 
 import java.util.ArrayList;
@@ -384,6 +385,46 @@ public class VendaRepository {
                     })
                     .addOnFailureListener(e -> callback.onErro(
                             e.getMessage() != null ? e.getMessage() : "Erro ao calcular totais legados."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    /**
+     * Busca uma vez todas as vendas associadas a um nome legível de caixa.
+     * Para o caixa legado, inclui vendas sem nomeCaixa e sem caixaId, além de caixaId = "caixa_0".
+     */
+    public void buscarVendasPorNomeCaixa(@NonNull String nomeCaixa,
+                                         @NonNull ListaCallback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        List<VendaModel> lista = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            VendaModel venda = doc.toObject(VendaModel.class);
+                            if (venda == null) continue;
+
+                            venda.setId(doc.getId());
+
+                            boolean pertenceAoCaixa;
+                            if (CaixaModel.ID_LEGADO.equals(nomeCaixa) || "legado".equalsIgnoreCase(nomeCaixa)) {
+                                boolean semCaixaId = venda.getCaixaId() == null || venda.getCaixaId().trim().isEmpty();
+                                boolean semNomeCaixa = venda.getNomeCaixa() == null || venda.getNomeCaixa().trim().isEmpty();
+                                pertenceAoCaixa = CaixaModel.ID_LEGADO.equals(venda.getCaixaId())
+                                        || (semCaixaId && semNomeCaixa);
+                            } else {
+                                pertenceAoCaixa = nomeCaixa.equals(venda.getNomeCaixa());
+                            }
+
+                            if (pertenceAoCaixa) {
+                                lista.add(venda);
+                            }
+                        }
+                        callback.onNovosDados(lista);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar vendas do caixa."));
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }

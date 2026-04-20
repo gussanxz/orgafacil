@@ -20,14 +20,20 @@ import java.util.Locale;
 
 public class AdapterHistoricoCaixas extends RecyclerView.Adapter<AdapterHistoricoCaixas.ViewHolder> {
 
+    public interface OnCaixaClickListener {
+        void onCaixaClick(CaixaModel caixa);
+    }
+
     private List<CaixaModel> lista;
+    private final OnCaixaClickListener onCaixaClickListener;
 
     private final SimpleDateFormat fmtData  = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
     private final SimpleDateFormat fmtHora  = new SimpleDateFormat("HH:mm", new Locale("pt", "BR"));
     private final NumberFormat     fmtMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    public AdapterHistoricoCaixas(List<CaixaModel> lista) {
+    public AdapterHistoricoCaixas(List<CaixaModel> lista, OnCaixaClickListener onCaixaClickListener) {
         this.lista = lista;
+        this.onCaixaClickListener = onCaixaClickListener;
     }
 
     public void atualizar(List<CaixaModel> novaLista) {
@@ -49,6 +55,12 @@ public class AdapterHistoricoCaixas extends RecyclerView.Adapter<AdapterHistoric
 
         boolean legado = c.isLegado();
         boolean aberto = c.isAberto();
+
+        h.itemView.setOnClickListener(v -> {
+            if (onCaixaClickListener != null) {
+                onCaixaClickListener.onCaixaClick(c);
+            }
+        });
 
         // Caixa legado recebe tratamento especial
         if (legado) {
