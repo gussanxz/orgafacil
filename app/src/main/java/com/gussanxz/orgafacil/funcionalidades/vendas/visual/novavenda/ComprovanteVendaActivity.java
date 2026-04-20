@@ -259,6 +259,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                         ? venda.getDataHoraFechamentoMillis()
                         : venda.getDataHoraAberturaMillis());
         intent.putExtra("formaPagamentoOriginal", venda.getFormaPagamento());
+        intent.putExtra("numeroVenda", venda.getNumeroVenda());
         if (venda.getCaixaId() != null)
             intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
         if (venda.getNomeCaixa() != null)

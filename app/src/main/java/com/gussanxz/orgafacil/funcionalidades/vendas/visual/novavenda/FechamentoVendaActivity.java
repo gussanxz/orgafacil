@@ -52,9 +52,12 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private LinearLayout cardPagamentoDinheiro;
     private TextView     txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
+    private TextView     txtLabelBtnFinalizar;
     private TextView     txtCaixaSelecionado;
     private ImageButton  btnAlterarCaixa;
     private LinearLayout btnSalvarEmAberto;
+    private LinearLayout rowNumeroVendaFechamento;
+    private TextView     txtNumeroVendaFechamento;
 
     // Seletor de data/hora -- so visivel em modo edicao
     private LinearLayout layoutSeletorData;
@@ -126,7 +129,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         cardPagamentoCredito         = findViewById(R.id.cardPagamentoCredito);
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
         btnFinalizarVenda            = findViewById(R.id.btnFinalizarVenda);
+        txtLabelBtnFinalizar         = findViewById(R.id.txtLabelBtnFinalizar);
         btnSalvarEmAberto            = findViewById(R.id.btnSalvarEmAberto);
+        rowNumeroVendaFechamento     = findViewById(R.id.rowNumeroVendaFechamento);
+        txtNumeroVendaFechamento     = findViewById(R.id.txtNumeroVendaFechamento);
 
         txtCaixaSelecionado  = findViewById(R.id.txtCaixaSelecionado);
         btnAlterarCaixa      = findViewById(R.id.btnAlterarCaixa);
@@ -193,6 +199,26 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         dataEscolhida = Calendar.getInstance();
         if (modoEdicao && dataHoraOriginal > 0)
             dataEscolhida.setTimeInMillis(dataHoraOriginal);
+
+        if (modoEdicao) {
+            // Oculta "Salvar em Aberto" — venda já foi finalizada
+            if (btnSalvarEmAberto != null)
+                btnSalvarEmAberto.setVisibility(android.view.View.GONE);
+
+            // Renomeia botão principal para "Atualizar Venda"
+            if (txtLabelBtnFinalizar != null)
+                txtLabelBtnFinalizar.setText("ATUALIZAR VENDA");
+
+            // Exibe número da venda no card de caixa
+            if (rowNumeroVendaFechamento != null)
+                rowNumeroVendaFechamento.setVisibility(android.view.View.VISIBLE);
+            if (txtNumeroVendaFechamento != null) {
+                txtNumeroVendaFechamento.setText(numeroVendaEdicao > 0
+                        ? String.format(Locale.ROOT, "#%07d", numeroVendaEdicao)
+                        : "—");
+            }
+        }
+
         configurarSeletorDataHora();
 
     }

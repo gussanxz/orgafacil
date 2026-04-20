@@ -88,7 +88,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- ── Caixa atual (sempre visível) ── -->
+            <!-- ── Caixa atual e número da venda ── -->
             <LinearLayout
                 android:id="@+id/layoutSeletorCaixa"
                 android:layout_width="match_parent"
@@ -96,38 +96,74 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="12dp"
                 android:background="@drawable/fundo_arredondado"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:layout_width="0dp"
+                <!-- Linha: Nº da venda — visível só em modo edição -->
+                <LinearLayout
+                    android:id="@+id/rowNumeroVendaFechamento"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Caixa"
-                    android:textColor="@color/cor_texto_primario"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone">
 
-                <TextView
-                    android:id="@+id/txtCaixaSelecionado"
-                    android:layout_width="wrap_content"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Nº da venda"
+                        android:textColor="@color/cor_texto_primario"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtNumeroVendaFechamento"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Linha: Caixa -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textColor="@color/colorPrimary"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <ImageButton
-                    android:id="@+id/btnAlterarCaixa"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Alterar caixa"
-                    android:src="@drawable/ic_lapis_editar_24"
-                    android:visibility="gone"
-                    app:tint="@color/colorPrimary" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Caixa"
+                        android:textColor="@color/cor_texto_primario"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtCaixaSelecionado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnAlterarCaixa"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Alterar caixa"
+                        android:src="@drawable/ic_lapis_editar_24"
+                        android:visibility="gone"
+                        app:tint="@color/colorPrimary" />
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -424,6 +460,7 @@
                 android:paddingVertical="16dp">
 
                 <TextView
+                    android:id="@+id/txtLabelBtnFinalizar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="FINALIZAR VENDA"
