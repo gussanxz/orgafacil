@@ -337,6 +337,26 @@ public class CaixaRepository {
     }
 
     /**
+     * Busca um caixa específico pelo ID.
+     */
+    public void buscarCaixaPorId(@NonNull String caixaId, @NonNull CaixaCallback callback) {
+        try {
+            FirestoreSchema.vendasCaixaDoc(caixaId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (!doc.exists()) { callback.onCaixa(null); return; }
+                        CaixaModel c = doc.toObject(CaixaModel.class);
+                        if (c != null) c.setId(doc.getId());
+                        callback.onCaixa(c);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar caixa."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
+    /**
      * Lista os caixas mais recentes, excluindo o legado (caixa_0).
      * Ordena apenas por abertoEmMillis para evitar índice composto.
      * Aumenta o limite em 1 para compensar a filtragem do legado em memória.

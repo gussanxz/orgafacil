@@ -21,6 +21,8 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
@@ -39,6 +41,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
 
     private TextView txtNumeroVenda;
     private TextView txtDataVenda;
+    private TextView txtNomeCaixaComprovante;
     private TextView txtFormaPagamento;
     private RecyclerView rvItensComprovante;
     private TextView txtQtdTotalItens;
@@ -97,9 +100,10 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     }
 
     private void inicializarComponentes() {
-        txtNumeroVenda      = findViewById(R.id.txtNumeroVenda);
-        txtDataVenda        = findViewById(R.id.txtDataVenda);
-        txtFormaPagamento   = findViewById(R.id.txtFormaPagamentoComprovante);
+        txtNumeroVenda          = findViewById(R.id.txtNumeroVenda);
+        txtDataVenda            = findViewById(R.id.txtDataVenda);
+        txtNomeCaixaComprovante = findViewById(R.id.txtNomeCaixaComprovante);
+        txtFormaPagamento       = findViewById(R.id.txtFormaPagamentoComprovante);
         rvItensComprovante  = findViewById(R.id.rvItensComprovante);
         txtQtdTotalItens    = findViewById(R.id.txtQtdTotalItensComprovante);
         txtSubtotal         = findViewById(R.id.txtSubtotalComprovante);
@@ -155,6 +159,12 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                 ? venda.getDataHoraFechamentoMillis()
                 : venda.getDataHoraAberturaMillis();
         txtDataVenda.setText(formatadorData.format(new Date(dataExibir)));
+
+        // Caixa
+        if (txtNomeCaixaComprovante != null) {
+            String nome = venda.getNomeCaixa();
+            txtNomeCaixaComprovante.setText("Caixa: " + (nome != null && !nome.isEmpty() ? nome : "—"));
+        }
 
         // Forma de pagamento
         txtFormaPagamento.setText(venda.getFormaPagamento() != null
@@ -249,6 +259,10 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                         ? venda.getDataHoraFechamentoMillis()
                         : venda.getDataHoraAberturaMillis());
         intent.putExtra("formaPagamentoOriginal", venda.getFormaPagamento());
+        if (venda.getCaixaId() != null)
+            intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
+        if (venda.getNomeCaixa() != null)
+            intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, venda.getNomeCaixa());
         startActivity(intent);
     }
 

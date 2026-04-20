@@ -17,9 +17,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.appcompat.app.AlertDialog;
+
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
@@ -48,6 +52,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private LinearLayout cardPagamentoDinheiro;
     private TextView     txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
+    private TextView     txtCaixaSelecionado;
+    private ImageButton  btnAlterarCaixa;
     private LinearLayout btnSalvarEmAberto;
 
     // Seletor de data/hora -- so visivel em modo edicao
@@ -74,7 +80,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private String  caixaId                   = null;
     /** Nome legível do caixa (ex.: "20260420_1"), desnormalizado na venda. */
     private String  nomeCaixa                 = null;
-    private VendaRepository vendaRepository;
+    private VendaRepository  vendaRepository;
+    private CaixaRepository  caixaRepository;
     private boolean salvandoVenda = false;
 
     // null em nova venda; preenchido na edicao
@@ -93,11 +100,13 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         });
 
         vendaRepository = new VendaRepository();
+        caixaRepository = new CaixaRepository();
 
         inicializarComponentes();
         configurarRecyclerView();
         configurarAcoesPagamento();
         carregarDadosRecebidos();
+        configurarSeletorCaixa();
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
     }
@@ -118,6 +127,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
         btnFinalizarVenda            = findViewById(R.id.btnFinalizarVenda);
         btnSalvarEmAberto            = findViewById(R.id.btnSalvarEmAberto);
+
+        txtCaixaSelecionado  = findViewById(R.id.txtCaixaSelecionado);
+        btnAlterarCaixa      = findViewById(R.id.btnAlterarCaixa);
 
         // layoutSeletorData comeca GONE no XML.
         // Os filhos (txtDataSelecionada, btnSelecionarHora, etc.) sao vinculados
@@ -265,6 +277,89 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         if (txtHoraSelecionada != null)
             txtHoraSelecionada.setText(fmtHora.format(dataEscolhida.getTime()));
+    }
+
+    // ----------------------------------------------------------------
+    // Caixa
+    // ----------------------------------------------------------------
+
+    private void configurarSeletorCaixa() {
+        atualizarExibicaoCaixa();
+
+        if (btnAlterarCaixa == null) return;
+
+        // O botão de alteração fica visível apenas em modo edição
+        if (modoEdicao) {
+            btnAlterarCaixa.setVisibility(android.view.View.VISIBLE);
+            btnAlterarCaixa.setOnClickListener(v -> abrirDialogAlterarCaixa());
+        }
+    }
+
+    private void atualizarExibicaoCaixa() {
+        if (txtCaixaSelecionado == null) return;
+        txtCaixaSelecionado.setText(
+                nomeCaixa != null && !nomeCaixa.isEmpty() ? nomeCaixa : "—");
+    }
+
+    private void abrirDialogAlterarCaixa() {
+        if (salvandoVenda) return;
+        long saleMillis = dataEscolhida != null
+                ? dataEscolhida.getTimeInMillis()
+                : System.currentTimeMillis();
+
+        caixaRepository.listarCaixasRecentes(100, new CaixaRepository.ListaCaixaCallback() {
+            @Override
+            public void onCaixas(java.util.List<CaixaModel> lista) {
+                // Filtra caixas compatíveis com o horário da venda
+                java.util.List<CaixaModel> compativeis = new java.util.ArrayList<>();
+                for (CaixaModel c : lista) {
+                    if (caixaEhCompativel(c, saleMillis)) compativeis.add(c);
+                }
+
+                if (compativeis.isEmpty()) {
+                    Toast.makeText(FechamentoVendaActivity.this,
+                            "Nenhum caixa compatível com o horário desta venda.",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String[] opcoes = new String[compativeis.size()];
+                for (int i = 0; i < compativeis.size(); i++) {
+                    CaixaModel c = compativeis.get(i);
+                    opcoes[i] = c.getNomeCaixa()
+                            + (c.isAberto() ? "  (aberto)" : "  (fechado)");
+                }
+
+                new AlertDialog.Builder(FechamentoVendaActivity.this)
+                        .setTitle("Selecionar caixa")
+                        .setItems(opcoes, (dialog, which) -> {
+                            CaixaModel escolhido = compativeis.get(which);
+                            caixaId   = escolhido.getId();
+                            nomeCaixa = escolhido.getNomeCaixa();
+                            atualizarExibicaoCaixa();
+                        })
+                        .setNegativeButton("Cancelar", null)
+                        .show();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao carregar caixas: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Um caixa é compatível se o horário da venda estiver dentro do intervalo de operação:
+     * abertura ≤ saleMillis ≤ fechamento (ou sem limite superior se ainda aberto).
+     */
+    private boolean caixaEhCompativel(CaixaModel caixa, long saleMillis) {
+        if (caixa.isLegado()) return false;
+        if (saleMillis < caixa.getAbertoEmMillis()) return false;
+        if (caixa.isFechado() && caixa.getFechadoEmMillis() > 0
+                && saleMillis > caixa.getFechadoEmMillis()) return false;
+        return true;
     }
 
     // ----------------------------------------------------------------

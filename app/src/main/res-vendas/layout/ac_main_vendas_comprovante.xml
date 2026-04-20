@@ -40,6 +40,15 @@
                 android:text="--/--/---- às --:--"
                 android:textColor="@color/cor_texto_secundario"
                 android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/txtNomeCaixaComprovante"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Caixa: —"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 
