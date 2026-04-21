@@ -234,15 +234,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         boolean origemHistorico  = getIntent().getBooleanExtra("origemHistorico", false);
         boolean origemFinanceiro = getIntent().getBooleanExtra("origemFinanceiro", false);
 
-        if (origemHistorico) {
-            finish();
-            return;
-        }
-
-        if (origemFinanceiro) {
-            Intent intent = new Intent(this, ResumoVendasActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
+        if (origemHistorico || origemFinanceiro) {
             finish();
             return;
         }
