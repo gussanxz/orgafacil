@@ -1,5 +1,6 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
@@ -26,6 +27,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -603,11 +605,81 @@ public class FecharCaixaActivity extends AppCompatActivity {
     private void confirmarFechamento() {
         if (operando || caixaAtual == null) return;
 
+        validarVendasEmAbertoAntesDeFechar();
+    }
+
+    private void validarVendasEmAbertoAntesDeFechar() {
+        vendaRepository.buscarVendasEmAberto(new VendaRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<VendaModel> lista) {
+                List<VendaModel> pendentes = new ArrayList<>();
+
+                if (lista != null) {
+                    for (VendaModel venda : lista) {
+                        if (venda != null && VendaModel.STATUS_EM_ABERTO.equals(venda.getStatus())) {
+                            pendentes.add(venda);
+                        }
+                    }
+                }
+
+                if (pendentes.isEmpty()) {
+                    exibirConfirmacaoFechamento();
+                    return;
+                }
+
+                exibirBloqueioVendasEmAberto(pendentes);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Erro ao validar vendas em aberto: " + erro,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void exibirConfirmacaoFechamento() {
         new AlertDialog.Builder(this)
                 .setTitle("Fechar Caixa")
                 .setMessage("Deseja fechar o caixa agora?\n\nO horário de fechamento será registrado.")
                 .setPositiveButton("Fechar", (d, w) -> executarFechamento())
                 .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void exibirBloqueioVendasEmAberto(@NonNull List<VendaModel> pendentes) {
+        StringBuilder mensagem = new StringBuilder();
+        mensagem.append("Existem ")
+                .append(pendentes.size())
+                .append(pendentes.size() == 1 ? " venda em aberto.\n\n" : " vendas em aberto.\n\n")
+                .append("É obrigatório finalizar ou cancelar essas vendas antes de fechar o caixa.");
+
+        int limite = Math.min(pendentes.size(), 5);
+        for (int i = 0; i < limite; i++) {
+            VendaModel venda = pendentes.get(i);
+
+            String numero = venda.getNumeroVenda() > 0
+                    ? String.format(Locale.ROOT, "#%07d", venda.getNumeroVenda())
+                    : (venda.getId() != null && venda.getId().length() >= 8
+                    ? venda.getId().substring(0, 8).toUpperCase()
+                    : "SEM_ID");
+
+            mensagem.append("\n• ").append(numero);
+        }
+
+        if (pendentes.size() > limite) {
+            mensagem.append("\n• ... e mais ").append(pendentes.size() - limite);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Fechamento bloqueado")
+                .setMessage(mensagem.toString())
+                .setPositiveButton("Ver vendas em aberto", (d, w) -> {
+                    Intent intent = new Intent(FecharCaixaActivity.this, VendasEmAbertoActivity.class);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Voltar", null)
                 .show();
     }
 

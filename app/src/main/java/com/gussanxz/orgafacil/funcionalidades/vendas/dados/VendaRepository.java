@@ -198,6 +198,23 @@ public class VendaRepository {
         }
     }
 
+    public void buscarVendasEmAberto(@NonNull ListaCallback callback) {
+        try {
+            FirestoreSchema.vendasVendasCol()
+                    .whereEqualTo("status", VendaModel.STATUS_EM_ABERTO)
+                    .orderBy("dataHoraAberturaMillis", Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener(snapshot -> callback.onNovosDados(extrairLista(snapshot)))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null
+                                    ? e.getMessage()
+                                    : "Erro ao buscar vendas em aberto."
+                    ));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuário não logado");
+        }
+    }
+
     // -----------------------------------------------------------
     // ATUALIZAR STATUS
     // -----------------------------------------------------------
