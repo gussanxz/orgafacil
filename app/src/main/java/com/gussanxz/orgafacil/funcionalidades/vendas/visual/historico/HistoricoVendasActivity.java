@@ -220,6 +220,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private void abrirComprovante(String vendaId) {
         Intent intent = new Intent(this, ComprovanteVendaActivity.class);
         intent.putExtra("vendaId", vendaId);
+        intent.putExtra("origemHistorico", true);
         startActivity(intent);
     }
 

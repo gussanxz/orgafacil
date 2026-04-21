@@ -84,7 +84,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                irParaResumoVendas();
+                voltarConformeOrigem();
             }
         });
         configurarRecyclerView();
@@ -127,7 +127,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
 
     private void configurarAcoes() {
         if (btnFecharComprovante != null) {
-            btnFecharComprovante.setOnClickListener(v -> voltarParaNovaVenda());
+            btnFecharComprovante.setOnClickListener(v -> voltarConformeOrigem());
         }
     }
 
@@ -230,15 +230,24 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         }
     }
 
-    private void voltarParaNovaVenda() {
-        Intent intent = new Intent(this, RegistrarVendasActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-        finish();
-    }
+    private void voltarConformeOrigem() {
+        boolean origemHistorico  = getIntent().getBooleanExtra("origemHistorico", false);
+        boolean origemFinanceiro = getIntent().getBooleanExtra("origemFinanceiro", false);
 
-    private void irParaResumoVendas() {
-        Intent intent = new Intent(this, ResumoVendasActivity.class);
+        if (origemHistorico) {
+            finish();
+            return;
+        }
+
+        if (origemFinanceiro) {
+            Intent intent = new Intent(this, ResumoVendasActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        Intent intent = new Intent(this, RegistrarVendasActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
