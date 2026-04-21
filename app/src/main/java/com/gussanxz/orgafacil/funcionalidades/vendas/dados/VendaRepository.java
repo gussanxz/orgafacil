@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -19,7 +20,9 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class VendaRepository {
 
@@ -58,7 +61,7 @@ public class VendaRepository {
                     venda.setNumeroVenda(numero);
                     String vendaId = FirestoreSchema.vendasVendasCol().document().getId();
                     venda.setId(vendaId);
-                    salvarNoFirestore(venda, callback);
+                    salvarNoFirestore(venda, null, callback);
                 }
 
                 @Override
@@ -66,18 +69,45 @@ public class VendaRepository {
                     callback.onErro(erro);
                 }
             });
-        } else {
-            // Atualização de venda existente — mantém o número que já tem
-            salvarNoFirestore(venda, callback);
+            return;
         }
+
+        buscarVendaPorId(venda.getId(), new VendaCallback() {
+            @Override
+            public void onVenda(VendaModel vendaAnterior) {
+                salvarNoFirestore(venda, vendaAnterior, callback);
+            }
+
+            @Override
+            public void onErro(String erro) {
+                callback.onErro(erro);
+            }
+        });
     }
 
-    private void salvarNoFirestore(@NonNull VendaModel venda, @NonNull Callback callback) {
+    private void salvarNoFirestore(@NonNull VendaModel venda,
+                                   @Nullable VendaModel vendaAnterior,
+                                   @NonNull Callback callback) {
         try {
             FirestoreSchema.vendasVendasCol()
                     .document(venda.getId())
                     .set(venda, SetOptions.merge())
-                    .addOnSuccessListener(unused -> callback.onSucesso(venda.getId()))
+                    .addOnSuccessListener(unused -> {
+                        String caixaAnteriorId = vendaAnterior != null ? vendaAnterior.getCaixaId() : null;
+                        String caixaAtualId = venda.getCaixaId();
+
+                        recalcularCaixasAfetados(caixaAnteriorId, caixaAtualId, new Callback() {
+                            @Override
+                            public void onSucesso(String ignored) {
+                                callback.onSucesso(venda.getId());
+                            }
+
+                            @Override
+                            public void onErro(String erro) {
+                                callback.onErro(erro);
+                            }
+                        });
+                    })
                     .addOnFailureListener(e -> callback.onErro(
                             e.getMessage() != null ? e.getMessage() : "Erro ao salvar venda."
                     ));
@@ -223,16 +253,117 @@ public class VendaRepository {
                                 @NonNull String novoStatus,
                                 @NonNull Callback callback) {
         try {
-            FirestoreSchema.vendasVendasCol()
-                    .document(vendaId)
-                    .update("status", novoStatus)
-                    .addOnSuccessListener(unused -> callback.onSucesso(vendaId))
-                    .addOnFailureListener(e -> callback.onErro(
-                            e.getMessage() != null ? e.getMessage() : "Erro ao atualizar status."
-                    ));
+            buscarVendaPorId(vendaId, new VendaCallback() {
+                @Override
+                public void onVenda(VendaModel vendaAtual) {
+                    FirestoreSchema.vendasVendasCol()
+                            .document(vendaId)
+                            .update("status", novoStatus)
+                            .addOnSuccessListener(unused ->
+                                    recalcularCaixasAfetados(vendaAtual.getCaixaId(), vendaAtual.getCaixaId(),
+                                            new Callback() {
+                                                @Override
+                                                public void onSucesso(String ignored) {
+                                                    callback.onSucesso(vendaId);
+                                                }
+
+                                                @Override
+                                                public void onErro(String erro) {
+                                                    callback.onErro(erro);
+                                                }
+                                            }))
+                            .addOnFailureListener(e -> callback.onErro(
+                                    e.getMessage() != null ? e.getMessage() : "Erro ao atualizar status."
+                            ));
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    callback.onErro(erro);
+                }
+            });
         } catch (IllegalStateException e) {
             callback.onErro("Usuário não logado");
         }
+    }
+    private void recalcularCaixasAfetados(@Nullable String caixaAnteriorId,
+                                          @Nullable String caixaAtualId,
+                                          @NonNull Callback callback) {
+        Set<String> caixasParaAtualizar = new HashSet<>();
+
+        caixasParaAtualizar.add(normalizarCaixaId(caixaAnteriorId));
+        caixasParaAtualizar.add(normalizarCaixaId(caixaAtualId));
+
+        recalcularProximoCaixa(new ArrayList<>(caixasParaAtualizar), 0, callback);
+    }
+
+    private void recalcularProximoCaixa(@NonNull List<String> caixasIds,
+                                        int index,
+                                        @NonNull Callback callback) {
+        if (index >= caixasIds.size()) {
+            callback.onSucesso("ok");
+            return;
+        }
+
+        String caixaId = caixasIds.get(index);
+        CaixaRepository caixaRepository = new CaixaRepository();
+
+        if (CaixaModel.ID_LEGADO.equals(caixaId)) {
+            buscarTotaisVendasLegadas(new TotaisCallback() {
+                @Override
+                public void onTotais(int qtd, double total) {
+                    caixaRepository.atualizarSnapshotTotais(caixaId, qtd, total,
+                            new CaixaRepository.VoidCallback() {
+                                @Override
+                                public void onSucesso(String ignored) {
+                                    recalcularProximoCaixa(caixasIds, index + 1, callback);
+                                }
+
+                                @Override
+                                public void onErro(String erro) {
+                                    callback.onErro(erro);
+                                }
+                            });
+                }
+
+                @Override
+                public void onErro(String erro) {
+                    callback.onErro(erro);
+                }
+            });
+            return;
+        }
+
+        buscarTotaisFinalizadasDoCaixa(caixaId, new TotaisCallback() {
+            @Override
+            public void onTotais(int qtd, double total) {
+                caixaRepository.atualizarSnapshotTotais(caixaId, qtd, total,
+                        new CaixaRepository.VoidCallback() {
+                            @Override
+                            public void onSucesso(String ignored) {
+                                recalcularProximoCaixa(caixasIds, index + 1, callback);
+                            }
+
+                            @Override
+                            public void onErro(String erro) {
+                                callback.onErro(erro);
+                            }
+                        });
+            }
+
+            @Override
+            public void onErro(String erro) {
+                callback.onErro(erro);
+            }
+        });
+    }
+
+    @NonNull
+    private String normalizarCaixaId(@Nullable String caixaId) {
+        if (caixaId == null || caixaId.trim().isEmpty()) {
+            return CaixaModel.ID_LEGADO;
+        }
+        return caixaId;
     }
     public void alternarStatus(@NonNull VendaModel venda, @NonNull Callback callback) {
         String statusAtual = venda.getStatus();
