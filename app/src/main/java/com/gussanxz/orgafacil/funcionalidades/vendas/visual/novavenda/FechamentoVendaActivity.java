@@ -451,12 +451,57 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         salvandoVenda = true;
         atualizarBotaoFinalizar();
 
-        vendaRepository.salvar(montarVendaParaSalvar(), new VendaRepository.Callback() {
+        garantirCaixaAntesDeSalvar(new Runnable() {
             @Override
-            public void onSucesso(String vendaId) {
-                salvandoVenda = false;
-                atualizarBotaoFinalizar();
-                abrirComprovante(vendaId);
+            public void run() {
+                vendaRepository.salvar(montarVendaParaSalvar(), new VendaRepository.Callback() {
+                    @Override
+                    public void onSucesso(String vendaId) {
+                        salvandoVenda = false;
+                        atualizarBotaoFinalizar();
+                        abrirComprovante(vendaId);
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        salvandoVenda = false;
+                        atualizarBotaoFinalizar();
+                        Toast.makeText(FechamentoVendaActivity.this,
+                                "Erro ao salvar venda: " + erro, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+    }
+
+    private void garantirCaixaAntesDeSalvar(Runnable onCaixaResolvido) {
+        if (modoEdicao) {
+            onCaixaResolvido.run();
+            return;
+        }
+
+        if (caixaId != null && !caixaId.trim().isEmpty()) {
+            onCaixaResolvido.run();
+            return;
+        }
+
+        caixaRepository.buscarCaixaAberto(new CaixaRepository.CaixaCallback() {
+            @Override
+            public void onCaixa(CaixaModel caixa) {
+                if (caixa == null || !caixa.isAberto()) {
+                    salvandoVenda = false;
+                    atualizarBotaoFinalizar();
+                    Toast.makeText(FechamentoVendaActivity.this,
+                            "Nenhum caixa aberto encontrado para vincular esta venda.",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                caixaId = caixa.getId();
+                nomeCaixa = caixa.getNomeCaixa();
+                atualizarExibicaoCaixa();
+
+                onCaixaResolvido.run();
             }
 
             @Override
@@ -464,7 +509,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                 salvandoVenda = false;
                 atualizarBotaoFinalizar();
                 Toast.makeText(FechamentoVendaActivity.this,
-                        "Erro ao salvar venda: " + erro, Toast.LENGTH_LONG).show();
+                        "Erro ao identificar caixa da venda: " + erro,
+                        Toast.LENGTH_LONG).show();
             }
         });
     }

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(./gradlew compileDebugJavaWithJavac)",
+      "Bash(xargs ls:*)",
+      "Bash(./gradlew :app:compileDebugJavaSources)",
+      "Bash(./gradlew :app:compileDebugJavaWithJavac)",
+      "Bash(ls \"D:/Projetos/Android/orgafacil/app/src/main/res/drawable/bg_chip\"*)",
+      "Bash(ls \"D:/Projetos/Android/orgafacil/app/src/main/res-vendas/drawable/bg_chip\"*)",
+      "Bash(find /d/Projetos/Android/orgafacil/app/src/main/res* -name \"*.xml\")",
+      "Bash(grep:*)"
+    ]
+  }
+}
