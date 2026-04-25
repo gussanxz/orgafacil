@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_card_home.xml
+    Conteúdo interno reutilizável de cada card da home.
+
+    Usado via <include> no ac_main_home.xml.
+    Preenchido em runtime por HomeCardBinder.java usando a classe HomeMenuItem.
+
+    Estrutura visual:
+      ┌───────────────────────┐
+      │  [ícone 48dp]         │
+      │  Título               │
+      │  ● Status             │
+      └───────────────────────┘
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="14dp">
+
+    <!-- Ícone do módulo -->
+    <ImageView
+        android:id="@+id/iconeCard"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="10dp"
+        android:contentDescription="@null"
+        app:tint="@color/cor_icone_home"
+        tools:srcCompat="@drawable/ic_wallet_96" />
+
+    <!-- Título do módulo -->
+    <TextView
+        android:id="@+id/tituloCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/cor_titulo_home"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        tools:text="Contas" />
+
+    <!-- Badge de status com dot colorido -->
+    <LinearLayout
+        android:id="@+id/layoutStatusCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Dot de status (círculo colorido) -->
+        <View
+            android:id="@+id/dotStatusCard"
+            android:layout_width="7dp"
+            android:layout_height="7dp"
+            android:layout_marginEnd="5dp"
+            android:background="@drawable/shape_dot_status"
+            tools:backgroundTint="@color/cor_status_teste" />
+
+        <!-- Texto do status -->
+        <TextView
+            android:id="@+id/textoStatusCard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            tools:text="Em teste"
+            tools:textColor="@color/cor_status_teste" />
+
+    </LinearLayout>
+
+</LinearLayout>

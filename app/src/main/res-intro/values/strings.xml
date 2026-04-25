@@ -18,4 +18,28 @@
 
         <i>Última atualização: Janeiro de 2026.</i>
     </string>
+
+    <!-- Home — Saudação -->
+    <string name="saudacao_home">Olá,</string>
+    <string name="nome_usuario_padrao">Usuário</string>
+
+    <!-- Home — Labels dos cards -->
+    <string name="menu_home_contas">Contas</string>
+    <string name="menu_home_vendas">Vendas</string>
+    <string name="menu_home_mercado">Lista Mercado</string>
+    <string name="menu_home_atividades">Lista atividades</string>
+    <string name="menu_home_boleto">Boleto por CPF</string>
+    <string name="menu_home_minha_conta">Minha Conta</string>
+
+    <!-- Home — Status dos módulos -->
+    <string name="status_em_teste">Em teste</string>
+    <string name="status_em_desenvolvimento">Em desenvolvimento</string>
+    <string name="status_em_breve">Em breve</string>
+
+    <!-- Home — Toast de bloqueio -->
+    <string name="aviso_funcionalidade_em_breve">Funcionalidade disponível em breve!</string>
+
+    <!-- Biometria (substituindo strings hard-coded em HomeActivity) -->
+    <string name="biometria_titulo">OrgaFácil Protegido</string>
+    <string name="biometria_subtitulo">Confirme sua identidade para acessar suas finanças</string>
 </resources>

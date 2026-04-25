@@ -6,255 +6,177 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/cor_fundo_home"
+    android:paddingBottom="20dp"
     tools:context=".funcionalidades.main.HomeActivity">
 
+    <!-- ════════════════════════════════════════════
+         LOGO
+         ════════════════════════════════════════════ -->
     <ImageView
         android:id="@+id/imageViewLogoHome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="28dp"
+        android:contentDescription="@string/app_name"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/logo_orgafacil_96x96" />
 
-    <ImageView
-        android:id="@+id/imageViewContas"
-        android:layout_width="wrap_content"
+    <!-- ════════════════════════════════════════════
+         SAUDAÇÃO
+         ════════════════════════════════════════════ -->
+    <TextView
+        android:id="@+id/textViewSaudacao"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="24dp"
+        android:text="@string/saudacao_home"
+        android:textColor="@color/cor_saudacao_home"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/imageViewLogoHome" />
+
+    <TextView
+        android:id="@+id/textViewNomeUsuario"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:textColor="@color/cor_nome_usuario_home"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewSaudacao"
+        tools:text="Gustavo Santos" />
+
+    <!-- ════════════════════════════════════════════
+         LINHA 1 — Contas | Vendas
+         top da chain: top→nomeUsuario, bottom→cardMercado
+         chain style spread_inside + weight=1 em cada par
+         ════════════════════════════════════════════ -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardContas"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="6dp"
         android:onClick="acessarResumoContasActivity"
-        app:layout_constraintEnd_toStartOf="@+id/imageViewVendas"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintBottom_toTopOf="@id/cardMercado"
+        app:layout_constraintEnd_toStartOf="@id/cardVendas"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/imageViewVendas"
-        app:srcCompat="@drawable/ic_wallet_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintTop_toBottomOf="@id/textViewNomeUsuario"
+        app:layout_constraintVertical_chainStyle="spread_inside"
+        app:layout_constraintVertical_weight="1">
 
-    <TextView
-        android:id="@+id/textViewContas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Contas"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewContas"
-        app:layout_constraintStart_toStartOf="@+id/imageViewContas"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewContas" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewStatusContas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em teste"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewContas"
-        app:layout_constraintStart_toStartOf="@+id/textViewContas"
-        app:layout_constraintTop_toBottomOf="@+id/textViewContas" />
+    </androidx.cardview.widget.CardView>
 
-    <ImageView
-        android:id="@+id/imageViewVendas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="64dp"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardVendas"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
         android:onClick="acessarResumoVendasAcitivity"
-        app:layout_constraintBottom_toTopOf="@+id/imageViewTodo"
+        app:layout_constraintBottom_toTopOf="@id/cardAtividades"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/imageViewContas"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed"
-        app:srcCompat="@drawable/ic_sale_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintStart_toEndOf="@id/cardContas"
+        app:layout_constraintTop_toBottomOf="@id/textViewNomeUsuario"
+        app:layout_constraintVertical_weight="1">
 
-    <TextView
-        android:id="@+id/textViewVendas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Vendas"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewVendas"
-        app:layout_constraintStart_toStartOf="@+id/imageViewVendas"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewStatusVendas"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em desenvolvimento"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewVendas"
-        app:layout_constraintStart_toStartOf="@+id/textViewVendas"
-        app:layout_constraintTop_toBottomOf="@+id/textViewVendas" />
+    </androidx.cardview.widget.CardView>
 
-    <ImageView
-        android:id="@+id/imageViewMercado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- ════════════════════════════════════════════
+         LINHA 2 — Mercado | Atividades
+         ════════════════════════════════════════════ -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardMercado"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="6dp"
         android:onClick="acessarListaMercado"
-        app:layout_constraintEnd_toStartOf="@+id/imageViewTodo"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintBottom_toTopOf="@id/cardBoleto"
+        app:layout_constraintEnd_toStartOf="@id/cardAtividades"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/imageViewTodo"
-        app:srcCompat="@drawable/ic_shopping_cart_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintTop_toBottomOf="@id/cardContas"
+        app:layout_constraintVertical_weight="1">
 
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:elevation="1dp"
-        app:layout_constraintBottom_toBottomOf="@+id/imageViewMercado"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
-        app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
-        app:layout_constraintTop_toTopOf="@id/imageViewMercado"
-        app:tint="@android:color/white" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewMercado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Lista Mercado"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewMercado"
-        app:layout_constraintStart_toStartOf="@+id/imageViewMercado"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewMercado" />
+    </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/textViewStatusMercado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em teste"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewMercado"
-        app:layout_constraintStart_toStartOf="@+id/textViewMercado"
-        app:layout_constraintTop_toBottomOf="@+id/textViewMercado" />
-
-    <ImageView
-        android:id="@+id/imageViewTodo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="64dp"
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:onClick="acessarListaAtividades"
-        app:layout_constraintBottom_toTopOf="@+id/imageViewConfigs"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardAtividades"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toTopOf="@id/cardMinhaConta"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/imageViewMercado"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewVendas"
-        app:srcCompat="@drawable/ic_checklist_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintStart_toEndOf="@id/cardMercado"
+        app:layout_constraintTop_toBottomOf="@id/cardVendas"
+        app:layout_constraintVertical_weight="1">
 
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:elevation="1dp"
-        android:src="@drawable/ic_lock_24"
-        app:layout_constraintBottom_toBottomOf="@+id/imageViewTodo"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewTodo"
-        app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
-        app:layout_constraintTop_toTopOf="@id/imageViewTodo"
-        app:tint="@android:color/white" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewAtividades"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Lista atividades"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewTodo"
-        app:layout_constraintStart_toStartOf="@+id/imageViewTodo"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewTodo" />
+    </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/textViewStatusTodo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em breve"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewAtividades"
-        app:layout_constraintStart_toStartOf="@+id/textViewAtividades"
-        app:layout_constraintTop_toBottomOf="@+id/textViewAtividades" />
-
-    <ImageView
-        android:id="@+id/imageViewBoletoCPF"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/fundo_arredondado"
-        android:backgroundTint="#CC000000"
-        android:onClick="acessarBoletos"
-        app:layout_constraintEnd_toStartOf="@+id/imageViewConfigs"
-        app:layout_constraintHorizontal_bias="0.5"
+    <!-- ════════════════════════════════════════════
+         LINHA 3 — Boleto | Minha Conta
+         bottom→parent fecha a chain vertical
+         ════════════════════════════════════════════ -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardBoleto"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/cardMinhaConta"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/imageViewConfigs"
-        app:srcCompat="@drawable/ic_barcode_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintTop_toBottomOf="@id/cardMercado"
+        app:layout_constraintVertical_weight="1">
 
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:elevation="1dp"
-        android:src="@drawable/ic_lock_24"
-        app:layout_constraintBottom_toBottomOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintTop_toTopOf="@id/imageViewBoletoCPF"
-        app:tint="@android:color/white" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewBoletoCPF"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Boleto por CPF"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintStart_toStartOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewBoletoCPF" />
+    </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/textViewStatusBoletoCPF"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em breve"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewBoletoCPF"
-        app:layout_constraintStart_toStartOf="@+id/textViewBoletoCPF"
-        app:layout_constraintTop_toBottomOf="@+id/textViewBoletoCPF" />
-
-    <ImageView
-        android:id="@+id/imageViewConfigs"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardMinhaConta"
+        style="@style/Widget.HomeCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="16dp"
         android:onClick="acessarConfigs"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/imageViewBoletoCPF"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewTodo"
-        app:srcCompat="@drawable/ic_manage_accounts_96"
-        app:tint="@color/cor_icones_home"/>
+        app:layout_constraintStart_toEndOf="@id/cardBoleto"
+        app:layout_constraintTop_toBottomOf="@id/cardAtividades"
+        app:layout_constraintVertical_weight="1">
 
-    <TextView
-        android:id="@+id/textViewConfigs"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Minha Conta"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/imageViewConfigs"
-        app:layout_constraintStart_toStartOf="@+id/imageViewConfigs"
-        app:layout_constraintTop_toBottomOf="@+id/imageViewConfigs" />
+        <include layout="@layout/item_card_home" />
 
-    <TextView
-        android:id="@+id/textViewStatusConfigs"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Em desenvolvimento"
-        android:textSize="12sp"
-        android:textColor="@color/cor_texto_home"
-        app:layout_constraintEnd_toEndOf="@+id/textViewConfigs"
-        app:layout_constraintStart_toStartOf="@+id/textViewConfigs"
-        app:layout_constraintTop_toBottomOf="@+id/textViewConfigs" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,12 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Cores modo escuro utilizadas no modulo intro -->
-    <color name="cor_fundo_home">#293141</color>
-    <color name="cor_icones_home">#F2F2F2</color>
+    <!-- ──────────────────────────────────────────
+         FUNDO DA TELA
+         ────────────────────────────────────────── -->
+    <color name="cor_fundo_home">#1A2030</color>
 
-    <color name="cor_texto_home">#99FFFFFF</color>
-    <color name="cor_barra_status">#00b2bc</color>
-    <color name="cor_botoes_navegacao">#00b2bc</color>
+    <!-- ──────────────────────────────────────────
+         CARDS
+         ────────────────────────────────────────── -->
+    <color name="cor_card_home">#242C3D</color>
+    <color name="cor_card_stroke_home">#2E3850</color>
+
+    <!-- ──────────────────────────────────────────
+         ÍCONES E TEXTO DENTRO DOS CARDS
+         ────────────────────────────────────────── -->
+    <color name="cor_icone_home">#1D9E75</color>
+    <color name="cor_titulo_home">#FFFFFF</color>
+
+    <!-- ──────────────────────────────────────────
+         SAUDAÇÃO E NOME DO USUÁRIO
+         ────────────────────────────────────────── -->
+    <color name="cor_saudacao_home">#AAAAAA</color>
+    <color name="cor_nome_usuario_home">#FFFFFF</color>
+
+    <!-- ──────────────────────────────────────────
+         STATUS DOS MÓDULOS (dot + texto)
+         ────────────────────────────────────────── -->
+    <color name="cor_status_teste">#1D9E75</color>
+    <color name="cor_status_dev">#EFA827</color>
+    <color name="cor_status_breve">#666666</color>
+
+    <!-- ──────────────────────────────────────────
+         BARRA DE STATUS / NAVEGAÇÃO
+         ────────────────────────────────────────── -->
+    <color name="cor_barra_status">#1A2030</color>
+    <color name="cor_botoes_navegacao">#1A2030</color>
 
 </resources>

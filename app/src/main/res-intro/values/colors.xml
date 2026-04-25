@@ -2,11 +2,43 @@
 <resources>
 <!-- Cores modo claro utilizadas no modulo intro -->
 
+    <!-- ──────────────────────────────────────────
+         FUNDO DA TELA
+         ────────────────────────────────────────── -->
     <color name="cor_fundo_home">#F4EEE9</color>
-    <color name="cor_icones_home">#1D4DB1</color>
 
-    <color name="cor_texto_home">#99000000</color>
+    <!-- ──────────────────────────────────────────
+         CARDS
+         ────────────────────────────────────────── -->
+    <color name="cor_card_home">#FFFFFF</color>
+    <color name="cor_card_stroke_home">#E8E0D6</color>
 
-    <color name="cor_barra_status">#1D3557</color>
-    <color name="cor_botoes_navegacao">#1D3557</color>
+    <!-- ──────────────────────────────────────────
+         ÍCONES E TEXTO DENTRO DOS CARDS
+         ────────────────────────────────────────── -->
+    <color name="cor_icone_home">#1D9E75</color>
+    <color name="cor_titulo_home">#1A1A1A</color>
+
+    <!-- ──────────────────────────────────────────
+         SAUDAÇÃO E NOME DO USUÁRIO
+         ────────────────────────────────────────── -->
+    <color name="cor_saudacao_home">#888888</color>
+    <color name="cor_nome_usuario_home">#1A1A1A</color>
+
+    <!-- ──────────────────────────────────────────
+         STATUS DOS MÓDULOS (dot + texto)
+         Em teste        → verde teal
+         Em desenvolvimento → âmbar
+         Em breve        → cinza
+         ────────────────────────────────────────── -->
+    <color name="cor_status_teste">#1D9E75</color>
+    <color name="cor_status_dev">#BA7517</color>
+    <color name="cor_status_breve">#AAAAAA</color>
+
+    <!-- ──────────────────────────────────────────
+         BARRA DE STATUS / NAVEGAÇÃO
+         ────────────────────────────────────────── -->
+    <color name="cor_barra_status">#F4EEE9</color>
+    <color name="cor_botoes_navegacao">#F4EEE9</color>
+
 </resources>
