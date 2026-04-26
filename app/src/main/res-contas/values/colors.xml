@@ -1,23 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    res-contas/values/colors.xml  →  MODO CLARO
+    Referência: imagem 20:10 (modo claro).
+    TODAS as fontes do header são escuras (#1A1A1A) sobre o teal claro.
+-->
 <resources>
-    <color name="chip_todos_background">#000000</color>  <!-- fundo preto -->
-    <color name="chip_todos_text">#FFFFFF</color>         <!-- texto branco -->
 
-    <!-- Chips de filtro de parcelas -->
+    <!-- HEADER E BOTTOM BAR -->
+    <color name="cor_fundo_header_resumo_contas">#00B7C3</color>
+    <color name="cor_fundo_inferior_resumo_contas">#00B7C3</color>
+    <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
+
+    <!-- TEXTOS DO HEADER (sobre fundo teal)
+         Na imagem alvo, TODOS os textos do header são escuros -->
+    <color name="cor_texto_header">#1A1A1A</color>
+    <color name="cor_texto_header_secundario">#33000000</color><!-- alpha 20% preto para "TOTAL A RECEBER" e saudação -->
+    <color name="cor_saldo_header">#1A1A1A</color>
+    <color name="cor_olho_header">#1A1A1A</color>
+
+    <!-- BOTÃO RELATÓRIOS: borda escura sutil, fundo levemente escuro, texto escuro -->
+    <color name="cor_fundo_btn_relatorios">#26000000</color>
+    <color name="cor_texto_btn_relatorios">#1A1A1A</color>
+
+    <!-- ABAS (TabLayout no corpo branco/escuro) -->
+    <color name="cor_tab_texto_ativo">#00B7C3</color>
+    <color name="cor_tab_texto_inativo">#999999</color>
+    <color name="cor_tab_indicador">#00B7C3</color>
+
+    <!-- CAMPO DE BUSCA -->
+    <color name="cor_fundo_busca">#F2F2F2</color>
+    <color name="cor_hint_busca">#AAAAAA</color>
+    <color name="cor_texto_busca">#1A1A1A</color>
+
+    <!-- CHIPS -->
+    <color name="chip_todos_background">#FFFFFF</color>
+    <color name="chip_todos_text">#1A1A1A</color>
+    <!-- chip_background: res-contas/color/chip_background.xml -->
+
+    <!-- CHIPS DE STATUS DE PARCELAS -->
     <color name="chip_pago_bg">#E8F5E9</color>
     <color name="chip_pago_text">#2E7D32</color>
-
     <color name="chip_pendente_bg">#FFF8E1</color>
     <color name="chip_pendente_text">#F57F17</color>
-
     <color name="chip_atrasado_bg">#FFEBEE</color>
     <color name="chip_atrasado_text">#C62828</color>
 
-    <color name="cor_fundo_cards">#3B5B6E</color> <!-- cor dos cards de relatorios -->
-    <color name="cor_fundo_inferior_resumo_contas">#293141</color>
-    <color name="cor_fundo_header_resumo_contas">#293141</color>
+    <!-- CARDS DE RELATÓRIOS -->
+    <color name="cor_fundo_cards">#3B5B6E</color>
 
-    <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
-
+    <!-- LABEL DO MENU RADIAL -->
     <color name="bg_label_menu">#CCFFFFFF</color>
+
 </resources>

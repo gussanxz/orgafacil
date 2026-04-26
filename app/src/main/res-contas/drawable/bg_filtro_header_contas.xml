@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_filtro_header_contas.xml
+    Container da barra de filtro TODOS | RECEITAS | DESPESAS no header teal.
+    Fundo escuro semitransparente com cantos bem arredondados.
+    Igual ao padrão da imagem alvo (20:10).
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#33000000" />
+    <corners android:radius="25dp" />
+</shape>

@@ -3,14 +3,16 @@ package com.gussanxz.orgafacil.funcionalidades.contas.resumo_contas.ui.visual;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -21,63 +23,73 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.ContasViewModel;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.dados.enums.TipoCategoriaContas;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.DespesasActivity;
 import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.activities.ReceitasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.ContasActivity;
-import com.gussanxz.orgafacil.funcionalidades.contas.movimentacoes.ui.helper.ConflitoDadosHelper;
-import com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.adapter.RelatoriosPagerAdapter;
 import com.gussanxz.orgafacil.util_helper.VisibilidadeHelper;
 import com.google.android.material.bottomappbar.BottomAppBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
-
-
-import java.text.NumberFormat;
-import java.util.Locale;
 
 public class ResumoContasActivity extends AppCompatActivity {
 
     private static final String TAG = "ResumoContasActivity";
 
-    // ViewModel e Dados
+    // ─────────────────────────────────────────────────────────────
+    // ViewModels
+    // ─────────────────────────────────────────────────────────────
     private ResumoGeralViewModel viewModel;
     private ContasViewModel contasViewModel;
 
-    // UI Dashboard
+    // ─────────────────────────────────────────────────────────────
+    // Views — Dashboard / Header
+    // ─────────────────────────────────────────────────────────────
+    private TextView textSaudacao;
     private TextView textSaldoGeral;
-    private ImageView imgOlhoSaldo;
-    private TextView labelDespesaFutura;
-    private TextView labelReceitaFutura;
-    private TextView labelNovaDespesa;
-    private TextView labelNovaReceita;
     private TextView textLegendaSaldo;
+    private ImageView imgOlhoSaldo;
 
-    // Layout Components
-    private LinearLayout btnFooterContas, btnFooterMovimentacoes;
+    // ─────────────────────────────────────────────────────────────
+    // Views — Corpo
+    // ─────────────────────────────────────────────────────────────
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
-    private BottomAppBar bottomAppBar;
+    private EditText editTextBusca;
 
-    // Menu Radial
-    private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa, fabNovaReceita, fabReceitaFutura;
-    private boolean isMenuOpen = false;
-    private final OvershootInterpolator interpolator = new OvershootInterpolator();
-    private View overlayBackground;
-    private View radialSpotlight;
-    private com.google.android.material.chip.ChipGroup chipGroupFiltroTipo;
+    // ─────────────────────────────────────────────────────────────
+    // Views — Footer / Navegação
+    // ─────────────────────────────────────────────────────────────
+    private LinearLayout btnFooterContas, btnFooterMovimentacoes;
+    private BottomAppBar bottomAppBar;
+    private RadioGroup radioGroupFiltroTipo;
     private View btnRelatoriosTop;
 
-    // Controle de Carregamento para o Observer
+    // ─────────────────────────────────────────────────────────────
+    // Views — Menu Radial
+    // ─────────────────────────────────────────────────────────────
+    private FloatingActionButton fabMain, fabDespesaFutura, fabNovaDespesa,
+            fabNovaReceita, fabReceitaFutura;
+    private TextView labelDespesaFutura, labelReceitaFutura,
+            labelNovaDespesa, labelNovaReceita;
+    private View overlayBackground;
+    private View radialSpotlight;
+    private boolean isMenuOpen = false;
+    private final OvershootInterpolator interpolator = new OvershootInterpolator();
+
+    // ─────────────────────────────────────────────────────────────
+    // Estado
+    // ─────────────────────────────────────────────────────────────
     private boolean aguardandoPrimeiroFetch = true;
-
-    // UI Dashboard
-    private TextView textSaudacao; // NOVO
-
     private androidx.activity.result.ActivityResultLauncher<Intent> launcherMovimentacao;
 
+    // ─────────────────────────────────────────────────────────────
+    // Ciclo de vida
+    // ─────────────────────────────────────────────────────────────
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,24 +97,22 @@ public class ResumoContasActivity extends AppCompatActivity {
         setContentView(R.layout.tela_resumo_contas);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return insets;
         });
 
-        // 1. Inicializa IDs e ViewModels
         inicializarComponentes();
+
         viewModel = new ViewModelProvider(this).get(ResumoGeralViewModel.class);
         contasViewModel = new ViewModelProvider(this).get(ContasViewModel.class);
 
-        // 👇 NOVO: Observa o nome do usuário vindo do ViewModel
         viewModel.nomeUsuario.observe(this, nome -> {
             if (textSaudacao != null) {
-                textSaudacao.setText("Olá, " + nome + "!");
+                textSaudacao.setText("Olá, " + nome + " 👋");
             }
         });
 
-        // 3. Configurações de UI e Comportamento
         setupSaldoListaObserver();
         viewModel.verificarViradaDeMes(this);
 
@@ -113,102 +123,103 @@ public class ResumoContasActivity extends AppCompatActivity {
                     contasViewModel.fetchDados(true, null);
                     new android.os.Handler(android.os.Looper.getMainLooper())
                             .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
-                }
-        );
+                });
 
         setupSlideView();
-
-        contasViewModel.fetchDados(true, null);   // futuro  (aba 0)
-
-        // Delay mínimo para não sobrescrever cacheHistorico com lista vazia
-// enquanto o fetch do futuro ainda está rodando e agendarFiltro() emite
+        contasViewModel.fetchDados(true, null);
         new android.os.Handler(android.os.Looper.getMainLooper())
                 .postDelayed(() -> contasViewModel.fetchDados(false, null), 300);
 
         configurarBottomAppBarCustomizada();
         setupMenuRadial();
         configurarChipsFiltro();
+        configurarBusca();
 
         overlayBackground.setOnClickListener(v -> fecharMenu());
     }
 
-    private void inicializarViewsDashboard() {
-
-        imgOlhoSaldo = findViewById(R.id.imgOlhoSaldo);
-        textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
-        textSaudacao = findViewById(R.id.textSaudacao);
-        textSaldoGeral = findViewById(R.id.textSaldo);
-
-        // 1. ABRIR A TELA -> MOSTRAR "CARREGANDO" (Estado inicial cravado)
-        if (textSaldoGeral != null) {
-            textSaldoGeral.setText("Carregando...");
-            textSaldoGeral.setTextColor(Color.WHITE);
-        }
-        if (textLegendaSaldo != null) {
-            textLegendaSaldo.setText("Calculando...");
-        }
-        if (imgOlhoSaldo != null) {
-            imgOlhoSaldo.setVisibility(View.GONE);
-        }
-    }
+    // ─────────────────────────────────────────────────────────────
+    // Inicialização
+    // ─────────────────────────────────────────────────────────────
 
     private void inicializarComponentes() {
         inicializarViewsDashboard();
 
-        tabLayout = findViewById(R.id.tabLayoutDashboard);
-        viewPager = findViewById(R.id.viewPagerDashboard);
-        overlayBackground = findViewById(R.id.overlay_background);
-        bottomAppBar = findViewById(R.id.bottomAppBar);
-        chipGroupFiltroTipo = findViewById(R.id.chipGroupFiltroTipo);
-        btnRelatoriosTop = findViewById(R.id.btnRelatoriosTop);
+        tabLayout           = findViewById(R.id.tabLayoutDashboard);
+        viewPager           = findViewById(R.id.viewPagerDashboard);
+        overlayBackground   = findViewById(R.id.overlay_background);
+        bottomAppBar        = findViewById(R.id.bottomAppBar);
+        radioGroupFiltroTipo = findViewById(R.id.radioGroupFiltroTipo);
+        btnRelatoriosTop    = findViewById(R.id.btnRelatoriosTop);
+        editTextBusca       = findViewById(R.id.editTextBusca);
+
+        // Botão voltar
+        ImageButton btnVoltar = findViewById(R.id.btnVoltar);
+        if (btnVoltar != null) btnVoltar.setOnClickListener(v -> finish());
 
         if (btnRelatoriosTop != null) {
             btnRelatoriosTop.setOnClickListener(v -> acessarRelatorios(v));
         }
     }
 
-    private void setupSaldoListaObserver() {
-        // Escuta o status de carregamento
-        contasViewModel.carregandoPaginacao.observe(this, isCarregando -> {
-            if (isCarregando) {
-                if (textLegendaSaldo != null) textLegendaSaldo.setText("Calculando...");
-            } else {
-                // Quando o carregamento do Firebase terminar, ele destrava a permissão
-                aguardandoPrimeiroFetch = false;
+    private void inicializarViewsDashboard() {
+        imgOlhoSaldo     = findViewById(R.id.imgOlhoSaldo);
+        textLegendaSaldo = findViewById(R.id.textLegendaSaldo);
+        textSaudacao     = findViewById(R.id.textSaudacao);
+        textSaldoGeral   = findViewById(R.id.textSaldo);
+
+        if (textSaldoGeral != null) {
+            textSaldoGeral.setText("Carregando...");
+            textSaldoGeral.setTextColor(Color.WHITE);
+        }
+        if (textLegendaSaldo != null) textLegendaSaldo.setText("Calculando...");
+        if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.GONE);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Busca
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Conecta o campo de busca ao ContasViewModel.
+     * Filtro aplicado a cada caractere digitado.
+     */
+    private void configurarBusca() {
+        if (editTextBusca == null) return;
+        editTextBusca.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // aplicarFiltros mantém os outros filtros ativos (datas e categorias = null = sem filtro)
+                contasViewModel.aplicarFiltros(s.toString().trim(), null, null, null);
             }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Saldo
+    // ─────────────────────────────────────────────────────────────
+
+    private void setupSaldoListaObserver() {
+        contasViewModel.carregandoPaginacao.observe(this, isCarregando -> {
+            if (!isCarregando) aguardandoPrimeiroFetch = false;
         });
 
-        // 2. Escuta a emissão de saldo do ViewModel e substitui na tela
         contasViewModel.saldoListaAtual.observe(this, saldoCentavos -> {
             if (saldoCentavos == null) return;
-
-            // Se o app ainda tá conectando no banco, não faz nada
             if (Boolean.TRUE.equals(contasViewModel.carregandoPaginacao.getValue())) return;
-
-            // BLOQUEIO DO PISCA: O ViewModel emite "0L" no milissegundo em que abre.
-            // A gente ignora esse 0L mentiroso se ainda estiver aguardando o primeiro fetch.
             if (aguardandoPrimeiroFetch && saldoCentavos == 0L) return;
-
-            // O saldo agora é validado e real. Manda desenhar na tela!
             desenharSaldoNaTela(saldoCentavos);
         });
     }
 
-    // ✅ COMO DEVE FICAR O MÉTODO INTEIRO:
     private void desenharSaldoNaTela(long saldoCentavos) {
-        // 1. O Helper já resolve pontos de milhar, vírgula de centavos e o sinal de negativo!
-        String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper.formatarCentavosParaBRL(saldoCentavos);
+        String valorFormatado = com.gussanxz.orgafacil.util_helper.MoedaHelper
+                .formatarCentavosParaBRL(saldoCentavos);
 
-        int corSaldo;
-
-        // 2. Definimos apenas as cores
-        if (saldoCentavos > 0) {
-            corSaldo = Color.parseColor("#4CAF50");
-        } else if (saldoCentavos < 0) {
-            corSaldo = Color.parseColor("#E53935");
-        } else {
-            corSaldo = Color.WHITE;
-        }
+        // Saldo no header sempre escuro (#1A1A1A) para contrastar com o teal.
+        // A cor semântica (verde/vermelho) fica nos itens da lista, não aqui.
+        int corSaldo = androidx.core.content.ContextCompat.getColor(this, R.color.cor_saldo_header);
 
         if (imgOlhoSaldo != null) imgOlhoSaldo.setVisibility(View.VISIBLE);
 
@@ -217,7 +228,8 @@ public class ResumoContasActivity extends AppCompatActivity {
             VisibilidadeHelper.configurarVisibilidadeSaldo(
                     containerSaldo, textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
         }
-        VisibilidadeHelper.atualizarValorSaldo(textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
+        VisibilidadeHelper.atualizarValorSaldo(
+                textSaldoGeral, imgOlhoSaldo, valorFormatado, corSaldo);
 
         atualizarLegendaSaldo(saldoCentavos);
     }
@@ -225,141 +237,136 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void atualizarLegendaSaldo(long saldoCentavos) {
         if (textLegendaSaldo == null) return;
 
-        int abaAtual = viewPager.getCurrentItem(); // 0 = Pendentes, 1 = Últimas Movimentações
-        String novoTexto = "";
+        int abaAtual = viewPager.getCurrentItem();
+        String novoTexto;
 
         if (abaAtual == 0) {
-            // Aba "Contas Pendentes"
-            if (saldoCentavos < 0) {
-                novoTexto = "Total a pagar";
-            } else if (saldoCentavos > 0) {
-                novoTexto = "Total a receber";
-            } else {
-                novoTexto = "Nenhum pendente";
-            }
+            if (saldoCentavos < 0)      novoTexto = "Total a pagar";
+            else if (saldoCentavos > 0) novoTexto = "Total a receber";
+            else                        novoTexto = "Nenhum pendente";
         } else {
-            // Aba "Últimas Movimentações"
             novoTexto = "Saldo das movimentações";
         }
 
-        // Se o texto for o mesmo, não faz nada
         if (textLegendaSaldo.getText().toString().equals(novoTexto)) return;
 
-        // Animação suave: esmaece, troca e volta
         final String textoFinal = novoTexto;
-        textLegendaSaldo.animate()
-                .alpha(0f)
-                .setDuration(150)
-                .withEndAction(() -> {
-                    textLegendaSaldo.setText(textoFinal);
-                    textLegendaSaldo.animate()
-                            .alpha(0.8f)
-                            .setDuration(150)
-                            .start();
-                }).start();
+        textLegendaSaldo.animate().alpha(0f).setDuration(150).withEndAction(() -> {
+            textLegendaSaldo.setText(textoFinal);
+            textLegendaSaldo.animate().alpha(0.8f).setDuration(150).start();
+        }).start();
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // ViewPager / Tabs
+    // ─────────────────────────────────────────────────────────────
+
+    private void setupSlideView() {
+        DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
+        viewPager.setAdapter(adapter);
+        viewPager.setOffscreenPageLimit(1);
+
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            if (position == 0) tab.setText(R.string.tab_titulo_contas_pendentes);
+            else               tab.setText(R.string.tab_titulo_ultimas_mov);
+        }).attach();
+
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                contasViewModel.notificarAbaAtiva(position == 0);
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Chips de filtro
+    // ─────────────────────────────────────────────────────────────
+
+    private void configurarChipsFiltro() {
+        RadioButton radioTodos     = radioGroupFiltroTipo.findViewById(R.id.radioTodos);
+        RadioButton radioReceitas  = radioGroupFiltroTipo.findViewById(R.id.radioReceitas);
+        RadioButton radioDespesas  = radioGroupFiltroTipo.findViewById(R.id.radioDespesas);
+
+        radioGroupFiltroTipo.setOnCheckedChangeListener((group, checkedId) -> {
+            // Força o redesenho de todos os botões para garantir que o selector
+            // de background e cor de texto sejam aplicados corretamente no tema escuro.
+            atualizarEstadoVisualFiltro(radioTodos, radioReceitas, radioDespesas);
+
+            if (checkedId == R.id.radioTodos) {
+                contasViewModel.setFiltroTipo(null);
+            } else if (checkedId == R.id.radioReceitas) {
+                contasViewModel.setFiltroTipo(TipoCategoriaContas.RECEITA);
+            } else if (checkedId == R.id.radioDespesas) {
+                contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
+            }
+        });
+
+        // Estado inicial correto
+        atualizarEstadoVisualFiltro(radioTodos, radioReceitas, radioDespesas);
+    }
+
+    /**
+     * Força o redesenho dos RadioButtons após mudança de estado.
+     * Necessário no tema escuro (Material3) porque o sistema não redesenha
+     * automaticamente o background/textColor baseado em state_checked.
+     */
+    private void atualizarEstadoVisualFiltro(RadioButton... botoes) {
+        for (RadioButton btn : botoes) {
+            btn.refreshDrawableState();
+            btn.invalidate();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Footer / Bottom bar
+    // ─────────────────────────────────────────────────────────────
 
     private void configurarBottomAppBarCustomizada() {
         bottomAppBar.setContentInsetsAbsolute(0, 0);
-        View containerInterno = findViewById(R.id.linear_footer_container);
-        if (containerInterno == null && bottomAppBar.getChildCount() > 0) {
-            for (int i = 0; i < bottomAppBar.getChildCount(); i++) {
-                if (bottomAppBar.getChildAt(i) instanceof LinearLayout) {
-                    containerInterno = bottomAppBar.getChildAt(i);
-                    break;
-                }
-            }
-        }
-        if (containerInterno != null) {
-            Toolbar.LayoutParams params = new Toolbar.LayoutParams(
-                    Toolbar.LayoutParams.MATCH_PARENT,
-                    Toolbar.LayoutParams.MATCH_PARENT
-            );
-            params.gravity = Gravity.CENTER;
-            containerInterno.setLayoutParams(params);
-        }
         setupMenuFooter();
     }
 
     private void setupMenuFooter() {
         btnFooterMovimentacoes = findViewById(R.id.btn_footer_movimentacoes);
-        btnFooterContas = findViewById(R.id.btn_footer_contas);
+        btnFooterContas        = findViewById(R.id.btn_footer_contas);
 
-        btnFooterMovimentacoes.setOnClickListener(v -> {
-            acaoRapida("Abrindo Contas");
-            acessarContasActivity(v);
-        });
-
-        btnFooterContas.setOnClickListener(v -> {
-            acaoRapida("Abrindo Contas Futuras");
-            acessarContasFuturas(v);
-        });
+        btnFooterMovimentacoes.setOnClickListener(v -> acessarContasActivity(v));
+        btnFooterContas.setOnClickListener(v -> acessarContasFuturas(v));
     }
 
-    private void setupMenuRadial() {
-        fabMain = findViewById(R.id.fab_main);
-        fabDespesaFutura = findViewById(R.id.fab_despesa_futura);
-        fabNovaDespesa = findViewById(R.id.fab_nova_despesa);
-        fabNovaReceita = findViewById(R.id.fab_nova_receita);
-        fabReceitaFutura = findViewById(R.id.fab_receita_futura);
-        radialSpotlight = findViewById(R.id.radial_spotlight);
+    // ─────────────────────────────────────────────────────────────
+    // Navegação
+    // ─────────────────────────────────────────────────────────────
 
-        fabMain.setOnClickListener(v -> {
-            if (!isMenuOpen) abrirMenu();
-            else fecharMenu();
-        });
+    public void acessarContasFuturas(View v) {
+        Intent intent = new Intent(this, ContasActivity.class);
+        intent.putExtra("EH_ATALHO", true);
+        startActivity(intent);
+    }
 
-        fabDespesaFutura.setOnClickListener(v -> {
-            acaoRapida("Abrindo Despesa Futura");
-            adicionarDespesaFutura(v);
-        });
-        fabNovaDespesa.setOnClickListener(v -> {
-            acaoRapida("Abrindo Nova Despesa");
-            adicionarDespesa(v);
-        });
-        fabNovaReceita.setOnClickListener(v -> {
-            acaoRapida("Abrindo Nova Receita");
-            adicionarReceita(v);
-        });
-        fabReceitaFutura.setOnClickListener(v -> {
-            acaoRapida("Abrindo Receita Futura");
-            adicionarReceitaFutura(v);
-        });
-
-        labelDespesaFutura = findViewById(R.id.label_fab_despesa_futura);
-        labelReceitaFutura = findViewById(R.id.label_fab_receita_futura);
-        labelNovaDespesa = findViewById(R.id.label_fab_nova_despesa);
-        labelNovaReceita = findViewById(R.id.label_fab_nova_receita);
+    public void acessarContasActivity(View view) {
+        startActivity(new Intent(this, ContasActivity.class));
     }
 
     public void adicionarReceita(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Receita");
-        launcherMovimentacao.launch(intent);  // ← era startActivity()
-    }
-
-    public void acessarContasFuturas(View v) {
-        Intent intent = new Intent(this, ContasActivity.class);
-        intent.putExtra("TEXTO_SALDO", "Saldo futuro");
-        intent.putExtra("BTN_DESPESA_FUTURA", "DESPESA FUTURA");
-        intent.putExtra("BTN_RECEITA_FUTURA", "RECEITA FUTURA");
-        intent.putExtra("EH_ATALHO", true);
-        startActivity(intent);
+        launcherMovimentacao.launch(intent);
     }
 
     public void adicionarDespesa(View v) {
         Intent intent = new Intent(this, DespesasActivity.class);
         intent.putExtra("TITULO_TELA", "Adicionar Despesa");
-        launcherMovimentacao.launch(intent);  // ← era startActivity()
+        launcherMovimentacao.launch(intent);
     }
-
 
     public void adicionarReceitaFutura(View v) {
         Intent intent = new Intent(this, ReceitasActivity.class);
         intent.putExtra("TITULO_TELA", "Agendar Receita");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        launcherMovimentacao.launch(intent);  // ← era startActivity()
+        launcherMovimentacao.launch(intent);
     }
 
     public void adicionarDespesaFutura(View v) {
@@ -367,12 +374,36 @@ public class ResumoContasActivity extends AppCompatActivity {
         intent.putExtra("TITULO_TELA", "Agendar Despesa");
         intent.putExtra("EH_ATALHO", true);
         intent.putExtra("EH_CONTA_FUTURA", true);
-        launcherMovimentacao.launch(intent);  // ← era startActivity()
+        launcherMovimentacao.launch(intent);
     }
 
-    public void acessarContasActivity(View view) {
-        startActivity(new Intent(this, ContasActivity.class));
-        Log.i(TAG, "acessou ContasActivity");
+    public void acessarRelatorios(View v) {
+        startActivity(new Intent(this,
+                com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.activities.RelatoriosActivity.class));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Menu Radial
+    // ─────────────────────────────────────────────────────────────
+
+    private void setupMenuRadial() {
+        fabMain           = findViewById(R.id.fab_main);
+        fabDespesaFutura  = findViewById(R.id.fab_despesa_futura);
+        fabNovaDespesa    = findViewById(R.id.fab_nova_despesa);
+        fabNovaReceita    = findViewById(R.id.fab_nova_receita);
+        fabReceitaFutura  = findViewById(R.id.fab_receita_futura);
+        radialSpotlight   = findViewById(R.id.radial_spotlight);
+
+        labelDespesaFutura = findViewById(R.id.label_fab_despesa_futura);
+        labelReceitaFutura = findViewById(R.id.label_fab_receita_futura);
+        labelNovaDespesa   = findViewById(R.id.label_fab_nova_despesa);
+        labelNovaReceita   = findViewById(R.id.label_fab_nova_receita);
+
+        fabMain.setOnClickListener(v -> { if (!isMenuOpen) abrirMenu(); else fecharMenu(); });
+        fabDespesaFutura.setOnClickListener(v -> { fecharMenu(); adicionarDespesaFutura(v); });
+        fabNovaDespesa.setOnClickListener(v   -> { fecharMenu(); adicionarDespesa(v); });
+        fabNovaReceita.setOnClickListener(v   -> { fecharMenu(); adicionarReceita(v); });
+        fabReceitaFutura.setOnClickListener(v -> { fecharMenu(); adicionarReceitaFutura(v); });
     }
 
     private void abrirMenu() {
@@ -386,13 +417,13 @@ public class ResumoContasActivity extends AppCompatActivity {
 
         animarBotao(fabDespesaFutura, -320f, -200f);
         animarBotao(fabReceitaFutura, -150f, -420f);
-        animarBotao(fabNovaDespesa, 150f, -420f);
-        animarBotao(fabNovaReceita, 320f, -200f);
+        animarBotao(fabNovaDespesa,    150f, -420f);
+        animarBotao(fabNovaReceita,    320f, -200f);
 
         animarLabelAcimaDoFab(labelDespesaFutura, -320f, -200f);
         animarLabelAcimaDoFab(labelReceitaFutura, -150f, -420f);
-        animarLabelAcimaDoFab(labelNovaDespesa, 150f, -420f);
-        animarLabelAcimaDoFab(labelNovaReceita, 320f, -200f);
+        animarLabelAcimaDoFab(labelNovaDespesa,    150f, -420f);
+        animarLabelAcimaDoFab(labelNovaReceita,    320f, -200f);
     }
 
     private void fecharMenu() {
@@ -403,15 +434,10 @@ public class ResumoContasActivity extends AppCompatActivity {
                 .withEndAction(() -> radialSpotlight.setVisibility(View.INVISIBLE)).start();
         fabMain.animate().setInterpolator(interpolator).rotation(0f).setDuration(300).start();
 
-        recolherBotao(fabDespesaFutura);
-        recolherBotao(fabNovaDespesa);
-        recolherBotao(fabNovaReceita);
-        recolherBotao(fabReceitaFutura);
-
-        recolherBotao(labelDespesaFutura);
-        recolherBotao(labelReceitaFutura);
-        recolherBotao(labelNovaDespesa);
-        recolherBotao(labelNovaReceita);
+        recolherBotao(fabDespesaFutura); recolherBotao(fabNovaDespesa);
+        recolherBotao(fabNovaReceita);   recolherBotao(fabReceitaFutura);
+        recolherBotao(labelDespesaFutura); recolherBotao(labelReceitaFutura);
+        recolherBotao(labelNovaDespesa);   recolherBotao(labelNovaReceita);
     }
 
     private void animarBotao(View view, float x, float y) {
@@ -430,66 +456,11 @@ public class ResumoContasActivity extends AppCompatActivity {
     private void animarLabelAcimaDoFab(TextView label, float fabX, float fabY) {
         label.setVisibility(View.VISIBLE);
         label.setAlpha(0f);
-        label.animate()
-                .translationX(fabX)
-                .translationY(fabY - dp(44))
-                .alpha(1f)
-                .setInterpolator(interpolator)
-                .setDuration(250)
-                .start();
+        label.animate().translationX(fabX).translationY(fabY - dp(44))
+                .alpha(1f).setInterpolator(interpolator).setDuration(250).start();
     }
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
-    }
-
-    private void acaoRapida(String mensagem) {
-        //Toast.makeText(this, mensagem, Toast.LENGTH_SHORT).show();
-        fecharMenu();
-    }
-
-    private void setupSlideView() {
-        DashboardPagerAdapter adapter = new DashboardPagerAdapter(this);
-        viewPager.setAdapter(adapter);
-
-        viewPager.setOffscreenPageLimit(1); // mantém aba adjacente viva na memória
-
-        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            if (position == 0) {
-                tab.setText(R.string.tab_titulo_contas_pendentes);
-            } else {
-                tab.setText(R.string.tab_titulo_ultimas_mov);
-            }
-        }).attach();
-
-        // Notifica o ViewModel quando o usuário troca de aba
-        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                boolean ehFuturo = (position == 0); // aba 0 = Pendentes, aba 1 = Últimas
-                contasViewModel.notificarAbaAtiva(ehFuturo);
-            }
-        });
-    }
-
-    private void configurarChipsFiltro() {
-        chipGroupFiltroTipo.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipTodos)) {
-                contasViewModel.setFiltroTipo(null);
-            } else if (checkedIds.contains(R.id.chipSoReceitas)) {
-                contasViewModel.setFiltroTipo(TipoCategoriaContas.RECEITA);
-            } else if (checkedIds.contains(R.id.chipSoDespesas)) {
-                contasViewModel.setFiltroTipo(TipoCategoriaContas.DESPESA);
-            }
-        });
-    }
-
-    public void acessarRelatorios(View v) {
-
-        Intent intent = new Intent(this,
-                com.gussanxz.orgafacil.funcionalidades.contas.relatorios.ui.activities.RelatoriosActivity.class);
-
-        startActivity(intent);
     }
 }

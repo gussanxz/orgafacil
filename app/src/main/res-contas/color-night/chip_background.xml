@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    res-contas/color-night/chip_background.xml
+    Chips RECEITAS e DESPESAS no modo escuro.
+    Sobre o header teal: fundo levemente transparente escuro.
+-->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="#FFFFFF" android:state_checked="true"/>  <!-- selecionado = branco -->
-    <item android:color="#121212" android:state_checked="false"/> <!-- não selecionado = preto -->
+    <item android:color="#40000000" android:state_checked="true" />
+    <item android:color="#26000000" android:state_checked="false" />
 </selector>

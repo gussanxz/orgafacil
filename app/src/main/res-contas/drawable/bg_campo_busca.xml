@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_campo_busca.xml
+    Fundo arredondado do campo de busca e do botão filtro
+    na tela de contas. Adapta via @color entre claro e escuro.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/cor_fundo_busca" />
+    <corners android:radius="12dp" />
+
+</shape>

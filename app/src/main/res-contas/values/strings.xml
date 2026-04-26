@@ -15,4 +15,24 @@
     <string name="notif_msg_em_breve_hoje">"%1$s" vence hoje!</string>
     <string name="notif_msg_em_breve_singular">"%1$s" vence em %2$d dia(s).</string>
     <string name="notif_msg_em_breve_plural">%1$d conta(s) vencem nas próximas 48h.</string>
+
+    <!-- Toolbar -->
+    <string name="btn_relatorios">Relatórios</string>
+    <string name="voltar">Voltar</string>
+
+    <!-- Header saldo -->
+    <string name="legenda_saldo_padrao">Total a receber</string>
+
+    <!-- Chips de filtro -->
+    <string name="chip_todos">✓ TODOS</string>
+    <string name="chip_receitas">RECEITAS</string>
+    <string name="chip_despesas">DESPESAS</string>
+
+    <!-- Campo de busca -->
+    <string name="hint_buscar_descricao">Buscar por descrição...</string>
+    <string name="filtro_avancado">Filtro avançado</string>
+
+    <!-- Footer -->
+    <string name="footer_pendentes">Pendentes</string>
+    <string name="footer_movimentacoes">Movimentações</string>
 </resources>

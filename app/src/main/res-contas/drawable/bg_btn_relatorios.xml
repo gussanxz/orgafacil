@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_btn_relatorios.xml
+    Fundo do botão "RELATÓRIOS" na toolbar.
+    - Modo claro:  fundo branco semitransparente + borda branca sutil
+    - Modo escuro: fundo branco semitransparente + borda branca sutil
+    A cor vem de @color/cor_fundo_btn_relatorios (values + values-night).
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/cor_fundo_btn_relatorios" />
+    <stroke
+        android:width="1dp"
+        android:color="#55FFFFFF" />
+    <corners android:radius="20dp" />
+
+    <padding
+        android:left="10dp"
+        android:right="10dp"
+        android:top="6dp"
+        android:bottom="6dp" />
+
+</shape>

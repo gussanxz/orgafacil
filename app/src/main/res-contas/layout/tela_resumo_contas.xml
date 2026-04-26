@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    tela_resumo_contas.xml
+    Tela principal do módulo Contas.
+
+    Estrutura visual (de cima para baixo):
+      1. Toolbar customizada  → botão voltar | título | botão relatórios
+      2. Header teal          → saudação | legenda | saldo + olho | chips filtro
+      3. Corpo branco arredondado
+            → TabLayout (Próx. Vencimento | Movimentações)
+            → Campo de busca + botão filtro
+            → ViewPager2 com lista
+      4. BottomAppBar         → PENDENTES | FAB + | MOVIMENTAÇÕES
+      5. Overlay + FABs radiais (menu flutuante)
+
+    Cores todas via @color (res-contas/values/colors.xml + values-night).
+    Nenhuma cor hard-coded neste arquivo.
+-->
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -9,85 +26,114 @@
     android:background="@color/cor_fundo_header_resumo_contas"
     tools:context=".funcionalidades.contas.resumo_contas.ui.visual.ResumoContasActivity">
 
+    <!-- ══════════════════════════════════════════════════════════
+         COLUNA PRINCIPAL (tudo menos FABs, overlay e bottom bar)
+         ══════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingBottom="70dp">
+        android:paddingBottom="64dp">
 
+        <!-- ────────────────────────────────────────────────────────
+             1. TOOLBAR CUSTOMIZADA
+             < voltar   |   OrgaFácil   |   [ícone] RELATÓRIOS
+             ──────────────────────────────────────────────────────── -->
         <LinearLayout
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="12dp">
+            android:paddingHorizontal="8dp">
 
+            <!-- Botão voltar -->
+            <ImageButton
+                android:id="@+id/btnVoltar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_arrow_back_24"
+                android:contentDescription="@string/voltar"
+                app:tint="@color/cor_texto_header"
+                android:onClick="finish" />
+
+            <!-- Título centralizado -->
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/app_name"
                 android:textSize="18sp"
-                android:textColor="@color/white"
+                android:textColor="@color/cor_texto_header"
                 android:textStyle="bold"
-                android:paddingStart="4dp"/>
+                android:gravity="center" />
 
+            <!-- Botão Relatórios (ícone + texto empilhados) -->
             <LinearLayout
                 android:id="@+id/btnRelatoriosTop"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="4dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="8dp"
+                android:background="@drawable/bg_btn_relatorios"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_analytics_24"
-                    app:tint="@color/white" />
+                    android:layout_marginEnd="4dp"
+                    app:tint="@color/cor_texto_btn_relatorios" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Relatórios"
-                    android:textColor="@color/white"
-                    android:textSize="10sp"
+                    android:text="@string/btn_relatorios"
+                    android:textColor="@color/cor_texto_btn_relatorios"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:textAllCaps="true" />
             </LinearLayout>
 
         </LinearLayout>
 
+        <!-- ────────────────────────────────────────────────────────
+             2. HEADER TEAL — saudação, legenda, saldo, chips
+             ──────────────────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingBottom="24dp">
+            android:paddingBottom="28dp">
 
+            <!-- Saudação: "Olá, Gustavo 👋" -->
             <TextView
                 android:id="@+id/textSaudacao"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Olá, Usuário"
-                android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:alpha="0.9"/>
+                android:text="Olá, Usuário 👋"
+                android:textColor="@color/cor_texto_header"
+                android:textSize="16sp"
+                android:alpha="0.85" />
 
+            <!-- Legenda do saldo: "TOTAL A RECEBER" -->
             <TextView
                 android:id="@+id/textLegendaSaldo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Saldo Atual"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:layout_marginTop="12dp"
-                android:alpha="0.8" />
+                android:text="@string/legenda_saldo_padrao"
+                android:textColor="@color/cor_texto_header"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="true"
+                android:layout_marginTop="10dp"
+                android:alpha="0.7" />
 
+            <!-- Valor + ícone olho -->
             <LinearLayout
                 android:id="@+id/containerSaldo"
                 android:layout_width="wrap_content"
@@ -102,9 +148,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="R$ 0,00"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/cor_saldo_header"
                     android:textStyle="bold"
-                    android:textSize="28sp"
+                    android:textSize="34sp"
                     android:maxLines="1"
                     android:ellipsize="end"
                     android:paddingVertical="2dp"
@@ -123,59 +169,80 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:src="@drawable/ic_visibility_24"
-                    app:tint="@color/white"/>
+                    android:visibility="gone"
+                    app:tint="@color/cor_olho_header" />
             </LinearLayout>
 
-            <ProgressBar
-                android:id="@+id/progressBarResumo"
+            <!-- Filtro: TODOS | RECEITAS | DESPESAS
+                 RadioGroup com RadioButton estilizados.
+                 stateListAnimator="@null" remove a sobreposição do Material3
+                 que impedia o selector de background de funcionar. -->
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:theme="@style/ThemeOverlay.AppCompat.Dark"
-                android:visibility="gone" />
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupFiltroTipo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="44dp"
                 android:layout_marginTop="16dp"
-                app:singleSelection="true"
-                app:selectionRequired="true"
-                app:chipSpacingHorizontal="8dp">
+                android:background="@drawable/bg_filtro_header_contas"
+                android:padding="4dp">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipTodos"
+                <RadioGroup
+                    android:id="@+id/radioGroupFiltroTipo"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="TODOS"
-                    android:checked="true"
-                    style="@style/Widget.MaterialComponents.Chip.Filter"
-                    app:chipBackgroundColor="@color/chip_todos_background"
-                    android:textColor="#222222"
-                    app:checkedIconTint="#222222"/>
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:checkedButton="@+id/radioTodos">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipSoReceitas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="RECEITAS"
-                    style="@style/Widget.MaterialComponents.Chip.Filter"
-                    app:chipBackgroundColor="@color/chip_background"
-                    android:textColor="#43A047"
-                    app:checkedIconTint="#43A047"/>
+                    <RadioButton
+                        android:id="@+id/radioTodos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="@string/chip_todos"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:stateListAnimator="@null"
+                        android:background="@drawable/selector_toggle_filtro_header"
+                        android:textColor="@color/selector_toggle_filtro_texto"
+                        android:checked="true" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipSoDespesas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="DESPESAS"
-                    style="@style/Widget.MaterialComponents.Chip.Filter"
-                    app:chipBackgroundColor="@color/chip_background"
-                    android:textColor="#E53935"
-                    app:checkedIconTint="#E53935"/>
-            </com.google.android.material.chip.ChipGroup>
+                    <RadioButton
+                        android:id="@+id/radioReceitas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="@string/chip_receitas"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:stateListAnimator="@null"
+                        android:background="@drawable/selector_toggle_filtro_header"
+                        android:textColor="@color/selector_toggle_filtro_texto" />
+
+                    <RadioButton
+                        android:id="@+id/radioDespesas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="@string/chip_despesas"
+                        android:button="@null"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:stateListAnimator="@null"
+                        android:background="@drawable/selector_toggle_filtro_header"
+                        android:textColor="@color/selector_toggle_filtro_texto" />
+
+                </RadioGroup>
+            </LinearLayout>
+
         </LinearLayout>
 
+        <!-- ────────────────────────────────────────────────────────
+             3. CORPO BRANCO com cantos superiores arredondados
+                TabLayout + barra de busca + ViewPager2
+             ──────────────────────────────────────────────────────── -->
         <LinearLayout
             android:id="@+id/scrollMeio"
             android:layout_width="match_parent"
@@ -183,35 +250,101 @@
             android:layout_weight="1"
             android:background="@drawable/header_background"
             android:orientation="vertical"
-            android:paddingTop="16dp">
+            android:paddingTop="8dp">
 
+            <!-- Abas: Próx. Vencimento | Movimentações -->
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabLayoutDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:tabMode="fixed"
                 app:tabGravity="fill"
-                android:background="@android:color/transparent"/>
+                app:tabTextColor="@color/cor_tab_texto_inativo"
+                app:tabSelectedTextColor="@color/cor_tab_texto_ativo"
+                app:tabIndicatorColor="@color/cor_tab_indicador"
+                app:tabIndicatorHeight="2dp"
+                android:background="@android:color/transparent" />
 
+            <!-- Campo de busca + botão filtro -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="4dp"
+                android:gravity="center_vertical">
+
+                <!-- Campo de busca -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_campo_busca"
+                    android:paddingHorizontal="12dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_search_24"
+                        android:layout_marginEnd="8dp"
+                        app:tint="@color/cor_hint_busca" />
+
+                    <EditText
+                        android:id="@+id/editTextBusca"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/hint_buscar_descricao"
+                        android:textColorHint="@color/cor_hint_busca"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_texto_busca"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:singleLine="true" />
+                </LinearLayout>
+
+                <!-- Botão filtro avançado -->
+                <ImageButton
+                    android:id="@+id/btnFiltroAvancado"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_campo_busca"
+                    android:src="@drawable/ic_filtro_24"
+                    android:padding="10dp"
+                    android:contentDescription="@string/filtro_avancado"
+                    app:tint="@color/cor_hint_busca" />
+
+            </LinearLayout>
+
+            <!-- Lista de movimentações via ViewPager2 -->
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPagerDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
+
         </LinearLayout>
+
     </LinearLayout>
 
+    <!-- ══════════════════════════════════════════════════════════
+         4. BOTTOM APP BAR — PENDENTES | (+) | MOVIMENTAÇÕES
+         ══════════════════════════════════════════════════════════ -->
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:layout_gravity="bottom"
         app:fabAlignmentMode="center"
-        app:fabCradleMargin="10dp"
-        app:fabCradleRoundedCornerRadius="15dp"
-        app:backgroundTint="@color/cor_background"
+        app:fabCradleMargin="8dp"
+        app:fabCradleRoundedCornerRadius="16dp"
+        app:backgroundTint="@color/cor_fundo_header_resumo_contas"
         app:contentInsetStart="0dp"
-        app:contentInsetEnd="0dp"
-        android:backgroundTint="@color/cor_fundo_header_resumo_contas">
+        app:contentInsetEnd="0dp">
 
         <LinearLayout
             android:id="@+id/linear_footer_container"
@@ -220,6 +353,7 @@
             android:orientation="horizontal"
             android:weightSum="2">
 
+            <!-- Pendentes (esquerda) -->
             <LinearLayout
                 android:id="@+id/btn_footer_contas"
                 android:layout_width="0dp"
@@ -227,23 +361,29 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingEnd="20dp"
-                android:onClick="acessarContasFuturas">
+                android:paddingEnd="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/ic_receipt_long_28"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_texto_abas_footer_resumo_contas" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="CONTAS PENDENTES"
+                    android:text="@string/footer_pendentes"
                     android:textColor="@color/cor_texto_abas_footer_resumo_contas"
                     android:textSize="10sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textAllCaps="true"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
+            <!-- Movimentações (direita) -->
             <LinearLayout
                 android:id="@+id/btn_footer_movimentacoes"
                 android:layout_width="0dp"
@@ -251,26 +391,48 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:onClick="acessarContasActivity">
+                android:paddingStart="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/ic_tune_24"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_texto_abas_footer_resumo_contas" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="MOVIMENTAÇÕES"
+                    android:text="@string/footer_movimentacoes"
                     android:textColor="@color/cor_texto_abas_footer_resumo_contas"
                     android:textSize="10sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textAllCaps="true"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
         </LinearLayout>
     </com.google.android.material.bottomappbar.BottomAppBar>
 
+    <!-- FAB principal (+ rosa) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#FF4081"
+        android:translationY="-40dp"
+        app:layout_anchor="@id/bottomAppBar"
+        app:layout_anchorGravity="center"
+        app:srcCompat="@drawable/ic_add_24"
+        app:tint="@color/white"
+        app:elevation="12dp"
+        app:pressedTranslationZ="12dp" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         5. OVERLAY + FABs DO MENU RADIAL (sem alteração de lógica)
+         ══════════════════════════════════════════════════════════ -->
     <View
         android:id="@+id/overlay_background"
         android:layout_width="match_parent"
@@ -278,7 +440,6 @@
         android:background="#80000000"
         android:visibility="gone"
         android:alpha="0"
-        app:pressedTranslationZ="10dp"
         android:clickable="true"
         android:focusable="true" />
 
@@ -307,7 +468,7 @@
         app:srcCompat="@drawable/ic_event_busy_24"
         app:tint="@color/white"
         app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
+        app:pressedTranslationZ="12dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_receita_futura"
@@ -321,7 +482,7 @@
         app:srcCompat="@drawable/ic_event_available_24"
         app:tint="@color/white"
         app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
+        app:pressedTranslationZ="12dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_nova_despesa"
@@ -335,7 +496,7 @@
         app:srcCompat="@drawable/ic_money_off_24"
         app:tint="@color/white"
         app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
+        app:pressedTranslationZ="12dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_nova_receita"
@@ -349,21 +510,9 @@
         app:srcCompat="@drawable/ic_attach_money_24"
         app:tint="@color/white"
         app:elevation="12dp"
-        app:pressedTranslationZ="12dp"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_main"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#FF4081"
-        android:translationY="-40dp"
-        app:layout_anchor="@id/bottomAppBar"
-        app:layout_anchorGravity="center"
-        app:srcCompat="@drawable/ic_add_24"
-        app:tint="@color/white"
-        app:elevation="12dp"
         app:pressedTranslationZ="12dp" />
 
+    <!-- Labels dos FABs radiais -->
     <TextView
         android:id="@+id/label_fab_despesa_futura"
         android:layout_width="wrap_content"

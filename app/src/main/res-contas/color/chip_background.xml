@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    res-contas/color/chip_background.xml  →  MODO CLARO
+    Chips RECEITAS e DESPESAS sobre o header teal.
+    Transparente para deixar o teal aparecer, sem borda.
+-->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="#000000" android:state_checked="true"/>  <!-- selecionado = preto -->
-    <item android:color="#E0E0E0" android:state_checked="false"/> <!-- não selecionado = cinza -->
+    <item android:color="#40FFFFFF" android:state_checked="true" />
+    <item android:color="#26FFFFFF" android:state_checked="false" />
 </selector>

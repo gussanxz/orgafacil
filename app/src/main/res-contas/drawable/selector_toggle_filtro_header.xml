@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    selector_toggle_filtro_header.xml  (drawable)
+    Selector de background para os RadioButtons do filtro de contas.
+    Vai em: res-contas/drawable/selector_toggle_filtro_header.xml
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true"
+        android:drawable="@drawable/bg_toggle_filtro_selecionado" />
+    <item android:state_checked="false"
+        android:drawable="@drawable/bg_toggle_filtro_normal" />
+</selector>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    res-contas/color-night/selector_toggle_filtro_texto.xml
+    Idêntico ao modo claro — o comportamento não muda entre temas:
+    Selecionado  → texto escuro (#1A1A1A) sobre fundo branco oval
+    Normal       → texto branco (#FFFFFF) sobre fundo transparente
+    O Android procura aqui primeiro no modo escuro.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true"  android:color="#1A1A1A" />
+    <item android:state_checked="false" android:color="#FFFFFF" />
+</selector>
