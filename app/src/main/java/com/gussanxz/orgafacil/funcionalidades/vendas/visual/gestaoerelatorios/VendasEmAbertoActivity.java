@@ -128,6 +128,11 @@ public class VendasEmAbertoActivity extends AppCompatActivity {
         if (btnVoltar != null) {
             btnVoltar.setOnClickListener(v -> finish());
         }
+
+        View btnIniciarNovaVenda = findViewById(R.id.btnIniciarNovaVenda);
+        if (btnIniciarNovaVenda != null) {
+            btnIniciarNovaVenda.setOnClickListener(v -> finish());
+        }
     }
 
     private void carregarVendasEmAberto() {

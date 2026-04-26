@@ -14,14 +14,15 @@
         android:background="@color/colorPrimary"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="12dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="18dp">
 
         <ImageButton
             android:id="@+id/btnVoltarAbrirCaixa"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_vendas_header_action"
             android:contentDescription="Voltar"
             android:src="@drawable/ic_arrow_back_48"
             app:tint="@color/white" />
@@ -32,7 +33,7 @@
             android:layout_weight="1"
             android:text="Abrir Caixa"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:layout_marginStart="8dp" />
 
@@ -43,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@drawable/header_background">
+        android:background="@drawable/bg_vendas_content">
 
         <LinearLayout
             android:layout_width="match_parent"

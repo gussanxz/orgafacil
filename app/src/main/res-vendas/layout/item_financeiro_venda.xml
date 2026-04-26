@@ -6,8 +6,9 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     app:cardCornerRadius="14dp"
+    app:cardBackgroundColor="@color/vendas_card"
     app:cardElevation="1dp"
-    app:strokeColor="@color/cor_divisor"
+    app:strokeColor="@color/vendas_stroke"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -44,14 +45,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="00:00"
-                    android:textColor="@color/cor_texto_secundario"
+                    android:textColor="@color/vendas_text_secondary"
                     android:textSize="12sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" · "
-                    android:textColor="@color/cor_texto_secundario"
+                    android:textColor="@color/vendas_text_secondary"
                     android:textSize="12sp" />
 
                 <TextView
@@ -59,7 +60,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="PIX"
-                    android:textColor="@color/cor_texto_secundario"
+                    android:textColor="@color/vendas_text_secondary"
                     android:textSize="12sp" />
 
             </LinearLayout>

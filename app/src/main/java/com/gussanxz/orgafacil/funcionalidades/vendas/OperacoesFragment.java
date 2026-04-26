@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity;
@@ -48,6 +49,15 @@ public class OperacoesFragment extends Fragment {
         if (cardCatalogo != null) {
             cardCatalogo.setOnClickListener(v ->
                     startActivity(new Intent(requireContext(), ListaProdutosEServicosActivity.class)));
+        }
+
+        View cardVendaRapida = view.findViewById(R.id.cardVendaRapida);
+        if (cardVendaRapida != null) {
+            cardVendaRapida.setOnClickListener(v -> {
+                if (requireActivity() instanceof ResumoVendasActivity) {
+                    ((ResumoVendasActivity) requireActivity()).verificarCaixaENavegar();
+                }
+            });
         }
     }
 }

@@ -44,6 +44,9 @@ public class VendasCadastrosActivity extends AppCompatActivity {
         ocultarOverlay(R.id.overlayCombos);
         ocultarOverlay(R.id.overlayModificadores);
 
+        View btnVoltar = findViewById(R.id.btnVoltarCadastros);
+        if (btnVoltar != null) btnVoltar.setOnClickListener(v -> finish());
+
         // Wiring manual do item Clientes (sem android:onClick no XML)
         View itemClientes = findViewById(R.id.itemClientes);
         if (itemClientes != null) {

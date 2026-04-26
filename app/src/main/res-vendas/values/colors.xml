@@ -16,4 +16,30 @@
     <!-- bottom_sheet_sacola_nova_venda -->
     <color name="background_sacola">#FFFFFFFF</color>
 
+    <!-- Dashboard cards -->
+    <color name="cor_titulo_card_vendas">#1A1A1A</color>
+    <color name="cor_subtitulo_card_vendas">#757575</color>
+
+    <!-- Stats header card -->
+    <color name="cor_stats_card_bg">#FFFFFF</color>
+    <color name="cor_stats_valor_hoje">#01C7D2</color>
+    <color name="cor_stats_label">#AAAAAA</color>
+    <color name="cor_stats_valor">#1A1A1A</color>
+    <color name="cor_stats_caixa_aberto">#01C7D2</color>
+    <color name="cor_stats_caixa_fechado">#FFD54F</color>
+
+    <!-- Surfaces vendas -->
+    <color name="vendas_surface">#F4F6F8</color>
+    <color name="vendas_card">#FFFFFF</color>
+    <color name="vendas_stroke">#DDE5EC</color>
+    <color name="vendas_search_hint">#8EA0B8</color>
+    <color name="vendas_chip_bg">#FFFFFF</color>
+    <color name="vendas_chip_selected">#01C7D2</color>
+    <color name="vendas_chip_text">#4B5870</color>
+    <color name="vendas_text_secondary">#6B7890</color>
+    <color name="vendas_icon_bg_product">#F2FBF8</color>
+    <color name="vendas_icon_bg_service">#EEF5FF</color>
+    <color name="vendas_grid_bg_product">#F8F2FF</color>
+    <color name="vendas_group_header">#D6F8F4</color>
+
 </resources>

@@ -4,19 +4,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardCornerRadius="14dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="@color/vendas_card"
     app:cardElevation="1dp"
-    app:strokeColor="@color/cor_divisor"
+    app:strokeColor="@color/vendas_stroke"
     app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
-        <!-- Linha 1: número + status -->
+        <!-- Linha 1: número + status badge -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -37,61 +39,80 @@
                 android:id="@+id/txtVendaStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_status_ativo"
+                android:background="@drawable/bg_status_finalizada"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="3dp"
                 android:text="FINALIZADA"
                 android:textColor="#2E7D32"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Linha 2: horário -->
-        <TextView
-            android:id="@+id/txtVendaData"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="00:00"
-            android:textColor="@color/cor_texto_secundario"
-            android:textSize="13sp" />
-
-        <!-- Linha 3: pagamento -->
-        <TextView
-            android:id="@+id/txtVendaPagamento"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Pagamento: PIX"
-            android:textColor="@color/cor_texto_secundario"
-            android:textSize="13sp" />
-
-        <!-- Linha 4: caixa -->
-        <TextView
-            android:id="@+id/txtVendaCaixa"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Caixa: —"
-            android:textColor="@color/cor_texto_secundario"
-            android:textSize="13sp" />
-
-        <!-- Linha 4: qtd + total + botões -->
+        <!-- Linha 2: horário · pagamento · quantidade -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:id="@+id/txtVendaData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                android:textColor="@color/vendas_text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:text="·"
+                android:textColor="@color/vendas_text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/txtVendaPagamento"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PIX"
+                android:textColor="@color/vendas_text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:text="·"
+                android:textColor="@color/vendas_text_secondary"
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/txtVendaQuantidade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1 item"
+                android:textColor="@color/vendas_text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Linha 3: caixa | total + editar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/txtVendaCaixa"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="1 item"
-                android:textColor="@color/cor_texto_primario"
-                android:textSize="14sp" />
+                android:text="Caixa —"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/txtVendaTotal"
@@ -99,30 +120,29 @@
                 android:layout_height="wrap_content"
                 android:text="R$ 0,00"
                 android:textColor="@color/colorPrimary"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <!-- Botão editar -->
             <ImageButton
                 android:id="@+id/btnEditarVenda"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="12dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Editar venda"
                 android:src="@drawable/ic_lapis_editar_24"
                 android:tint="@color/colorPrimary" />
 
-            <!-- Botão alternar status (ícone muda via código) -->
             <ImageButton
                 android:id="@+id/btnAlternarStatus"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="2dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Alternar status"
+                android:contentDescription="Cancelar venda"
                 android:src="@drawable/ic_delete_forever_24"
-                android:tint="#C62828" />
+                android:tint="#C62828"
+                android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>

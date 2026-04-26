@@ -4,12 +4,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
+    android:layout_margin="6dp"
     android:clickable="true"
     android:focusable="true"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:strokeColor="#E0E0E0"
+    app:cardBackgroundColor="@color/vendas_card"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/vendas_stroke"
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -17,52 +18,38 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Imagem grande no topo -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="match_parent"
-            android:layout_height="110dp"
-            app:cardBackgroundColor="#F5F5F5"
+            android:layout_height="86dp"
+            app:cardBackgroundColor="@color/vendas_grid_bg_product"
             app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/linearLayout">
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/imageIcone"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:padding="6dp"
+                android:scaleType="center"
                 android:src="@drawable/ic_categorias_geral_24" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Preço sobre a imagem, canto superior direito -->
-        <TextView
-            android:id="@+id/textPrecoItem"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="6dp"
-            android:background="#CC000000"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
-            android:text="R$ 0,00"
-            android:textColor="#4CAF50"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Tag tipo (PRODUTO/SERVIÇO) e status sobre a imagem -->
         <LinearLayout
             android:id="@+id/linearLayout"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:elevation="2dp"
             android:gravity="center_vertical"
-            android:padding="6dp"
+            android:orientation="horizontal"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textPrecoItem">
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
                 android:id="@+id/textTipoTag"
@@ -70,36 +57,38 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_tag_produto"
                 android:paddingHorizontal="6dp"
-                android:paddingVertical="3dp"
+                android:paddingVertical="2dp"
                 android:text="PRODUTO"
-                android:textColor="@color/cor_texto_secundario"
+                android:textColor="@color/vendas_text_secondary"
                 android:textSize="9sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/textStatusItem"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/bg_status_ativo" />
-
         </LinearLayout>
 
-        <!-- Nome e descrição abaixo da imagem -->
+        <View
+            android:id="@+id/textStatusItem"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_status_ativo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
             android:id="@+id/textNomeItem"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginHorizontal="8dp"
-            android:gravity="center"
-            android:text="Nome do Item"
-            android:textColor="@color/cor_texto"
-            android:textSize="13sp"
-            android:textStyle="bold"
+            android:layout_marginHorizontal="14dp"
+            android:layout_marginTop="12dp"
+            android:ellipsize="end"
+            android:gravity="start"
             android:maxLines="2"
             android:minLines="1"
-            android:ellipsize="end"
+            android:text="Nome do Item"
+            android:textColor="@color/cor_texto"
+            android:textSize="15sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cardIcone" />
@@ -108,19 +97,33 @@
             android:id="@+id/textDescricaoItem"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
             android:layout_marginTop="2dp"
-            android:layout_marginHorizontal="8dp"
-            android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="Descrição..."
-            android:textColor="@color/cor_texto_secundario"
-            android:textSize="11sp"
-            android:maxLines="1"
             android:ellipsize="end"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:gravity="start"
+            android:maxLines="1"
+            android:text="Descricao"
+            android:textColor="@color/vendas_text_secondary"
+            android:textSize="13sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/textNomeItem" />
+
+        <TextView
+            android:id="@+id/textPrecoItem"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="14dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="12dp"
+            android:text="R$ 0,00"
+            android:textColor="@color/colorPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textDescricaoItem" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -18,15 +18,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="12dp"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="18dp"
+            android:paddingBottom="18dp"
             android:background="@color/colorPrimary">
 
             <ImageButton
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="@android:color/transparent"
+                android:background="@drawable/bg_vendas_header_action"
                 android:src="@drawable/ic_arrow_back_48"
                 app:tint="@color/white"
                 android:onClick="retornarPrincipal"
@@ -39,7 +39,7 @@
                 android:layout_marginStart="8dp"
                 android:text="Relatórios"
                 android:textColor="@color/white"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -57,7 +57,7 @@
         android:layout_gravity="bottom"
         android:layout_marginBottom="64dp"
         android:orientation="vertical"
-        android:background="@color/cor_background"
+            android:background="@drawable/bg_vendas_content"
         android:paddingTop="6dp"
         android:paddingBottom="4dp"
         android:gravity="center_horizontal"

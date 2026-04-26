@@ -100,7 +100,8 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         boolean isAtivo = isItemAtivo(item);
 
         int corDestaque;
-        int corFundoElements = Color.WHITE;
+        int corFundoElements;
+        int corTagBg = androidx.core.content.ContextCompat.getColor(context, R.color.vendas_chip_bg);
         int backgroundRes;
         String textoTag;
 
@@ -108,10 +109,12 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             corDestaque = Color.parseColor("#EF6C00");
             textoTag = "PRODUTO";
             backgroundRes = R.drawable.bg_tag_produto;
+            corFundoElements = androidx.core.content.ContextCompat.getColor(context, R.color.vendas_icon_bg_product);
         } else {
             corDestaque = Color.parseColor("#1565C0");
             textoTag = "SERVIÇO";
             backgroundRes = R.drawable.bg_tag_servico;
+            corFundoElements = androidx.core.content.ContextCompat.getColor(context, R.color.vendas_icon_bg_service);
         }
 
         txtTag.setText(textoTag);
@@ -121,7 +124,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         if (txtTag.getBackground() != null) {
             androidx.core.graphics.drawable.DrawableCompat.setTint(
                     txtTag.getBackground(),
-                    corFundoElements
+                    corTagBg
             );
         }
 

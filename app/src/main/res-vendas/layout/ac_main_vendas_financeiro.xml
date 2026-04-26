@@ -13,15 +13,15 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="12dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="18dp">
 
         <ImageButton
             android:id="@+id/btnVoltarFinanceiro"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_vendas_header_action"
             android:contentDescription="Voltar"
             android:src="@drawable/ic_arrow_back_48"
             app:tint="@color/white" />
@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 android:text="Financeiro"
                 android:textColor="@color/white"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -50,6 +50,15 @@
                 android:textColor="#CCFFFFFF"
                 android:textSize="13sp" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCalendarioFinanceiro"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_vendas_header_action"
+            android:contentDescription="Datas"
+            android:src="@drawable/ic_calendar_month_24"
+            app:tint="@color/white" />
     </LinearLayout>
 
     <!-- Corpo com fundo arredondado -->
@@ -57,7 +66,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="@drawable/header_background"
+        android:background="@drawable/bg_vendas_content"
         android:paddingTop="12dp">
 
         <!-- Filtros rápidos de status -->
@@ -96,7 +105,21 @@
                     android:background="@drawable/fundo_arredondado"
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="7dp"
-                    android:text="Finalizadas"
+                    android:text="Entradas"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/chipFinSaidas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/fundo_arredondado"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="7dp"
+                    android:text="Saídas"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:clickable="true"

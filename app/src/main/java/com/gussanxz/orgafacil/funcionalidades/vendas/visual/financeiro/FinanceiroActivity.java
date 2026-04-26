@@ -49,7 +49,7 @@ public class FinanceiroActivity extends AppCompatActivity {
     // Views
     private ImageButton btnVoltar;
     private TextView txtTotalVendido;
-    private TextView chipTodasF, chipFinalizadas, chipCanceladas;
+    private TextView chipTodasF, chipFinalizadas, chipSaidas, chipCanceladas;
     private Spinner spinnerPagamento, spinnerTipoItem;
     private TextView btnDataInicial, btnDataFinal;
     private ImageButton btnLimparFiltros;
@@ -132,6 +132,7 @@ public class FinanceiroActivity extends AppCompatActivity {
         txtTotalVendido         = findViewById(R.id.txtTotalVendido);
         chipTodasF              = findViewById(R.id.chipFinTodasF);
         chipFinalizadas         = findViewById(R.id.chipFinFinalizadas);
+        chipSaidas              = findViewById(R.id.chipFinSaidas);
         chipCanceladas          = findViewById(R.id.chipFinCanceladas);
         spinnerPagamento        = findViewById(R.id.spinnerPagamento);
         spinnerTipoItem         = findViewById(R.id.spinnerTipoItem);
@@ -209,6 +210,7 @@ public class FinanceiroActivity extends AppCompatActivity {
 
         chipTodasF.setOnClickListener(v    -> { filtroStatus = null; atualizarChips(); aplicarFiltros(); });
         chipFinalizadas.setOnClickListener(v -> { filtroStatus = VendaModel.STATUS_FINALIZADA; atualizarChips(); aplicarFiltros(); });
+        if (chipSaidas != null) chipSaidas.setOnClickListener(v -> { filtroStatus = VendaModel.STATUS_CANCELADA; atualizarChips(); aplicarFiltros(); });
         chipCanceladas.setOnClickListener(v  -> { filtroStatus = VendaModel.STATUS_CANCELADA;  atualizarChips(); aplicarFiltros(); });
 
         btnDataInicial.setOnClickListener(v -> abrirDatePicker(true));
@@ -218,7 +220,7 @@ public class FinanceiroActivity extends AppCompatActivity {
             boolean visivel = painelFiltrosAvancados.getVisibility() == View.VISIBLE;
             painelFiltrosAvancados.setVisibility(visivel ? View.GONE : View.VISIBLE);
             btnToggleFiltros.setBackgroundTintList(getColorStateList(
-                    visivel ? android.R.color.white : R.color.colorPrimary));
+                    visivel ? R.color.vendas_chip_bg : R.color.vendas_chip_selected));
             androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleFiltros,
                     getColorStateList(visivel ? R.color.colorPrimary : android.R.color.white));
         });
@@ -227,10 +229,15 @@ public class FinanceiroActivity extends AppCompatActivity {
             boolean visivel = painelDatas.getVisibility() == View.VISIBLE;
             painelDatas.setVisibility(visivel ? View.GONE : View.VISIBLE);
             btnToggleDatas.setBackgroundTintList(getColorStateList(
-                    visivel ? android.R.color.white : R.color.colorPrimary));
+                    visivel ? R.color.vendas_chip_bg : R.color.vendas_chip_selected));
             androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleDatas,
                     getColorStateList(visivel ? R.color.colorPrimary : android.R.color.white));
         });
+
+        ImageButton btnCalendario = findViewById(R.id.btnCalendarioFinanceiro);
+        if (btnCalendario != null) {
+            btnCalendario.setOnClickListener(v -> btnToggleDatas.performClick());
+        }
 
         btnLimparFiltros.setOnClickListener(v -> limparTodosFiltros());
     }
@@ -315,8 +322,8 @@ public class FinanceiroActivity extends AppCompatActivity {
 
         painelFiltrosAvancados.setVisibility(View.GONE);
         painelDatas.setVisibility(View.GONE);
-        btnToggleFiltros.setBackgroundTintList(getColorStateList(android.R.color.white));
-        btnToggleDatas.setBackgroundTintList(getColorStateList(android.R.color.white));
+        btnToggleFiltros.setBackgroundTintList(getColorStateList(R.color.vendas_chip_bg));
+        btnToggleDatas.setBackgroundTintList(getColorStateList(R.color.vendas_chip_bg));
         androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleFiltros,
                 getColorStateList(R.color.colorPrimary));
         androidx.core.widget.ImageViewCompat.setImageTintList(btnToggleDatas,
@@ -461,15 +468,16 @@ public class FinanceiroActivity extends AppCompatActivity {
     private void atualizarChips() {
         atualizarEstiloChip(chipTodasF,      filtroStatus == null);
         atualizarEstiloChip(chipFinalizadas, VendaModel.STATUS_FINALIZADA.equals(filtroStatus));
+        atualizarEstiloChip(chipSaidas,      false); // placeholder — Saídas not yet distinct
         atualizarEstiloChip(chipCanceladas,  VendaModel.STATUS_CANCELADA.equals(filtroStatus));
     }
 
     private void atualizarEstiloChip(TextView chip, boolean selecionado) {
         if (chip == null) return;
         chip.setBackgroundTintList(getColorStateList(
-                selecionado ? R.color.colorPrimary : android.R.color.white));
+                selecionado ? R.color.vendas_chip_selected : R.color.vendas_chip_bg));
         chip.setTextColor(selecionado
-                ? android.graphics.Color.WHITE
-                : android.graphics.Color.parseColor("#757575"));
+                ? android.graphics.Color.parseColor("#071120")
+                : getColor(R.color.vendas_chip_text));
     }
 }

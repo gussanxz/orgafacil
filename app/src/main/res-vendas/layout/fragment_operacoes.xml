@@ -1,132 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="@android:color/transparent">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:baselineAligned="false">
+        android:orientation="vertical"
+        android:padding="12dp">
 
+        <!-- Linha 1: Cadastros | Vendas em aberto -->
         <LinearLayout
-            android:id="@+id/cardCadastros"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/fundo_arredondado"
-            android:orientation="vertical"
-            android:layout_margin="4dp"
-            android:clickable="true"
-            android:focusable="true">
+            android:orientation="horizontal"
+            android:baselineAligned="false">
 
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:src="@drawable/ic_tune_24"
-                android:layout_gravity="center"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
+            <!-- Card Cadastros -->
+            <LinearLayout
+                android:id="@+id/cardCadastros"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="CADASTROS"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:layout_marginBottom="16dp"
-                android:lines="3" />
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E6F5EE"
+                    android:gravity="center"
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_tune_24"
+                        app:tint="#1D9E75"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cadastros"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Produtos, clientes e mais"
+                    android:textSize="12sp"
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
+            </LinearLayout>
+
+            <!-- Card Vendas em aberto -->
+            <LinearLayout
+                android:id="@+id/cardPedidosAbertos"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E8EEF8"
+                    android:gravity="center"
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_receipt_long_28"
+                        app:tint="#4A7BCC"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vendas em aberto"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Retome sem perder o pedido"
+                    android:textSize="12sp"
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
+            </LinearLayout>
         </LinearLayout>
 
-        <FrameLayout
-            android:id="@+id/cardPedidosAbertos"
-            android:layout_width="0dp"
+        <!-- Linha 2: Catálogo | Venda rápida -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true"
-            android:clickable="true"
-            android:focusable="true">
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginTop="10dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <!-- Card Catálogo -->
+            <FrameLayout
+                android:id="@+id/cardCatalogo"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:clipToOutline="true">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_receipt_long_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icone_card"
+                        android:backgroundTint="#FFF3E0"
+                        android:gravity="center"
+                        android:clipToOutline="true">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_inventory_2_28"
+                            app:tint="#E08D00"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Catálogo"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_titulo_card_vendas"
+                        android:layout_marginTop="10dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Explore seus produtos"
+                        android:textSize="12sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="3dp"/>
+
+                </LinearLayout>
+
+                <!-- Overlay de bloqueio (removido via Java) -->
+                <ImageView
+                    android:id="@+id/overlayCatalogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/cor_fundo_bloqueado"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="gone"
+                    android:elevation="10dp"/>
+            </FrameLayout>
+
+            <!-- Card Venda Rápida (destaque) -->
+            <LinearLayout
+                android:id="@+id/cardVendaRapida"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_card_venda_rapida"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="@color/colorPrimary"
                     android:gravity="center"
-                    android:lines="3"
-                    android:text="VENDAS EM\nABERTO"
-                    android:textColor="@color/black"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="16dp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/cardCatalogo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true"
-            android:clickable="true"
-            android:focusable="true">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_inventory_2_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_shopping_cart_checkout_24"
+                        app:tint="@color/white"/>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="CATÁLOGO"
-                    android:textColor="@color/black"
+                    android:text="Venda rápida"
                     android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
-            </LinearLayout>
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
 
-            <ImageView
-                android:id="@+id/overlayCatalogo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#CC000000"
-                android:src="@drawable/ic_lock_24"
-                android:scaleType="center"
-                app:tint="@android:color/white"
-                android:visibility="visible"
-                android:elevation="10dp"/>
-        </FrameLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1 toque para abrir o carrinho"
+                    android:textSize="12sp"
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

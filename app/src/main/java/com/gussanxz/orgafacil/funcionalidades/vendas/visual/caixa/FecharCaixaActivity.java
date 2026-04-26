@@ -337,12 +337,12 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
         if (selecionado) {
             chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    androidx.core.content.ContextCompat.getColor(this, R.color.colorPrimary)));
-            chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.white));
+                    androidx.core.content.ContextCompat.getColor(this, R.color.vendas_chip_selected)));
+            chip.setTextColor(android.graphics.Color.parseColor("#071120"));
         } else {
             chip.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    androidx.core.content.ContextCompat.getColor(this, android.R.color.white)));
-            chip.setTextColor(android.graphics.Color.parseColor("#757575"));
+                    androidx.core.content.ContextCompat.getColor(this, R.color.vendas_chip_bg)));
+            chip.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.vendas_chip_text));
         }
     }
 

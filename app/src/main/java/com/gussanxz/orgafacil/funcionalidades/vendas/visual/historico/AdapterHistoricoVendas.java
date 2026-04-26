@@ -144,12 +144,12 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
                     : venda.getDataHoraAberturaMillis();
             txtVendaData.setText(formatadorHora.format(new Date(dataExibir)));
 
-            txtVendaPagamento.setText("Pagamento: " + (venda.getFormaPagamento() != null
-                    ? venda.getFormaPagamento() : "-"));
+            txtVendaPagamento.setText(venda.getFormaPagamento() != null
+                    ? venda.getFormaPagamento() : "-");
 
             if (txtVendaCaixa != null) {
                 String nome = venda.getNomeCaixa();
-                txtVendaCaixa.setText("Caixa: " + (nome != null && !nome.isEmpty() ? nome : "—"));
+                txtVendaCaixa.setText("Caixa " + (nome != null && !nome.isEmpty() ? nome : "—"));
             }
 
             txtVendaQuantidade.setText(venda.getQuantidadeTotal()

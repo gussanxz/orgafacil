@@ -320,7 +320,7 @@ public class ResumoVendasActivity extends AppCompatActivity {
         verificarCaixaENavegar();
     }
 
-    private void verificarCaixaENavegar() {
+    public void verificarCaixaENavegar() {
         if (caixaAtual != null && caixaAtual.isAberto()) {
             navegarParaNovaVenda(caixaAtual.getId(), caixaAtual.getNomeCaixa());
         } else {

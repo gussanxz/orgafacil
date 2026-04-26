@@ -14,27 +14,43 @@
         android:background="@color/colorPrimary"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="12dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="18dp">
 
         <ImageButton
             android:id="@+id/btnVoltarFecharCaixa"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/bg_vendas_header_action"
             android:contentDescription="Voltar"
             android:src="@drawable/ic_arrow_back_48"
             app:tint="@color/white" />
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:text="Controle de Caixa"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginStart="8dp" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Controle de caixa"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtSubtituloControle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text=""
+                android:textColor="#CCFFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -44,7 +60,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true"
-        android:background="@drawable/header_background">
+        android:background="@drawable/bg_vendas_content">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -56,19 +72,27 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/fundo_arredondado"
+                android:background="@drawable/bg_vendas_card"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
-                <ImageView
-                    android:id="@+id/imgStatusCaixaControle"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:src="@drawable/ic_lock_24"
-                    android:layout_marginEnd="12dp"
-                    app:tint="#FFD54F" />
+                <LinearLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E6F5EE"
+                    android:gravity="center"
+                    android:clipToOutline="true"
+                    android:layout_marginEnd="12dp">
+                    <ImageView
+                        android:id="@+id/imgStatusCaixaControle"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_lock_24"
+                        app:tint="#FFD54F" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -81,7 +105,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Fechado"
-                        android:textSize="18sp"
+                        android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -90,10 +114,36 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Nenhum caixa aberto"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginTop="2dp" />
 
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="end">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TOTAL"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:letterSpacing="0.06" />
+
+                    <TextView
+                        android:id="@+id/txtTotalCaixa"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorPrimary"
+                        android:layout_marginTop="2dp" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -109,87 +159,102 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- Card resumo de vendas -->
+                <!-- 2-col stats row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/fundo_arredondado"
-                    android:orientation="vertical"
-                    android:padding="16dp"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Vendas neste caixa"
-                        android:textSize="13sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="12dp" />
-
+                    <!-- FINALIZADAS -->
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_vendas_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="Finalizadas"
-                                android:textSize="12sp"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-
-                            <TextView
-                                android:id="@+id/txtQtdVendasCaixa"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="—"
-                                android:textSize="20sp"
+                                android:layout_weight="1"
+                                android:text="FINALIZADAS"
+                                android:textSize="10sp"
                                 android:textStyle="bold"
-                                android:textColor="?attr/colorOnSurface" />
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:letterSpacing="0.06" />
 
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_check_circle_24"
+                                app:tint="@color/colorPrimary" />
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/txtQtdVendasCaixa"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Total"
-                                android:textSize="12sp"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-
-                            <TextView
-                                android:id="@+id/txtTotalCaixa"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="—"
-                                android:textSize="20sp"
-                                android:textStyle="bold"
-                                android:textColor="?attr/colorOnSurface" />
-
-                        </LinearLayout>
+                            android:text="—"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"
+                            android:layout_marginTop="6dp" />
 
                     </LinearLayout>
 
-                    <!-- Horário de fechamento previsto -->
-                    <TextView
-                        android:id="@+id/txtFechamentoInfo"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="—"
-                        android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginTop="12dp" />
+                    <!-- STATUS / INFO -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/bg_vendas_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="HORÁRIO"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:letterSpacing="0.06" />
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/ic_schedule_24"
+                                app:tint="@color/colorPrimary" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/txtFechamentoInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textSize="13sp"
+                            android:textColor="?attr/colorOnSurface"
+                            android:layout_marginTop="6dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -239,7 +304,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/fundo_arredondado"
+                    android:background="@drawable/bg_vendas_card"
                     android:orientation="vertical"
                     android:padding="16dp"
                     android:layout_marginBottom="16dp">

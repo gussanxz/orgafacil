@@ -1,271 +1,371 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="@android:color/transparent">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:baselineAligned="false">
+        android:orientation="vertical"
+        android:padding="12dp">
 
-        <FrameLayout
-            android:layout_width="0dp"
+        <!-- Linha 1: Vendas | Estoque -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
+            android:orientation="horizontal"
+            android:baselineAligned="false">
 
+            <!-- Card Vendas (Histórico) -->
             <LinearLayout
                 android:id="@+id/cardVendas"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_vendas_card"
                 android:orientation="vertical"
+                android:padding="16dp"
                 android:clickable="true"
                 android:focusable="true">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_monitoring_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"/>
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E6F5EE"
+                    android:gravity="center"
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_monitoring_28"
+                        app:tint="#1D9E75"/>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="VENDAS"
-                    android:textColor="@color/black"
+                    android:text="Vendas"
                     android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Histórico detalhado"
                     android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
             </LinearLayout>
-        </FrameLayout>
 
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
-
-            <LinearLayout
-                android:id="@+id/cardEstoque"
-                android:layout_width="match_parent"
+            <!-- Card Estoque (bloqueado) -->
+            <FrameLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:clipToOutline="true">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_inventory_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/cardEstoque"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="ESTOQUE"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/overlayEstoque"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#CC000000"
-                android:src="@drawable/ic_lock_24"
-                android:scaleType="center"
-                app:tint="@android:color/white"
-                android:visibility="visible"
-                android:elevation="10dp"
-                android:clickable="true"
-                android:focusable="true"/>
-        </FrameLayout>
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icone_card"
+                        android:backgroundTint="#F0F0F0"
+                        android:gravity="center"
+                        android:clipToOutline="true">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_inventory_28"
+                            app:tint="#AAAAAA"/>
+                    </LinearLayout>
 
-        <FrameLayout
-            android:layout_width="0dp"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Estoque"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="10dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Em breve no seu plano"
+                        android:textSize="12sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="3dp"/>
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/overlayEstoque"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#55000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </FrameLayout>
+
+        </LinearLayout>
+
+        <!-- Linha 2: Devoluções | Relatórios -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
-            <LinearLayout
-                android:id="@+id/cardDevolucoes"
-                android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginTop="10dp">
+
+            <!-- Card Devoluções (bloqueado) -->
+            <FrameLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:clipToOutline="true">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_assignment_return_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/cardDevolucoes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="DEVOLUÇÕES"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/overlayDevolucoes"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#CC000000"
-                android:src="@drawable/ic_lock_24"
-                android:scaleType="center"
-                app:tint="@android:color/white"
-                android:visibility="visible"
-                android:elevation="10dp"
-                android:clickable="true"
-                android:focusable="true"/>
-        </FrameLayout>
-    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icone_card"
+                        android:backgroundTint="#F0F0F0"
+                        android:gravity="center"
+                        android:clipToOutline="true">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_assignment_return_28"
+                            app:tint="#AAAAAA"/>
+                    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:baselineAligned="false">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Devoluções"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="10dp"/>
 
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Em breve no seu plano"
+                        android:textSize="12sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="3dp"/>
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/overlayDevolucoes"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#55000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </FrameLayout>
+
+            <!-- Card Relatórios -->
             <LinearLayout
                 android:id="@+id/cardRelatorios"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_analytics_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="RELATÓRIOS"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
-            </LinearLayout>
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
-            <LinearLayout
-                android:id="@+id/cardControleCaixa"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_point_of_sale_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="CONTROLE\nDE CAIXA"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
-            </LinearLayout>
-
-            <ImageView
-                android:id="@+id/overlayControleCaixa"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#CC000000"
-                android:src="@drawable/ic_lock_24"
-                android:scaleType="center"
-                app:tint="@android:color/white"
-                android:visibility="visible"
-                android:elevation="10dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:clickable="true"
-                android:focusable="true"/>
-        </FrameLayout>
+                android:focusable="true">
 
-        <FrameLayout
-            android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E8EEF8"
+                    android:gravity="center"
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_analytics_28"
+                        app:tint="#4A7BCC"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Relatórios"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resumo do mês"
+                    android:textSize="12sp"
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Linha 3: Controle de caixa | Financeiro -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:background="@drawable/fundo_arredondado"
-            android:clipToOutline="true">
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginTop="10dp">
+
+            <!-- Card Controle de Caixa -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:clipToOutline="true">
+
+                <LinearLayout
+                    android:id="@+id/cardControleCaixa"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icone_card"
+                        android:backgroundTint="#FFF3E0"
+                        android:gravity="center"
+                        android:clipToOutline="true">
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:src="@drawable/ic_point_of_sale_28"
+                            app:tint="#E08D00"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Controle de caixa"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@color/cor_titulo_card_vendas"
+                        android:layout_marginTop="10dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Abertura e fechamento"
+                        android:textSize="12sp"
+                        android:textColor="@color/cor_subtitulo_card_vendas"
+                        android:layout_marginTop="3dp"/>
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/overlayControleCaixa"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#55000000"
+                    android:src="@drawable/ic_lock_24"
+                    android:scaleType="center"
+                    app:tint="@android:color/white"
+                    android:visibility="visible"
+                    android:elevation="10dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </FrameLayout>
+
+            <!-- Card Financeiro -->
             <LinearLayout
                 android:id="@+id/cardFinanceiro"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_vendas_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_paid_28"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp" />
+                <LinearLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icone_card"
+                    android:backgroundTint="#E6F5EE"
+                    android:gravity="center"
+                    android:clipToOutline="true">
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_paid_28"
+                        app:tint="#1D9E75"/>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="FINANCEIRO"
-                    android:textColor="@color/black"
+                    android:text="Financeiro"
                     android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/cor_titulo_card_vendas"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Entradas e saídas"
                     android:textSize="12sp"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:lines="3" />
+                    android:textColor="@color/cor_subtitulo_card_vendas"
+                    android:layout_marginTop="3dp"/>
+
             </LinearLayout>
-        </FrameLayout>
+        </LinearLayout>
+
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

@@ -12,9 +12,11 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header"
         android:layout_width="0dp"
-        android:layout_height="70dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
+        android:layout_height="wrap_content"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="18dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -25,25 +27,54 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="retornarParaVendasCadastros"
-            app:backgroundTint="@color/cardview_dark_background"
-            app:fabCustomSize="45dp"
+            app:backgroundTint="@color/transparent"
+            app:fabCustomSize="40dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_arrow_back_48" />
+            app:srcCompat="@drawable/ic_arrow_back_48"
+            android:background="@drawable/bg_vendas_header_action" />
 
-        <TextView
-            android:id="@+id/textViewHeader"
+        <LinearLayout
+            android:id="@+id/layoutHeaderTexto"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Categorias"
-            android:textColor="@color/white"
-            android:textSize="20sp"
-            android:textStyle="bold"
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnFiltroCategorias"
+            app:layout_constraintStart_toEndOf="@id/fabVoltar"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/textViewHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categorias"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtSubtituloCategorias"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text=""
+                android:textColor="#CCFFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnFiltroCategorias"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_vendas_header_action"
+            android:contentDescription="Filtros"
+            android:src="@drawable/ic_filtro_24"
+            app:tint="@color/white"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -53,7 +84,7 @@
         android:id="@+id/content"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@drawable/header_background"
+        android:background="@drawable/bg_vendas_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -67,6 +98,10 @@
             android:layout_marginTop="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_vendas_search"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:boxBackgroundMode="none"
+            app:hintTextColor="@color/vendas_search_hint"
             app:startIconDrawable="@drawable/ic_search_24"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -79,7 +114,10 @@
                 android:hint="Buscar categoria"
                 android:inputType="text"
                 android:maxLines="1"
-                android:paddingStart="40dp" />
+                android:paddingStart="40dp"
+                android:textColor="@color/cor_texto_primario"
+                android:textColorHint="@color/vendas_search_hint"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- FILTROS -->
@@ -181,8 +219,11 @@
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             android:onClick="acessarCadastroCategoria"
-            app:icon="@drawable/fab_add"
-            app:backgroundTint="@color/colorAccentProventos"
+            android:text="Nova"
+            android:textColor="@color/white"
+            app:icon="@drawable/ic_add_24"
+            app:iconTint="@color/white"
+            app:backgroundTint="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>

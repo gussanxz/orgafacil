@@ -63,37 +63,65 @@
         <LinearLayout
             android:id="@+id/layoutEstadoVazioEmAberto"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingTop="16dp"
             android:paddingHorizontal="24dp"
             android:visibility="gone">
 
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_receipt_long_28"
-                app:tint="#9E9E9E" />
+            <LinearLayout
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:background="@drawable/bg_icone_card"
+                android:backgroundTint="#E6F5EE"
+                android:gravity="center"
+                android:clipToOutline="true">
+                <ImageView
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:src="@drawable/ic_receipt_long_28"
+                    app:tint="@color/colorPrimary" />
+            </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Nenhuma venda em aberto"
+                android:layout_marginTop="20dp"
+                android:text="Tudo certo por aqui"
                 android:textColor="@color/cor_texto_primario"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:text="As vendas salvas como &quot;Em aberto&quot; aparecerão aqui."
+                android:text="As vendas que você salvar como &quot;em aberto&quot; aparecerão nesta tela para você retomar depois."
                 android:textColor="@color/cor_texto_secundario"
                 android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/btnIniciarNovaVenda"
+                android:layout_width="wrap_content"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/fundo_botao_azul"
+                android:backgroundTint="@color/colorPrimary"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="28dp"
+                android:clickable="true"
+                android:focusable="true">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+ Iniciar nova venda"
+                    android:textColor="@color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Lista -->

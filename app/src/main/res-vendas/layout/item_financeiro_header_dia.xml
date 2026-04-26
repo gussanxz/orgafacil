@@ -8,7 +8,7 @@
     android:layout_marginBottom="2dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/cardDiaBackground">
+    app:cardBackgroundColor="@color/vendas_group_header">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
+            android:background="@color/vendas_group_header"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
@@ -31,7 +31,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Hoje"
-                android:textColor="@color/white"
+                android:textColor="@color/colorPrimary"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -50,7 +50,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@color/cor_divisor" />
+            android:background="@color/transparent" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

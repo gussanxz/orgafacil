@@ -315,9 +315,9 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private void atualizarEstiloChip(TextView chip, boolean selecionado) {
         if (chip == null) return;
         chip.setBackgroundTintList(getColorStateList(
-                selecionado ? R.color.colorPrimary : android.R.color.white));
+                selecionado ? R.color.vendas_chip_selected : R.color.vendas_chip_bg));
         chip.setTextColor(selecionado
-                ? android.graphics.Color.WHITE
-                : android.graphics.Color.parseColor("#757575"));
+                ? android.graphics.Color.parseColor("#071120")
+                : getColor(R.color.vendas_chip_text));
     }
 }
