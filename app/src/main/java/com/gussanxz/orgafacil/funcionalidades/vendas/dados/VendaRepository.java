@@ -89,6 +89,10 @@ public class VendaRepository {
                                    @Nullable VendaModel vendaAnterior,
                                    @NonNull Callback callback) {
         try {
+            if (vendaAnterior != null && venda.getNumeroVenda() <= 0 && vendaAnterior.getNumeroVenda() > 0) {
+                venda.setNumeroVenda(vendaAnterior.getNumeroVenda());
+            }
+
             FirestoreSchema.vendasVendasCol()
                     .document(venda.getId())
                     .set(venda, SetOptions.merge())

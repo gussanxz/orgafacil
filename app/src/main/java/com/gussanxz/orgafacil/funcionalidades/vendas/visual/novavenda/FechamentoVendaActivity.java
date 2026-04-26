@@ -558,6 +558,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         VendaModel venda = new VendaModel();
         if (vendaIdEdicao != null) venda.setId(vendaIdEdicao);
+        if (numeroVendaEdicao > 0) venda.setNumeroVenda(numeroVendaEdicao);
         venda.setDataHoraAberturaMillis(System.currentTimeMillis());
         venda.setDataHoraFechamentoMillis(0);
         venda.setFormaPagamento(null);

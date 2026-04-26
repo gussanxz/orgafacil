@@ -234,6 +234,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         }
         intent.putExtra("itensSacola", sacola);
         intent.putExtra("vendaId", venda.getId());
+        intent.putExtra("numeroVenda", venda.getNumeroVenda());
         // Extras adicionais para o FechamentoVendaActivity saber que é edição retroativa
         intent.putExtra("dataHoraOriginal",
                 venda.getDataHoraFechamentoMillis() > 0
