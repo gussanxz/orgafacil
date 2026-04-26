@@ -50,8 +50,8 @@ public class AdapterGradeCategoriasNovaVenda
         Categoria categoria = lista.get(position);
         holder.txtNome.setText(categoria.getNome());
 
-        // Ícone "Todos" usa ícone de grade; demais categorias usam label
-        if ("todos".equals(categoria.getId())) {
+        // Ícone "Todos os produtos" usa ícone de grade; demais categorias usam label
+        if (RegistrarVendasViewModel.ID_TODOS_PRODUTOS.equals(categoria.getId())) {
             holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
             holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));

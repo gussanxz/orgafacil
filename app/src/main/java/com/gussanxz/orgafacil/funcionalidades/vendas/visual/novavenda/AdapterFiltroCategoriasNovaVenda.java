@@ -36,6 +36,7 @@ public class AdapterFiltroCategoriasNovaVenda extends RecyclerView.Adapter<Adapt
 
     // Variável para saber qual item está clicado (começa no 0)
     private int posicaoSelecionada = 0;
+    private boolean selecaoManual = false;
 
     // Interface para avisar a Activity que mudou o filtro
     public interface OnCategoriaSelectedListener {
@@ -79,6 +80,7 @@ public class AdapterFiltroCategoriasNovaVenda extends RecyclerView.Adapter<Adapt
         holder.itemView.setOnClickListener(v -> {
             // Atualiza a posição selecionada
             posicaoSelecionada = pos;
+            selecaoManual = true;
 
             // Avisa o adapter para redesenhar as cores
             notifyDataSetChanged();
@@ -93,6 +95,18 @@ public class AdapterFiltroCategoriasNovaVenda extends RecyclerView.Adapter<Adapt
     @Override
     public int getItemCount() {
         return listaCategorias.size();
+    }
+
+    public void selecionarTodosProdutosInicial() {
+        if (selecaoManual || listaCategorias == null || listaCategorias.isEmpty()) return;
+        for (int i = 0; i < listaCategorias.size(); i++) {
+            Categoria categoria = listaCategorias.get(i);
+            if (RegistrarVendasViewModel.ID_TODOS_PRODUTOS.equals(categoria.getId())) {
+                posicaoSelecionada = i;
+                notifyDataSetChanged();
+                return;
+            }
+        }
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

@@ -14,9 +14,13 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaV
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RegistrarVendasViewModel extends ViewModel {
+
+    public static final String ID_TODOS_PRODUTOS = "todos_produtos";
 
     private final CatalogoRepository catalogoRepository = new CatalogoRepository();
     private final CategoriaCatalogoRepository categoriaRepository = new CategoriaCatalogoRepository();
@@ -24,11 +28,15 @@ public class RegistrarVendasViewModel extends ViewModel {
 
     private ListenerRegistration listenerCatalogo;
     private ListenerRegistration listenerCategorias;
+    private ListenerRegistration listenerExibicaoCategorias;
 
     private Categoria categoriaAtiva = null;
     private String textoBusca = null;
+    private String exibicaoCategoriasAtiva = CategoriaCatalogoRepository.EXIBICAO_ALFABETICA;
     private final List<ItemVendaModel> catalogoCompleto = new ArrayList<>();
     private final List<Categoria> categoriasBrutas = new ArrayList<>();
+    private final List<String> ordemCategoriasAtiva = new ArrayList<>();
+    private final Map<String, List<String>> ordemItensPorCategoria = new HashMap<>();
 
     private final MutableLiveData<List<ItemVendaModel>> _produtosFiltrados = new MutableLiveData<>(new ArrayList<>());
     public final LiveData<List<ItemVendaModel>> produtosFiltrados = _produtosFiltrados;
@@ -68,6 +76,22 @@ public class RegistrarVendasViewModel extends ViewModel {
             }
             @Override public void onErro(String erro) { _erro.postValue(erro); }
         });
+
+        listenerExibicaoCategorias = categoriaRepository.ouvirOrganizacaoCatalogo(new CategoriaCatalogoRepository.OrganizacaoCallback() {
+            @Override public void onNovosDados(String exibicaoAtiva,
+                                               List<String> ordemCategoriaIds,
+                                               Map<String, List<String>> novaOrdemItensPorCategoria) {
+                exibicaoCategoriasAtiva = exibicaoAtiva;
+                ordemCategoriasAtiva.clear();
+                ordemCategoriasAtiva.addAll(ordemCategoriaIds);
+                ordemItensPorCategoria.clear();
+                ordemItensPorCategoria.putAll(novaOrdemItensPorCategoria);
+                publicarCategorias();
+                publicarProdutosFiltrados();
+            }
+
+            @Override public void onErro(String erro) { _erro.postValue(erro); }
+        });
     }
 
     // ── Modo de exibição ──────────────────────────────────────────────
@@ -82,7 +106,7 @@ public class RegistrarVendasViewModel extends ViewModel {
     }
 
     public void entrarEmModoPS(Categoria categoria) {
-        categoriaAtiva = "todos".equals(categoria.getId()) ? null : categoria;
+        categoriaAtiva = ID_TODOS_PRODUTOS.equals(categoria.getId()) ? null : categoria;
         entrarEmModoPS();
     }
 
@@ -103,27 +127,67 @@ public class RegistrarVendasViewModel extends ViewModel {
         for (ItemVendaModel item : catalogoCompleto) {
             CatalogoModel c = (CatalogoModel) item;
             if (!c.isStatusAtivo()) continue;
+            if (!categoriaEstaAtiva(c.getCategoriaId())) continue;
             if (categoriaAtiva != null && !categoriaAtiva.getId().equals(c.getCategoriaId())) continue;
             if (textoBusca != null && !c.getNome().toLowerCase().contains(textoBusca.toLowerCase())) continue;
             filtrados.add(item);
         }
-        _produtosFiltrados.setValue(filtrados);
+        _produtosFiltrados.setValue(ordenarItensParaExibicao(filtrados));
+    }
+
+    private List<ItemVendaModel> ordenarItensParaExibicao(List<ItemVendaModel> itens) {
+        List<ItemVendaModel> ordenados = new ArrayList<>(itens);
+        ordenados.sort((a, b) -> {
+            CatalogoModel itemA = (CatalogoModel) a;
+            CatalogoModel itemB = (CatalogoModel) b;
+
+            int categoriaA = indiceCategoria(itemA.getCategoriaId());
+            int categoriaB = indiceCategoria(itemB.getCategoriaId());
+            if (categoriaA != categoriaB) return Integer.compare(categoriaA, categoriaB);
+
+            int posA = indiceItem(itemA);
+            int posB = indiceItem(itemB);
+            if (posA != posB) return Integer.compare(posA, posB);
+
+            return itemA.getNome().compareToIgnoreCase(itemB.getNome());
+        });
+        return ordenados;
+    }
+
+    private int indiceCategoria(String categoriaId) {
+        int index = ordemCategoriasAtiva.indexOf(categoriaId);
+        return index >= 0 ? index : Integer.MAX_VALUE;
+    }
+
+    private int indiceItem(CatalogoModel item) {
+        List<String> ordem = ordemItensPorCategoria.get(item.getCategoriaId());
+        if (ordem == null) return Integer.MAX_VALUE;
+        int index = ordem.indexOf(item.getId());
+        return index >= 0 ? index : Integer.MAX_VALUE;
     }
 
     private void publicarCategorias() {
         List<Categoria> lista = new ArrayList<>();
-        Categoria todos = new Categoria();
-        todos.setId("todos");
-        todos.setNome("Todos");
-        todos.setAtiva(true);
-        lista.add(todos);
-        lista.addAll(filtrarCategoriasSemItens(categoriasBrutas));
+        lista.addAll(CategoriaCatalogoRepository.ordenarParaExibicao(
+                filtrarCategoriasSemItens(categoriasBrutas),
+                exibicaoCategoriasAtiva,
+                ordemCategoriasAtiva));
+        lista.add(criarTodosProdutos());
         _categorias.setValue(lista);
+    }
+
+    private Categoria criarTodosProdutos() {
+        Categoria todos = new Categoria();
+        todos.setId(ID_TODOS_PRODUTOS);
+        todos.setNome("Todos os produtos");
+        todos.setAtiva(true);
+        return todos;
     }
 
     private List<Categoria> filtrarCategoriasSemItens(List<Categoria> categorias) {
         List<Categoria> comItens = new ArrayList<>();
         for (Categoria categoria : categorias) {
+            if (!categoria.isAtiva()) continue;
             for (ItemVendaModel item : catalogoCompleto) {
                 CatalogoModel c = (CatalogoModel) item;
                 if (c.isStatusAtivo() && categoria.getId().equals(c.getCategoriaId())) {
@@ -133,6 +197,15 @@ public class RegistrarVendasViewModel extends ViewModel {
             }
         }
         return comItens;
+    }
+
+    private boolean categoriaEstaAtiva(String categoriaId) {
+        for (Categoria categoria : categoriasBrutas) {
+            if (categoria.getId() != null && categoria.getId().equals(categoriaId)) {
+                return categoria.isAtiva();
+            }
+        }
+        return true;
     }
 
     // ── Carrinho ──────────────────────────────────────────────────────
@@ -188,5 +261,6 @@ public class RegistrarVendasViewModel extends ViewModel {
         super.onCleared();
         if (listenerCatalogo != null) listenerCatalogo.remove();
         if (listenerCategorias != null) listenerCategorias.remove();
+        if (listenerExibicaoCategorias != null) listenerExibicaoCategorias.remove();
     }
 }

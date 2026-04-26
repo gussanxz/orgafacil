@@ -98,6 +98,9 @@
             android:name=".funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity"
             android:exported="false" />
         <activity
+            android:name=".funcionalidades.vendas.visual.catalogo.CatalogoActivity"
+            android:exported="false" />
+        <activity
             android:name=".funcionalidades.vendas.relatorios.RelatoriosVendasActivity"
             android:exported="false" />
         <activity

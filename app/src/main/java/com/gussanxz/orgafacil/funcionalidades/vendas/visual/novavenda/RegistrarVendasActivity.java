@@ -179,6 +179,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         viewModel.categorias.observe(this, lista -> {
             listaCategorias.clear();
             listaCategorias.addAll(lista);
+            adapterFiltro.selecionarTodosProdutosInicial();
             adapterFiltro.notifyDataSetChanged();
             if (adapterGridCategorias != null) adapterGridCategorias.atualizarLista(lista);
         });

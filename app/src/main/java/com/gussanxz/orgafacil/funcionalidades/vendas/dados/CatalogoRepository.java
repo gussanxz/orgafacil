@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
@@ -16,7 +17,9 @@ import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CatalogoRepository {
 
@@ -116,6 +119,70 @@ public class CatalogoRepository {
     }
 
     // ── Listener em tempo real (todos) ────────────────────────────────
+    public void atualizarStatus(@NonNull String itemId,
+                                boolean statusAtivo,
+                                @NonNull Callback callback) {
+        try {
+            FirestoreSchema.vendasProdutoDoc(itemId)
+                    .update("statusAtivo", statusAtivo)
+                    .addOnSuccessListener(v -> callback.onSucesso(statusAtivo ? "Item ativado" : "Item inativado"))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao alterar status"));
+        } catch (IllegalStateException e) {
+            callback.onErro("Sessao expirada: " + e.getMessage());
+        }
+    }
+
+    public void atualizarStatus(@NonNull CatalogoModel item,
+                                boolean statusAnterior,
+                                boolean statusAtivo,
+                                @NonNull Callback callback) {
+        if (item.getId() == null || item.getId().trim().isEmpty()) {
+            callback.onErro("Item invalido.");
+            return;
+        }
+
+        try {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("statusAtivo", statusAtivo);
+            if (statusAnterior != statusAtivo) {
+                String tipo = item.isServico() ? "servico" : "produto";
+                updates.put("historicoAlteracoes", FieldValue.arrayUnion(
+                        criarHistoricoAlteracao(
+                                "Status do " + tipo,
+                                rotuloStatusItem(statusAnterior),
+                                rotuloStatusItem(statusAtivo),
+                                "catalogo")));
+            }
+
+            FirestoreSchema.vendasProdutoDoc(item.getId())
+                    .update(updates)
+                    .addOnSuccessListener(v -> callback.onSucesso(statusAtivo ? "Item ativado" : "Item inativado"))
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao alterar status"));
+        } catch (IllegalStateException e) {
+            callback.onErro("Sessao expirada: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> criarHistoricoAlteracao(@NonNull String campo,
+                                                        @NonNull String valorAnterior,
+                                                        @NonNull String valorNovo,
+                                                        @NonNull String origem) {
+        Map<String, Object> historico = new HashMap<>();
+        historico.put("campo", campo);
+        historico.put("valorAnterior", valorAnterior);
+        historico.put("valorNovo", valorNovo);
+        historico.put("descricao", campo + ": " + valorAnterior + " -> " + valorNovo);
+        historico.put("origem", origem);
+        historico.put("alteradoEm", FirestoreSchema.nowTs());
+        return historico;
+    }
+
+    private String rotuloStatusItem(boolean ativo) {
+        return ativo ? "Ativo" : "Inativo";
+    }
+
     public ListenerRegistration listarTempoReal(@NonNull ListaCallback callback) {
         return listarTempoRealFiltrado(null, callback);
     }

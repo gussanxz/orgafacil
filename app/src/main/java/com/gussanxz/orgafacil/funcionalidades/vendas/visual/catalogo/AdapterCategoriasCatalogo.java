@@ -1,0 +1,110 @@
+package com.gussanxz.orgafacil.funcionalidades.vendas.visual.catalogo;
+
+import android.graphics.Color;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+
+import java.util.List;
+
+public class AdapterCategoriasCatalogo extends RecyclerView.Adapter<AdapterCategoriasCatalogo.ViewHolder> {
+
+    public interface OnCategoriaActionListener {
+        void onCategoriaClick(Categoria categoria);
+        void onStatusChanged(Categoria categoria, boolean ativa);
+    }
+
+    private final List<Categoria> categorias;
+    private final OnCategoriaActionListener listener;
+
+    public AdapterCategoriasCatalogo(List<Categoria> categorias,
+                                     OnCategoriaActionListener listener) {
+        this.categorias = categorias;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_catalogo_categoria_grid, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Categoria categoria = categorias.get(position);
+        boolean todosProdutos = CatalogoActivity.ID_TODOS_PRODUTOS.equals(categoria.getId());
+
+        holder.txtNome.setText(categoria.getNome());
+        holder.switchStatus.setOnCheckedChangeListener(null);
+        holder.switchStatus.setVisibility(todosProdutos ? View.GONE : View.VISIBLE);
+        holder.switchStatus.setChecked(categoria.isAtiva());
+        holder.overlayInativa.setVisibility(!todosProdutos && !categoria.isAtiva() ? View.VISIBLE : View.GONE);
+
+        if (todosProdutos) {
+            holder.imgIcone.setPadding(32, 32, 32, 32);
+            holder.imgIcone.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            holder.imgIcone.setImageResource(R.drawable.ic_grid_24);
+            holder.imgIcone.setColorFilter(Color.parseColor("#616161"));
+            holder.card.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
+        } else if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
+            holder.imgIcone.setPadding(0, 0, 0, 0);
+            holder.imgIcone.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            holder.imgIcone.clearColorFilter();
+            holder.card.setCardBackgroundColor(Color.TRANSPARENT);
+            Glide.with(holder.itemView.getContext())
+                    .load(categoria.getUrlImagem())
+                    .placeholder(R.drawable.ic_label_24)
+                    .centerCrop()
+                    .into(holder.imgIcone);
+        } else {
+            holder.imgIcone.setPadding(32, 32, 32, 32);
+            holder.imgIcone.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            holder.imgIcone.setImageResource(R.drawable.ic_label_24);
+            holder.imgIcone.setColorFilter(Color.parseColor("#9E9E9E"));
+            holder.card.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
+        }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onCategoriaClick(categoria);
+        });
+
+        holder.switchStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (listener != null) listener.onStatusChanged(categoria, isChecked);
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return categorias.size();
+    }
+
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        final MaterialCardView card;
+        final ImageView imgIcone;
+        final TextView txtNome;
+        final SwitchMaterial switchStatus;
+        final View overlayInativa;
+
+        ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            card = itemView.findViewById(R.id.cardCategoriaCatalogo);
+            imgIcone = itemView.findViewById(R.id.imgIconeCategoriaCatalogo);
+            txtNome = itemView.findViewById(R.id.txtNomeCategoriaCatalogo);
+            switchStatus = itemView.findViewById(R.id.switchStatusCategoria);
+            overlayInativa = itemView.findViewById(R.id.overlayCategoriaInativa);
+        }
+    }
+}

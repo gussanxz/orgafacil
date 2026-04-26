@@ -12,7 +12,7 @@ import androidx.fragment.app.Fragment;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.VendasCadastrosActivity;
-import com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.produtos_e_servicos.ListaProdutosEServicosActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.catalogo.CatalogoActivity;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity;
 
 public class OperacoesFragment extends Fragment {
@@ -48,7 +48,7 @@ public class OperacoesFragment extends Fragment {
         if (overlayCatalogo != null) overlayCatalogo.setVisibility(View.GONE);
         if (cardCatalogo != null) {
             cardCatalogo.setOnClickListener(v ->
-                    startActivity(new Intent(requireContext(), ListaProdutosEServicosActivity.class)));
+                    startActivity(new Intent(requireContext(), CatalogoActivity.class)));
         }
 
         View cardVendaRapida = view.findViewById(R.id.cardVendaRapida);

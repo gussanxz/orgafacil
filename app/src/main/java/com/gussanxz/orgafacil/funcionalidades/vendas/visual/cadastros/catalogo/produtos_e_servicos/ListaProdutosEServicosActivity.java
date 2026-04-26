@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -34,11 +33,9 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
 
     private AdapterExibirPSGradeListaNovaVenda adapter;
 
-    // Listas
-    private final List<ItemVendaModel> listaTotal    = new ArrayList<>();
+    private final List<ItemVendaModel> listaTotal = new ArrayList<>();
     private final List<ItemVendaModel> listaFiltrada = new ArrayList<>();
 
-    // Repositório unificado
     private CatalogoRepository catalogoRepo;
     private ListenerRegistration listenerCatalogo;
 
@@ -51,8 +48,8 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
 
         catalogoRepo = new CatalogoRepository();
 
-        recyclerProdutos   = findViewById(R.id.recyclerProdutos);
-        chipGroupTipo      = findViewById(R.id.chipGroupTipo);
+        recyclerProdutos = findViewById(R.id.recyclerProdutos);
+        chipGroupTipo = findViewById(R.id.chipGroupTipo);
         toggleVisualizacao = findViewById(R.id.toggleVisualizacao);
 
         configurarRecyclerView();
@@ -72,8 +69,6 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
         if (listenerCatalogo != null) listenerCatalogo.remove();
     }
 
-    // ── Carregamento ──────────────────────────────────────────────────
-
     private void carregarDados() {
         listenerCatalogo = catalogoRepo.listarTempoReal(new CatalogoRepository.ListaCallback() {
             @Override
@@ -86,12 +81,10 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
             @Override
             public void onErro(String erro) {
                 Toast.makeText(ListaProdutosEServicosActivity.this,
-                        "Erro ao carregar catálogo: " + erro, Toast.LENGTH_SHORT).show();
+                        "Erro ao carregar catalogo: " + erro, Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-    // ── RecyclerView ──────────────────────────────────────────────────
 
     private void configurarRecyclerView() {
         adapter = new AdapterExibirPSGradeListaNovaVenda(listaFiltrada, this::onItemClick);
@@ -102,49 +95,37 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     private void configurarAlternanciaVisualizacao() {
         toggleVisualizacao.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
-                boolean modoGrade = (checkedId == R.id.btnVisualizacaoGrade);
+                boolean modoGrade = checkedId == R.id.btnVisualizacaoGrade;
                 recyclerProdutos.setLayoutManager(
-                        modoGrade
-                                ? new GridLayoutManager(this, 2)
-                                : new LinearLayoutManager(this));
+                        modoGrade ? new GridLayoutManager(this, 2) : new LinearLayoutManager(this));
                 if (adapter != null) adapter.setModoGrade(modoGrade);
             }
         });
     }
 
-    // ── Clique no item → abre CadastroCatalogoActivity ───────────────
-
     private void onItemClick(ItemVendaModel item) {
         if (!(item instanceof CatalogoModel)) {
-            Toast.makeText(this, "Item inválido", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Item invalido", Toast.LENGTH_SHORT).show();
             return;
         }
         CatalogoModel c = (CatalogoModel) item;
         Intent intent = new Intent(this, CadastroCatalogoActivity.class);
-        intent.putExtra("id",          c.getId());
-        intent.putExtra("nome",        c.getNome());
-        intent.putExtra("tipo",        c.getTipoStr());
-        intent.putExtra("preco",       c.getPreco());
+        intent.putExtra("id", c.getId());
+        intent.putExtra("nome", c.getNome());
+        intent.putExtra("tipo", c.getTipoStr());
+        intent.putExtra("preco", c.getPreco());
         intent.putExtra("categoriaId", c.getCategoriaId());
-        intent.putExtra("categoria",   c.getCategoria());
-        intent.putExtra("descricao",   c.getDescricao());
+        intent.putExtra("categoria", c.getCategoria());
+        intent.putExtra("descricao", c.getDescricao());
         intent.putExtra("statusAtivo", c.isStatusAtivo());
-        intent.putExtra("iconeIndex",  c.getIconeIndex());
+        intent.putExtra("iconeIndex", c.getIconeIndex());
         intent.putExtra("urlFoto", c.getUrlFoto());
         startActivity(intent);
     }
 
-    // ── FAB / botão de cadastro ───────────────────────────────────────
-
-    /**
-     * Chamado pelo XML via android:onClick="cadastrarProdutoOuServico".
-     * Exibe um diálogo para o usuário escolher o tipo antes de abrir o cadastro.
-     */
     public void cadastrarProdutoOuServico(View view) {
         startActivity(new Intent(this, CadastroCatalogoActivity.class));
     }
-
-    // ── Filtros por chip (Todos / Produtos / Serviços) ────────────────
 
     private void configurarFiltros() {
         chipGroupTipo.setOnCheckedChangeListener((group, checkedId) -> aplicarFiltros());
@@ -158,15 +139,13 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
             boolean isProd = item.getTipo() == ItemVendaModel.TIPO_PRODUTO;
             boolean isServ = item.getTipo() == ItemVendaModel.TIPO_SERVICO;
 
-            if      (id == R.id.chipProdutos && isProd)               listaFiltrada.add(item);
-            else if (id == R.id.chipServicos && isServ)               listaFiltrada.add(item);
-            else if (id == View.NO_ID        || id == R.id.chipTodos) listaFiltrada.add(item);
+            if (id == R.id.chipProdutos && isProd) listaFiltrada.add(item);
+            else if (id == R.id.chipServicos && isServ) listaFiltrada.add(item);
+            else if (id == View.NO_ID || id == R.id.chipTodos) listaFiltrada.add(item);
         }
 
         if (adapter != null) adapter.notifyDataSetChanged();
     }
-
-    // ── Utilitários ───────────────────────────────────────────────────
 
     public void retornarParaVendasCadastros(View view) {
         finish();
