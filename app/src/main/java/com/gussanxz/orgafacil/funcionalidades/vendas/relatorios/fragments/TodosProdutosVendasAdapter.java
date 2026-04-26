@@ -32,6 +32,15 @@ public class TodosProdutosVendasAdapter
 
     private final List<ProdutoItem> lista = new ArrayList<>();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    private OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onItemClick(ProdutoItem item);
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
 
     public void atualizar(List<ProdutoItem> novaLista) {
         lista.clear();
@@ -53,6 +62,9 @@ public class TodosProdutosVendasAdapter
         holder.nome.setText(item.nome);
         holder.qtd.setText(item.quantidade + "x");
         holder.valor.setText(fmt.format(item.valorTotal));
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onItemClick(item);
+        });
     }
 
     @Override

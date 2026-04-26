@@ -15,24 +15,22 @@
         android:textColor="@color/cor_texto"
         android:textSize="14sp"
         android:ellipsize="end"
-        android:maxLines="1" />
+        android:maxLines="2" />
 
     <TextView
         android:id="@+id/txtProdListaQtd"
-        android:layout_width="wrap_content"
+        android:layout_width="48dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:minWidth="36dp"
         android:gravity="end"
         android:textColor="@color/cor_texto_secundario"
         android:textSize="13sp" />
 
     <TextView
         android:id="@+id/txtProdListaValor"
-        android:layout_width="wrap_content"
+        android:layout_width="104dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
-        android:minWidth="80dp"
         android:gravity="end"
         android:textColor="@color/colorPrimary"
         android:textSize="13sp"

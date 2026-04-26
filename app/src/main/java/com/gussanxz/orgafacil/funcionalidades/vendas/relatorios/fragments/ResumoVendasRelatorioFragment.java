@@ -77,10 +77,13 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private Map<String, String> catalogoCategoriasIdMap = new HashMap<>();
     private Map<String, String> categoriaNomesMap = new HashMap<>();
     private Map<String, String> catalogoNomesMap = new HashMap<>();
+    private Map<String, String> catalogoTiposMap = new HashMap<>();
+    private Map<String, List<CatalogoResumoItem>> catalogoItensPorCategoriaMap = new HashMap<>();
 
     private Calendar mesSelecionado;
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final SimpleDateFormat fmtMes = new SimpleDateFormat("MMM/yy", new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtDia = new SimpleDateFormat("dd/MM/yyyy", new Locale("pt", "BR"));
 
     @Nullable
     @Override
@@ -123,6 +126,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         recyclerListaCompleta      = view.findViewById(R.id.recyclerListaCompleta);
         recyclerListaCompleta.setLayoutManager(new LinearLayoutManager(requireContext()));
         listaCompletaAdapter = new TodosProdutosVendasAdapter();
+        listaCompletaAdapter.setOnItemClickListener(item -> {
+            if (!listaExibindoProdutos) mostrarDialogItensDaCategoria(item.nome);
+        });
         recyclerListaCompleta.setAdapter(listaCompletaAdapter);
 
         btnListaCompletaProdutos.setOnClickListener(v -> {
@@ -179,6 +185,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                 catalogoCategoriasMap.clear();
                 catalogoCategoriasIdMap.clear();
                 catalogoNomesMap.clear();
+                catalogoTiposMap.clear();
+                catalogoItensPorCategoriaMap.clear();
                 for (DocumentSnapshot doc : snap.getDocuments()) {
                     String cat = doc.getString("categoria");
                     if (cat != null && !cat.isEmpty()) {
@@ -192,6 +200,10 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     if (nome != null && !nome.isEmpty()) {
                         catalogoNomesMap.put(doc.getId(), nome);
                     }
+                    String tipo = doc.getString("tipo");
+                    if (tipo != null && !tipo.isEmpty()) {
+                        catalogoTiposMap.put(doc.getId(), tipo);
+                    }
                 }
                 // Após o catálogo, carrega as categorias para resolver nomes atuais pelo ID.
                 vendasRepository.listarTodasCategorias(new RepoCallback<QuerySnapshot>() {
@@ -204,10 +216,12 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                                 categoriaNomesMap.put(catDoc.getId(), nome);
                             }
                         }
+                        indexarItensCatalogoPorCategoria();
                         iniciarListenerVendas();
                     }
                     @Override
                     public void onError(Exception e) {
+                        indexarItensCatalogoPorCategoria();
                         iniciarListenerVendas();
                     }
                 });
@@ -462,6 +476,143 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         }
     }
 
+    private void mostrarDialogItensDaCategoria(@NonNull String categoriaNome) {
+        List<TodosProdutosVendasAdapter.ProdutoItem> itens = montarItensDaCategoria(categoriaNome);
+        TodosProdutosVendasAdapter adapter = new TodosProdutosVendasAdapter();
+        adapter.atualizar(itens);
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_categoria_itens_vendas, null);
+
+        TextView txtTitulo = dialogView.findViewById(R.id.txtCategoriaDialogTitulo);
+        TextView txtResumo = dialogView.findViewById(R.id.txtCategoriaDialogResumo);
+        TextView txtPeriodo = dialogView.findViewById(R.id.txtCategoriaDialogPeriodo);
+        TextView txtVazio = dialogView.findViewById(R.id.txtCategoriaDialogVazio);
+        TextView txtTotalQtd = dialogView.findViewById(R.id.txtCategoriaDialogTotalQtd);
+        TextView txtTotalValor = dialogView.findViewById(R.id.txtCategoriaDialogTotalValor);
+        MaterialButton btnFechar = dialogView.findViewById(R.id.btnFecharDialogCategoriaItens);
+        RecyclerView recycler = dialogView.findViewById(R.id.recyclerCategoriaDialogItens);
+
+        recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recycler.setAdapter(adapter);
+
+        int totalQtd = 0;
+        double totalValor = 0;
+        for (TodosProdutosVendasAdapter.ProdutoItem item : itens) {
+            totalQtd += item.quantidade;
+            totalValor += item.valorTotal;
+        }
+
+        txtTitulo.setText(categoriaNome);
+        txtResumo.setText(itens.size() + (itens.size() == 1 ? " item cadastrado" : " itens cadastrados"));
+        txtPeriodo.setText(montarIntervaloMesSelecionado());
+        txtTotalQtd.setText(totalQtd + "x");
+        txtTotalValor.setText(fmt.format(totalValor));
+        recycler.setVisibility(itens.isEmpty() ? View.GONE : View.VISIBLE);
+        txtVazio.setVisibility(itens.isEmpty() ? View.VISIBLE : View.GONE);
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .create();
+
+        btnFechar.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+    }
+
+    @NonNull
+    private String montarIntervaloMesSelecionado() {
+        Calendar inicio = (Calendar) mesSelecionado.clone();
+        inicio.set(Calendar.DAY_OF_MONTH, 1);
+
+        Calendar fim = (Calendar) mesSelecionado.clone();
+        fim.set(Calendar.DAY_OF_MONTH, fim.getActualMaximum(Calendar.DAY_OF_MONTH));
+
+        return fmtDia.format(inicio.getTime()) + " - " + fmtDia.format(fim.getTime());
+    }
+
+    @NonNull
+    private List<TodosProdutosVendasAdapter.ProdutoItem> montarItensDaCategoria(@NonNull String categoriaNome) {
+        Map<String, ItemCategoriaResumo> mapa = new LinkedHashMap<>();
+
+        List<CatalogoResumoItem> cadastrados = catalogoItensPorCategoriaMap.get(categoriaNome);
+        if (cadastrados != null) {
+            for (CatalogoResumoItem item : cadastrados) {
+                mapa.put(item.id, new ItemCategoriaResumo(item.nome, item.tipo));
+            }
+        }
+
+        for (VendaModel venda : doMesCache) {
+            if (venda.getItens() == null) continue;
+            for (ItemVendaRegistradaModel item : venda.getItens()) {
+                if (!categoriaNome.equals(resolverCategoria(item))) continue;
+
+                String chave = item.getItemId();
+                if (chave == null || chave.isEmpty()) {
+                    chave = item.getTipo() + "_" + resolverNome(item);
+                }
+
+                ItemCategoriaResumo resumo = mapa.get(chave);
+                if (resumo == null) {
+                    resumo = new ItemCategoriaResumo(resolverNome(item), rotuloTipo(item.getTipo()));
+                    mapa.put(chave, resumo);
+                }
+                resumo.quantidade += item.getQuantidade();
+                resumo.valorTotal += item.getPrecoUnitario() * item.getQuantidade();
+            }
+        }
+
+        List<ItemCategoriaResumo> resumos = new ArrayList<>(mapa.values());
+        resumos.sort((a, b) -> {
+            int total = Double.compare(b.valorTotal, a.valorTotal);
+            if (total != 0) return total;
+            return a.nome.compareToIgnoreCase(b.nome);
+        });
+
+        List<TodosProdutosVendasAdapter.ProdutoItem> itens = new ArrayList<>();
+        for (ItemCategoriaResumo resumo : resumos) {
+            itens.add(new TodosProdutosVendasAdapter.ProdutoItem(
+                    resumo.nome + " • " + resumo.tipo,
+                    resumo.quantidade,
+                    resumo.valorTotal));
+        }
+        return itens;
+    }
+
+    private void indexarItensCatalogoPorCategoria() {
+        catalogoItensPorCategoriaMap.clear();
+        for (Map.Entry<String, String> entry : catalogoNomesMap.entrySet()) {
+            String itemId = entry.getKey();
+            String categoriaNome = resolverCategoriaCatalogo(itemId);
+            CatalogoResumoItem item = new CatalogoResumoItem(
+                    itemId,
+                    entry.getValue(),
+                    rotuloTipo(catalogoTiposMap.get(itemId)));
+            List<CatalogoResumoItem> itens = catalogoItensPorCategoriaMap.get(categoriaNome);
+            if (itens == null) {
+                itens = new ArrayList<>();
+                catalogoItensPorCategoriaMap.put(categoriaNome, itens);
+            }
+            itens.add(item);
+        }
+        for (List<CatalogoResumoItem> itens : catalogoItensPorCategoriaMap.values()) {
+            itens.sort((a, b) -> a.nome.compareToIgnoreCase(b.nome));
+        }
+    }
+
+    @NonNull
+    private String resolverCategoriaCatalogo(@NonNull String itemId) {
+        String catId = catalogoCategoriasIdMap.get(itemId);
+        if (catId != null) {
+            String catNome = categoriaNomesMap.get(catId);
+            if (catNome != null && !catNome.isEmpty()) return catNome;
+        }
+        String cat = catalogoCategoriasMap.get(itemId);
+        return (cat != null && !cat.isEmpty()) ? cat : "Sem categoria";
+    }
+
     private void atualizarVisualToggleLista() {
         int corInativo = ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario);
         if (listaExibindoProdutos) {
@@ -659,5 +810,37 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         }
         String fallback = item.getCategoria();
         return (fallback != null && !fallback.isEmpty()) ? fallback : "Sem categoria";
+    }
+
+    private String rotuloTipo(int tipo) {
+        return tipo == ItemVendaRegistradaModel.TIPO_SERVICO ? "Servico" : "Produto";
+    }
+
+    private String rotuloTipo(@Nullable String tipo) {
+        return "servico".equals(tipo) ? "Servico" : "Produto";
+    }
+
+    private static class CatalogoResumoItem {
+        final String id;
+        final String nome;
+        final String tipo;
+
+        CatalogoResumoItem(String id, String nome, String tipo) {
+            this.id = id;
+            this.nome = nome;
+            this.tipo = tipo;
+        }
+    }
+
+    private static class ItemCategoriaResumo {
+        final String nome;
+        final String tipo;
+        int quantidade;
+        double valorTotal;
+
+        ItemCategoriaResumo(String nome, String tipo) {
+            this.nome = nome;
+            this.tipo = tipo;
+        }
     }
 }
