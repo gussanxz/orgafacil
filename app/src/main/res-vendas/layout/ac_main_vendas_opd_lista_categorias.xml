@@ -15,8 +15,8 @@
         android:layout_height="wrap_content"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="18dp"
-        android:paddingBottom="18dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -33,13 +33,14 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_arrow_back_48"
+            app:tint="@android:color/white"
             android:background="@drawable/bg_vendas_header_action" />
 
         <LinearLayout
             android:id="@+id/layoutHeaderTexto"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btnFiltroCategorias"
@@ -51,8 +52,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Categorias"
-                android:textColor="@color/white"
-                android:textSize="22sp"
+                android:textColor="@android:color/white"
+                android:textSize="23sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -62,7 +63,8 @@
                 android:layout_marginTop="1dp"
                 android:text=""
                 android:textColor="#CCFFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <ImageButton
@@ -72,7 +74,7 @@
             android:background="@drawable/bg_vendas_header_action"
             android:contentDescription="Filtros"
             android:src="@drawable/ic_filtro_24"
-            app:tint="@color/white"
+            app:tint="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -96,8 +98,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
             android:background="@drawable/bg_vendas_search"
             app:boxBackgroundColor="@android:color/transparent"
             app:boxBackgroundMode="none"
@@ -114,7 +116,8 @@
                 android:hint="Buscar categoria"
                 android:inputType="text"
                 android:maxLines="1"
-                android:paddingStart="40dp"
+                android:minHeight="48dp"
+                android:paddingStart="42dp"
                 android:textColor="@color/cor_texto_primario"
                 android:textColorHint="@color/vendas_search_hint"
                 android:textSize="16sp" />
@@ -126,8 +129,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
             app:singleSelection="true"
             app:selectionRequired="true"
             app:layout_constraintEnd_toEndOf="parent"
@@ -136,25 +139,25 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipTodas"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
+                style="@style/Widget.Vendas.FilterChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="Todas" />
+                android:text="Todas · 7" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipAtivas"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
+                style="@style/Widget.Vendas.FilterChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ativas" />
+                android:text="Ativas · 7" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipInativas"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
+                style="@style/Widget.Vendas.FilterChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Inativas" />
+                android:text="Inativas · 0" />
 
         </com.google.android.material.chip.ChipGroup>
 
@@ -164,10 +167,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginTop="8dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
             android:clipToPadding="false"
-            android:paddingBottom="96dp"
+            android:paddingBottom="104dp"
             tools:listitem="@layout/item_vendas_lista_categorias"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -220,9 +223,13 @@
             android:layout_margin="16dp"
             android:onClick="acessarCadastroCategoria"
             android:text="Nova"
-            android:textColor="@color/white"
+            android:minHeight="56dp"
+            android:paddingStart="18dp"
+            android:paddingEnd="22dp"
+            android:textColor="@color/vendas_fab_text"
+            android:textStyle="bold"
             app:icon="@drawable/ic_add_24"
-            app:iconTint="@color/white"
+            app:iconTint="@color/vendas_fab_text"
             app:backgroundTint="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

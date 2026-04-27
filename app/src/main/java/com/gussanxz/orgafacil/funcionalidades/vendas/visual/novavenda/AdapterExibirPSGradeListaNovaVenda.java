@@ -1,6 +1,7 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -106,10 +107,10 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
         String textoTag;
 
         if (isProduto) {
-            corDestaque = Color.parseColor("#EF6C00");
+            corDestaque = getCorDestaqueProduto(item);
             textoTag = "PRODUTO";
             backgroundRes = R.drawable.bg_tag_produto;
-            corFundoElements = androidx.core.content.ContextCompat.getColor(context, R.color.vendas_icon_bg_product);
+            corFundoElements = getCorFundoProduto(item);
         } else {
             corDestaque = Color.parseColor("#1565C0");
             textoTag = "SERVIÇO";
@@ -155,6 +156,37 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
             return ((CatalogoModel) item).isStatusAtivo();
         }
         return true;
+    }
+
+    private int getCorDestaqueProduto(ItemVendaModel item) {
+        int[] cores = {
+                Color.parseColor("#8A3FFC"),
+                Color.parseColor("#FF9800"),
+                Color.parseColor("#00B894"),
+                Color.parseColor("#76C900")
+        };
+        int index = item instanceof CatalogoModel ? ((CatalogoModel) item).getIconeIndex() : 0;
+        return cores[Math.abs(index) % cores.length];
+    }
+
+    private int getCorFundoProduto(ItemVendaModel item) {
+        boolean night = (context.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        int[] cores = night
+                ? new int[]{
+                        Color.parseColor("#231F45"),
+                        Color.parseColor("#302A25"),
+                        Color.parseColor("#12363D"),
+                        Color.parseColor("#1C342C")
+                }
+                : new int[]{
+                        Color.parseColor("#F1E8FF"),
+                        Color.parseColor("#FFF4DE"),
+                        Color.parseColor("#E2FAF4"),
+                        Color.parseColor("#F0FBE5")
+                };
+        int index = item instanceof CatalogoModel ? ((CatalogoModel) item).getIconeIndex() : 0;
+        return cores[Math.abs(index) % cores.length];
     }
 
     private int getIconeDoItem(ItemVendaModel item) {
@@ -213,6 +245,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
                     cardIcone,
                     itemView
             );
+            textTipoTag.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "PRODUTO" : "SERVI\u00c7O");
         }
     }
 
@@ -248,6 +281,7 @@ public class AdapterExibirPSGradeListaNovaVenda extends RecyclerView.Adapter<Rec
                     cardIcone,
                     itemView
             );
+            textTipoTag.setText(item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Servi\u00e7o");
         }
     }
 }

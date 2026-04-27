@@ -14,8 +14,8 @@
         android:layout_height="wrap_content"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="18dp"
-        android:paddingBottom="18dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -32,12 +32,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_arrow_back_48"
+            app:tint="@android:color/white"
             android:background="@drawable/bg_vendas_header_action" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -49,7 +50,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Produtos e serviços"
-                android:textColor="@color/white"
+                android:textColor="@android:color/white"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
@@ -58,9 +59,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="1dp"
-                android:text=""
+                android:text="26 ativos · 2 inativos"
                 android:textColor="#CCFFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -80,8 +82,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
             android:background="@drawable/bg_vendas_search"
             app:boxBackgroundColor="@android:color/transparent"
             app:boxBackgroundMode="none"
@@ -98,7 +100,8 @@
                 android:hint="Buscar produto ou serviço"
                 android:inputType="text"
                 android:maxLines="1"
-                android:paddingStart="40dp"
+                android:minHeight="48dp"
+                android:paddingStart="42dp"
                 android:textColor="@color/cor_texto_primario"
                 android:textColorHint="@color/vendas_search_hint"
                 android:textSize="16sp" />
@@ -108,8 +111,8 @@
             android:id="@+id/toggleVisualizacao"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="20dp"
             app:singleSelection="true"
             app:selectionRequired="true"
             app:checkedButton="@id/btnVisualizacaoLista"
@@ -118,45 +121,14 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVisualizacaoLista"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="38dp"
-                android:layout_height="45dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:padding="0dp"
-                android:gravity="center"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                android:backgroundTint="@color/selector_toggle_grid_list_color"
+                style="@style/Widget.Vendas.ViewToggleButton"
                 app:icon="@drawable/ic_list_24"
-                app:iconTint="@color/black"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:strokeColor="#BDBDBD"
-                app:strokeWidth="1dp"
                 tools:ignore="ContentDescription" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVisualizacaoGrade"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="38dp"
-                android:layout_height="45dp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                android:backgroundTint="@color/selector_toggle_grid_list_color"
+                style="@style/Widget.Vendas.ViewToggleButton"
                 app:icon="@drawable/ic_grid_24"
-                app:iconTint="@color/black"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:strokeColor="#BDBDBD"
-                app:strokeWidth="1dp"
                 tools:ignore="ContentDescription" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
@@ -165,7 +137,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="20dp"
             android:layout_marginEnd="8dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/toggleVisualizacao"
@@ -182,7 +154,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipTodos"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    style="@style/Widget.Vendas.FilterChip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
@@ -190,14 +162,14 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipProdutos"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    style="@style/Widget.Vendas.FilterChip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Produtos" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipServicos"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    style="@style/Widget.Vendas.FilterChip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Serviços" />
@@ -210,10 +182,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginTop="8dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-
-            android:layout_marginBottom="85dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:clipToPadding="false"
+            android:paddingBottom="104dp"
 
             tools:listitem="@layout/item_vendas_lista_categorias"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -265,9 +237,13 @@
             android:layout_margin="16dp"
             android:onClick="cadastrarProdutoOuServico"
             android:text="Nova"
-            android:textColor="@color/white"
+            android:minHeight="56dp"
+            android:paddingStart="18dp"
+            android:paddingEnd="22dp"
+            android:textColor="@color/vendas_fab_text"
+            android:textStyle="bold"
             app:icon="@drawable/ic_add_24"
-            app:iconTint="@color/white"
+            app:iconTint="@color/vendas_fab_text"
             app:backgroundTint="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

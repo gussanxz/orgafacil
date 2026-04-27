@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,15 +17,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CatalogoRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CategoriaCatalogoRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ListaCategoriasCatalogoActivity extends AppCompatActivity implements AdapterItemListaCategoriasCatalogoVendas.OnCategoriaActionListener {
 
@@ -32,13 +38,18 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
     private LinearLayout emptyState;
     private TextInputEditText editBusca;
     private ChipGroup chipGroupFiltro;
+    private Chip chipTodas, chipAtivas, chipInativas;
+    private TextView txtSubtituloCategorias;
 
     private AdapterItemListaCategoriasCatalogoVendas adapter;
     private final List<Categoria> listaCategoriasTotal = new ArrayList<>();
     private final List<Categoria> listaFiltrada = new ArrayList<>();
+    private final Map<String, Integer> quantidadeItensPorCategoria = new HashMap<>();
 
     private CategoriaCatalogoRepository repository;
+    private CatalogoRepository catalogoRepository;
     private ListenerRegistration listenerRegistration;
+    private ListenerRegistration listenerCatalogoRegistration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +57,7 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         setContentView(R.layout.ac_main_vendas_opd_lista_categorias);
 
         repository = new CategoriaCatalogoRepository();
+        catalogoRepository = new CatalogoRepository();
         repository.garantirCategoriaPadrao(new CategoriaCatalogoRepository.Callback() {
             @Override public void onSucesso(String mensagem) {}
             @Override public void onErro(String erro) {}
@@ -60,6 +72,7 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
     protected void onStart() {
         super.onStart();
         recuperarCategoriasEmTempoReal();
+        recuperarQuantidadesEmTempoReal();
     }
 
     @Override
@@ -68,6 +81,10 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         if (listenerRegistration != null) {
             listenerRegistration.remove();
             listenerRegistration = null;
+        }
+        if (listenerCatalogoRegistration != null) {
+            listenerCatalogoRegistration.remove();
+            listenerCatalogoRegistration = null;
         }
     }
 
@@ -106,6 +123,7 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
 
     private void configurarRecyclerView() {
         adapter = new AdapterItemListaCategoriasCatalogoVendas(listaFiltrada, this, this);
+        adapter.atualizarQuantidades(quantidadeItensPorCategoria);
         recyclerCategorias.setLayoutManager(new LinearLayoutManager(this));
         recyclerCategorias.setAdapter(adapter);
 
@@ -163,6 +181,36 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         });
     }
 
+    private void recuperarQuantidadesEmTempoReal() {
+        listenerCatalogoRegistration = catalogoRepository.listarTempoReal(new CatalogoRepository.ListaCallback() {
+            @Override
+            public void onNovosDados(List<CatalogoModel> lista) {
+                quantidadeItensPorCategoria.clear();
+                for (CatalogoModel item : lista) {
+                    String categoriaId = item.getCategoriaId();
+                    if (categoriaId == null || categoriaId.trim().isEmpty()) {
+                        categoriaId = CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO;
+                    }
+
+                    int quantidadeAtual = quantidadeItensPorCategoria.containsKey(categoriaId)
+                            ? quantidadeItensPorCategoria.get(categoriaId)
+                            : 0;
+                    quantidadeItensPorCategoria.put(categoriaId, quantidadeAtual + 1);
+                }
+
+                if (adapter != null) {
+                    adapter.atualizarQuantidades(quantidadeItensPorCategoria);
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                Toast.makeText(ListaCategoriasCatalogoActivity.this,
+                        "Erro ao carregar itens: " + erro, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void filtrarDados() {
         String texto = editBusca.getText() != null ? editBusca.getText().toString().toLowerCase() : "";
         int chipId = chipGroupFiltro.getCheckedChipId();
@@ -180,7 +228,22 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         }
 
         adapter.atualizarLista(listaFiltrada);
+        atualizarResumo();
         atualizarEmptyState(listaFiltrada.isEmpty());
+    }
+
+    private void atualizarResumo() {
+        int ativas = 0;
+        int inativas = 0;
+        for (Categoria categoria : listaCategoriasTotal) {
+            if (categoria.isAtiva()) ativas++;
+            else inativas++;
+        }
+
+        chipTodas.setText("Todas \u00b7 " + listaCategoriasTotal.size());
+        chipAtivas.setText("Ativas \u00b7 " + ativas);
+        chipInativas.setText("Inativas \u00b7 " + inativas);
+        txtSubtituloCategorias.setText(ativas + (ativas == 1 ? " ativa" : " ativas"));
     }
 
     private void atualizarEmptyState(boolean estaVazia) {
@@ -202,6 +265,10 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         recyclerCategorias = findViewById(R.id.recyclerCategorias);
         editBusca = findViewById(R.id.editBusca);
         chipGroupFiltro = findViewById(R.id.chipGroupFiltroStatus);
+        chipTodas = findViewById(R.id.chipTodas);
+        chipAtivas = findViewById(R.id.chipAtivas);
+        chipInativas = findViewById(R.id.chipInativas);
+        txtSubtituloCategorias = findViewById(R.id.txtSubtituloCategorias);
         emptyState = findViewById(R.id.emptyState);
     }
 

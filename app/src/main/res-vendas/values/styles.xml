@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Widget.Vendas.FilterChip" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="android:minHeight">34dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="chipMinHeight">34dp</item>
+        <item name="chipCornerRadius">17dp</item>
+        <item name="chipBackgroundColor">@color/selector_vendas_chip_background</item>
+        <item name="chipStrokeColor">@color/vendas_stroke</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="android:textColor">@color/selector_vendas_chip_text</item>
+        <item name="rippleColor">@color/colorPrimary</item>
+    </style>
+
+    <style name="Widget.Vendas.ViewToggleButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:layout_width">38dp</item>
+        <item name="android:layout_height">38dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="backgroundTint">@color/selector_vendas_toggle_background</item>
+        <item name="iconTint">@color/selector_vendas_toggle_icon</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">0dp</item>
+        <item name="strokeColor">@color/vendas_stroke</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
     <style name="WidgetCadastroCategoriaIconOption" parent="Widget.MaterialComponents.CardView">
         <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>

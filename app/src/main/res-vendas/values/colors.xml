@@ -35,8 +35,12 @@
     <color name="vendas_search_hint">#8EA0B8</color>
     <color name="vendas_chip_bg">#FFFFFF</color>
     <color name="vendas_chip_selected">#01C7D2</color>
+    <color name="vendas_chip_selected_text">#FFFFFF</color>
     <color name="vendas_chip_text">#4B5870</color>
+    <color name="vendas_fab_text">#FFFFFF</color>
     <color name="vendas_text_secondary">#6B7890</color>
+    <color name="vendas_status_pill_bg">#CFF8E3</color>
+    <color name="vendas_status_pill_text">#06A66F</color>
     <color name="vendas_icon_bg_product">#F2FBF8</color>
     <color name="vendas_icon_bg_service">#EEF5FF</color>
     <color name="vendas_grid_bg_product">#F8F2FF</color>

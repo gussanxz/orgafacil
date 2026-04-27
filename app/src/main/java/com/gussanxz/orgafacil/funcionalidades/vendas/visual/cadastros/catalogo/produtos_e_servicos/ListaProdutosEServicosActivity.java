@@ -3,6 +3,7 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,6 +31,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
     private RecyclerView recyclerProdutos;
     private ChipGroup chipGroupTipo;
     private MaterialButtonToggleGroup toggleVisualizacao;
+    private TextView txtSubtituloProdutos;
 
     private AdapterExibirPSGradeListaNovaVenda adapter;
 
@@ -51,6 +53,7 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
         recyclerProdutos = findViewById(R.id.recyclerProdutos);
         chipGroupTipo = findViewById(R.id.chipGroupTipo);
         toggleVisualizacao = findViewById(R.id.toggleVisualizacao);
+        txtSubtituloProdutos = findViewById(R.id.txtSubtituloProdutos);
 
         configurarRecyclerView();
         configurarFiltros();
@@ -145,6 +148,19 @@ public class ListaProdutosEServicosActivity extends AppCompatActivity {
         }
 
         if (adapter != null) adapter.notifyDataSetChanged();
+        atualizarResumo();
+    }
+
+    private void atualizarResumo() {
+        int ativos = 0;
+        int inativos = 0;
+
+        for (ItemVendaModel item : listaTotal) {
+            if (item instanceof CatalogoModel && !((CatalogoModel) item).isStatusAtivo()) inativos++;
+            else ativos++;
+        }
+
+        txtSubtituloProdutos.setText(ativos + " ativos · " + inativos + " inativos");
     }
 
     public void retornarParaVendasCadastros(View view) {

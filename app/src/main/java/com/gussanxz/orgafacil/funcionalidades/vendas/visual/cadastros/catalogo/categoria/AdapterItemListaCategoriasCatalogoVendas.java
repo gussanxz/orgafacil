@@ -20,12 +20,15 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.negocio.modelos.Categoria;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapter<AdapterItemListaCategoriasCatalogoVendas.MyViewHolder> {
 
     private List<Categoria> lista;
     private final Context context;
     private final OnCategoriaActionListener listener;
+    private Map<String, Integer> quantidadeItensPorCategoria = new HashMap<>();
 
     public interface OnCategoriaActionListener {
         void onEditarClick(Categoria categoria);
@@ -48,6 +51,11 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
         setListaFiltrada(novaLista);
     }
 
+    public void atualizarQuantidades(Map<String, Integer> quantidades) {
+        this.quantidadeItensPorCategoria = quantidades != null ? new HashMap<>(quantidades) : new HashMap<>();
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -61,6 +69,7 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         holder.textNomeCategoria.setText(categoria.getNome());
         holder.textDescCategoria.setText(categoria.getDescricao() != null ? categoria.getDescricao() : "");
+        holder.textQuantidadeItensCategoria.setText(String.valueOf(getQuantidadeItens(categoria)));
 
         // --- LÓGICA DE VISUAL: FOTO vs ÍCONE ---
         if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
@@ -117,7 +126,7 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-        TextView textNomeCategoria, textDescCategoria;
+        TextView textNomeCategoria, textDescCategoria, textQuantidadeItensCategoria;
         View textStatus;
         ImageView imgIconeCategoria;
         MaterialCardView cardIconeCategoria;
@@ -127,6 +136,7 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
             super(itemView);
             textNomeCategoria = itemView.findViewById(R.id.textNomeCategoria);
             textDescCategoria = itemView.findViewById(R.id.textDescCategoria);
+            textQuantidadeItensCategoria = itemView.findViewById(R.id.textQuantidadeItensCategoria);
             textStatus = itemView.findViewById(R.id.textStatus);
             imgIconeCategoria = itemView.findViewById(R.id.imgIconeCategoria);
             cardIconeCategoria = itemView.findViewById(R.id.cardIconeCategoria);
@@ -147,6 +157,13 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
         } catch (IllegalArgumentException e) {
             return Color.parseColor("#9E9E9E");
         }
+    }
+
+    private int getQuantidadeItens(Categoria categoria) {
+        String id = categoria.getId();
+        if (id == null || id.trim().isEmpty()) return 0;
+        Integer quantidade = quantidadeItensPorCategoria.get(id);
+        return quantidade != null ? quantidade : 0;
     }
 
     private int getIconePorIndex(int index) {

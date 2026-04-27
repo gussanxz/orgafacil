@@ -4,10 +4,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="6dp"
+    android:layout_margin="7dp"
     android:clickable="true"
     android:focusable="true"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="14dp"
     app:cardBackgroundColor="@color/vendas_card"
     app:cardElevation="1dp"
     app:strokeColor="@color/vendas_stroke"
@@ -21,7 +21,7 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIcone"
             android:layout_width="match_parent"
-            android:layout_height="86dp"
+            android:layout_height="84dp"
             app:cardBackgroundColor="@color/vendas_grid_bg_product"
             app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
@@ -31,10 +31,10 @@
 
             <ImageView
                 android:id="@+id/imageIcone"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_gravity="center"
-                android:padding="6dp"
+                android:padding="7dp"
                 android:scaleType="center"
                 android:src="@drawable/ic_categorias_geral_24" />
         </com.google.android.material.card.MaterialCardView>
@@ -56,11 +56,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_tag_produto"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="7dp"
                 android:paddingVertical="2dp"
                 android:text="PRODUTO"
                 android:textColor="@color/vendas_text_secondary"
-                android:textSize="9sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -86,7 +86,7 @@
             android:maxLines="2"
             android:minLines="1"
             android:text="Nome do Item"
-            android:textColor="@color/cor_texto"
+            android:textColor="@color/black"
             android:textSize="15sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
@@ -115,7 +115,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="14dp"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="14dp"
             android:text="R$ 0,00"
             android:textColor="@color/colorPrimary"
             android:textSize="15sp"
