@@ -17,6 +17,7 @@ public class Categoria implements Serializable {
     private String nome;
     private String descricao;
     private int indexIcone;
+    private String corIcone;
     private String urlImagem;
     private boolean ativa;
     private String tipo; // Salva como String no banco ("RECEITA" ou "DESPESA")
@@ -66,6 +67,14 @@ public class Categoria implements Serializable {
     }
     public void setIndexIcone(int indexIcone) {
         this.indexIcone = indexIcone;
+    }
+
+    public String getCorIcone() {
+        return corIcone;
+    }
+
+    public void setCorIcone(String corIcone) {
+        this.corIcone = corIcone;
     }
 
 

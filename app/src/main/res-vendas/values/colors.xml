@@ -42,4 +42,21 @@
     <color name="vendas_grid_bg_product">#F8F2FF</color>
     <color name="vendas_group_header">#D6F8F4</color>
 
+    <!-- Cadastro categoria -->
+    <color name="cadastro_categoria_header">#18BDB4</color>
+    <color name="cadastro_categoria_header_action">#33FFFFFF</color>
+    <color name="cadastro_categoria_surface">#F4F6F8</color>
+    <color name="cadastro_categoria_card">#FFFFFF</color>
+    <color name="cadastro_categoria_card_selected">#D8F7F3</color>
+    <color name="cadastro_categoria_stroke">#DDE5EC</color>
+    <color name="cadastro_categoria_accent">#18BDB4</color>
+    <color name="cadastro_categoria_button">#0E9A82</color>
+    <color name="cadastro_categoria_text_primary">#172033</color>
+    <color name="cadastro_categoria_text_secondary">#6B7890</color>
+    <color name="cadastro_categoria_label">#4B5870</color>
+    <color name="cadastro_categoria_hint">#93A4BD</color>
+    <color name="cadastro_categoria_icon_muted">#4B5870</color>
+    <color name="cadastro_categoria_bottom_bar">#E6F7F4</color>
+    <color name="cadastro_categoria_on_accent">#FFFFFF</color>
+
 </resources>

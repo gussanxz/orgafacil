@@ -65,7 +65,7 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
     }
 
     // --- SALVAR ---
-    public void salvar(String nome, String descricao, boolean ativa) {
+    public void salvar(String nome, String descricao, boolean ativa, String corIcone) {
         if (nome == null || nome.trim().isEmpty()) {
             _mensagemErro.setValue("O nome da categoria é obrigatório.");
             return;
@@ -86,6 +86,7 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
         categoria.setDescricao(descricao);
         categoria.setAtiva(ativa);
         categoria.setTipoEnum(tipoCategoria);
+        categoria.setCorIcone(corIcone);
         // Se tiver ícone selecionado, usa ele. Se for foto (-1), o repository zera lá.
         categoria.setIndexIcone(_iconeSelecionado.getValue() != null ? _iconeSelecionado.getValue() : 0);
 

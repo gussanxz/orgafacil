@@ -70,9 +70,10 @@ public class AdapterGradeCategoriasNovaVenda
                     .placeholder(R.drawable.ic_label_24)
                     .into(holder.imgIcone); // sem circleCrop — agora é retangular
         } else {
+            int corIcone = corIconeCategoria(categoria);
             holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-            holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#9E9E9E"));
+            holder.imgIcone.setColorFilter(corIcone);
             holder.imgIcone.setImageResource(R.drawable.ic_label_24);
             if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
                     android.graphics.Color.parseColor("#F5F5F5"));
@@ -86,6 +87,16 @@ public class AdapterGradeCategoriasNovaVenda
     @Override
     public int getItemCount() {
         return lista != null ? lista.size() : 0;
+    }
+
+    private int corIconeCategoria(Categoria categoria) {
+        String cor = categoria.getCorIcone();
+        if (cor == null || cor.trim().isEmpty()) return android.graphics.Color.parseColor("#9E9E9E");
+        try {
+            return android.graphics.Color.parseColor(cor);
+        } catch (IllegalArgumentException e) {
+            return android.graphics.Color.parseColor("#9E9E9E");
+        }
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

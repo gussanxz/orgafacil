@@ -79,14 +79,15 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
             holder.cardIconeCategoria.setStrokeWidth(3);
         } else {
             // MODO ÍCONE
+            int corIcone = corIconeCategoria(categoria);
             holder.imgIconeCategoria.setImageResource(getIconePorIndex(categoria.getIndexIcone()));
-            holder.imgIconeCategoria.setColorFilter(Color.parseColor("#9E9E9E"));
+            holder.imgIconeCategoria.setColorFilter(corIcone);
 
             int padding = dpToPx(8);
             holder.imgIconeCategoria.setPadding(padding, padding, padding, padding);
             holder.imgIconeCategoria.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
-            holder.cardIconeCategoria.setStrokeColor(Color.parseColor("#E0E0E0")); // Cinza
+            holder.cardIconeCategoria.setStrokeColor(corIcone);
             holder.cardIconeCategoria.setStrokeWidth(2);
         }
 
@@ -133,6 +134,16 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
     private int dpToPx(int dp) {
         float density = context.getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
+    }
+
+    private int corIconeCategoria(Categoria categoria) {
+        String cor = categoria.getCorIcone();
+        if (cor == null || cor.trim().isEmpty()) return Color.parseColor("#9E9E9E");
+        try {
+            return Color.parseColor(cor);
+        } catch (IllegalArgumentException e) {
+            return Color.parseColor("#9E9E9E");
+        }
     }
 
     private int getIconePorIndex(int index) {

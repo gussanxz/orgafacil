@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WidgetCadastroCategoriaIconOption" parent="Widget.MaterialComponents.CardView">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_margin">8dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+        <item name="cardBackgroundColor">@color/cadastro_categoria_card</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/cadastro_categoria_stroke</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <style name="WidgetCadastroCategoriaIconOptionImage">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:tint">@color/cadastro_categoria_icon_muted</item>
+    </style>
+</resources>

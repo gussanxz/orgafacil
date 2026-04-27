@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -21,6 +22,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -50,7 +52,14 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
     private View loadingOverlay;
     private MaterialCardView cardPreviewFoto, cardContainerGrid;
     private ImageView imgPreviewLarge;
-    private TextView txtTituloSelecao;
+    private TextView txtTituloSelecao, txtLabelCorIcone;
+    private LinearLayout containerCoresIcone;
+
+    private String corIconeSelecionada = "#2ED8CC";
+    private final String[] coresIcone = {
+            "#2ED8CC", "#46E0A6", "#7B61FF", "#E14FC4",
+            "#FFB020", "#FF706A", "#4DA3FF", "#A8B3C7"
+    };
 
     // Botões Salvar
     private View btnSalvarSuperior, btnSalvarInferior;
@@ -105,6 +114,8 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
         cardContainerGrid = findViewById(R.id.cardContainerGrid);
         imgPreviewLarge = findViewById(R.id.imgPreviewLarge);
         txtTituloSelecao = findViewById(R.id.txtTituloSelecao);
+        txtLabelCorIcone = findViewById(R.id.txtLabelCorIcone);
+        containerCoresIcone = findViewById(R.id.containerCoresIcone);
 
         // 2. Configurar Cliques Básicos
         findViewById(R.id.fabVoltar).setOnClickListener(v -> finish());
@@ -118,6 +129,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
         // 3. Configurar Grid de Ícones
         configurarCliquesGridIcones();
+        configurarSeletorCoresIcone();
     }
 
     private void processarIntentInicial() {
@@ -136,6 +148,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
             editNome.setText(intent.getStringExtra("nome"));
             editDesc.setText(intent.getStringExtra("descricao"));
             switchAtiva.setChecked(intent.getBooleanExtra("ativa", true));
+            selecionarCorIcone(intent.getStringExtra("corIcone"), false);
 
             String urlFoto = intent.getStringExtra("urlImagem");
 
@@ -150,7 +163,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
                 imgBtnGaleria.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 androidx.core.widget.ImageViewCompat.setImageTintList(imgBtnGaleria, null);
-                cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
+                cardBtnGaleria.setStrokeColor(ContextCompat.getColor(this, R.color.cadastro_categoria_accent));
                 cardBtnGaleria.setStrokeWidth(4);
 
                 // ── ADICIONE ISTO: Preview grande com a foto existente ──
@@ -166,6 +179,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
                 if (layoutSelecao != null)    layoutSelecao.setVisibility(View.VISIBLE);
                 if (cardContainerGrid != null) cardContainerGrid.setVisibility(View.GONE);
                 if (cardPreviewFoto != null)   cardPreviewFoto.setVisibility(View.VISIBLE);
+                setCoresIconeVisibility(false);
                 if (txtTituloSelecao != null)  txtTituloSelecao.setText("Pré-visualização:");
             }
 
@@ -232,7 +246,8 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
         viewModel.salvar(
                 editNome.getText().toString(),
                 editDesc.getText().toString(),
-                switchAtiva.isChecked()
+                switchAtiva.isChecked(),
+                corIconeSelecionada
         );
     }
 
@@ -296,6 +311,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
         layoutSelecao.setVisibility(View.VISIBLE);
         cardContainerGrid.setVisibility(View.VISIBLE);
         cardPreviewFoto.setVisibility(View.GONE);
+        setCoresIconeVisibility(true);
         txtTituloSelecao.setText("Selecione um Ícone:");
 
         // Rola a tela para baixo para mostrar os ícones
@@ -313,9 +329,9 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
     private void atualizarVisualGaleria(Uri uri) {
         // 1. Atualiza visual do botão pequeno (apenas borda e ícone azul)
-        cardBtnGaleria.setStrokeColor(Color.parseColor("#2196F3"));
+        cardBtnGaleria.setStrokeColor(ContextCompat.getColor(this, R.color.cadastro_categoria_accent));
         cardBtnGaleria.setStrokeWidth(4);
-        imgBtnGaleria.setColorFilter(Color.parseColor("#2196F3"));
+        imgBtnGaleria.setColorFilter(ContextCompat.getColor(this, R.color.cadastro_categoria_accent));
 
         // 2. Atualiza o PREVIEW GRANDE com a foto real
         if (imgPreviewLarge != null) {
@@ -329,6 +345,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
         if (layoutSelecao != null) layoutSelecao.setVisibility(View.VISIBLE);
         if (cardContainerGrid != null) cardContainerGrid.setVisibility(View.GONE);
         if (cardPreviewFoto != null) cardPreviewFoto.setVisibility(View.VISIBLE);
+        setCoresIconeVisibility(false);
         if (txtTituloSelecao != null) txtTituloSelecao.setText("Pré-visualização:");
 
         // 4. Scroll Automático
@@ -339,16 +356,17 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
 
     private void resetarVisualGaleria() {
         // Volta o botão da galeria para o estado inativo (cinza)
-        cardBtnGaleria.setStrokeColor(Color.parseColor("#E0E0E0"));
+        cardBtnGaleria.setStrokeColor(ContextCompat.getColor(this, R.color.cadastro_categoria_stroke));
         cardBtnGaleria.setStrokeWidth(1);
-        imgBtnGaleria.setColorFilter(Color.parseColor("#757575"));
+        imgBtnGaleria.setColorFilter(ContextCompat.getColor(this, R.color.cadastro_categoria_icon_muted));
     }
 
     private void atualizarVisualGridIcones(int indexSelecionado) {
-        int verde = Color.parseColor("#25D366");
-        int cinzaBg = Color.parseColor("#F5F5F5");
-        int cinzaIcon = Color.parseColor("#9E9E9E");
-        int borda = Color.parseColor("#E0E0E0");
+        int accent = corIconeInt();
+        int selectedBg = ContextCompat.getColor(this, R.color.cadastro_categoria_card_selected);
+        int cardBg = ContextCompat.getColor(this, R.color.cadastro_categoria_card);
+        int iconMuted = ContextCompat.getColor(this, R.color.cadastro_categoria_icon_muted);
+        int borda = ContextCompat.getColor(this, R.color.cadastro_categoria_stroke);
 
         if (containerIcones == null) return;
 
@@ -357,21 +375,21 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
             ImageView icon = (ImageView) c.getChildAt(0);
             boolean isSelected = (i == indexSelecionado);
 
-            c.setCardBackgroundColor(isSelected ? verde : cinzaBg);
+            c.setCardBackgroundColor(isSelected ? selectedBg : cardBg);
             c.setStrokeWidth(isSelected ? 0 : 3);
             c.setStrokeColor(borda);
-            if (icon != null) icon.setColorFilter(isSelected ? Color.WHITE : cinzaIcon);
+            if (icon != null) icon.setColorFilter(isSelected ? accent : iconMuted);
         }
 
         if (indexSelecionado >= 0) {
             imgBtnSelecionarIcones.setImageResource(getIconePorIndex(indexSelecionado));
-            imgBtnSelecionarIcones.setColorFilter(Color.parseColor("#2196F3"));
+            imgBtnSelecionarIcones.setColorFilter(accent);
         }
     }
 
     private void resetarVisualGridIcones() {
         atualizarVisualGridIcones(-1);
-        imgBtnSelecionarIcones.setColorFilter(Color.parseColor("#757575"));
+        imgBtnSelecionarIcones.setColorFilter(ContextCompat.getColor(this, R.color.cadastro_categoria_icon_muted));
     }
 
     private void configurarCliquesGridIcones() {
@@ -380,6 +398,97 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
             int finalI = i;
             containerIcones.getChildAt(i).setOnClickListener(v -> viewModel.selecionarIcone(finalI));
         }
+    }
+
+    private void configurarSeletorCoresIcone() {
+        if (containerCoresIcone == null) return;
+        containerCoresIcone.removeAllViews();
+
+        for (String cor : coresIcone) {
+            MaterialCardView swatch = new MaterialCardView(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(42), dp(42));
+            params.setMarginEnd(dp(10));
+            swatch.setLayoutParams(params);
+            swatch.setRadius(dp(21));
+            swatch.setCardElevation(0);
+            swatch.setClickable(true);
+            swatch.setFocusable(true);
+            swatch.setTag(cor);
+            swatch.setOnClickListener(v -> selecionarCorIcone((String) v.getTag(), true));
+
+            View bolinha = new View(this);
+            swatch.addView(bolinha, new MaterialCardView.LayoutParams(
+                    MaterialCardView.LayoutParams.MATCH_PARENT,
+                    MaterialCardView.LayoutParams.MATCH_PARENT));
+
+            containerCoresIcone.addView(swatch);
+        }
+
+        atualizarPreviewCorIcone();
+    }
+
+    private void setCoresIconeVisibility(boolean visible) {
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        if (txtLabelCorIcone != null) txtLabelCorIcone.setVisibility(visibility);
+        if (containerCoresIcone != null && containerCoresIcone.getParent() instanceof View) {
+            ((View) containerCoresIcone.getParent()).setVisibility(visibility);
+        }
+    }
+
+    private void selecionarCorIcone(String corHex, boolean atualizarIcone) {
+        if (corHex != null && !corHex.trim().isEmpty()) {
+            corIconeSelecionada = corHex;
+        }
+
+        atualizarPreviewCorIcone();
+
+        if (atualizarIcone) {
+            Integer index = viewModel.iconeSelecionado.getValue();
+            if (index == null || index == -1) {
+                viewModel.selecionarIcone(0);
+            } else {
+                atualizarVisualGridIcones(index);
+            }
+        }
+    }
+
+    private void atualizarPreviewCorIcone() {
+        if (containerCoresIcone == null) return;
+        int strokeSelected = ContextCompat.getColor(this, R.color.cadastro_categoria_text_primary);
+        int strokeDefault = ContextCompat.getColor(this, R.color.cadastro_categoria_stroke);
+
+        for (int i = 0; i < containerCoresIcone.getChildCount(); i++) {
+            View child = containerCoresIcone.getChildAt(i);
+            if (!(child instanceof MaterialCardView)) continue;
+            MaterialCardView swatch = (MaterialCardView) child;
+            String cor = (String) swatch.getTag();
+            boolean selecionada = corIconeSelecionada.equalsIgnoreCase(cor);
+            swatch.setCardBackgroundColor(Color.TRANSPARENT);
+            swatch.setStrokeWidth(dp(selecionada ? 3 : 1));
+            swatch.setStrokeColor(selecionada ? strokeSelected : strokeDefault);
+            if (swatch.getChildCount() > 0) {
+                swatch.getChildAt(0).setBackground(criarDrawableCor(Color.parseColor(cor)));
+            }
+        }
+    }
+
+    private GradientDrawable criarDrawableCor(int cor) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.OVAL);
+        drawable.setColor(cor);
+        return drawable;
+    }
+
+    private int corIconeInt() {
+        try {
+            return Color.parseColor(corIconeSelecionada);
+        } catch (IllegalArgumentException e) {
+            return ContextCompat.getColor(this, R.color.cadastro_categoria_accent);
+        }
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     // --- HELPERS ---

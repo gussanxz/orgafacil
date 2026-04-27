@@ -70,10 +70,11 @@ public class AdapterCategoriasCatalogo extends RecyclerView.Adapter<AdapterCateg
                     .centerCrop()
                     .into(holder.imgIcone);
         } else {
+            int corIcone = corIconeCategoria(categoria);
             holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             holder.imgIcone.setImageResource(R.drawable.ic_label_24);
-            holder.imgIcone.setColorFilter(Color.parseColor("#9E9E9E"));
+            holder.imgIcone.setColorFilter(corIcone);
             holder.card.setCardBackgroundColor(Color.parseColor("#F5F5F5"));
         }
 
@@ -89,6 +90,16 @@ public class AdapterCategoriasCatalogo extends RecyclerView.Adapter<AdapterCateg
     @Override
     public int getItemCount() {
         return categorias.size();
+    }
+
+    private int corIconeCategoria(Categoria categoria) {
+        String cor = categoria.getCorIcone();
+        if (cor == null || cor.trim().isEmpty()) return Color.parseColor("#9E9E9E");
+        try {
+            return Color.parseColor(cor);
+        } catch (IllegalArgumentException e) {
+            return Color.parseColor("#9E9E9E");
+        }
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

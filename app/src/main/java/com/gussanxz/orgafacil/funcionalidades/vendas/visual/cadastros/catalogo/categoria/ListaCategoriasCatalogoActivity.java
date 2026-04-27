@@ -135,6 +135,7 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
         intent.putExtra("nome", categoria.getNome());
         intent.putExtra("descricao", categoria.getDescricao());
         intent.putExtra("iconeIndex", categoria.getIndexIcone());
+        intent.putExtra("corIcone", categoria.getCorIcone());
         intent.putExtra("ativa", categoria.isAtiva());
         intent.putExtra("urlImagem", categoria.getUrlImagem());
         startActivity(intent);
