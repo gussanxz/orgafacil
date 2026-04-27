@@ -1,9 +1,12 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.cadastros.catalogo.categoria;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,6 +31,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoMod
 import com.gussanxz.orgafacil.util_helper.SwipeCallback;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,11 +93,19 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
     }
 
     private void confirmarExclusao(Categoria categoria, int positionParaRestaurar) {
+        restaurarItemSeNecessario(positionParaRestaurar);
+
+        String motivoBloqueio = getMotivoBloqueioExclusao(categoria);
+        if (motivoBloqueio != null) {
+            exibirDialogExclusaoBloqueada(motivoBloqueio);
+            return;
+        }
+
         new AlertDialog.Builder(this)
-                .setTitle("Excluir Categoria")
-                .setMessage("Tem certeza que deseja excluir: " + categoria.getNome() + "?")
+                .setTitle("Excluir categoria")
+                .setMessage("Tem certeza que deseja excluir " + categoria.getNome() + "? Esta ação não pode ser desfeita.")
                 .setCancelable(false)
-                .setPositiveButton("Sim", (dialog, which) -> repository.excluir(categoria.getId(), new CategoriaCatalogoRepository.Callback() {
+                .setPositiveButton("Excluir", (dialog, which) -> repository.excluir(categoria.getId(), new CategoriaCatalogoRepository.Callback() {
                     @Override
                     public void onSucesso(String mensagem) {
                         Toast.makeText(ListaCategoriasCatalogoActivity.this, mensagem, Toast.LENGTH_SHORT).show();
@@ -101,14 +113,49 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
 
                     @Override
                     public void onErro(String erro) {
-                        Toast.makeText(ListaCategoriasCatalogoActivity.this, "Erro: " + erro, Toast.LENGTH_SHORT).show();
-                        if (positionParaRestaurar != -1) adapter.notifyItemChanged(positionParaRestaurar);
+                        exibirDialogExclusaoBloqueada(erro);
                     }
                 }))
-                .setNegativeButton("Nao", (dialog, which) -> {
-                    if (positionParaRestaurar != -1) adapter.notifyItemChanged(positionParaRestaurar);
-                })
+                .setNegativeButton("Cancelar", null)
                 .show();
+    }
+
+    private String getMotivoBloqueioExclusao(Categoria categoria) {
+        if (isCategoriaPadrao(categoria)) {
+            return "A categoria Não alocado é usada como backup para produtos e serviços sem categoria definida e não pode ser excluída.";
+        }
+
+        int quantidadeItens = getQuantidadeItens(categoria);
+        if (quantidadeItens > 0) {
+            return "Esta categoria possui " + quantidadeItens + " produto(s) ou serviço(s) cadastrado(s). Remova ou altere a categoria desses itens antes de excluir.";
+        }
+
+        return null;
+    }
+
+    private void exibirDialogExclusaoBloqueada(String mensagem) {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_exclusao_bloqueada_categoria, null);
+        TextView textMensagem = view.findViewById(R.id.textMensagemDialog);
+        View btnEntendi = view.findViewById(R.id.btnEntendiDialog);
+
+        textMensagem.setText(mensagem);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        btnEntendi.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void restaurarItemSeNecessario(int positionParaRestaurar) {
+        if (positionParaRestaurar != -1 && adapter != null) {
+            recyclerCategorias.post(() -> adapter.notifyItemChanged(positionParaRestaurar));
+        }
     }
 
     @Override
@@ -227,9 +274,23 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
             if (matchTexto && matchStatus) listaFiltrada.add(c);
         }
 
+        ordenarCategoriasParaExibicao(listaFiltrada);
         adapter.atualizarLista(listaFiltrada);
         atualizarResumo();
         atualizarEmptyState(listaFiltrada.isEmpty());
+    }
+
+    private void ordenarCategoriasParaExibicao(List<Categoria> categorias) {
+        Collections.sort(categorias, (a, b) -> {
+            boolean aPadrao = isCategoriaPadrao(a);
+            boolean bPadrao = isCategoriaPadrao(b);
+            if (aPadrao && !bPadrao) return 1;
+            if (!aPadrao && bPadrao) return -1;
+
+            String nomeA = a.getNome() != null ? a.getNome() : "";
+            String nomeB = b.getNome() != null ? b.getNome() : "";
+            return nomeA.compareToIgnoreCase(nomeB);
+        });
     }
 
     private void atualizarResumo() {
@@ -249,6 +310,20 @@ public class ListaCategoriasCatalogoActivity extends AppCompatActivity implement
     private void atualizarEmptyState(boolean estaVazia) {
         recyclerCategorias.setVisibility(estaVazia ? View.GONE : View.VISIBLE);
         emptyState.setVisibility(estaVazia ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean isCategoriaPadrao(Categoria categoria) {
+        return categoria != null
+                && CategoriaCatalogoRepository.ID_CATEGORIA_PADRAO.equals(categoria.getId());
+    }
+
+    private int getQuantidadeItens(Categoria categoria) {
+        if (categoria == null || categoria.getId() == null || categoria.getId().trim().isEmpty()) {
+            return 0;
+        }
+
+        Integer quantidade = quantidadeItensPorCategoria.get(categoria.getId());
+        return quantidade != null ? quantidade : 0;
     }
 
     private void configurarListenerDeFiltro() {

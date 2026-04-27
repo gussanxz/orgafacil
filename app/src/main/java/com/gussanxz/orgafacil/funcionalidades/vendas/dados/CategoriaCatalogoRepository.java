@@ -357,12 +357,28 @@ public class CategoriaCatalogoRepository {
             callback.onErro("A categoria padrão não pode ser excluída.");
             return;
         }
+        if (idCategoria.trim().isEmpty()) {
+            callback.onErro("Categoria inválida.");
+            return;
+        }
 
         try {
-            FirestoreSchema.vendasCategoriaDoc(idCategoria)
-                    .delete()
-                    .addOnSuccessListener(aVoid -> callback.onSucesso("Categoria excluída com sucesso!"))
-                    .addOnFailureListener(e -> callback.onErro("Erro ao excluir: " + e.getMessage()));
+            FirestoreSchema.vendasCatalogoCol()
+                    .whereEqualTo("categoriaId", idCategoria)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        if (snapshot != null && !snapshot.isEmpty()) {
+                            callback.onErro("Categorias com produtos ou serviços cadastrados não podem ser excluídas.");
+                            return;
+                        }
+
+                        FirestoreSchema.vendasCategoriaDoc(idCategoria)
+                                .delete()
+                                .addOnSuccessListener(aVoid -> callback.onSucesso("Categoria excluída com sucesso!"))
+                                .addOnFailureListener(e -> callback.onErro("Erro ao excluir: " + e.getMessage()));
+                    })
+                    .addOnFailureListener(e -> callback.onErro("Erro ao validar categoria: " + e.getMessage()));
         } catch (IllegalStateException e) {
             callback.onErro(e.getMessage());
         }

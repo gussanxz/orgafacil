@@ -67,7 +67,7 @@ public abstract class SwipeCallback extends ItemTouchHelper.SimpleCallback {
     @Override
     public int getSwipeDirs(@NonNull RecyclerView recyclerView,
                             @NonNull RecyclerView.ViewHolder viewHolder) {
-        if (viewHolder.getItemViewType() == AdapterItemListaMovimentacao.TYPE_HEADER) {
+        if (isHeaderMovimentacao(recyclerView, viewHolder)) {
             return ItemTouchHelper.LEFT; // header: só excluir dia
         }
         return ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
@@ -89,23 +89,26 @@ public abstract class SwipeCallback extends ItemTouchHelper.SimpleCallback {
         int pos = viewHolder.getAdapterPosition();
         if (pos == RecyclerView.NO_POSITION) return;
 
-        if (viewHolder.getItemViewType() == AdapterItemListaMovimentacao.TYPE_HEADER) {
-            if (viewHolder.itemView.getParent() instanceof RecyclerView) {
-                RecyclerView rv = (RecyclerView) viewHolder.itemView.getParent();
-                if (rv.getAdapter() instanceof AdapterMovimentacaoLista) {
-                    AdapterMovimentacaoLista adapter = (AdapterMovimentacaoLista) rv.getAdapter();
-                    AdapterItemListaMovimentacao headerItem = adapter.getItens().get(pos);
-                    String tituloDia = headerItem.tituloDia != null ? headerItem.tituloDia : headerItem.data;
-                    List<MovimentacaoModel> movsDoDia = adapter.getMovimentacoesDoDia(pos);
-                    adapter.notifyItemChanged(pos);
-                    onHeaderSwipeDelete(tituloDia, movsDoDia);
-                }
-            }
+        if (viewHolder.itemView.getParent() instanceof RecyclerView
+                && isHeaderMovimentacao((RecyclerView) viewHolder.itemView.getParent(), viewHolder)) {
+            RecyclerView rv = (RecyclerView) viewHolder.itemView.getParent();
+            AdapterMovimentacaoLista adapter = (AdapterMovimentacaoLista) rv.getAdapter();
+            AdapterItemListaMovimentacao headerItem = adapter.getItens().get(pos);
+            String tituloDia = headerItem.tituloDia != null ? headerItem.tituloDia : headerItem.data;
+            List<MovimentacaoModel> movsDoDia = adapter.getMovimentacoesDoDia(pos);
+            adapter.notifyItemChanged(pos);
+            onHeaderSwipeDelete(tituloDia, movsDoDia);
             return;
         }
 
         // Item normal → chama o método unificado que as subclasses sobrescrevem
         onMovimentoSwiped(viewHolder, direction, pos);
+    }
+
+    private boolean isHeaderMovimentacao(@NonNull RecyclerView recyclerView,
+                                         @NonNull RecyclerView.ViewHolder viewHolder) {
+        return recyclerView.getAdapter() instanceof AdapterMovimentacaoLista
+                && viewHolder.getItemViewType() == AdapterItemListaMovimentacao.TYPE_HEADER;
     }
 
     // =========================================================================

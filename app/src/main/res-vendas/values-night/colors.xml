@@ -63,4 +63,12 @@
     <color name="cadastro_categoria_bottom_bar">#0B1424</color>
     <color name="cadastro_categoria_on_accent">#FFFFFF</color>
 
+    <!-- Dialog warning -->
+    <color name="dialog_warning_surface">#151F31</color>
+    <color name="dialog_warning_icon_bg">#3A2A13</color>
+    <color name="dialog_warning_accent">#FFB74D</color>
+    <color name="dialog_warning_text_primary">#F7FAFF</color>
+    <color name="dialog_warning_text_secondary">#A8B3C7</color>
+    <color name="dialog_warning_button_text">#071120</color>
+
 </resources>
