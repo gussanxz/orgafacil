@@ -479,7 +479,8 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
     private void mostrarDialogItensDaCategoria(@NonNull String categoriaNome) {
         List<TodosProdutosVendasAdapter.ProdutoItem> itens = montarItensDaCategoria(categoriaNome);
-        TodosProdutosVendasAdapter adapter = new TodosProdutosVendasAdapter();
+        TodosProdutosVendasAdapter adapter = new TodosProdutosVendasAdapter(
+                R.layout.item_categoria_dialog_venda_lista);
         adapter.atualizar(itens);
 
         View dialogView = LayoutInflater.from(requireContext())
@@ -511,6 +512,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         txtTotalValor.setText(fmt.format(totalValor));
         recycler.setVisibility(itens.isEmpty() ? View.GONE : View.VISIBLE);
         txtVazio.setVisibility(itens.isEmpty() ? View.VISIBLE : View.GONE);
+        ajustarAlturaListaDialogCategoria(recycler, itens.size());
 
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
@@ -520,7 +522,25 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         dialog.show();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            int largura = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+            dialog.getWindow().setLayout(largura, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
+    }
+
+    private void ajustarAlturaListaDialogCategoria(@NonNull RecyclerView recycler, int quantidadeItens) {
+        if (quantidadeItens <= 0) return;
+        int alturaPorItem = dp(58);
+        int alturaMinima = dp(72);
+        int alturaMaxima = dp(280);
+        int altura = Math.min(alturaMaxima, Math.max(alturaMinima, quantidadeItens * alturaPorItem));
+        ViewGroup.LayoutParams params = recycler.getLayoutParams();
+        params.height = altura;
+        recycler.setLayoutParams(params);
+        recycler.setNestedScrollingEnabled(quantidadeItens > 4);
+    }
+
+    private int dp(int valor) {
+        return (int) (valor * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     @NonNull

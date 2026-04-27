@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -32,7 +33,17 @@ public class TodosProdutosVendasAdapter
 
     private final List<ProdutoItem> lista = new ArrayList<>();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+    @LayoutRes
+    private final int itemLayoutRes;
     private OnItemClickListener listener;
+
+    public TodosProdutosVendasAdapter() {
+        this(R.layout.item_produto_venda_lista);
+    }
+
+    public TodosProdutosVendasAdapter(@LayoutRes int itemLayoutRes) {
+        this.itemLayoutRes = itemLayoutRes;
+    }
 
     public interface OnItemClickListener {
         void onItemClick(ProdutoItem item);
@@ -52,7 +63,7 @@ public class TodosProdutosVendasAdapter
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_produto_venda_lista, parent, false);
+                .inflate(itemLayoutRes, parent, false);
         return new VH(v);
     }
 
