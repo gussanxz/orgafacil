@@ -30,6 +30,7 @@ import com.gussanxz.orgafacil.R;
 import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CatalogoModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments.TopProdutosVendasAdapter;
@@ -200,7 +201,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
                     if (nome != null && !nome.isEmpty()) {
                         catalogoNomesMap.put(doc.getId(), nome);
                     }
-                    String tipo = doc.getString("tipo");
+                    String tipo = resolverTipoCatalogo(doc.get("tipo"));
                     if (tipo != null && !tipo.isEmpty()) {
                         catalogoTiposMap.put(doc.getId(), tipo);
                     }
@@ -818,6 +819,21 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
     private String rotuloTipo(@Nullable String tipo) {
         return "servico".equals(tipo) ? "Servico" : "Produto";
+    }
+
+    private String resolverTipoCatalogo(@Nullable Object tipoRaw) {
+        if (tipoRaw instanceof String) {
+            String tipo = (String) tipoRaw;
+            return CatalogoModel.TIPO_STR_SERVICO.equals(tipo)
+                    ? CatalogoModel.TIPO_STR_SERVICO
+                    : CatalogoModel.TIPO_STR_PRODUTO;
+        }
+        if (tipoRaw instanceof Number) {
+            return ((Number) tipoRaw).intValue() == 1
+                    ? CatalogoModel.TIPO_STR_SERVICO
+                    : CatalogoModel.TIPO_STR_PRODUTO;
+        }
+        return CatalogoModel.TIPO_STR_PRODUTO;
     }
 
     private static class CatalogoResumoItem {

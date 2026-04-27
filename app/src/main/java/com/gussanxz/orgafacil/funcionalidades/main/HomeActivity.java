@@ -33,7 +33,6 @@ import com.gussanxz.orgafacil.funcionalidades.usuario.repository.PreferenciasRep
 import com.gussanxz.orgafacil.funcionalidades.usuario.modelos.PreferenciasModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.ResumoVendasActivity;
 import com.gussanxz.orgafacil.util_helper.AppLogger;
-import com.gussanxz.orgafacil.util_helper.DialogLogoutHelper;
 import com.gussanxz.orgafacil.util_helper.TemaHelper;
 import com.gussanxz.orgafacil.util_helper.SecurityConstants;
 
@@ -266,7 +265,7 @@ public class HomeActivity extends AppCompatActivity {
                 new OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
-                        DialogLogoutHelper.mostrarDialogo(HomeActivity.this);
+                        moveTaskToBack(true);
                     }
                 });
     }
