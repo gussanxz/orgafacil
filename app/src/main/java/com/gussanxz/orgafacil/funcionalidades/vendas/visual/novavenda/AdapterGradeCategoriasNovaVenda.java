@@ -52,6 +52,8 @@ public class AdapterGradeCategoriasNovaVenda
 
         // Ícone "Todos os produtos" usa ícone de grade; demais categorias usam label
         if (RegistrarVendasViewModel.ID_TODOS_PRODUTOS.equals(categoria.getId())) {
+            Glide.with(holder.itemView.getContext()).clear(holder.imgIcone);
+            holder.imgIcone.setImageDrawable(null);
             holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
             holder.imgIcone.setColorFilter(android.graphics.Color.parseColor("#616161"));
@@ -59,6 +61,7 @@ public class AdapterGradeCategoriasNovaVenda
             if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
                     android.graphics.Color.parseColor("#F5F5F5"));
         } else if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
+            Glide.with(holder.itemView.getContext()).clear(holder.imgIcone);
             holder.imgIcone.setPadding(0, 0, 0, 0);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             holder.imgIcone.clearColorFilter();
@@ -71,10 +74,12 @@ public class AdapterGradeCategoriasNovaVenda
                     .into(holder.imgIcone); // sem circleCrop — agora é retangular
         } else {
             int corIcone = corIconeCategoria(categoria);
+            Glide.with(holder.itemView.getContext()).clear(holder.imgIcone);
+            holder.imgIcone.setImageDrawable(null);
             holder.imgIcone.setPadding(32, 32, 32, 32);
             holder.imgIcone.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+            holder.imgIcone.setImageResource(getIconePorIndex(categoria.getIndexIcone()));
             holder.imgIcone.setColorFilter(corIcone);
-            holder.imgIcone.setImageResource(R.drawable.ic_label_24);
             if (holder.cardRaiz != null) holder.cardRaiz.setCardBackgroundColor(
                     android.graphics.Color.parseColor("#F5F5F5"));
         }
@@ -96,6 +101,24 @@ public class AdapterGradeCategoriasNovaVenda
             return android.graphics.Color.parseColor(cor);
         } catch (IllegalArgumentException e) {
             return android.graphics.Color.parseColor("#9E9E9E");
+        }
+    }
+
+    private int getIconePorIndex(int index) {
+        switch (index) {
+            case 0: return R.drawable.ic_categorias_mercado_24;
+            case 1: return R.drawable.ic_categorias_roupas_24;
+            case 2: return R.drawable.ic_categorias_comida_24;
+            case 3: return R.drawable.ic_categorias_bebidas_24;
+            case 4: return R.drawable.ic_categorias_eletronicos_24;
+            case 5: return R.drawable.ic_categorias_spa_24;
+            case 6: return R.drawable.ic_categorias_fitness_24;
+            case 7: return R.drawable.ic_categorias_geral_24;
+            case 8: return R.drawable.ic_categorias_ferramentas_24;
+            case 9: return R.drawable.ic_categorias_papelaria_24;
+            case 10: return R.drawable.ic_categorias_casa_24;
+            case 11: return R.drawable.ic_categorias_brinquedos_24;
+            default: return R.drawable.ic_categorias_geral_24;
         }
     }
 

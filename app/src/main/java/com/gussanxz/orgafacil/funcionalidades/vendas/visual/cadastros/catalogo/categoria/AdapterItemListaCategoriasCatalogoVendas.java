@@ -64,6 +64,7 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         // --- LÓGICA DE VISUAL: FOTO vs ÍCONE ---
         if (categoria.getUrlImagem() != null && !categoria.getUrlImagem().isEmpty()) {
+            Glide.with(context).clear(holder.imgIconeCategoria);
             androidx.core.widget.ImageViewCompat.setImageTintList(holder.imgIconeCategoria, null);
             holder.imgIconeCategoria.clearColorFilter();
             holder.imgIconeCategoria.setPadding(0, 0, 0, 0);
@@ -80,6 +81,8 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
         } else {
             // MODO ÍCONE
             int corIcone = corIconeCategoria(categoria);
+            Glide.with(context).clear(holder.imgIconeCategoria);
+            holder.imgIconeCategoria.setImageDrawable(null);
             holder.imgIconeCategoria.setImageResource(getIconePorIndex(categoria.getIndexIcone()));
             holder.imgIconeCategoria.setColorFilter(corIcone);
 
