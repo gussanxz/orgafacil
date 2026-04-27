@@ -195,6 +195,90 @@ public class CaixaRepository {
      * Chamado na primeira execução do app após a implantação do fluxo de caixa.
      * Vendas sem caixaId são tratadas como pertencentes a este caixa legado.
      */
+    /**
+     * Busca o caixa fechado mais recente, excluindo o caixa legado.
+     */
+    public void buscarUltimoCaixaFechado(@NonNull CaixaCallback callback) {
+        try {
+            FirestoreSchema.vendasCaixaCol()
+                    .orderBy("abertoEmMillis", Query.Direction.DESCENDING)
+                    .limit(20)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            if (CaixaModel.ID_LEGADO.equals(doc.getId())) continue;
+
+                            CaixaModel caixa = doc.toObject(CaixaModel.class);
+                            if (caixa == null) continue;
+                            caixa.setId(doc.getId());
+
+                            if (caixa.isFechado()) {
+                                callback.onCaixa(caixa);
+                                return;
+                            }
+                        }
+
+                        callback.onCaixa(null);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar ultimo caixa fechado."));
+        } catch (IllegalStateException e) {
+            callback.onErro("Usuario nao logado");
+        }
+    }
+
+    /**
+     * Reabre um caixa fechado somente se nao houver outro caixa aberto no momento.
+     */
+    public void reabrirCaixa(@NonNull String caixaId, @NonNull VoidCallback callback) {
+        buscarCaixaAberto(new CaixaCallback() {
+            @Override
+            public void onCaixa(@Nullable CaixaModel caixaAberto) {
+                if (caixaAberto != null) {
+                    callback.onErro("Ja existe um caixa aberto.");
+                    return;
+                }
+
+                FirestoreSchema.vendasCaixaDoc(caixaId)
+                        .get()
+                        .addOnSuccessListener(doc -> {
+                            if (!doc.exists()) {
+                                callback.onErro("Caixa nao encontrado.");
+                                return;
+                            }
+
+                            CaixaModel caixa = doc.toObject(CaixaModel.class);
+                            if (caixa == null || CaixaModel.ID_LEGADO.equals(doc.getId())) {
+                                callback.onErro("Este caixa nao pode ser reaberto.");
+                                return;
+                            }
+
+                            if (!caixa.isFechado()) {
+                                callback.onErro("Somente caixas fechados podem ser reabertos.");
+                                return;
+                            }
+
+                            Map<String, Object> patch = new HashMap<>();
+                            patch.put("status", CaixaModel.STATUS_ABERTO);
+                            patch.put("fechadoEmMillis", 0L);
+
+                            FirestoreSchema.vendasCaixaDoc(caixaId)
+                                    .set(patch, SetOptions.merge())
+                                    .addOnSuccessListener(v -> callback.onSucesso(caixaId))
+                                    .addOnFailureListener(e -> callback.onErro(
+                                            e.getMessage() != null ? e.getMessage() : "Erro ao reabrir caixa."));
+                        })
+                        .addOnFailureListener(e -> callback.onErro(
+                                e.getMessage() != null ? e.getMessage() : "Erro ao buscar caixa."));
+            }
+
+            @Override
+            public void onErro(String erro) {
+                callback.onErro(erro);
+            }
+        });
+    }
+
     public void garantirCaixaLegado(@NonNull VoidCallback callback) {
         try {
             Map<String, Object> data = new HashMap<>();

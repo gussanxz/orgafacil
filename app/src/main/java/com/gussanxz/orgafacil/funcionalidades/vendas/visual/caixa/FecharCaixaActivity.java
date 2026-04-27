@@ -136,7 +136,6 @@ public class FecharCaixaActivity extends AppCompatActivity {
     private void bindViews() {
         ImageButton btnVoltar = findViewById(R.id.btnVoltarFecharCaixa);
         if (btnVoltar != null) btnVoltar.setOnClickListener(v -> finish());
-
         imgStatusCaixaControle   = findViewById(R.id.imgStatusCaixaControle);
         txtStatusCaixaControle   = findViewById(R.id.txtStatusCaixaControle);
         txtAberturaInfo          = findViewById(R.id.txtAberturaInfo);
@@ -518,8 +517,100 @@ public class FecharCaixaActivity extends AppCompatActivity {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
 
+        View btnReabrirDetalhesCaixa = view.findViewById(R.id.btnReabrirDetalhesCaixa);
         View btnFecharDetalhesCaixa = view.findViewById(R.id.btnFecharDetalhesCaixa);
+        configurarReaberturaNoDialog(caixa, dialog, btnReabrirDetalhesCaixa);
         btnFecharDetalhesCaixa.setOnClickListener(v -> dialog.dismiss());
+    }
+
+    private void configurarReaberturaNoDialog(
+            @NonNull CaixaModel caixa,
+            @NonNull AlertDialog dialog,
+            View btnReabrirDetalhesCaixa
+    ) {
+        if (btnReabrirDetalhesCaixa == null) return;
+
+        btnReabrirDetalhesCaixa.setVisibility(View.GONE);
+        btnReabrirDetalhesCaixa.setEnabled(false);
+
+        if (caixa.isLegado() || !caixa.isFechado() || (caixaAtual != null && caixaAtual.isAberto())) {
+            return;
+        }
+
+        caixaRepository.buscarUltimoCaixaFechado(new CaixaRepository.CaixaCallback() {
+            @Override
+            public void onCaixa(CaixaModel ultimoFechado) {
+                boolean podeReabrir = ultimoFechado != null
+                        && caixa.getId() != null
+                        && caixa.getId().equals(ultimoFechado.getId())
+                        && (caixaAtual == null || !caixaAtual.isAberto());
+
+                btnReabrirDetalhesCaixa.setVisibility(podeReabrir ? View.VISIBLE : View.GONE);
+                btnReabrirDetalhesCaixa.setEnabled(podeReabrir);
+
+                if (podeReabrir) {
+                    btnReabrirDetalhesCaixa.setOnClickListener(v ->
+                            confirmarReaberturaCaixa(caixa, dialog, btnReabrirDetalhesCaixa));
+                }
+            }
+
+            @Override
+            public void onErro(String erro) {
+                btnReabrirDetalhesCaixa.setVisibility(View.GONE);
+                btnReabrirDetalhesCaixa.setEnabled(false);
+            }
+        });
+    }
+
+    private void confirmarReaberturaCaixa(
+            @NonNull CaixaModel caixa,
+            @NonNull AlertDialog dialog,
+            View btnReabrirDetalhesCaixa
+    ) {
+        if (operando) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Reabrir caixa")
+                .setMessage("Deseja reabrir o caixa " + caixa.getNomeCaixa() + "?")
+                .setPositiveButton("Reabrir", (d, w) ->
+                        executarReaberturaCaixa(caixa, dialog, btnReabrirDetalhesCaixa))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void executarReaberturaCaixa(
+            @NonNull CaixaModel caixa,
+            @NonNull AlertDialog dialog,
+            View btnReabrirDetalhesCaixa
+    ) {
+        if (operando || caixa.getId() == null) return;
+        operando = true;
+
+        if (btnReabrirDetalhesCaixa != null) {
+            btnReabrirDetalhesCaixa.setEnabled(false);
+            btnReabrirDetalhesCaixa.setAlpha(0.5f);
+        }
+
+        caixaRepository.reabrirCaixa(caixa.getId(), new CaixaRepository.VoidCallback() {
+            @Override
+            public void onSucesso(String caixaId) {
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Caixa reaberto.", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+                carregarHistorico();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                operando = false;
+                if (btnReabrirDetalhesCaixa != null) {
+                    btnReabrirDetalhesCaixa.setEnabled(true);
+                    btnReabrirDetalhesCaixa.setAlpha(1f);
+                }
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Erro ao reabrir caixa: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private String formatarDataCaixa(@NonNull CaixaModel caixa) {
@@ -728,4 +819,5 @@ public class FecharCaixaActivity extends AppCompatActivity {
             btnFecharCaixa.setAlpha(on ? 1f : 0.5f);
         }
     }
+
 }
