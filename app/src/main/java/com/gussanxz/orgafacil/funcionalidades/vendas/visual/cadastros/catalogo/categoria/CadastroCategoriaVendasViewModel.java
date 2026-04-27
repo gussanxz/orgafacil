@@ -30,7 +30,7 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
     public LiveData<Boolean> carregando = _carregando;
 
     // Dados Internos
-    private Categoria.Tipo tipoCategoria = Categoria.Tipo.DESPESA;
+    private Categoria.Tipo tipoCategoria = Categoria.Tipo.PRODUTO;
     private String idEdicao = null;
 
     public CadastroCategoriaVendasViewModel() {
@@ -50,13 +50,7 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
 
     // --- CONFIGURAÇÃO ---
     public void definirContexto(String tipoString) {
-        if (tipoString != null) {
-            try {
-                this.tipoCategoria = Categoria.Tipo.valueOf(tipoString);
-            } catch (Exception e) {
-                this.tipoCategoria = Categoria.Tipo.DESPESA;
-            }
-        }
+        this.tipoCategoria = Categoria.Tipo.PRODUTO;
     }
 
     public void carregarDadosEdicao(String id, String nome, String desc, boolean ativa, String urlFoto, int indexIcone) {
@@ -68,10 +62,6 @@ public class CadastroCategoriaVendasViewModel extends ViewModel {
         } else {
             selecionarIcone(indexIcone);
         }
-    }
-
-    public Categoria.Tipo getTipoCategoria() {
-        return tipoCategoria;
     }
 
     // --- SALVAR ---

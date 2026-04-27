@@ -385,28 +385,7 @@ public class CadastroCategoriaCatalogoActivity extends AppCompatActivity {
     // --- HELPERS ---
 
     private void atualizarTituloHeader() {
-        String titulo = "Nova Categoria";
-        if (viewModel.getTipoCategoria() != null) {
-            switch (viewModel.getTipoCategoria()) {
-                case RECEITA:
-                    titulo = "Nova Categoria de Receita";
-                    break;
-                case PRODUTO:
-                    titulo = "Nova Categoria de Produto";
-                    break;
-                case SERVICO:
-                    titulo = "Nova Categoria de Serviço";
-                    break;
-                case DESPESA:
-                    titulo = "Nova Categoria de Despesa";
-                    break;
-            }
-        }
-        textViewHeader.setText(titulo);
-    }
-
-    private String obterNomeTipoBonito() {
-        return textViewHeader.getText().toString().replace("Nova ", "").replace("Editar ", "");
+        textViewHeader.setText("Nova Categoria");
     }
 
     private void esconderTeclado() {
