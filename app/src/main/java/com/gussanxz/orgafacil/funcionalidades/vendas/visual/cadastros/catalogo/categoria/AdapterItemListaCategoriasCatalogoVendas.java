@@ -7,9 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -105,10 +107,16 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
 
         // --- STATUS VISUAL ---
         if (categoria.isAtiva()) {
+            holder.layoutStatusCategoria.setBackgroundResource(R.drawable.bg_vendas_status_pill);
             holder.textStatus.setBackgroundResource(R.drawable.bg_status_ativo);
+            holder.textStatusCategoria.setText("Ativa");
+            holder.textStatusCategoria.setTextColor(ContextCompat.getColor(context, R.color.vendas_status_pill_text));
             holder.itemView.setAlpha(1.0f);
         } else {
+            holder.layoutStatusCategoria.setBackgroundResource(R.drawable.bg_vendas_status_pill_inativo);
             holder.textStatus.setBackgroundResource(R.drawable.bg_status_inativo);
+            holder.textStatusCategoria.setText("Inativa");
+            holder.textStatusCategoria.setTextColor(ContextCompat.getColor(context, R.color.vendas_status_pill_inactive_text));
             holder.itemView.setAlpha(0.7f);
         }
 
@@ -126,10 +134,11 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-        TextView textNomeCategoria, textDescCategoria, textQuantidadeItensCategoria;
+        TextView textNomeCategoria, textDescCategoria, textQuantidadeItensCategoria, textStatusCategoria;
         View textStatus;
         ImageView imgIconeCategoria;
         MaterialCardView cardIconeCategoria;
+        LinearLayout layoutStatusCategoria;
         ImageButton btnExcluirCategoria;
 
         public MyViewHolder(@NonNull View itemView) {
@@ -137,9 +146,11 @@ public class AdapterItemListaCategoriasCatalogoVendas extends RecyclerView.Adapt
             textNomeCategoria = itemView.findViewById(R.id.textNomeCategoria);
             textDescCategoria = itemView.findViewById(R.id.textDescCategoria);
             textQuantidadeItensCategoria = itemView.findViewById(R.id.textQuantidadeItensCategoria);
+            textStatusCategoria = itemView.findViewById(R.id.textStatusCategoria);
             textStatus = itemView.findViewById(R.id.textStatus);
             imgIconeCategoria = itemView.findViewById(R.id.imgIconeCategoria);
             cardIconeCategoria = itemView.findViewById(R.id.cardIconeCategoria);
+            layoutStatusCategoria = itemView.findViewById(R.id.layoutStatusCategoria);
             btnExcluirCategoria = itemView.findViewById(R.id.btnExcluirCategoria);
         }
     }

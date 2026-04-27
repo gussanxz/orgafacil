@@ -89,6 +89,7 @@
 
         <!-- Status dot + "Ativa" label -->
         <LinearLayout
+            android:id="@+id/layoutStatusCategoria"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_vendas_status_pill"
@@ -104,6 +105,7 @@
                 android:layout_marginEnd="4dp" />
 
             <TextView
+                android:id="@+id/textStatusCategoria"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ativa"
