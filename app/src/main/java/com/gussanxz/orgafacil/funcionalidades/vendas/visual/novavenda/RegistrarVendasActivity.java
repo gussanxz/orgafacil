@@ -161,7 +161,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         if (btnHistoricoVendas != null) {
             btnHistoricoVendas.setOnClickListener(v ->
-                    startActivity(new Intent(this, HistoricoVendasActivity.class)));
+                    confirmarSaidaComSacolaSeNecessario(() ->
+                            startActivity(new Intent(this, HistoricoVendasActivity.class))));
         }
 
         if (layoutResumoSacola != null) {
@@ -285,6 +286,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         TextView     txtTotalBottom = view.findViewById(R.id.txtTotalSacolaBottom);
         TextView     txtEstadoVazio = view.findViewById(R.id.txtEstadoVazioSacola);
         ImageButton  btnFechar      = view.findViewById(R.id.btnFecharSacola);
+        LinearLayout btnLimpar      = view.findViewById(R.id.btnLimparSacola);
         LinearLayout btnCobrarModal = view.findViewById(R.id.btnCobrar);
         TextView     txtCobrarTotal = view.findViewById(R.id.txtCobrarTotal);
 
@@ -325,6 +327,18 @@ public class RegistrarVendasActivity extends AppCompatActivity {
 
         if (btnFechar != null) btnFechar.setOnClickListener(v -> dialog.dismiss());
 
+        if (btnLimpar != null) {
+            btnLimpar.setOnClickListener(v -> confirmarLimpezaSacola(
+                    adapterRef[0],
+                    rvItensSacola,
+                    txtQtdItens,
+                    txtTotalBottom,
+                    txtCobrarTotal,
+                    txtEstadoVazio,
+                    dialog
+            ));
+        }
+
         if (btnCobrarModal != null) {
             btnCobrarModal.setOnClickListener(v -> {
                 if (viewModel.isSacolaVazia()) {
@@ -339,6 +353,32 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         sincronizarBottomSheet(adapterRef[0], rvItensSacola,
                 txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
         dialog.show();
+    }
+
+    private void confirmarLimpezaSacola(
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio,
+            BottomSheetDialog dialog) {
+
+        if (viewModel.isSacolaVazia()) {
+            Toast.makeText(this, "A sacola j\u00e1 est\u00e1 vazia.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Limpar sacola?")
+                .setMessage("Todos os itens adicionados nesta venda ser\u00e3o removidos.")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Limpar", (d, w) -> {
+                    viewModel.limparSacola();
+                    sincronizarBottomSheet(adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
+                    dialog.dismiss();
+                })
+                .show();
     }
 
     private void configurarSwipeSacola(
@@ -559,7 +599,25 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         if (!viewModel.isModoCategorias()) {
             viewModel.entrarEmModoCategorias();
         } else {
-            super.onBackPressed();
+            confirmarSaidaComSacolaSeNecessario(this::sairDaTela);
         }
+    }
+
+    private void sairDaTela() {
+        super.onBackPressed();
+    }
+
+    private void confirmarSaidaComSacolaSeNecessario(@NonNull Runnable acaoAoConfirmar) {
+        if (viewModel.isSacolaVazia()) {
+            acaoAoConfirmar.run();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Sair da venda?")
+                .setMessage("A sacola possui itens. Se sair agora, a venda n\u00e3o ser\u00e1 salva.")
+                .setNegativeButton("Continuar vendendo", null)
+                .setPositiveButton("Sair", (dialog, which) -> acaoAoConfirmar.run())
+                .show();
     }
 }
