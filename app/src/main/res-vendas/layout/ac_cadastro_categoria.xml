@@ -161,7 +161,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="DESCRIÃ‡ÃƒO"
+                android:text="DESCRIÇÃO"
                 android:textColor="@color/cadastro_categoria_label"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -195,7 +195,7 @@
                     android:paddingEnd="18dp"
                     android:textColor="@color/cadastro_categoria_text_primary"
                     android:textSize="15sp"
-                    android:hint="Descreva os produtos/serviÃ§os desta categoria"
+                    android:hint="Descreva os produtos/serviços desta categoria"
                     android:textColorHint="@color/cadastro_categoria_hint" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -244,7 +244,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="VisÃ­vel no PDV"
+                        android:text="Visível no PDV"
                         android:textColor="@color/cadastro_categoria_text_secondary"
                         android:textSize="13sp"
                         app:layout_constraintBottom_toBottomOf="parent"
