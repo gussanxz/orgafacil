@@ -68,6 +68,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private String vendaIdEdicao = null;
     private long dataHoraOriginalEdicao = 0L;
     private String formaPagamentoOriginalEdicao = null;
+    private double valorRecebidoDinheiroOriginalEdicao = 0.0;
     private int numeroVendaEdicao = 0;
 
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
@@ -262,6 +263,8 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                 intent.putExtra("dataHoraOriginal", dataHoraOriginalEdicao);
             if (formaPagamentoOriginalEdicao != null)
                 intent.putExtra("formaPagamentoOriginal", formaPagamentoOriginalEdicao);
+            if (valorRecebidoDinheiroOriginalEdicao > 0)
+                intent.putExtra("valorRecebidoDinheiroOriginal", valorRecebidoDinheiroOriginalEdicao);
             if (numeroVendaEdicao > 0)
                 intent.putExtra("numeroVenda", numeroVendaEdicao);
         }
@@ -570,6 +573,7 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         vendaIdEdicao                = getIntent().getStringExtra("vendaId");
         dataHoraOriginalEdicao       = getIntent().getLongExtra("dataHoraOriginal", 0L);
         formaPagamentoOriginalEdicao = getIntent().getStringExtra("formaPagamentoOriginal");
+        valorRecebidoDinheiroOriginalEdicao = getIntent().getDoubleExtra("valorRecebidoDinheiroOriginal", 0.0);
         numeroVendaEdicao            = getIntent().getIntExtra("numeroVenda", 0);
 
         ArrayList<ItemSacolaVendaModel> itensRecebidos =

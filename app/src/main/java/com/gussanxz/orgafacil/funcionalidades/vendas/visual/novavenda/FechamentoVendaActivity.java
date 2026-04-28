@@ -4,6 +4,10 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -27,6 +31,7 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
+import com.gussanxz.orgafacil.util_helper.MascaraMoedaWatcher;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -50,6 +55,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private LinearLayout cardPagamentoDebito;
     private LinearLayout cardPagamentoCredito;
     private LinearLayout cardPagamentoDinheiro;
+    private LinearLayout layoutPagamentoDinheiro;
+    private EditText     editValorRecebidoDinheiro;
+    private TextView     txtTrocoDinheiro;
+    private TextView     txtErroValorRecebido;
     private TextView     txtFormaPagamentoSelecionada;
     private LinearLayout btnFinalizarVenda;
     private TextView     txtLabelBtnFinalizar;
@@ -74,6 +83,8 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private final SimpleDateFormat fmtChave = new SimpleDateFormat("yyyyMMdd",   Locale.US);
 
     private String  formaPagamentoSelecionada = null;
+    private boolean pagamentosRecolhidos      = false;
+    private MascaraMoedaWatcher valorRecebidoWatcher;
     private int     quantidadeTotal           = 0;
     private double  valorTotal                = 0.0;
     private String  vendaIdEdicao             = null;
@@ -127,6 +138,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         cardPagamentoDinheiro        = findViewById(R.id.cardPagamentoDinheiro);
         cardPagamentoDebito          = findViewById(R.id.cardPagamentoDebito);
         cardPagamentoCredito         = findViewById(R.id.cardPagamentoCredito);
+        layoutPagamentoDinheiro      = findViewById(R.id.layoutPagamentoDinheiro);
+        editValorRecebidoDinheiro    = findViewById(R.id.editValorRecebidoDinheiro);
+        txtTrocoDinheiro             = findViewById(R.id.txtTrocoDinheiro);
+        txtErroValorRecebido         = findViewById(R.id.txtErroValorRecebido);
         txtFormaPagamentoSelecionada = findViewById(R.id.txtFormaPagamentoSelecionada);
         btnFinalizarVenda            = findViewById(R.id.btnFinalizarVenda);
         txtLabelBtnFinalizar         = findViewById(R.id.txtLabelBtnFinalizar);
@@ -159,8 +174,28 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         if (cardPagamentoDebito  != null) cardPagamentoDebito.setOnClickListener(v   -> selecionarFormaPagamento(VendaModel.PAGAMENTO_DEBITO));
         if (cardPagamentoCredito != null) cardPagamentoCredito.setOnClickListener(v  -> selecionarFormaPagamento(VendaModel.PAGAMENTO_CREDITO));
 
+        configurarCamposDinheiro();
+
         if (btnSalvarEmAberto != null) btnSalvarEmAberto.setOnClickListener(v -> salvarEmAberto());
         if (btnFinalizarVenda != null) btnFinalizarVenda.setOnClickListener(v -> finalizarVenda());
+    }
+
+    private void configurarCamposDinheiro() {
+        if (editValorRecebidoDinheiro == null) return;
+
+        valorRecebidoWatcher = new MascaraMoedaWatcher(editValorRecebidoDinheiro);
+        editValorRecebidoDinheiro.addTextChangedListener(valorRecebidoWatcher);
+        valorRecebidoWatcher.setValorInicial(0.0);
+        editValorRecebidoDinheiro.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                atualizarTrocoDinheiro();
+                atualizarBotaoFinalizar();
+            }
+        });
     }
 
     // ----------------------------------------------------------------
@@ -180,6 +215,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         long   dataHoraOriginal       = getIntent().getLongExtra("dataHoraOriginal", 0L);
         String formaPagamentoOriginal = getIntent().getStringExtra("formaPagamentoOriginal");
+        double valorRecebidoOriginal  = getIntent().getDoubleExtra("valorRecebidoDinheiroOriginal", 0.0);
 
         modoEdicao = vendaIdEdicao != null && dataHoraOriginal > 0;
         numeroVendaEdicao   = getIntent().getIntExtra("numeroVenda", 0);
@@ -193,8 +229,13 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         if (txtTotalResumo != null)
             txtTotalResumo.setText(formatadorMoeda.format(valorTotal));
 
-        if (formaPagamentoOriginal != null)
+        if (formaPagamentoOriginal != null) {
             formaPagamentoSelecionada = formaPagamentoOriginal;
+            pagamentosRecolhidos = true;
+        }
+
+        if (valorRecebidoWatcher != null && valorRecebidoOriginal > 0)
+            valorRecebidoWatcher.setValorInicial(valorRecebidoOriginal);
 
         dataEscolhida = Calendar.getInstance();
         if (modoEdicao && dataHoraOriginal > 0)
@@ -394,35 +435,77 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
     private void selecionarFormaPagamento(String formaPagamento) {
         if (salvandoVenda) return;
-        formaPagamentoSelecionada = formaPagamento;
+        if (formaPagamento.equals(formaPagamentoSelecionada) && pagamentosRecolhidos) {
+            pagamentosRecolhidos = false;
+        } else {
+            formaPagamentoSelecionada = formaPagamento;
+            pagamentosRecolhidos = true;
+        }
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
     }
 
     private void atualizarEstadoPagamento() {
-        atualizarCardPagamento(cardPagamentoPix,      VendaModel.PAGAMENTO_PIX.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoDinheiro, VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoDebito,   VendaModel.PAGAMENTO_DEBITO.equals(formaPagamentoSelecionada));
-        atualizarCardPagamento(cardPagamentoCredito,  VendaModel.PAGAMENTO_CREDITO.equals(formaPagamentoSelecionada));
+        atualizarCardPagamento(cardPagamentoPix,      VendaModel.PAGAMENTO_PIX.equals(formaPagamentoSelecionada), pagamentosRecolhidos);
+        atualizarCardPagamento(cardPagamentoDinheiro, VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada), pagamentosRecolhidos);
+        atualizarCardPagamento(cardPagamentoDebito,   VendaModel.PAGAMENTO_DEBITO.equals(formaPagamentoSelecionada), pagamentosRecolhidos);
+        atualizarCardPagamento(cardPagamentoCredito,  VendaModel.PAGAMENTO_CREDITO.equals(formaPagamentoSelecionada), pagamentosRecolhidos);
+
+        boolean pagamentoEmDinheiro = VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada);
+        if (layoutPagamentoDinheiro != null) {
+            layoutPagamentoDinheiro.setVisibility(pagamentoEmDinheiro ? View.VISIBLE : View.GONE);
+        }
+        atualizarTrocoDinheiro();
 
         if (txtFormaPagamentoSelecionada != null) {
             txtFormaPagamentoSelecionada.setText(formaPagamentoSelecionada == null
                     ? "Selecione uma forma de pagamento"
-                    : "Pagamento selecionado: " + formaPagamentoSelecionada);
+                    : pagamentosRecolhidos
+                    ? "Pagamento selecionado: " + formaPagamentoSelecionada + " (toque para alterar)"
+                    : "Escolha outra forma de pagamento ou toque novamente na atual");
         }
     }
 
-    private void atualizarCardPagamento(LinearLayout card, boolean selecionado) {
+    private void atualizarCardPagamento(LinearLayout card, boolean selecionado, boolean recolhido) {
         if (card == null) return;
+        card.setVisibility(recolhido && !selecionado ? View.GONE : View.VISIBLE);
         card.setAlpha(selecionado ? 1f : 0.75f);
         card.setBackgroundResource(selecionado
                 ? R.drawable.bg_pagamento_selecionado
                 : R.drawable.fundo_arredondado);
     }
 
+    private void atualizarTrocoDinheiro() {
+        if (txtTrocoDinheiro == null && txtErroValorRecebido == null) return;
+
+        boolean pagamentoEmDinheiro = VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada);
+        double valorRecebido = obterValorRecebidoDinheiro();
+        double troco = Math.max(0.0, valorRecebido - valorTotal);
+        boolean insuficiente = pagamentoEmDinheiro && valorRecebido + 0.001 < valorTotal;
+
+        if (txtTrocoDinheiro != null) {
+            txtTrocoDinheiro.setText(formatadorMoeda.format(troco));
+        }
+        if (txtErroValorRecebido != null) {
+            txtErroValorRecebido.setVisibility(insuficiente ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private double obterValorRecebidoDinheiro() {
+        return valorRecebidoWatcher != null ? valorRecebidoWatcher.getValorDouble() : 0.0;
+    }
+
+    private boolean dinheiroValido() {
+        if (!VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada)) return true;
+        return obterValorRecebidoDinheiro() + 0.001 >= valorTotal;
+    }
+
     private void atualizarBotaoFinalizar() {
         if (btnFinalizarVenda == null) return;
-        boolean habilitado = !listaItens.isEmpty() && formaPagamentoSelecionada != null && !salvandoVenda;
+        boolean habilitado = !listaItens.isEmpty()
+                && formaPagamentoSelecionada != null
+                && dinheiroValido()
+                && !salvandoVenda;
         btnFinalizarVenda.setEnabled(habilitado);
         btnFinalizarVenda.setAlpha(habilitado ? 1f : 0.5f);
 
@@ -445,6 +528,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         }
         if (formaPagamentoSelecionada == null) {
             Toast.makeText(this, "Selecione uma forma de pagamento.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!dinheiroValido()) {
+            atualizarTrocoDinheiro();
+            Toast.makeText(this, "Valor recebido em dinheiro insuficiente.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -530,6 +618,14 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setFormaPagamento(formaPagamentoSelecionada);
         venda.setQuantidadeTotal(quantidadeTotal);
         venda.setValorTotal(valorTotal);
+        if (VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada)) {
+            double valorRecebido = obterValorRecebidoDinheiro();
+            venda.setValorRecebidoDinheiro(valorRecebido);
+            venda.setTrocoDinheiro(Math.max(0.0, valorRecebido - valorTotal));
+        } else {
+            venda.setValorRecebidoDinheiro(0.0);
+            venda.setTrocoDinheiro(0.0);
+        }
         venda.setStatus(VendaModel.STATUS_FINALIZADA);
         venda.setItens(converterItensParaVenda(listaItens));
         venda.setCaixaId(caixaId);     // associa ao caixa aberto (null = legado)

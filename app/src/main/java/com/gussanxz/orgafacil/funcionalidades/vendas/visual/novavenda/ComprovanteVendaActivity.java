@@ -43,6 +43,9 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     private TextView txtDataVenda;
     private TextView txtNomeCaixaComprovante;
     private TextView txtFormaPagamento;
+    private LinearLayout layoutTrocoComprovante;
+    private TextView txtValorRecebidoComprovante;
+    private TextView txtTrocoComprovante;
     private RecyclerView rvItensComprovante;
     private TextView txtQtdTotalItens;
     private TextView txtSubtotal;
@@ -104,6 +107,9 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         txtDataVenda            = findViewById(R.id.txtDataVenda);
         txtNomeCaixaComprovante = findViewById(R.id.txtNomeCaixaComprovante);
         txtFormaPagamento       = findViewById(R.id.txtFormaPagamentoComprovante);
+        layoutTrocoComprovante  = findViewById(R.id.layoutTrocoComprovante);
+        txtValorRecebidoComprovante = findViewById(R.id.txtValorRecebidoComprovante);
+        txtTrocoComprovante     = findViewById(R.id.txtTrocoComprovante);
         rvItensComprovante  = findViewById(R.id.rvItensComprovante);
         txtQtdTotalItens    = findViewById(R.id.txtQtdTotalItensComprovante);
         txtSubtotal         = findViewById(R.id.txtSubtotalComprovante);
@@ -171,6 +177,8 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                 ? venda.getFormaPagamento() : "—");
 
         // Itens — carrega catálogo completo (ativos e inativos) para resolver nomes atuais
+        preencherTrocoComprovante(venda);
+
         vendasRepository.listarTodoCatalogo(new RepoCallback<QuerySnapshot>() {
             @Override
             public void onSuccess(QuerySnapshot snap) {
@@ -245,6 +253,23 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         finish();
     }
 
+    private void preencherTrocoComprovante(VendaModel venda) {
+        boolean exibirTroco = VendaModel.PAGAMENTO_DINHEIRO.equals(venda.getFormaPagamento())
+                && venda.getValorRecebidoDinheiro() > 0;
+
+        if (layoutTrocoComprovante != null) {
+            layoutTrocoComprovante.setVisibility(exibirTroco ? View.VISIBLE : View.GONE);
+        }
+        if (!exibirTroco) return;
+
+        if (txtValorRecebidoComprovante != null) {
+            txtValorRecebidoComprovante.setText(formatadorMoeda.format(venda.getValorRecebidoDinheiro()));
+        }
+        if (txtTrocoComprovante != null) {
+            txtTrocoComprovante.setText(formatadorMoeda.format(venda.getTrocoDinheiro()));
+        }
+    }
+
     private void abrirEdicao(VendaModel venda) {
         Intent intent = new Intent(this, RegistrarVendasActivity.class);
         ArrayList<ItemSacolaVendaModel> sacola = new ArrayList<>();
@@ -260,6 +285,7 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
                         ? venda.getDataHoraFechamentoMillis()
                         : venda.getDataHoraAberturaMillis());
         intent.putExtra("formaPagamentoOriginal", venda.getFormaPagamento());
+        intent.putExtra("valorRecebidoDinheiroOriginal", venda.getValorRecebidoDinheiro());
         intent.putExtra("numeroVenda", venda.getNumeroVenda());
         if (venda.getCaixaId() != null)
             intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());

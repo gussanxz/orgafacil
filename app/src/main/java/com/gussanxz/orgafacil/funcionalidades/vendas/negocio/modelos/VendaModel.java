@@ -35,6 +35,8 @@ public class VendaModel implements Serializable {
     private double valorTotal;
     private double acrescimo = 0.0;
     private double desconto = 0.0;
+    private double valorRecebidoDinheiro = 0.0;
+    private double trocoDinheiro = 0.0;
     private String status;
     private List<ItemVendaRegistradaModel> itens = new ArrayList<>();
 
@@ -118,6 +120,10 @@ public class VendaModel implements Serializable {
 
     public double getDesconto() { return desconto; }
     public void setDesconto(double desconto) { this.desconto = desconto; }
+    public double getValorRecebidoDinheiro() { return valorRecebidoDinheiro; }
+    public void setValorRecebidoDinheiro(double valorRecebidoDinheiro) { this.valorRecebidoDinheiro = valorRecebidoDinheiro; }
+    public double getTrocoDinheiro() { return trocoDinheiro; }
+    public void setTrocoDinheiro(double trocoDinheiro) { this.trocoDinheiro = trocoDinheiro; }
     public String getDiaKey() { return diaKey; }
     public void setDiaKey(String diaKey) { this.diaKey = diaKey; }
 
