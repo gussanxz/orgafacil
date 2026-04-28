@@ -11,6 +11,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -18,6 +20,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -299,21 +302,26 @@ public class RegistrarVendasActivity extends AppCompatActivity {
                     }
                     @Override public void onSubtrair(ItemSacolaVendaModel item) {
                         rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
-                        viewModel.decrementarItem(item.getChave());
-                        sincronizarBottomSheet(adapterRef[0], rvItensSacola,
-                                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
+                        if (item.getQuantidade() <= 1) {
+                            confirmarRemocaoAoZerarItem(item, adapterRef[0], rvItensSacola,
+                                    txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog);
+                        } else {
+                            viewModel.decrementarItem(item.getChave());
+                            sincronizarBottomSheet(adapterRef[0], rvItensSacola,
+                                    txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
+                        }
                     }
                     @Override public void onRemover(ItemSacolaVendaModel item) {
                         rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK);
-                        viewModel.removerItem(item.getChave());
-                        sincronizarBottomSheet(adapterRef[0], rvItensSacola,
-                                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
-                        if (viewModel.isSacolaVazia()) dialog.dismiss();
+                        confirmarRemocaoItem(item, adapterRef[0], rvItensSacola,
+                                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog);
                     }
                 }
         );
 
         rvItensSacola.setAdapter(adapterRef[0]);
+        configurarSwipeSacola(adapterRef[0], rvItensSacola,
+                txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog);
 
         if (btnFechar != null) btnFechar.setOnClickListener(v -> dialog.dismiss());
 
@@ -331,6 +339,111 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         sincronizarBottomSheet(adapterRef[0], rvItensSacola,
                 txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
         dialog.show();
+    }
+
+    private void configurarSwipeSacola(
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio,
+            BottomSheetDialog dialog) {
+
+        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public int getSwipeDirs(@NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder) {
+                return adapter.getItemSacola(viewHolder.getAdapterPosition()) == null
+                        ? 0
+                        : super.getSwipeDirs(recyclerView, viewHolder);
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) {
+                    sincronizarBottomSheet(adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
+                    return;
+                }
+
+                ItemSacolaVendaModel item = adapter.getItemSacola(position);
+                if (item == null) {
+                    adapter.notifyItemChanged(position);
+                    return;
+                }
+
+                rvItensSacola.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK);
+                confirmarRemocaoItem(item, adapter, rvItensSacola,
+                        txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog);
+            }
+        });
+        helper.attachToRecyclerView(rvItensSacola);
+    }
+
+    private void confirmarRemocaoAoZerarItem(
+            ItemSacolaVendaModel item,
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio,
+            BottomSheetDialog dialog) {
+
+        new AlertDialog.Builder(this)
+                .setTitle("Remover item da venda?")
+                .setMessage("Ao reduzir \"" + item.getNome() + "\" de 1 para 0, o item ser\u00e1 removido da sacola.")
+                .setNegativeButton("Cancelar", (d, w) ->
+                        sincronizarBottomSheet(adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio))
+                .setPositiveButton("Remover", (d, w) ->
+                        removerItemDaSacola(item, adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog))
+                .show();
+    }
+
+    private void confirmarRemocaoItem(
+            ItemSacolaVendaModel item,
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio,
+            BottomSheetDialog dialog) {
+
+        String quantidade = item.getQuantidade() + (item.getQuantidade() == 1 ? " unidade" : " unidades");
+        String valor = formatadorMoeda.format(item.getSubtotal());
+
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir item da venda?")
+                .setMessage("Ser\u00e3o exclu\u00eddos " + quantidade + " de \"" + item.getNome() + "\", no valor de " + valor + ".")
+                .setNegativeButton("Cancelar", (d, w) ->
+                        sincronizarBottomSheet(adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio))
+                .setPositiveButton("Excluir", (d, w) ->
+                        removerItemDaSacola(item, adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio, dialog))
+                .show();
+    }
+
+    private void removerItemDaSacola(
+            ItemSacolaVendaModel item,
+            AdapterSacolaNovaVenda adapter,
+            RecyclerView rvItensSacola,
+            TextView txtQtdItens,
+            TextView txtTotalBottom,
+            TextView txtCobrarTotal,
+            TextView txtEstadoVazio,
+            BottomSheetDialog dialog) {
+
+        viewModel.removerItem(item.getChave());
+        sincronizarBottomSheet(adapter, rvItensSacola, txtQtdItens, txtTotalBottom, txtCobrarTotal, txtEstadoVazio);
+        if (viewModel.isSacolaVazia()) dialog.dismiss();
     }
 
     private void sincronizarBottomSheet(

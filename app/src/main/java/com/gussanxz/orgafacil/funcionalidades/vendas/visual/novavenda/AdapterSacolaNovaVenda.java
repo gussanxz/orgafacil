@@ -47,6 +47,12 @@ public class AdapterSacolaNovaVenda extends RecyclerView.Adapter<RecyclerView.Vi
         notifyDataSetChanged();
     }
 
+    public ItemSacolaVendaModel getItemSacola(int adapterPosition) {
+        if (adapterPosition < 0 || adapterPosition >= listaFlat.size()) return null;
+        Object item = listaFlat.get(adapterPosition);
+        return item instanceof ItemSacolaVendaModel ? (ItemSacolaVendaModel) item : null;
+    }
+
     // ── Agrupamento ───────────────────────────────────────────────────────────
 
     private static List<Object> agrupar(List<ItemSacolaVendaModel> itens) {
