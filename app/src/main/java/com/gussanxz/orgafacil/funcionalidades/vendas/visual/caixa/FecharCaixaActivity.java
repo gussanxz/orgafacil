@@ -2,6 +2,8 @@ package com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -58,7 +60,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
     private LinearLayout secaoCaixaAberto;
     private TextView     txtQtdVendasCaixa;
     private TextView     txtTotalCaixa;
-    private TextView     txtFechamentoInfo;
+    private TextView     txtTempoAbertoValor;
     private LinearLayout btnFecharCaixa;
 
     // Seção FECHADO
@@ -95,13 +97,17 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     private CaixaModel caixaAtual  = null;
     private boolean    operando    = false; // evita duplo clique
+    private final Handler tempoAbertoHandler = new Handler(Looper.getMainLooper());
+    private Runnable atualizacaoTempoAberto;
 
     /** Totais atuais das vendas (usados para snapshot ao fechar). */
     private int    qtdVendasAtual  = 0;
     private double totalVendasAtual = 0.0;
 
-    private final SimpleDateFormat fmtHora  = new SimpleDateFormat(
-            "HH:mm 'de' dd/MM/yyyy", new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtHoraAbertura  = new SimpleDateFormat(
+            "HH:mm", new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtDataAbertura  = new SimpleDateFormat(
+            "dd/MM/yyyy", new Locale("pt", "BR"));
     private final NumberFormat     fmtMoeda = NumberFormat.getCurrencyInstance(
             new Locale("pt", "BR"));
 
@@ -129,6 +135,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
         super.onDestroy();
         if (listenerCaixa  != null) listenerCaixa.remove();
         if (listenerVendas != null) listenerVendas.remove();
+        pararAtualizacaoTempoAberto();
     }
 
     // ── Bind ────────────────────────────────────────────────────────────
@@ -143,7 +150,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
         secaoCaixaAberto         = findViewById(R.id.secaoCaixaAberto);
         txtQtdVendasCaixa        = findViewById(R.id.txtQtdVendasCaixa);
         txtTotalCaixa            = findViewById(R.id.txtTotalCaixa);
-        txtFechamentoInfo        = findViewById(R.id.txtFechamentoInfo);
+        txtTempoAbertoValor      = findViewById(R.id.txtTempoAbertoValor);
         btnFecharCaixa           = findViewById(R.id.btnFecharCaixa);
 
         secaoCaixaFechado        = findViewById(R.id.secaoCaixaFechado);
@@ -376,10 +383,12 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     private void mostrarEstadoAberto(CaixaModel caixa) {
         // Status card
-        if (txtStatusCaixaControle != null) txtStatusCaixaControle.setText("Aberto");
-        if (txtAberturaInfo != null)
-            txtAberturaInfo.setText("Abertura: " +
-                    fmtHora.format(new Date(caixa.getAbertoEmMillis())));
+        if (txtStatusCaixaControle != null) txtStatusCaixaControle.setText("Caixa aberto");
+        if (txtAberturaInfo != null) {
+            Date abertura = new Date(caixa.getAbertoEmMillis());
+            txtAberturaInfo.setText("Abertura: " + fmtHoraAbertura.format(abertura)
+                    + "\n" + fmtDataAbertura.format(abertura));
+        }
         if (imgStatusCaixaControle != null) {
             imgStatusCaixaControle.setImageResource(R.drawable.ic_lock_open_28);
             imgStatusCaixaControle.setColorFilter(0xFF4CAF50); // verde
@@ -389,9 +398,7 @@ public class FecharCaixaActivity extends AppCompatActivity {
         if (secaoCaixaAberto  != null) secaoCaixaAberto.setVisibility(View.VISIBLE);
         if (secaoCaixaFechado != null) secaoCaixaFechado.setVisibility(View.GONE);
 
-        // Atualiza hora de fechamento prevista (agora)
-        if (txtFechamentoInfo != null)
-            txtFechamentoInfo.setText("Fechamento registrado em: " + fmtHora.format(new Date()));
+        iniciarAtualizacaoTempoAberto(caixa.getAbertoEmMillis());
 
         // Escuta vendas do caixa
         escutarVendas(caixa.getId());
@@ -399,12 +406,13 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     private void mostrarEstadoFechado() {
         // Status card
-        if (txtStatusCaixaControle != null) txtStatusCaixaControle.setText("Fechado");
+        if (txtStatusCaixaControle != null) txtStatusCaixaControle.setText("Caixa fechado");
         if (txtAberturaInfo != null) txtAberturaInfo.setText("Nenhum caixa aberto");
         if (imgStatusCaixaControle != null) {
             imgStatusCaixaControle.setImageResource(R.drawable.ic_lock_24);
             imgStatusCaixaControle.setColorFilter(0xFFFFD54F); // âmbar
         }
+        pararAtualizacaoTempoAberto();
 
         // Visibilidade de seções
         if (secaoCaixaAberto  != null) secaoCaixaAberto.setVisibility(View.GONE);
@@ -418,6 +426,38 @@ public class FecharCaixaActivity extends AppCompatActivity {
     }
 
     // ── Vendas do caixa ─────────────────────────────────────────────────
+
+    private void iniciarAtualizacaoTempoAberto(long abertoEmMillis) {
+        pararAtualizacaoTempoAberto();
+        atualizacaoTempoAberto = new Runnable() {
+            @Override
+            public void run() {
+                if (txtTempoAbertoValor != null) {
+                    txtTempoAbertoValor.setText(formatarTempoAberto(abertoEmMillis));
+                }
+                tempoAbertoHandler.postDelayed(this, 60_000L);
+            }
+        };
+        atualizacaoTempoAberto.run();
+    }
+
+    private void pararAtualizacaoTempoAberto() {
+        if (atualizacaoTempoAberto != null) {
+            tempoAbertoHandler.removeCallbacks(atualizacaoTempoAberto);
+            atualizacaoTempoAberto = null;
+        }
+    }
+
+    private String formatarTempoAberto(long abertoEmMillis) {
+        if (abertoEmMillis <= 0L) {
+            return "00:00";
+        }
+        long duracao = Math.max(0L, System.currentTimeMillis() - abertoEmMillis);
+        long minutosTotais = duracao / 60_000L;
+        long horas = minutosTotais / 60L;
+        long minutos = minutosTotais % 60L;
+        return String.format(Locale.getDefault(), "%02d:%02d", horas, minutos);
+    }
 
     private void escutarVendas(String caixaId) {
         if (listenerVendas != null) listenerVendas.remove();
@@ -778,10 +818,6 @@ public class FecharCaixaActivity extends AppCompatActivity {
         if (operando || caixaAtual == null) return;
         operando = true;
         habilitarBotaoFechar(false);
-
-        // Atualiza hora na UI antes de confirmar
-        if (txtFechamentoInfo != null)
-            txtFechamentoInfo.setText("Fechamento registrado em: " + fmtHora.format(new Date()));
 
         caixaRepository.fecharCaixa(caixaAtual.getId(), qtdVendasAtual, totalVendasAtual,
                 new CaixaRepository.VoidCallback() {
