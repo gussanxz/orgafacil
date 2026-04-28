@@ -66,9 +66,9 @@ public class AdapterResumoFechamentoVenda extends RecyclerView.Adapter<AdapterRe
         void bind(ItemSacolaVendaModel item) {
             txtNomeItem.setText(item.getNome());
             txtTipoItem.setText(
-                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "Produto" : "Serviço"
+                    item.getTipo() == ItemVendaModel.TIPO_PRODUTO ? "P · " : "S · "
             );
-            txtQuantidadeItem.setText("Qtd: " + item.getQuantidade());
+            txtQuantidadeItem.setText(item.getQuantidade() + "x ");
             txtSubtotalItem.setText(formatadorMoeda.format(item.getSubtotal()));
         }
     }
