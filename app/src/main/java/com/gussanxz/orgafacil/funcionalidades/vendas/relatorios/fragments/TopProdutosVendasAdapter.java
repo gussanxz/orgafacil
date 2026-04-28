@@ -1,15 +1,10 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.relatorios.fragments;
 
 import android.graphics.Color;
-import android.graphics.Typeface;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.RelativeSizeSpan;
-import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -27,13 +22,12 @@ public class TopProdutosVendasAdapter extends RecyclerView.Adapter<TopProdutosVe
     private List<TopItemVenda> lista = new ArrayList<>();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
-    // Cores de rank: ouro, prata, bronze, cinza claro (4º e 5º)
     private static final int[] CORES_RANK = {
-            Color.parseColor("#FFC107"),  // 1º ouro
-            Color.parseColor("#9E9E9E"),  // 2º prata
-            Color.parseColor("#A1887F"),  // 3º bronze
-            Color.parseColor("#BDBDBD"),  // 4º
-            Color.parseColor("#BDBDBD"),  // 5º
+            Color.parseColor("#D9A520"),
+            Color.parseColor("#8B96A8"),
+            Color.parseColor("#B8753A"),
+            Color.parseColor("#6B7890"),
+            Color.parseColor("#6B7890"),
     };
 
     public static class TopItemVenda {
@@ -41,10 +35,14 @@ public class TopProdutosVendasAdapter extends RecyclerView.Adapter<TopProdutosVe
         public String nome;
         public int quantidade;
         public double valorTotal;
+        public int percentual;
 
         public TopItemVenda(int posicao, String nome, int quantidade, double valorTotal, int percentual) {
-            this.posicao = posicao; this.nome = nome;
-            this.quantidade = quantidade; this.valorTotal = valorTotal;
+            this.posicao = posicao;
+            this.nome = nome;
+            this.quantidade = quantidade;
+            this.valorTotal = valorTotal;
+            this.percentual = percentual;
         }
     }
 
@@ -64,29 +62,40 @@ public class TopProdutosVendasAdapter extends RecyclerView.Adapter<TopProdutosVe
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         TopItemVenda item = lista.get(position);
-
         int corRank = position < CORES_RANK.length ? CORES_RANK[position] : CORES_RANK[CORES_RANK.length - 1];
-        String prefixo = "#" + item.posicao + "  ";
-        SpannableString ss = new SpannableString(prefixo + item.nome);
-        ss.setSpan(new ForegroundColorSpan(corRank), 0, prefixo.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        ss.setSpan(new StyleSpan(Typeface.BOLD), 0, prefixo.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        ss.setSpan(new RelativeSizeSpan(0.85f), 0, prefixo.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        h.txtNome.setText(ss);
 
-        h.txtQtd.setText(item.quantidade + "x");
+        h.txtRank.setText("#" + item.posicao);
+        h.txtRank.setTextColor(corRank);
+        h.txtRank.setBackgroundResource(backgroundRank(position));
+        h.txtNome.setText(item.nome);
         h.txtValor.setText(fmt.format(item.valorTotal));
+        h.txtQtd.setText(item.quantidade + "x vendidos");
+        h.progressValor.setProgress(Math.max(4, Math.min(100, item.percentual)));
+    }
+
+    private int backgroundRank(int position) {
+        if (position == 0) return R.drawable.bg_rank_gold;
+        if (position == 1) return R.drawable.bg_rank_silver;
+        if (position == 2) return R.drawable.bg_rank_bronze;
+        return R.drawable.bg_rank_default;
     }
 
     @Override
-    public int getItemCount() { return lista.size(); }
+    public int getItemCount() {
+        return lista.size();
+    }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView txtNome, txtQtd, txtValor;
+        TextView txtRank, txtNome, txtQtd, txtValor;
+        ProgressBar progressValor;
+
         VH(@NonNull View itemView) {
             super(itemView);
-            txtNome  = itemView.findViewById(R.id.txtTopVendaNome);
-            txtQtd   = itemView.findViewById(R.id.txtTopVendaQtd);
+            txtRank = itemView.findViewById(R.id.txtTopVendaRank);
+            txtNome = itemView.findViewById(R.id.txtTopVendaNome);
+            txtQtd = itemView.findViewById(R.id.txtTopVendaQtd);
             txtValor = itemView.findViewById(R.id.txtTopVendaValor);
+            progressValor = itemView.findViewById(R.id.progressTopVendaValor);
         }
     }
 }

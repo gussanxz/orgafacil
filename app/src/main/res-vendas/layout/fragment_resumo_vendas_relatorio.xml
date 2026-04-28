@@ -13,203 +13,136 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Navegação por mês -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="76dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_relatorio_intervalo"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginBottom="16dp">
+            android:paddingHorizontal="12dp">
 
             <ImageView
                 android:id="@+id/btnRelVendasMesAnterior"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:padding="8dp"
-                android:src="@drawable/ic_arrow_back_24"
-                app:tint="@color/cor_texto"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true" android:focusable="true"/>
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_back_24"
+                app:tint="@color/cor_texto" />
 
-            <TextView
-                android:id="@+id/txtRelVendasMesAtual"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:text="ABR/26"
-                android:textColor="@color/cor_texto"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PERIODO"
+                    android:textColor="@color/vendas_text_secondary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtRelVendasMesAtual"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="ABR/26"
+                    android:textColor="@color/cor_texto"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtRelVendasIntervalo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="01/04/2026 - 30/04/2026"
+                    android:textColor="@color/vendas_text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <ImageView
                 android:id="@+id/btnRelVendasMesProximo"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:padding="8dp"
-                android:src="@drawable/ic_arrow_forward_24"
-                app:tint="@color/cor_texto"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true" android:focusable="true"/>
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_forward_24"
+                app:tint="@color/cor_texto" />
         </LinearLayout>
 
-        <!-- Cards de métricas: Total e Qtd -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
 
-            <com.google.android.material.card.MaterialCardView
+            <include
+                android:id="@+id/includeMetricTotal"
+                layout="@layout/include_relatorio_vendas_metric_card"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_height="112dp"
                 android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="@color/vendas_card"
-                app:cardElevation="2dp">
+                android:layout_weight="1" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Total vendido"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"/>
-
-                    <TextView
-                        android:id="@+id/txtRelVendasTotal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="R$ 0,00"
-                        android:textColor="@color/cor_texto_primario"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
-
-                    <TextView
-                        android:id="@+id/txtRelVendasTotalVariacao"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="11sp"
-                        android:layout_marginTop="4dp"
-                        android:visibility="gone"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
+            <include
+                android:id="@+id/includeMetricVendas"
+                layout="@layout/include_relatorio_vendas_metric_card"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_height="112dp"
                 android:layout_marginStart="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="@color/vendas_card"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Vendas realizadas"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"/>
-
-                    <TextView
-                        android:id="@+id/txtRelVendasQtd"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 vendas"
-                        android:textColor="@color/cor_texto"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
-
-                    <TextView
-                        android:id="@+id/txtRelVendasQtdVariacao"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:layout_marginTop="4dp"
-                        android:visibility="gone"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_weight="1" />
         </LinearLayout>
 
-        <!-- Cards: Ticket médio e Pagamento principal -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
 
-            <com.google.android.material.card.MaterialCardView
+            <include
+                android:id="@+id/includeMetricTicket"
+                layout="@layout/include_relatorio_vendas_metric_card"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_height="112dp"
                 android:layout_marginEnd="4dp"
-                app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="@color/vendas_card"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ticket médio"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"/>
-
-                    <TextView
-                        android:id="@+id/txtRelVendasTicket"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="R$ 0,00"
-                        android:textColor="@color/cor_texto"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_weight="1" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPagamentosResumo"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_height="112dp"
                 android:layout_marginStart="4dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardCornerRadius="12dp"
                 app:cardBackgroundColor="@color/vendas_card"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="2dp"
-                app:rippleColor="?attr/colorControlHighlight">
+                app:rippleColor="?attr/colorControlHighlight"
+                app:strokeColor="@color/vendas_stroke"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
@@ -217,66 +150,69 @@
                             android:layout_weight="1"
                             android:text="Pagamentos"
                             android:textColor="@color/vendas_text_secondary"
-                            android:textSize="11sp"/>
+                            android:textSize="11sp" />
 
                         <ImageView
-                            android:layout_width="14dp"
-                            android:layout_height="14dp"
-                            android:src="@drawable/ic_arrow_forward_24"
-                            app:tint="@color/vendas_text_secondary"/>
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_relatorio_metric_icon"
+                            android:padding="7dp"
+                            android:src="@drawable/ic_point_of_sale_28"
+                            app:tint="@color/colorPrimary" />
                     </LinearLayout>
 
                     <LinearLayout
                         android:id="@+id/layoutPagamentos"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginTop="6dp"/>
+                        android:layout_height="0dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Estado vazio -->
         <LinearLayout
             android:id="@+id/layoutRelVendasVazio"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:gravity="center"
+            android:orientation="vertical"
             android:padding="32dp"
             android:visibility="gone">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nenhuma venda finalizada neste mês"
+                android:gravity="center"
+                android:text="Nenhuma venda finalizada neste periodo"
                 android:textColor="@color/vendas_text_secondary"
-                android:textSize="14sp"
-                android:gravity="center"/>
+                android:textSize="14sp" />
         </LinearLayout>
 
-        <!-- Card Top 5 mais vendidos -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardTop5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             android:visibility="gone"
-            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/vendas_card"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeColor="@color/vendas_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Cabeçalho com abas -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
                     android:paddingTop="16dp"
                     android:paddingBottom="8dp">
@@ -288,41 +224,49 @@
                         android:text="Top 5 mais vendidos"
                         android:textColor="@color/cor_texto"
                         android:textSize="14sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/btnRelVendasAbaProdutos"
+                    <LinearLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Produtos"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:background="@drawable/bg_aba_ativa"/>
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_relatorio_segmented"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="3dp">
 
-                    <TextView
-                        android:id="@+id/btnRelVendasAbaCategorias"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Categorias"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:layout_marginStart="8dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"/>
+                        <TextView
+                            android:id="@+id/btnRelVendasAbaProdutos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_aba_ativa"
+                            android:gravity="center"
+                            android:minWidth="78dp"
+                            android:paddingHorizontal="12dp"
+                            android:text="Itens"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btnRelVendasAbaCategorias"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:minWidth="92dp"
+                            android:paddingHorizontal="12dp"
+                            android:text="Categorias"
+                            android:textColor="@color/vendas_text_secondary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#EEEEEE"
-                    android:layout_marginHorizontal="16dp"/>
+                    android:layout_marginHorizontal="16dp"
+                    android:background="@color/vendas_stroke" />
 
-                <!-- Cabeçalho de colunas -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -336,31 +280,20 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Produto"
+                        android:text="Produto/servico"
+                        android:textAllCaps="true"
                         android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
+                        android:textSize="11sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minWidth="36dp"
                         android:gravity="end"
-                        android:text="Qtd"
+                        android:minWidth="88dp"
+                        android:text="Valor"
+                        android:textAllCaps="true"
                         android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:minWidth="80dp"
-                        android:gravity="end"
-                        android:text="Total"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -368,89 +301,100 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
-                    android:paddingBottom="8dp"/>
-
+                    android:paddingBottom="8dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Seção unificada: Todos os produtos / Todas as categorias -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardListaCompleta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
             android:visibility="gone"
-            app:cardCornerRadius="12dp"
             app:cardBackgroundColor="@color/vendas_card"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeColor="@color/vendas_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Cabeçalho com toggle -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
                     android:paddingTop="16dp"
                     android:paddingBottom="8dp">
 
-                    <TextView
-                        android:id="@+id/txtListaCompletaTitulo"
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Todos os produtos"
-                        android:textColor="@color/cor_texto"
-                        android:textSize="14sp"
-                        android:textStyle="bold"/>
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/txtListaCompletaContagem"
+                        <TextView
+                            android:id="@+id/txtListaCompletaTitulo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Todos os itens"
+                            android:textColor="@color/cor_texto"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtListaCompletaContagem"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/vendas_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="12sp"/>
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_relatorio_segmented"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="3dp">
 
-                    <TextView
-                        android:id="@+id/btnListaCompletaProdutos"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Produtos"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="5dp"
-                        android:background="@drawable/bg_aba_ativa"/>
+                        <TextView
+                            android:id="@+id/btnListaCompletaProdutos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_aba_ativa"
+                            android:gravity="center"
+                            android:minWidth="70dp"
+                            android:paddingHorizontal="10dp"
+                            android:text="Itens"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/btnListaCompletaCategorias"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Categorias"
-                        android:textColor="@color/vendas_text_secondary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="5dp"
-                        android:layout_marginStart="6dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"/>
-
+                        <TextView
+                            android:id="@+id/btnListaCompletaCategorias"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:minWidth="86dp"
+                            android:paddingHorizontal="10dp"
+                            android:text="Categorias"
+                            android:textColor="@color/vendas_text_secondary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#EEEEEE"
-                    android:layout_marginHorizontal="16dp"/>
+                    android:layout_marginHorizontal="16dp"
+                    android:background="@color/vendas_stroke" />
 
-                <!-- Linha de colunas -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -464,32 +408,31 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Produto"
+                        android:text="Produto/servico"
+                        android:textAllCaps="true"
                         android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
+                        android:textSize="11sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minWidth="36dp"
                         android:gravity="end"
+                        android:minWidth="36dp"
                         android:text="Qtd"
+                        android:textAllCaps="true"
                         android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
+                        android:textSize="11sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:minWidth="80dp"
                         android:gravity="end"
+                        android:minWidth="80dp"
                         android:text="Total"
+                        android:textAllCaps="true"
                         android:textColor="@color/vendas_text_secondary"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"/>
-
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -497,10 +440,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
-                    android:paddingBottom="8dp"/>
-
+                    android:paddingBottom="8dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

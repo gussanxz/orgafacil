@@ -53,7 +53,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     private LinearLayout layoutPagamentos;
     private MaterialCardView cardPagamentosResumo;
     private ImageView btnMesAnterior, btnMesProximo;
-    private TextView txtMesAtual;
+    private TextView txtMesAtual, txtIntervaloAtual;
     private View cardTop5;
     private TextView txtTop5ColunaLabel;
     private RecyclerView recyclerTopProdutos;
@@ -98,17 +98,26 @@ public class ResumoVendasRelatorioFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        txtTotalVendido           = view.findViewById(R.id.txtRelVendasTotal);
-        txtRelVendasTotalVariacao = view.findViewById(R.id.txtRelVendasTotalVariacao);
-        txtQtdVendas              = view.findViewById(R.id.txtRelVendasQtd);
-        txtRelVendasQtdVariacao   = view.findViewById(R.id.txtRelVendasQtdVariacao);
-        txtTicketMedio            = view.findViewById(R.id.txtRelVendasTicket);
+        View metricTotal = view.findViewById(R.id.includeMetricTotal);
+        configurarMetricCard(metricTotal, "Total vendido", R.drawable.ic_attach_money_24);
+        txtTotalVendido           = metricTotal.findViewById(R.id.txtMetricValue);
+        txtRelVendasTotalVariacao = metricTotal.findViewById(R.id.txtMetricVariation);
+
+        View metricVendas = view.findViewById(R.id.includeMetricVendas);
+        configurarMetricCard(metricVendas, "Vendas", R.drawable.ic_shopping_cart_checkout_24);
+        txtQtdVendas              = metricVendas.findViewById(R.id.txtMetricValue);
+        txtRelVendasQtdVariacao   = metricVendas.findViewById(R.id.txtMetricVariation);
+
+        View metricTicket = view.findViewById(R.id.includeMetricTicket);
+        configurarMetricCard(metricTicket, "Ticket medio", R.drawable.ic_monitoring_28);
+        txtTicketMedio            = metricTicket.findViewById(R.id.txtMetricValue);
         layoutPagamentos          = view.findViewById(R.id.layoutPagamentos);
         cardPagamentosResumo      = view.findViewById(R.id.cardPagamentosResumo);
         btnMesAnterior            = view.findViewById(R.id.btnRelVendasMesAnterior);
         cardPagamentosResumo.setOnClickListener(v -> mostrarDialogPagamentos());
         btnMesProximo     = view.findViewById(R.id.btnRelVendasMesProximo);
         txtMesAtual       = view.findViewById(R.id.txtRelVendasMesAtual);
+        txtIntervaloAtual = view.findViewById(R.id.txtRelVendasIntervalo);
         layoutVazio          = view.findViewById(R.id.layoutRelVendasVazio);
         cardTop5             = view.findViewById(R.id.cardTop5);
         txtTop5ColunaLabel   = view.findViewById(R.id.txtTop5ColunaLabel);
@@ -133,13 +142,17 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         recyclerListaCompleta.setAdapter(listaCompletaAdapter);
 
         btnListaCompletaProdutos.setOnClickListener(v -> {
+            if (listaExibindoProdutos) return;
             listaExibindoProdutos = true;
             atualizarVisualToggleLista();
+            animarTroca(recyclerListaCompleta);
             renderizarListaCompleta(doMesCache);
         });
         btnListaCompletaCategorias.setOnClickListener(v -> {
+            if (!listaExibindoProdutos) return;
             listaExibindoProdutos = false;
             atualizarVisualToggleLista();
+            animarTroca(recyclerListaCompleta);
             renderizarListaCompleta(doMesCache);
         });
 
@@ -147,13 +160,17 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         btnAbaCategorias = view.findViewById(R.id.btnRelVendasAbaCategorias);
 
         btnAbaProdutos.setOnClickListener(v -> {
+            if (exibindoProdutos) return;
             exibindoProdutos = true;
             atualizarVisualAbas();
+            animarTroca(recyclerTopProdutos);
             renderizarTop5(doMesCache);
         });
         btnAbaCategorias.setOnClickListener(v -> {
+            if (!exibindoProdutos) return;
             exibindoProdutos = false;
             atualizarVisualAbas();
+            animarTroca(recyclerTopProdutos);
             renderizarTop5(doMesCache);
         });
 
@@ -173,6 +190,18 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             atualizarTextMes();
             calcularResumo();
         });
+    }
+
+    private void configurarMetricCard(@NonNull View card, @NonNull String label, int iconRes) {
+        TextView txtLabel = card.findViewById(R.id.txtMetricLabel);
+        ImageView imgIcon = card.findViewById(R.id.imgMetricIcon);
+        txtLabel.setText(label);
+        imgIcon.setImageResource(iconRes);
+    }
+
+    private void animarTroca(@NonNull View view) {
+        view.setAlpha(0.55f);
+        view.animate().alpha(1f).setDuration(180).start();
     }
 
     @Override
@@ -261,6 +290,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
 
     private void atualizarTextMes() {
         txtMesAtual.setText(fmtMes.format(mesSelecionado.getTime()).toUpperCase(new Locale("pt", "BR")));
+        if (txtIntervaloAtual != null) {
+            txtIntervaloAtual.setText(montarIntervaloMesSelecionado());
+        }
     }
 
     private void calcularResumo() {
@@ -426,7 +458,7 @@ public class ResumoVendasRelatorioFragment extends Fragment {
             btnAbaProdutos.setTextColor(Color.WHITE);
             btnAbaCategorias.setBackgroundResource(0);
             btnAbaCategorias.setTextColor(corInativo);
-            txtTop5ColunaLabel.setText("Produto");
+            txtTop5ColunaLabel.setText("Produto/servico");
         } else {
             btnAbaCategorias.setBackgroundResource(R.drawable.bg_aba_ativa);
             btnAbaCategorias.setTextColor(Color.WHITE);
@@ -467,9 +499,9 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         listaCompletaAdapter.atualizar(itens);
 
         if (listaExibindoProdutos) {
-            txtListaCompletaTitulo.setText("Todos os produtos");
-            txtListaCompletaColunaLabel.setText("Produto");
-            txtListaCompletaContagem.setText(itens.size() + (itens.size() == 1 ? " produto" : " produtos"));
+            txtListaCompletaTitulo.setText("Todos os itens");
+            txtListaCompletaColunaLabel.setText("Produto/servico");
+            txtListaCompletaContagem.setText(itens.size() + (itens.size() == 1 ? " item" : " itens"));
         } else {
             txtListaCompletaTitulo.setText("Todas as categorias");
             txtListaCompletaColunaLabel.setText("Categoria");
@@ -673,13 +705,15 @@ public class ResumoVendasRelatorioFragment extends Fragment {
         entries.sort((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]));
         if (entries.size() > 5) entries = entries.subList(0, 5);
 
-        double totalItens = 0;
-        for (Map.Entry<String, double[]> e : entries) totalItens += e.getValue()[1];
+        double maiorValor = 0;
+        for (Map.Entry<String, double[]> e : entries) {
+            maiorValor = Math.max(maiorValor, e.getValue()[1]);
+        }
 
         List<TopProdutosVendasAdapter.TopItemVenda> topItens = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
             Map.Entry<String, double[]> e = entries.get(i);
-            int pctItem = totalItens > 0 ? (int) ((e.getValue()[1] / totalItens) * 100) : 0;
+            int pctItem = maiorValor > 0 ? (int) ((e.getValue()[1] / maiorValor) * 100) : 0;
             topItens.add(new TopProdutosVendasAdapter.TopItemVenda(
                     i + 1, e.getKey(), (int) e.getValue()[0], e.getValue()[1], pctItem));
         }
