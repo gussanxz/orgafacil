@@ -23,10 +23,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.gussanxz.orgafacil.R;
+import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoCallback;
+import com.gussanxz.orgafacil.funcionalidades.comum.dados.RepoVoidCallback;
 import com.gussanxz.orgafacil.funcionalidades.firebase.FirestoreSchema;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.CaixaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
+import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendasRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemSacolaVendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.ItemVendaRegistradaModel;
@@ -38,8 +46,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class FechamentoVendaActivity extends AppCompatActivity {
 
@@ -67,6 +77,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private LinearLayout btnSalvarEmAberto;
     private LinearLayout rowNumeroVendaFechamento;
     private TextView     txtNumeroVendaFechamento;
+    private TextView     txtClienteSelecionado;
+    private TextView     txtVendedorResponsavel;
+    private LinearLayout btnSelecionarCliente;
+    private LinearLayout btnClienteAvulso;
+    private LinearLayout btnCadastrarClienteRapido;
 
     // Seletor de data/hora -- so visivel em modo edicao
     private LinearLayout layoutSeletorData;
@@ -94,7 +109,14 @@ public class FechamentoVendaActivity extends AppCompatActivity {
     private String  caixaId                   = null;
     /** Nome legível do caixa (ex.: "20260420_1"), desnormalizado na venda. */
     private String  nomeCaixa                 = null;
+    private String  clienteId                 = null;
+    private String  clienteNome               = null;
+    private String  clienteTelefone           = null;
+    private String  vendedorId                = null;
+    private String  vendedorNome              = null;
+    private String  vendedorEmail             = null;
     private VendaRepository  vendaRepository;
+    private VendasRepository vendasRepository;
     private CaixaRepository  caixaRepository;
     private boolean salvandoVenda = false;
 
@@ -114,12 +136,14 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         });
 
         vendaRepository = new VendaRepository();
+        vendasRepository = new VendasRepository();
         caixaRepository = new CaixaRepository();
 
         inicializarComponentes();
         configurarRecyclerView();
         configurarAcoesPagamento();
         carregarDadosRecebidos();
+        configurarClienteEVendedor();
         configurarSeletorCaixa();
         atualizarEstadoPagamento();
         atualizarBotaoFinalizar();
@@ -148,6 +172,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         btnSalvarEmAberto            = findViewById(R.id.btnSalvarEmAberto);
         rowNumeroVendaFechamento     = findViewById(R.id.rowNumeroVendaFechamento);
         txtNumeroVendaFechamento     = findViewById(R.id.txtNumeroVendaFechamento);
+        txtClienteSelecionado        = findViewById(R.id.txtClienteSelecionado);
+        txtVendedorResponsavel       = findViewById(R.id.txtVendedorResponsavel);
+        btnSelecionarCliente         = findViewById(R.id.btnSelecionarCliente);
+        btnClienteAvulso             = findViewById(R.id.btnClienteAvulso);
+        btnCadastrarClienteRapido    = findViewById(R.id.btnCadastrarClienteRapido);
 
         txtCaixaSelecionado  = findViewById(R.id.txtCaixaSelecionado);
         btnAlterarCaixa      = findViewById(R.id.btnAlterarCaixa);
@@ -210,6 +239,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         vendaIdEdicao   = getIntent().getStringExtra("vendaId");
         caixaId         = getIntent().getStringExtra(EXTRA_CAIXA_ID);
         nomeCaixa       = getIntent().getStringExtra(EXTRA_NOME_CAIXA);
+        clienteId       = getIntent().getStringExtra("clienteId");
+        clienteNome     = getIntent().getStringExtra("clienteNome");
+        clienteTelefone = getIntent().getStringExtra("clienteTelefone");
         quantidadeTotal = getIntent().getIntExtra("quantidadeTotal", 0);
         valorTotal      = getIntent().getDoubleExtra("valorTotal", 0.0);
 
@@ -262,6 +294,157 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         configurarSeletorDataHora();
 
+    }
+
+    // ----------------------------------------------------------------
+    // Cliente e vendedor
+    // ----------------------------------------------------------------
+
+    private void configurarClienteEVendedor() {
+        carregarVendedorResponsavel();
+        atualizarExibicaoCliente();
+
+        if (btnSelecionarCliente != null)
+            btnSelecionarCliente.setOnClickListener(v -> abrirDialogSelecionarCliente());
+        if (btnClienteAvulso != null)
+            btnClienteAvulso.setOnClickListener(v -> definirClienteAvulso());
+        if (btnCadastrarClienteRapido != null)
+            btnCadastrarClienteRapido.setOnClickListener(v -> abrirDialogCadastroClienteRapido());
+    }
+
+    private void carregarVendedorResponsavel() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            vendedorId = user.getUid();
+            vendedorNome = user.getDisplayName();
+            vendedorEmail = user.getEmail();
+        }
+        if (vendedorNome == null || vendedorNome.trim().isEmpty()) {
+            vendedorNome = vendedorEmail != null && !vendedorEmail.trim().isEmpty()
+                    ? vendedorEmail
+                    : "Usuario responsavel";
+        }
+        if (txtVendedorResponsavel != null) {
+            txtVendedorResponsavel.setText(vendedorNome);
+        }
+    }
+
+    private void atualizarExibicaoCliente() {
+        if (txtClienteSelecionado == null) return;
+        boolean temCliente = clienteId != null && !clienteId.trim().isEmpty()
+                && clienteNome != null && !clienteNome.trim().isEmpty();
+        txtClienteSelecionado.setText(temCliente ? clienteNome : "Venda avulsa");
+    }
+
+    private void definirClienteAvulso() {
+        clienteId = null;
+        clienteNome = null;
+        clienteTelefone = null;
+        atualizarExibicaoCliente();
+    }
+
+    private void abrirDialogSelecionarCliente() {
+        vendasRepository.listarClientes(new RepoCallback<QuerySnapshot>() {
+            @Override
+            public void onSuccess(QuerySnapshot snap) {
+                List<DocumentSnapshot> docs = snap != null ? snap.getDocuments() : new ArrayList<>();
+                if (docs.isEmpty()) {
+                    Toast.makeText(FechamentoVendaActivity.this,
+                            "Nenhum cliente cadastrado.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String[] opcoes = new String[docs.size()];
+                for (int i = 0; i < docs.size(); i++) {
+                    String nome = docs.get(i).getString("nome");
+                    String telefone = docs.get(i).getString("telefone");
+                    opcoes[i] = nome != null && !nome.trim().isEmpty() ? nome : "Cliente sem nome";
+                    if (telefone != null && !telefone.trim().isEmpty()) {
+                        opcoes[i] += " - " + telefone;
+                    }
+                }
+
+                new AlertDialog.Builder(FechamentoVendaActivity.this)
+                        .setTitle("Selecionar cliente")
+                        .setItems(opcoes, (dialog, which) -> {
+                            DocumentSnapshot doc = docs.get(which);
+                            clienteId = doc.getId();
+                            clienteNome = doc.getString("nome");
+                            clienteTelefone = doc.getString("telefone");
+                            atualizarExibicaoCliente();
+                        })
+                        .setNeutralButton("Venda avulsa", (dialog, which) -> definirClienteAvulso())
+                        .setNegativeButton("Cancelar", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao carregar clientes: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void abrirDialogCadastroClienteRapido() {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int) (24 * getResources().getDisplayMetrics().density);
+        container.setPadding(padding, 8, padding, 0);
+
+        EditText inputNome = new EditText(this);
+        inputNome.setHint("Nome do cliente");
+        inputNome.setSingleLine(true);
+        container.addView(inputNome);
+
+        EditText inputTelefone = new EditText(this);
+        inputTelefone.setHint("Telefone (opcional)");
+        inputTelefone.setSingleLine(true);
+        inputTelefone.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+        container.addView(inputTelefone);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Cliente rapido")
+                .setView(container)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Salvar", null)
+                .create();
+
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String nome = inputNome.getText().toString().trim();
+            String telefone = inputTelefone.getText().toString().trim();
+            if (nome.isEmpty()) {
+                inputNome.setError("Informe o nome");
+                return;
+            }
+            salvarClienteRapido(nome, telefone, dialog);
+        }));
+        dialog.show();
+    }
+
+    private void salvarClienteRapido(String nome, String telefone, AlertDialog dialog) {
+        String novoClienteId = FirestoreSchema.vendasClientesCol().document().getId();
+        Map<String, Object> data = new HashMap<>();
+        data.put("nome", nome);
+        data.put("telefone", telefone);
+        data.put("statusAtivo", true);
+
+        vendasRepository.salvarCliente(novoClienteId, data, new RepoVoidCallback() {
+            @Override
+            public void onSuccess() {
+                clienteId = novoClienteId;
+                clienteNome = nome;
+                clienteTelefone = telefone;
+                atualizarExibicaoCliente();
+                dialog.dismiss();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao salvar cliente: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     // ----------------------------------------------------------------
@@ -547,6 +730,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                     public void onSucesso(String vendaId) {
                         salvandoVenda = false;
                         atualizarBotaoFinalizar();
+                        atualizarUltimaCompraCliente();
                         abrirComprovante(vendaId);
                     }
 
@@ -630,6 +814,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setItens(converterItensParaVenda(listaItens));
         venda.setCaixaId(caixaId);     // associa ao caixa aberto (null = legado)
         venda.setNomeCaixa(nomeCaixa); // nome legível desnormalizado
+        aplicarClienteEVendedor(venda);
 
         return venda;
     }
@@ -640,6 +825,23 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
         finish();
+    }
+
+    private void aplicarClienteEVendedor(VendaModel venda) {
+        venda.setClienteId(clienteId);
+        venda.setClienteNome(clienteNome);
+        venda.setClienteTelefone(clienteTelefone);
+        venda.setVendedorId(vendedorId);
+        venda.setVendedorNome(vendedorNome);
+        venda.setVendedorEmail(vendedorEmail);
+    }
+
+    private void atualizarUltimaCompraCliente() {
+        if (clienteId == null || clienteId.trim().isEmpty()) return;
+        vendasRepository.atualizarUltimaCompraCliente(clienteId, Timestamp.now(), new RepoVoidCallback() {
+            @Override public void onSuccess() {}
+            @Override public void onError(Exception e) {}
+        });
     }
 
     private void salvarEmAberto() {
@@ -664,6 +866,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setItens(converterItensParaVenda(listaItens));
         venda.setCaixaId(caixaId);
         venda.setNomeCaixa(nomeCaixa);
+        aplicarClienteEVendedor(venda);
 
         vendaRepository.salvar(venda, new VendaRepository.Callback() {
             @Override

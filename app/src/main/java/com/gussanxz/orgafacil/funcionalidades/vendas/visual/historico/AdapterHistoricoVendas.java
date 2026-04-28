@@ -114,6 +114,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
         private final TextView    txtVendaData;
         private final TextView    txtVendaPagamento;
         private final TextView    txtVendaCaixa;
+        private final TextView    txtVendaCliente;
         private final TextView    txtVendaQuantidade;
         private final TextView    txtVendaStatus;
         private final TextView    txtVendaTotal;
@@ -126,6 +127,7 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
             txtVendaData       = itemView.findViewById(R.id.txtVendaData);
             txtVendaPagamento  = itemView.findViewById(R.id.txtVendaPagamento);
             txtVendaCaixa      = itemView.findViewById(R.id.txtVendaCaixa);
+            txtVendaCliente    = itemView.findViewById(R.id.txtVendaCliente);
             txtVendaQuantidade = itemView.findViewById(R.id.txtVendaQuantidade);
             txtVendaStatus     = itemView.findViewById(R.id.txtVendaStatus);
             txtVendaTotal      = itemView.findViewById(R.id.txtVendaTotal);
@@ -150,6 +152,13 @@ public class AdapterHistoricoVendas extends RecyclerView.Adapter<RecyclerView.Vi
             if (txtVendaCaixa != null) {
                 String nome = venda.getNomeCaixa();
                 txtVendaCaixa.setText("Caixa " + (nome != null && !nome.isEmpty() ? nome : "—"));
+            }
+
+            if (txtVendaCliente != null) {
+                String cliente = venda.getClienteNome();
+                txtVendaCliente.setText(cliente != null && !cliente.trim().isEmpty()
+                        ? "Cliente " + cliente
+                        : "Venda avulsa");
             }
 
             txtVendaQuantidade.setText(venda.getQuantidadeTotal()

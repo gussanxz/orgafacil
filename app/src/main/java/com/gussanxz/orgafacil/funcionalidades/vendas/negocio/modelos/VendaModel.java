@@ -38,6 +38,12 @@ public class VendaModel implements Serializable {
     private double valorRecebidoDinheiro = 0.0;
     private double trocoDinheiro = 0.0;
     private String status;
+    private String clienteId;
+    private String clienteNome;
+    private String clienteTelefone;
+    private String vendedorId;
+    private String vendedorNome;
+    private String vendedorEmail;
     private List<ItemVendaRegistradaModel> itens = new ArrayList<>();
 
     public VendaModel() {
@@ -132,4 +138,22 @@ public class VendaModel implements Serializable {
 
     public String getNomeCaixa() { return nomeCaixa; }
     public void setNomeCaixa(String nomeCaixa) { this.nomeCaixa = nomeCaixa; }
+
+    public String getClienteId() { return clienteId; }
+    public void setClienteId(String clienteId) { this.clienteId = clienteId; }
+
+    public String getClienteNome() { return clienteNome; }
+    public void setClienteNome(String clienteNome) { this.clienteNome = clienteNome; }
+
+    public String getClienteTelefone() { return clienteTelefone; }
+    public void setClienteTelefone(String clienteTelefone) { this.clienteTelefone = clienteTelefone; }
+
+    public String getVendedorId() { return vendedorId; }
+    public void setVendedorId(String vendedorId) { this.vendedorId = vendedorId; }
+
+    public String getVendedorNome() { return vendedorNome; }
+    public void setVendedorNome(String vendedorNome) { this.vendedorNome = vendedorNome; }
+
+    public String getVendedorEmail() { return vendedorEmail; }
+    public void setVendedorEmail(String vendedorEmail) { this.vendedorEmail = vendedorEmail; }
 }

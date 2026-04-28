@@ -41,6 +41,7 @@ import java.util.Map;
 public class HistoricoVendasActivity extends AppCompatActivity {
 
     private ImageButton btnVoltarHistorico;
+    private ImageButton btnFiltroHistorico;
     private RecyclerView rvHistoricoVendas;
     private View layoutEstadoVazioHistorico;
     private TextView txtQuantidadeVendas;
@@ -51,6 +52,8 @@ public class HistoricoVendasActivity extends AppCompatActivity {
     private final List<Object> listaItens = new ArrayList<>();
     private final List<VendaModel> listaCompleta = new ArrayList<>();
     private String filtroAtivo = null;
+    private String clienteFiltroId = null;
+    private String clienteFiltroNome = null;
 
     private AdapterHistoricoVendas adapter;
     private VendaRepository vendaRepository;
@@ -73,6 +76,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         inicializarComponentes();
         configurarRecyclerView();
         configurarAcoes();
+        restaurarFiltroClienteIntent();
         atualizarEstadoTela();
     }
 
@@ -93,6 +97,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
 
     private void inicializarComponentes() {
         btnVoltarHistorico         = findViewById(R.id.btnVoltarHistorico);
+        btnFiltroHistorico         = findViewById(R.id.btnFiltroHistorico);
         rvHistoricoVendas          = findViewById(R.id.rvHistoricoVendas);
         layoutEstadoVazioHistorico = findViewById(R.id.layoutEstadoVazioHistorico);
         txtQuantidadeVendas        = findViewById(R.id.txtQuantidadeVendas);
@@ -117,6 +122,9 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         if (btnVoltarHistorico != null) {
             btnVoltarHistorico.setOnClickListener(v -> finish());
         }
+        if (btnFiltroHistorico != null) {
+            btnFiltroHistorico.setOnClickListener(v -> abrirFiltroCliente());
+        }
         if (chipTodas != null)       chipTodas.setOnClickListener(v -> aplicarFiltro(null));
         if (chipFinalizadas != null) chipFinalizadas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_FINALIZADA));
         if (chipCanceladas != null)  chipCanceladas.setOnClickListener(v -> aplicarFiltro(VendaModel.STATUS_CANCELADA));
@@ -140,6 +148,11 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         });
     }
 
+    private void restaurarFiltroClienteIntent() {
+        clienteFiltroId = getIntent().getStringExtra("clienteFiltroId");
+        clienteFiltroNome = getIntent().getStringExtra("clienteFiltroNome");
+    }
+
     private void atualizarEstadoTela() {
         long qtdVendas = listaItens.stream()
                 .filter(o -> o instanceof VendaModel)
@@ -150,10 +163,12 @@ public class HistoricoVendasActivity extends AppCompatActivity {
             layoutEstadoVazioHistorico.setVisibility(vazio ? View.VISIBLE : View.GONE);
         if (rvHistoricoVendas != null)
             rvHistoricoVendas.setVisibility(vazio ? View.GONE : View.VISIBLE);
-        if (txtQuantidadeVendas != null)
+        if (txtQuantidadeVendas != null) {
+            String sufixoCliente = clienteFiltroNome != null ? " - " + clienteFiltroNome : "";
             txtQuantidadeVendas.setText(vazio
-                    ? "Nenhuma venda encontrada"
-                    : qtdVendas + (qtdVendas == 1 ? " venda" : " vendas"));
+                    ? "Nenhuma venda encontrada" + sufixoCliente
+                    : qtdVendas + (qtdVendas == 1 ? " venda" : " vendas") + sufixoCliente);
+        }
     }
 
     private void aplicarFiltro(String status) {
@@ -164,6 +179,7 @@ public class HistoricoVendasActivity extends AppCompatActivity {
         for (VendaModel v : listaCompleta) {
             if (VendaModel.STATUS_EM_ABERTO.equals(v.getStatus())) continue;
             if (status != null && !status.equals(v.getStatus())) continue;
+            if (clienteFiltroId != null && !clienteFiltroId.equals(v.getClienteId())) continue;
             filtradas.add(v);
         }
 
@@ -245,7 +261,51 @@ public class HistoricoVendasActivity extends AppCompatActivity {
             intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
         if (venda.getNomeCaixa() != null)
             intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, venda.getNomeCaixa());
+        if (venda.getClienteId() != null)
+            intent.putExtra("clienteId", venda.getClienteId());
+        if (venda.getClienteNome() != null)
+            intent.putExtra("clienteNome", venda.getClienteNome());
+        if (venda.getClienteTelefone() != null)
+            intent.putExtra("clienteTelefone", venda.getClienteTelefone());
         startActivity(intent);
+    }
+
+    private void abrirFiltroCliente() {
+        LinkedHashMap<String, String> clientes = new LinkedHashMap<>();
+        for (VendaModel venda : listaCompleta) {
+            String id = venda.getClienteId();
+            String nome = venda.getClienteNome();
+            if (id != null && !id.trim().isEmpty()
+                    && nome != null && !nome.trim().isEmpty()) {
+                clientes.put(id, nome);
+            }
+        }
+
+        if (clientes.isEmpty()) {
+            Toast.makeText(this, "Nenhuma venda com cliente para filtrar.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> ids = new ArrayList<>(clientes.keySet());
+        String[] opcoes = new String[ids.size()];
+        for (int i = 0; i < ids.size(); i++) {
+            opcoes[i] = clientes.get(ids.get(i));
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Filtrar por cliente")
+                .setItems(opcoes, (dialog, which) -> {
+                    clienteFiltroId = ids.get(which);
+                    clienteFiltroNome = clientes.get(clienteFiltroId);
+                    aplicarFiltro(filtroAtivo);
+                })
+                .setNeutralButton("Todos os clientes", (dialog, which) -> {
+                    clienteFiltroId = null;
+                    clienteFiltroNome = null;
+                    aplicarFiltro(filtroAtivo);
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     private void confirmarAlteracaoStatus(VendaModel venda) {

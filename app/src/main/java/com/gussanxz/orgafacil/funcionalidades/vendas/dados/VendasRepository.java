@@ -166,9 +166,20 @@ public class VendasRepository {
     // =========================
 
     public void salvarCliente(@NonNull String clienteId, @NonNull Map<String, Object> data, @NonNull RepoVoidCallback cb) {
+        if (!data.containsKey("createdAt")) data.put("createdAt", Timestamp.now());
+        data.put("updatedAt", Timestamp.now());
+
         FirestoreSchema.clienteDoc(clienteId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess())
+                .addOnFailureListener(cb::onError);
+    }
+
+    public void listarClientes(@NonNull RepoCallback<QuerySnapshot> cb) {
+        FirestoreSchema.vendasClientesCol()
+                .orderBy("nome", Query.Direction.ASCENDING)
+                .get()
+                .addOnSuccessListener(cb::onSuccess)
                 .addOnFailureListener(cb::onError);
     }
 

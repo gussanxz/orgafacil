@@ -42,6 +42,8 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
     private TextView txtNumeroVenda;
     private TextView txtDataVenda;
     private TextView txtNomeCaixaComprovante;
+    private TextView txtClienteComprovante;
+    private TextView txtVendedorComprovante;
     private TextView txtFormaPagamento;
     private LinearLayout layoutTrocoComprovante;
     private TextView txtValorRecebidoComprovante;
@@ -106,6 +108,8 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         txtNumeroVenda          = findViewById(R.id.txtNumeroVenda);
         txtDataVenda            = findViewById(R.id.txtDataVenda);
         txtNomeCaixaComprovante = findViewById(R.id.txtNomeCaixaComprovante);
+        txtClienteComprovante   = findViewById(R.id.txtClienteComprovante);
+        txtVendedorComprovante  = findViewById(R.id.txtVendedorComprovante);
         txtFormaPagamento       = findViewById(R.id.txtFormaPagamentoComprovante);
         layoutTrocoComprovante  = findViewById(R.id.layoutTrocoComprovante);
         txtValorRecebidoComprovante = findViewById(R.id.txtValorRecebidoComprovante);
@@ -170,6 +174,16 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
         if (txtNomeCaixaComprovante != null) {
             String nome = venda.getNomeCaixa();
             txtNomeCaixaComprovante.setText("Caixa: " + (nome != null && !nome.isEmpty() ? nome : "—"));
+        }
+        if (txtClienteComprovante != null) {
+            String cliente = venda.getClienteNome();
+            txtClienteComprovante.setText("Cliente: "
+                    + (cliente != null && !cliente.trim().isEmpty() ? cliente : "Venda avulsa"));
+        }
+        if (txtVendedorComprovante != null) {
+            String vendedor = venda.getVendedorNome();
+            txtVendedorComprovante.setText("Vendedor: "
+                    + (vendedor != null && !vendedor.trim().isEmpty() ? vendedor : "—"));
         }
 
         // Forma de pagamento
@@ -291,6 +305,12 @@ public class ComprovanteVendaActivity extends AppCompatActivity {
             intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, venda.getCaixaId());
         if (venda.getNomeCaixa() != null)
             intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, venda.getNomeCaixa());
+        if (venda.getClienteId() != null)
+            intent.putExtra("clienteId", venda.getClienteId());
+        if (venda.getClienteNome() != null)
+            intent.putExtra("clienteNome", venda.getClienteNome());
+        if (venda.getClienteTelefone() != null)
+            intent.putExtra("clienteTelefone", venda.getClienteTelefone());
         startActivity(intent);
     }
 

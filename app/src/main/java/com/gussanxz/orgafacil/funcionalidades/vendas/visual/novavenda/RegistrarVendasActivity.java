@@ -70,6 +70,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
     private String formaPagamentoOriginalEdicao = null;
     private double valorRecebidoDinheiroOriginalEdicao = 0.0;
     private int numeroVendaEdicao = 0;
+    private String clienteIdEdicao = null;
+    private String clienteNomeEdicao = null;
+    private String clienteTelefoneEdicao = null;
 
     private final NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
@@ -257,6 +260,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         intent.putExtra("valorTotal",      viewModel.getValorTotal());
         if (caixaId != null)   intent.putExtra(FechamentoVendaActivity.EXTRA_CAIXA_ID, caixaId);
         if (nomeCaixa != null) intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, nomeCaixa);
+        if (clienteIdEdicao != null) intent.putExtra("clienteId", clienteIdEdicao);
+        if (clienteNomeEdicao != null) intent.putExtra("clienteNome", clienteNomeEdicao);
+        if (clienteTelefoneEdicao != null) intent.putExtra("clienteTelefone", clienteTelefoneEdicao);
         if (vendaIdEdicao != null) {
             intent.putExtra("vendaId", vendaIdEdicao);
             if (dataHoraOriginalEdicao > 0)
@@ -575,6 +581,9 @@ public class RegistrarVendasActivity extends AppCompatActivity {
         formaPagamentoOriginalEdicao = getIntent().getStringExtra("formaPagamentoOriginal");
         valorRecebidoDinheiroOriginalEdicao = getIntent().getDoubleExtra("valorRecebidoDinheiroOriginal", 0.0);
         numeroVendaEdicao            = getIntent().getIntExtra("numeroVenda", 0);
+        clienteIdEdicao              = getIntent().getStringExtra("clienteId");
+        clienteNomeEdicao            = getIntent().getStringExtra("clienteNome");
+        clienteTelefoneEdicao        = getIntent().getStringExtra("clienteTelefone");
 
         ArrayList<ItemSacolaVendaModel> itensRecebidos =
                 (ArrayList<ItemSacolaVendaModel>) getIntent().getSerializableExtra("itensSacola");

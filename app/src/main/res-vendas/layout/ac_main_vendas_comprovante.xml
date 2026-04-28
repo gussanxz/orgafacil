@@ -49,6 +49,24 @@
                 android:text="Caixa: —"
                 android:textColor="@color/cor_texto_secundario"
                 android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/txtClienteComprovante"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Cliente: Venda avulsa"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/txtVendedorComprovante"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Vendedor: -"
+                android:textColor="@color/cor_texto_secundario"
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 
