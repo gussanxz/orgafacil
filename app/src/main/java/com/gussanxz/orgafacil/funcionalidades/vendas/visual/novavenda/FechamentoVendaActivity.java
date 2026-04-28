@@ -663,8 +663,11 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         boolean pagamentoEmDinheiro = VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada);
         double valorRecebido = obterValorRecebidoDinheiro();
-        double troco = Math.max(0.0, valorRecebido - valorTotal);
-        boolean insuficiente = pagamentoEmDinheiro && valorRecebido + 0.001 < valorTotal;
+        boolean valorRecebidoInformado = valorRecebidoDinheiroInformado();
+        double troco = valorRecebidoInformado ? Math.max(0.0, valorRecebido - valorTotal) : 0.0;
+        boolean insuficiente = pagamentoEmDinheiro
+                && valorRecebidoInformado
+                && valorRecebido + 0.001 < valorTotal;
 
         if (txtTrocoDinheiro != null) {
             txtTrocoDinheiro.setText(formatadorMoeda.format(troco));
@@ -678,8 +681,13 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         return valorRecebidoWatcher != null ? valorRecebidoWatcher.getValorDouble() : 0.0;
     }
 
+    private boolean valorRecebidoDinheiroInformado() {
+        return obterValorRecebidoDinheiro() > 0.001;
+    }
+
     private boolean dinheiroValido() {
         if (!VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada)) return true;
+        if (!valorRecebidoDinheiroInformado()) return true;
         return obterValorRecebidoDinheiro() + 0.001 >= valorTotal;
     }
 
@@ -804,8 +812,13 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         venda.setValorTotal(valorTotal);
         if (VendaModel.PAGAMENTO_DINHEIRO.equals(formaPagamentoSelecionada)) {
             double valorRecebido = obterValorRecebidoDinheiro();
-            venda.setValorRecebidoDinheiro(valorRecebido);
-            venda.setTrocoDinheiro(Math.max(0.0, valorRecebido - valorTotal));
+            if (valorRecebidoDinheiroInformado()) {
+                venda.setValorRecebidoDinheiro(valorRecebido);
+                venda.setTrocoDinheiro(Math.max(0.0, valorRecebido - valorTotal));
+            } else {
+                venda.setValorRecebidoDinheiro(0.0);
+                venda.setTrocoDinheiro(0.0);
+            }
         } else {
             venda.setValorRecebidoDinheiro(0.0);
             venda.setTrocoDinheiro(0.0);

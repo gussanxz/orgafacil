@@ -501,7 +501,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Valor recebido em espécie"
+                    android:text="Valor recebido em espécie (opcional)"
                     android:textColor="@color/cor_texto_primario"
                     android:textSize="14sp"
                     android:textStyle="bold" />
