@@ -16,49 +16,116 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
             android:layout_marginBottom="12dp">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Evolução de Vendas"
+                android:text="Evolu&#231;&#227;o de Vendas"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@color/cor_texto"/>
+                android:textColor="@color/cor_texto"
+                android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupEvolucaoVendas"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:chipSpacingHorizontal="4dp">
 
                 <com.google.android.material.chip.Chip
-                    android:id="@+id/chipEv3m"
+                    android:id="@+id/chipEvDia"
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3m"/>
+                    android:text="Dia"/>
 
                 <com.google.android.material.chip.Chip
-                    android:id="@+id/chipEv6m"
+                    android:id="@+id/chipEvSemana"
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="6m"/>
+                    android:text="Semana"/>
 
                 <com.google.android.material.chip.Chip
-                    android:id="@+id/chipEv12m"
+                    android:id="@+id/chipEv15Dias"
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12m"/>
+                    android:text="15 dias"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipEvMesAtual"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="M&#234;s atual"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipEvIntervalo"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Intervalo"/>
             </com.google.android.material.chip.ChipGroup>
+
+            <LinearLayout
+                android:id="@+id/layoutEvDiaData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEvDiaSelecionado"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dia"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_calendar_month_24"
+                    app:iconGravity="textStart"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutEvIntervaloDatas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEvDataInicial"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="In&#237;cio"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_calendar_month_24"
+                    app:iconGravity="textStart"/>
+
+                <Space
+                    android:layout_width="8dp"
+                    android:layout_height="1dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEvDataFinal"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Fim"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_calendar_month_24"
+                    app:iconGravity="textStart"/>
+            </LinearLayout>
         </LinearLayout>
 
         <com.github.mikephil.charting.charts.BarChart
@@ -91,7 +158,7 @@
                         android:id="@+id/txtEvolucaoMelhorMes"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Melhor mês: —"
+                        android:text="Melhor per&#237;odo: -"
                         android:textColor="@color/cor_texto"
                         android:textSize="13sp"
                         android:textStyle="bold"/>
@@ -108,7 +175,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Resumo do período -->
+        <!-- Resumo do periodo -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -132,7 +199,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Total no período"
+                        android:text="Total no per&#237;odo"
                         android:textColor="@color/cor_texto_secundario"
                         android:textSize="11sp"/>
 
@@ -192,7 +259,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Média mensal"
+                        android:id="@+id/txtEvMediaLabel"
+                        android:text="M&#233;dia por dia"
                         android:textColor="@color/cor_texto_secundario"
                         android:textSize="11sp"/>
 
