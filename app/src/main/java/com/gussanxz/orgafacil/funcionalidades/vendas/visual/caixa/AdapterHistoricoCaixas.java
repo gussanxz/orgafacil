@@ -94,11 +94,11 @@ public class AdapterHistoricoCaixas extends RecyclerView.Adapter<AdapterHistoric
         // Badge de status
         h.txtCaixaStatusBadge.setText(aberto ? "ABERTO" : "FECHADO");
         if (aberto) {
-            h.txtCaixaStatusBadge.setBackgroundResource(R.drawable.bg_status_ativo);
-            h.txtCaixaStatusBadge.setTextColor(Color.parseColor("#2E7D32"));
+            h.txtCaixaStatusBadge.setBackgroundResource(R.drawable.bg_caixa_status_aberto);
+            h.txtCaixaStatusBadge.setTextColor(Color.parseColor("#2EE6D6"));
         } else {
-            h.txtCaixaStatusBadge.setBackgroundResource(R.drawable.bg_status_finalizada);
-            h.txtCaixaStatusBadge.setTextColor(Color.parseColor("#1565C0"));
+            h.txtCaixaStatusBadge.setBackgroundResource(R.drawable.bg_caixa_status_fechado);
+            h.txtCaixaStatusBadge.setTextColor(Color.parseColor("#A8B3C7"));
         }
 
         // Horários
