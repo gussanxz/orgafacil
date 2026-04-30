@@ -134,9 +134,9 @@ public class ExportacaoRelatorioFragment extends Fragment {
     private void atualizarSelecaoFormato(boolean isPdf) {
         this.isPdfSelected = isPdf;
 
-        int corAtivaFundo = ContextCompat.getColor(requireContext(), R.color.colorPrimary);
-        int corInativaFundo = Color.parseColor("#252A40");
-        int corInativaTexto = Color.parseColor("#9E9E9E");
+        int corAtivaFundo = ContextCompat.getColor(requireContext(), R.color.cor_fundo_header_resumo_contas);
+        int corInativaFundo = ContextCompat.getColor(requireContext(), R.color.cor_fundo_cards);
+        int corInativaTexto = ContextCompat.getColor(requireContext(), R.color.cor_texto_secundario);
 
         // Atualiza PDF
         cardFormatoPdf.setCardBackgroundColor(isPdf ? corAtivaFundo : corInativaFundo);

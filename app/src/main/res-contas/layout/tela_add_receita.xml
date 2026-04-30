@@ -25,7 +25,7 @@
             android:onClick="retornarPrincipal"
             app:backgroundTint="@color/colorPrimaryProventos"
             app:tint="@color/white"
-            app:elevation="4dp"
+            app:elevation="0dp"
             app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/textViewHeader"
@@ -34,9 +34,9 @@
         <TextView
             android:id="@+id/textViewHeader"
             android:layout_width="0dp"
-            android:layout_height="70dp"
+            android:layout_height="76dp"
             android:gravity="center"
-            android:text="Adicionar Receita"
+            android:text="Agendar Receita"
             android:textAlignment="gravity"
             android:textColor="@color/white"
             android:textSize="20sp"
@@ -55,7 +55,7 @@
             android:onClick="salvarProventos"
             app:backgroundTint="@color/colorPrimaryProventos"
             app:tint="@color/white"
-            app:elevation="4dp"
+            app:elevation="0dp"
             app:layout_constraintBottom_toBottomOf="@+id/textViewHeader"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/textViewHeader"
@@ -79,7 +79,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Valor da receita"
+                android:text="VALOR DA RECEITA"
                 android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold"
@@ -96,7 +96,7 @@
                 android:inputType="numberDecimal"
                 android:textColor="@color/white"
                 android:textColorHint="#99FFFFFF"
-                android:textSize="40sp"
+                android:textSize="44sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -111,8 +111,8 @@
         android:gravity="center_vertical"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp"
         android:background="@color/cor_background"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -136,13 +136,15 @@
 
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fabInferiorSalvarCategoria"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
             android:clickable="true"
             android:onClick="salvarProventos"
             android:text="Salvar"
             android:textColor="@color/white"
             app:backgroundTint="@color/colorAccentProventos"
+            app:cornerRadius="16dp"
             app:icon="@drawable/ic_confirmar_branco_24"
             app:iconTint="@color/white" />
 
@@ -163,7 +165,7 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="24dp"
+            android:paddingTop="28dp"
             android:paddingBottom="32dp">
 
             <LinearLayout
@@ -205,6 +207,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
+                app:boxBackgroundColor="@color/cor_background"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeColor="@color/cor_divisor"
                 android:layout_marginTop="8dp"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -226,6 +234,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
+                app:boxBackgroundColor="@color/cor_background"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeColor="@color/cor_divisor"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textInputValor"
@@ -245,6 +259,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="12dp"
+                app:boxBackgroundColor="@color/cor_background"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:boxStrokeColor="@color/cor_divisor"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/textInputDescricao"
@@ -293,6 +313,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
+                    app:boxBackgroundColor="@color/cor_background"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxStrokeColor="@color/cor_divisor"
                     app:startIconDrawable="@drawable/ic_calendar_month_24">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -310,6 +336,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    app:boxBackgroundColor="@color/cor_background"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxStrokeColor="@color/cor_divisor"
                     app:startIconDrawable="@drawable/ic_relogio_24">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -343,10 +375,10 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="@color/cor_background"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E0E0E0"
+                app:strokeColor="@color/cor_divisor"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/labelInfoAdicionais">
@@ -401,10 +433,10 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="@color/cor_background"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E0E0E0"
+                app:strokeColor="@color/cor_divisor"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/labelRecorrencia">

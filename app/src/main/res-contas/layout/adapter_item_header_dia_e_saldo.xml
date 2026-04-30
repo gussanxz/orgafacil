@@ -4,13 +4,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginEnd="8dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginBottom="2dp"
-    card_view:cardUseCompatPadding="true"
-    card_view:cardElevation="2dp"
-    card_view:cardCornerRadius="12dp"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginBottom="8dp"
+    card_view:cardUseCompatPadding="false"
+    card_view:cardElevation="0dp"
+    card_view:cardCornerRadius="14dp"
     card_view:cardBackgroundColor="@color/cardDiaBackground">
 
     <LinearLayout
@@ -26,9 +26,9 @@
             android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp"
-            android:background="@color/cardDiaHeaderBackground"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:background="@color/cardDiaBackground"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?android:attr/selectableItemBackground">
@@ -42,7 +42,7 @@
                 android:textAllCaps="true"
                 android:textStyle="bold"
                 android:textSize="14sp"
-                android:textColor="@color/cardDiaTextPrimary" />
+                android:textColor="@color/cardDiaTextSecondary" />
 
             <ImageView
                 android:layout_width="20dp"
@@ -54,7 +54,7 @@
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="0dp"
             android:background="@color/cardDiaDivider" />
 
     </LinearLayout>

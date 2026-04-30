@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/header_background">
+    android:background="@color/cor_background">
 
     <!--
         Conteúdo principal — paddingBottom cobre bolinhas (34dp) + BottomAppBar (64dp) = 98dp
@@ -16,6 +16,66 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingBottom="98dp">
+
+        <LinearLayout
+            android:id="@+id/headerRelatorios"
+            android:layout_width="match_parent"
+            android:layout_height="96dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp"
+            android:background="@color/cor_background">
+
+            <ImageButton
+                android:id="@+id/btnVoltarRelatorios"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_campo_busca"
+                android:contentDescription="@string/voltar"
+                android:onClick="retornarPrincipal"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_back_24"
+                app:tint="@color/cor_texto" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Relatórios"
+                    android:textColor="@color/cor_texto"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textPeriodoRelatorios"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Abril 2026"
+                    android:textColor="@color/cor_texto_secundario"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnSelecionarPeriodoRelatorios"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_campo_busca"
+                android:contentDescription="Selecionar período"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_down_24"
+                app:tint="@color/cor_texto" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/cor_divisor" />
 
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/viewPagerRelatorios"
@@ -66,7 +126,7 @@
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:layout_gravity="bottom"
-        app:backgroundTint="@color/colorPrimary"
+        app:backgroundTint="@color/cor_background"
         app:contentInsetStart="0dp"
         app:contentInsetEnd="0dp">
 
@@ -90,13 +150,13 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_analytics_24"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_fundo_header_resumo_contas" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="RESUMO"
-                    android:textColor="#FFFFFF"
-                    android:textSize="9sp"
+                    android:textColor="@color/cor_fundo_header_resumo_contas"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -113,13 +173,13 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_evolucao_24"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_fundo_header_resumo_contas" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="EVOLUÇÃO"
-                    android:textColor="#FFFFFF"
-                    android:textSize="9sp"
+                    android:textColor="@color/cor_fundo_header_resumo_contas"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -136,13 +196,13 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_planos_24"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_fundo_header_resumo_contas" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="PLANOS"
-                    android:textColor="#FFFFFF"
-                    android:textSize="9sp"
+                    android:textColor="@color/cor_fundo_header_resumo_contas"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -159,13 +219,13 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_exportar_24"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/cor_fundo_header_resumo_contas" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="EXPORTAR"
-                    android:textColor="#FFFFFF"
-                    android:textSize="9sp"
+                    android:textColor="@color/cor_fundo_header_resumo_contas"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 

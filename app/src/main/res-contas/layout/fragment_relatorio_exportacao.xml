@@ -12,6 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="70dp"
         android:background="@color/colorPrimary"
+        android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -52,7 +53,7 @@
         app:layout_constraintBottom_toTopOf="@id/layoutBotaoExportar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header">
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -184,10 +185,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="#252A40"
+                    app:cardBackgroundColor="@color/cor_fundo_cards"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeWidth="0dp"
+                    app:strokeColor="@color/cor_fundo_header_resumo_contas"
+                    app:strokeWidth="1dp"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -195,8 +197,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+                            android:gravity="start|center_vertical"
+                            android:padding="16dp">
                         <ImageView
                             android:id="@+id/iconFormatoPdf"
                             android:layout_width="32dp"
@@ -220,10 +222,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    app:cardBackgroundColor="#252A40"
+                    app:cardBackgroundColor="@color/cor_fundo_cards"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeWidth="0dp"
+                    app:strokeColor="@color/cor_divisor"
+                    app:strokeWidth="1dp"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -231,8 +234,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="16dp">
+                            android:gravity="start|center_vertical"
+                            android:padding="16dp">
                         <ImageView
                             android:id="@+id/iconFormatoCsv"
                             android:layout_width="32dp"
@@ -412,7 +415,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:id="@+id/layoutBotaoExportar"
@@ -420,7 +423,9 @@
         android:layout_height="wrap_content"
         android:background="@color/cor_background"
         android:elevation="16dp"
-        android:padding="16dp"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -434,8 +439,8 @@
             android:textStyle="bold"
             app:icon="@drawable/ic_receipt_long_28"
             app:iconGravity="textStart"
-            app:cornerRadius="12dp"
-            android:backgroundTint="@color/colorPrimary" />
+            app:cornerRadius="18dp"
+            android:backgroundTint="@color/cor_fundo_header_resumo_contas" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

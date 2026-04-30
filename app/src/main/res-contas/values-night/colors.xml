@@ -7,29 +7,29 @@
 <resources>
 
     <!-- HEADER E BOTTOM BAR -->
-    <color name="cor_fundo_header_resumo_contas">#00B7C3</color>
-    <color name="cor_fundo_inferior_resumo_contas">#00B7C3</color>
-    <color name="cor_texto_abas_footer_resumo_contas">#FFFFFF</color>
+    <color name="cor_fundo_header_resumo_contas">#35BDB2</color>
+    <color name="cor_fundo_inferior_resumo_contas">#35BDB2</color>
+    <color name="cor_texto_abas_footer_resumo_contas">#102024</color>
 
     <!-- TEXTOS DO HEADER (sobre fundo teal)
          No modo escuro, todos os textos são brancos -->
-    <color name="cor_texto_header">#FFFFFF</color>
-    <color name="cor_texto_header_secundario">#CCFFFFFF</color>
-    <color name="cor_saldo_header">#FFFFFF</color>
-    <color name="cor_olho_header">#FFFFFF</color>
+    <color name="cor_texto_header">#102024</color>
+    <color name="cor_texto_header_secundario">#99102024</color>
+    <color name="cor_saldo_header">#061316</color>
+    <color name="cor_olho_header">#102024</color>
 
     <!-- BOTÃO RELATÓRIOS: pill branco semitransparente, texto branco -->
     <color name="cor_fundo_btn_relatorios">#26FFFFFF</color>
-    <color name="cor_texto_btn_relatorios">#FFFFFF</color>
+    <color name="cor_texto_btn_relatorios">#102024</color>
 
     <!-- ABAS -->
-    <color name="cor_tab_texto_ativo">#00B7C3</color>
+    <color name="cor_tab_texto_ativo">#35BDB2</color>
     <color name="cor_tab_texto_inativo">#888888</color>
-    <color name="cor_tab_indicador">#00B7C3</color>
+    <color name="cor_tab_indicador">#35BDB2</color>
 
     <!-- CAMPO DE BUSCA -->
-    <color name="cor_fundo_busca">#2A3244</color>
-    <color name="cor_hint_busca">#777777</color>
+    <color name="cor_fundo_busca">#101B20</color>
+    <color name="cor_hint_busca">#7D8C96</color>
     <color name="cor_texto_busca">#FFFFFF</color>
 
     <!-- CHIPS: TODOS = oval branco, texto escuro | RECEITAS/DESPESAS = transparente, texto branco -->
@@ -38,7 +38,7 @@
     <!-- chip_background: res-contas/color-night/chip_background.xml -->
 
     <!-- CARDS DE RELATÓRIOS -->
-    <color name="cor_fundo_cards">#2E3A45</color>
+    <color name="cor_fundo_cards">#101B20</color>
 
     <!-- LABEL DO MENU RADIAL -->
     <color name="bg_label_menu">#CC000000</color>
