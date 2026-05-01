@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -538,11 +539,9 @@ public class FechamentoVendaActivity extends AppCompatActivity {
 
         if (btnAlterarCaixa == null) return;
 
-        // O botão de alteração fica visível apenas em modo edição
-        if (modoEdicao) {
-            btnAlterarCaixa.setVisibility(android.view.View.VISIBLE);
-            btnAlterarCaixa.setOnClickListener(v -> abrirDialogAlterarCaixa());
-        }
+        // Permite vincular venda nova ou edicao a um caixa antigo compativel.
+        btnAlterarCaixa.setVisibility(android.view.View.VISIBLE);
+        btnAlterarCaixa.setOnClickListener(v -> abrirDialogAlterarCaixa());
     }
 
     private void atualizarExibicaoCaixa() {
@@ -557,7 +556,7 @@ public class FechamentoVendaActivity extends AppCompatActivity {
                 ? dataEscolhida.getTimeInMillis()
                 : System.currentTimeMillis();
 
-        caixaRepository.listarCaixasRecentes(100, new CaixaRepository.ListaCaixaCallback() {
+        caixaRepository.listarTodosCaixasHistorico(new CaixaRepository.ListaCaixaCallback() {
             @Override
             public void onCaixas(java.util.List<CaixaModel> lista) {
                 // Filtra caixas compatíveis com o horário da venda
@@ -726,6 +725,10 @@ public class FechamentoVendaActivity extends AppCompatActivity {
             Toast.makeText(this, "Valor recebido em dinheiro insuficiente.", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (dataEscolhida != null && dataEscolhida.getTimeInMillis() > System.currentTimeMillis()) {
+            Toast.makeText(this, "A data e hora da venda nao podem ficar no futuro.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         salvandoVenda = true;
         atualizarBotaoFinalizar();
@@ -733,23 +736,61 @@ public class FechamentoVendaActivity extends AppCompatActivity {
         garantirCaixaAntesDeSalvar(new Runnable() {
             @Override
             public void run() {
-                vendaRepository.salvar(montarVendaParaSalvar(), new VendaRepository.Callback() {
-                    @Override
-                    public void onSucesso(String vendaId) {
-                        salvandoVenda = false;
-                        atualizarBotaoFinalizar();
-                        atualizarUltimaCompraCliente();
-                        abrirComprovante(vendaId);
-                    }
+                validarCaixaSelecionadoAntesDeSalvar(() ->
+                        vendaRepository.salvar(montarVendaParaSalvar(), new VendaRepository.Callback() {
+                            @Override
+                            public void onSucesso(String vendaId) {
+                                salvandoVenda = false;
+                                atualizarBotaoFinalizar();
+                                atualizarUltimaCompraCliente();
+                                abrirComprovante(vendaId);
+                            }
 
-                    @Override
-                    public void onErro(String erro) {
-                        salvandoVenda = false;
-                        atualizarBotaoFinalizar();
-                        Toast.makeText(FechamentoVendaActivity.this,
-                                "Erro ao salvar venda: " + erro, Toast.LENGTH_LONG).show();
-                    }
-                });
+                            @Override
+                            public void onErro(String erro) {
+                                salvandoVenda = false;
+                                atualizarBotaoFinalizar();
+                                Toast.makeText(FechamentoVendaActivity.this,
+                                        "Erro ao salvar venda: " + erro, Toast.LENGTH_LONG).show();
+                            }
+                        }));
+            }
+        });
+    }
+
+    private void validarCaixaSelecionadoAntesDeSalvar(@NonNull Runnable onValido) {
+        if (caixaId == null || caixaId.trim().isEmpty()) {
+            onValido.run();
+            return;
+        }
+
+        long vendaMillis = dataEscolhida != null
+                ? dataEscolhida.getTimeInMillis()
+                : System.currentTimeMillis();
+
+        caixaRepository.buscarCaixaPorId(caixaId, new CaixaRepository.CaixaCallback() {
+            @Override
+            public void onCaixa(CaixaModel caixa) {
+                if (caixa == null || !caixaEhCompativel(caixa, vendaMillis)) {
+                    salvandoVenda = false;
+                    atualizarBotaoFinalizar();
+                    Toast.makeText(FechamentoVendaActivity.this,
+                            "Selecione um caixa compatível com a data e hora da venda.",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                nomeCaixa = caixa.getNomeCaixa();
+                atualizarExibicaoCaixa();
+                onValido.run();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                salvandoVenda = false;
+                atualizarBotaoFinalizar();
+                Toast.makeText(FechamentoVendaActivity.this,
+                        "Erro ao validar caixa da venda: " + erro,
+                        Toast.LENGTH_LONG).show();
             }
         });
     }

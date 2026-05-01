@@ -1,6 +1,8 @@
 package com.gussanxz.orgafacil.funcionalidades.vendas.visual.caixa;
 
 import android.content.Intent;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -30,10 +33,13 @@ import com.gussanxz.orgafacil.funcionalidades.vendas.dados.VendaRepository;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.CaixaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.negocio.modelos.VendaModel;
 import com.gussanxz.orgafacil.funcionalidades.vendas.visual.gestaoerelatorios.VendasEmAbertoActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.FechamentoVendaActivity;
+import com.gussanxz.orgafacil.funcionalidades.vendas.visual.novavenda.RegistrarVendasActivity;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -67,6 +73,14 @@ public class FecharCaixaActivity extends AppCompatActivity {
     private LinearLayout secaoCaixaFechado;
     private EditText     etObservacaoCaixa;
     private CheckBox     cbPermiteLancamentoTardio;
+    private CheckBox     cbCaixaRetroativo;
+    private LinearLayout layoutPeriodoRetroativo;
+    private TextView     txtAberturaRetroativa;
+    private TextView     txtFechamentoRetroativo;
+    private ImageButton  btnDataAberturaRetroativa;
+    private ImageButton  btnHoraAberturaRetroativa;
+    private ImageButton  btnDataFechamentoRetroativa;
+    private ImageButton  btnHoraFechamentoRetroativa;
     private LinearLayout btnAbrirCaixa;
 
     // Seção HISTÓRICO
@@ -97,6 +111,8 @@ public class FecharCaixaActivity extends AppCompatActivity {
 
     private CaixaModel caixaAtual  = null;
     private boolean    operando    = false; // evita duplo clique
+    private Calendar aberturaRetroativa;
+    private Calendar fechamentoRetroativo;
     private final Handler tempoAbertoHandler = new Handler(Looper.getMainLooper());
     private Runnable atualizacaoTempoAberto;
 
@@ -108,6 +124,8 @@ public class FecharCaixaActivity extends AppCompatActivity {
             "HH:mm", new Locale("pt", "BR"));
     private final SimpleDateFormat fmtDataAbertura  = new SimpleDateFormat(
             "dd/MM/yyyy", new Locale("pt", "BR"));
+    private final SimpleDateFormat fmtDataHoraCaixa  = new SimpleDateFormat(
+            "dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
     private final NumberFormat     fmtMoeda = NumberFormat.getCurrencyInstance(
             new Locale("pt", "BR"));
 
@@ -156,10 +174,19 @@ public class FecharCaixaActivity extends AppCompatActivity {
         secaoCaixaFechado        = findViewById(R.id.secaoCaixaFechado);
         etObservacaoCaixa        = findViewById(R.id.etObservacaoCaixa);
         cbPermiteLancamentoTardio = findViewById(R.id.cbPermiteLancamentoTardio);
+        cbCaixaRetroativo        = findViewById(R.id.cbCaixaRetroativo);
+        layoutPeriodoRetroativo  = findViewById(R.id.layoutPeriodoRetroativo);
+        txtAberturaRetroativa    = findViewById(R.id.txtAberturaRetroativa);
+        txtFechamentoRetroativo  = findViewById(R.id.txtFechamentoRetroativo);
+        btnDataAberturaRetroativa = findViewById(R.id.btnDataAberturaRetroativa);
+        btnHoraAberturaRetroativa = findViewById(R.id.btnHoraAberturaRetroativa);
+        btnDataFechamentoRetroativa = findViewById(R.id.btnDataFechamentoRetroativa);
+        btnHoraFechamentoRetroativa = findViewById(R.id.btnHoraFechamentoRetroativa);
         btnAbrirCaixa            = findViewById(R.id.btnAbrirCaixa);
 
         if (btnAbrirCaixa  != null) btnAbrirCaixa.setOnClickListener(v  -> executarAbertura());
         if (btnFecharCaixa != null) btnFecharCaixa.setOnClickListener(v -> confirmarFechamento());
+        configurarPeriodoRetroativo();
 
         secaoHistoricoCaixas       = findViewById(R.id.secaoHistoricoCaixas);
         rvHistoricoCaixas          = findViewById(R.id.rvHistoricoCaixas);
@@ -171,6 +198,81 @@ public class FecharCaixaActivity extends AppCompatActivity {
         chipHistorico50 = findViewById(R.id.chipHistorico50);
         btnPaginaAnteriorHistorico = findViewById(R.id.btnPaginaAnteriorHistorico);
         btnPaginaProximaHistorico  = findViewById(R.id.btnPaginaProximaHistorico);
+    }
+
+    private void configurarPeriodoRetroativo() {
+        aberturaRetroativa = Calendar.getInstance();
+        aberturaRetroativa.set(Calendar.HOUR_OF_DAY, 8);
+        aberturaRetroativa.set(Calendar.MINUTE, 0);
+        aberturaRetroativa.set(Calendar.SECOND, 0);
+        aberturaRetroativa.set(Calendar.MILLISECOND, 0);
+
+        fechamentoRetroativo = (Calendar) aberturaRetroativa.clone();
+        fechamentoRetroativo.set(Calendar.HOUR_OF_DAY, 18);
+
+        if (cbCaixaRetroativo != null) {
+            cbCaixaRetroativo.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (layoutPeriodoRetroativo != null) {
+                    layoutPeriodoRetroativo.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                }
+                if (isChecked && cbPermiteLancamentoTardio != null) {
+                    cbPermiteLancamentoTardio.setChecked(true);
+                }
+            });
+        }
+
+        if (btnDataAberturaRetroativa != null)
+            btnDataAberturaRetroativa.setOnClickListener(v -> abrirDatePickerCaixa(aberturaRetroativa));
+        if (btnHoraAberturaRetroativa != null)
+            btnHoraAberturaRetroativa.setOnClickListener(v -> abrirTimePickerCaixa(aberturaRetroativa));
+        if (btnDataFechamentoRetroativa != null)
+            btnDataFechamentoRetroativa.setOnClickListener(v -> abrirDatePickerCaixa(fechamentoRetroativo));
+        if (btnHoraFechamentoRetroativa != null)
+            btnHoraFechamentoRetroativa.setOnClickListener(v -> abrirTimePickerCaixa(fechamentoRetroativo));
+
+        atualizarPeriodoRetroativo();
+    }
+
+    private void abrirDatePickerCaixa(@NonNull Calendar alvo) {
+        new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    alvo.set(Calendar.YEAR, year);
+                    alvo.set(Calendar.MONTH, month);
+                    alvo.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    atualizarPeriodoRetroativo();
+                },
+                alvo.get(Calendar.YEAR),
+                alvo.get(Calendar.MONTH),
+                alvo.get(Calendar.DAY_OF_MONTH)
+        ) {{
+            getDatePicker().setMaxDate(System.currentTimeMillis());
+        }}.show();
+    }
+
+    private void abrirTimePickerCaixa(@NonNull Calendar alvo) {
+        new TimePickerDialog(
+                this,
+                (view, hourOfDay, minute) -> {
+                    alvo.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    alvo.set(Calendar.MINUTE, minute);
+                    alvo.set(Calendar.SECOND, 0);
+                    alvo.set(Calendar.MILLISECOND, 0);
+                    atualizarPeriodoRetroativo();
+                },
+                alvo.get(Calendar.HOUR_OF_DAY),
+                alvo.get(Calendar.MINUTE),
+                true
+        ).show();
+    }
+
+    private void atualizarPeriodoRetroativo() {
+        if (txtAberturaRetroativa != null && aberturaRetroativa != null) {
+            txtAberturaRetroativa.setText(fmtDataHoraCaixa.format(aberturaRetroativa.getTime()));
+        }
+        if (txtFechamentoRetroativo != null && fechamentoRetroativo != null) {
+            txtFechamentoRetroativo.setText(fmtDataHoraCaixa.format(fechamentoRetroativo.getTime()));
+        }
     }
 
     // ── Histórico de caixas ─────────────────────────────────────────────
@@ -558,9 +660,74 @@ public class FecharCaixaActivity extends AppCompatActivity {
         }
 
         View btnReabrirDetalhesCaixa = view.findViewById(R.id.btnReabrirDetalhesCaixa);
+        View btnExcluirDetalhesCaixa = view.findViewById(R.id.btnExcluirDetalhesCaixa);
         View btnFecharDetalhesCaixa = view.findViewById(R.id.btnFecharDetalhesCaixa);
         configurarReaberturaNoDialog(caixa, dialog, btnReabrirDetalhesCaixa);
+        configurarExclusaoNoDialog(caixa, vendas, dialog, btnExcluirDetalhesCaixa);
         btnFecharDetalhesCaixa.setOnClickListener(v -> dialog.dismiss());
+    }
+
+    private void configurarExclusaoNoDialog(
+            @NonNull CaixaModel caixa,
+            List<VendaModel> vendas,
+            @NonNull AlertDialog dialog,
+            View btnExcluirDetalhesCaixa
+    ) {
+        if (btnExcluirDetalhesCaixa == null) return;
+
+        boolean podeExcluir = !caixa.isLegado()
+                && caixa.getId() != null
+                && (vendas == null || vendas.isEmpty());
+
+        btnExcluirDetalhesCaixa.setVisibility(podeExcluir ? View.VISIBLE : View.GONE);
+        btnExcluirDetalhesCaixa.setEnabled(podeExcluir);
+
+        if (!podeExcluir) return;
+
+        btnExcluirDetalhesCaixa.setOnClickListener(v ->
+                new AlertDialog.Builder(this)
+                        .setTitle("Excluir caixa")
+                        .setMessage("Deseja excluir o caixa " + caixa.getNomeCaixa() + "? Esta acao nao pode ser desfeita.")
+                        .setPositiveButton("Excluir", (d, w) ->
+                                executarExclusaoCaixa(caixa, dialog, btnExcluirDetalhesCaixa))
+                        .setNegativeButton("Cancelar", null)
+                        .show());
+    }
+
+    private void executarExclusaoCaixa(
+            @NonNull CaixaModel caixa,
+            @NonNull AlertDialog dialog,
+            View btnExcluirDetalhesCaixa
+    ) {
+        if (operando || caixa.getId() == null) return;
+        operando = true;
+
+        if (btnExcluirDetalhesCaixa != null) {
+            btnExcluirDetalhesCaixa.setEnabled(false);
+            btnExcluirDetalhesCaixa.setAlpha(0.5f);
+        }
+
+        caixaRepository.excluirCaixaSemVendas(caixa.getId(), new CaixaRepository.VoidCallback() {
+            @Override
+            public void onSucesso(String caixaId) {
+                operando = false;
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Caixa excluido.", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+                carregarHistorico();
+            }
+
+            @Override
+            public void onErro(String erro) {
+                operando = false;
+                if (btnExcluirDetalhesCaixa != null) {
+                    btnExcluirDetalhesCaixa.setEnabled(true);
+                    btnExcluirDetalhesCaixa.setAlpha(1f);
+                }
+                Toast.makeText(FecharCaixaActivity.this,
+                        "Erro ao excluir caixa: " + erro, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void configurarReaberturaNoDialog(
@@ -711,14 +878,138 @@ public class FecharCaixaActivity extends AppCompatActivity {
                 ? etObservacaoCaixa.getText().toString().trim() : "";
         boolean tardio  = cbPermiteLancamentoTardio != null
                 && cbPermiteLancamentoTardio.isChecked();
+        boolean retroativo = cbCaixaRetroativo != null && cbCaixaRetroativo.isChecked();
 
-        caixaRepository.abrirCaixa(obs.isEmpty() ? null : obs, tardio,
+        long abertoEmMillis = retroativo && aberturaRetroativa != null
+                ? aberturaRetroativa.getTimeInMillis()
+                : System.currentTimeMillis();
+        long fechadoEmMillis = retroativo && fechamentoRetroativo != null
+                ? fechamentoRetroativo.getTimeInMillis()
+                : 0L;
+
+        if (retroativo) {
+            if (fechadoEmMillis <= abertoEmMillis) {
+                operando = false;
+                habilitarBotaoAbrir(true);
+                Toast.makeText(this,
+                        "O fechamento deve ser depois da abertura.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (fechadoEmMillis > System.currentTimeMillis()) {
+                operando = false;
+                habilitarBotaoAbrir(true);
+                Toast.makeText(this,
+                        "O fechamento do caixa antigo nao pode ficar no futuro.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
+        verificarConflitoAntesDeAbrir(
+                obs.isEmpty() ? null : obs,
+                tardio,
+                retroativo,
+                abertoEmMillis,
+                fechadoEmMillis
+        );
+    }
+
+    private void verificarConflitoAntesDeAbrir(@Nullable String obs,
+                                               boolean tardio,
+                                               boolean retroativo,
+                                               long abertoEmMillis,
+                                               long fechadoEmMillis) {
+        caixaRepository.listarCaixasComConflito(null, abertoEmMillis, fechadoEmMillis,
+                new CaixaRepository.ListaCaixaCallback() {
+                    @Override
+                    public void onCaixas(List<CaixaModel> conflitos) {
+                        if (conflitos == null || conflitos.isEmpty()) {
+                            abrirCaixaAposConfirmacao(obs, tardio, retroativo,
+                                    abertoEmMillis, fechadoEmMillis);
+                            return;
+                        }
+
+                        new AlertDialog.Builder(FecharCaixaActivity.this)
+                                .setTitle("Horario em conflito")
+                                .setMessage(montarMensagemConflito(conflitos))
+                                .setPositiveButton("Continuar", (d, w) ->
+                                        abrirCaixaAposConfirmacao(obs, tardio, retroativo,
+                                                abertoEmMillis, fechadoEmMillis))
+                                .setNegativeButton("Cancelar", (d, w) -> {
+                                    operando = false;
+                                    habilitarBotaoAbrir(true);
+                                })
+                                .setOnCancelListener(d -> {
+                                    operando = false;
+                                    habilitarBotaoAbrir(true);
+                                })
+                                .show();
+                    }
+
+                    @Override
+                    public void onErro(String erro) {
+                        operando = false;
+                        habilitarBotaoAbrir(true);
+                        Toast.makeText(FecharCaixaActivity.this,
+                                "Erro ao verificar conflito de caixa: " + erro,
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private String montarMensagemConflito(@NonNull List<CaixaModel> conflitos) {
+        StringBuilder mensagem = new StringBuilder();
+        mensagem.append("Ja existe caixa com horario que se sobrepoe ao periodo informado.");
+        mensagem.append("\n\nConflitos encontrados:");
+
+        int limite = Math.min(conflitos.size(), 3);
+        for (int i = 0; i < limite; i++) {
+            CaixaModel c = conflitos.get(i);
+            mensagem.append("\n")
+                    .append(c.getNomeCaixa())
+                    .append(" - ")
+                    .append(formatarPeriodoCaixa(c));
+        }
+
+        if (conflitos.size() > limite) {
+            mensagem.append("\n... e mais ").append(conflitos.size() - limite);
+        }
+
+        mensagem.append("\n\nDeseja continuar mesmo assim?");
+        return mensagem.toString();
+    }
+
+    private String formatarPeriodoCaixa(@NonNull CaixaModel caixa) {
+        String abertura = caixa.getAbertoEmMillis() > 0
+                ? fmtDataHoraCaixa.format(new Date(caixa.getAbertoEmMillis()))
+                : "--/--/---- --:--";
+        String fechamento = caixa.getFechadoEmMillis() > 0
+                ? fmtDataHoraCaixa.format(new Date(caixa.getFechadoEmMillis()))
+                : "em aberto";
+        return abertura + " ate " + fechamento;
+    }
+
+    private void abrirCaixaAposConfirmacao(@Nullable String obs,
+                                           boolean tardio,
+                                           boolean retroativo,
+                                           long abertoEmMillis,
+                                           long fechadoEmMillis) {
+        caixaRepository.abrirCaixaComPeriodo(obs, tardio, abertoEmMillis, fechadoEmMillis,
                 new CaixaRepository.AbrirCaixaCallback() {
                     @Override
                     public void onSucesso(String caixaId, String nomeCaixa) {
-                        // listener atualiza a UI automaticamente
                         Toast.makeText(FecharCaixaActivity.this,
-                                "Caixa aberto!", Toast.LENGTH_SHORT).show();
+                                retroativo
+                                        ? "Caixa antigo criado."
+                                        : "Caixa aberto!",
+                                Toast.LENGTH_SHORT).show();
+                        if (retroativo) {
+                            operando = false;
+                            habilitarBotaoAbrir(true);
+                            carregarHistorico();
+                            sugerirVendaParaCaixaAntigo(caixaId, nomeCaixa);
+                        }
                     }
 
                     @Override
@@ -729,6 +1020,20 @@ public class FecharCaixaActivity extends AppCompatActivity {
                                 "Erro ao abrir caixa: " + erro, Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    private void sugerirVendaParaCaixaAntigo(@NonNull String caixaId, @NonNull String nomeCaixa) {
+        new AlertDialog.Builder(this)
+                .setTitle("Registrar venda?")
+                .setMessage("Caixa antigo criado. Deseja fazer uma venda para esse caixa agora?")
+                .setPositiveButton("Fazer venda", (d, w) -> {
+                    Intent intent = new Intent(this, RegistrarVendasActivity.class);
+                    intent.putExtra(RegistrarVendasActivity.EXTRA_CAIXA_ID, caixaId);
+                    intent.putExtra(FechamentoVendaActivity.EXTRA_NOME_CAIXA, nomeCaixa);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Depois", null)
+                .show();
     }
 
     // ── Fechamento ───────────────────────────────────────────────────────

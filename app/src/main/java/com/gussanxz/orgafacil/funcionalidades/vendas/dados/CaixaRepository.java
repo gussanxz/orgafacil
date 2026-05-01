@@ -117,11 +117,20 @@ public class CaixaRepository {
     public void abrirCaixa(@Nullable String observacao,
                             boolean permiteLancamentoTardio,
                             @NonNull AbrirCaixaCallback callback) {
+        abrirCaixaComPeriodo(observacao, permiteLancamentoTardio,
+                System.currentTimeMillis(), 0L, callback);
+    }
+
+    public void abrirCaixaComPeriodo(@Nullable String observacao,
+                                     boolean permiteLancamentoTardio,
+                                     long abertoEmMillis,
+                                     long fechadoEmMillis,
+                                     @NonNull AbrirCaixaCallback callback) {
         try {
             String caixaId = FirestoreSchema.vendasCaixaCol().document().getId();
-            long agora = System.currentTimeMillis();
-            String diaKeyAtual = FirestoreSchema.diaKey(new Date(agora));
-            String mesKeyAtual = FirestoreSchema.mesKey(new Date(agora));
+            String diaKeyAtual = FirestoreSchema.diaKey(new Date(abertoEmMillis));
+            String mesKeyAtual = FirestoreSchema.mesKey(new Date(abertoEmMillis));
+            boolean caixaJaFechado = fechadoEmMillis > 0L;
 
             // Conta caixas do dia para definir o numeroCaixa sequencial
             FirestoreSchema.vendasCaixaCol()
@@ -137,9 +146,11 @@ public class CaixaRepository {
 
                         Map<String, Object> data = new HashMap<>();
                         data.put("id",                    caixaId);
-                        data.put("status",                CaixaModel.STATUS_ABERTO);
-                        data.put("abertoEmMillis",         agora);
-                        data.put("fechadoEmMillis",        0L);
+                        data.put("status",                caixaJaFechado
+                                ? CaixaModel.STATUS_FECHADO
+                                : CaixaModel.STATUS_ABERTO);
+                        data.put("abertoEmMillis",         abertoEmMillis);
+                        data.put("fechadoEmMillis",        caixaJaFechado ? fechadoEmMillis : 0L);
                         data.put("diaKey",                diaKeyAtual);
                         data.put("mesKey",                mesKeyAtual);
                         data.put("observacao",            observacao != null ? observacao : "");
@@ -171,10 +182,18 @@ public class CaixaRepository {
                             int qtdVendas,
                             double valorTotal,
                             @NonNull VoidCallback callback) {
+        fecharCaixa(caixaId, qtdVendas, valorTotal, System.currentTimeMillis(), callback);
+    }
+
+    public void fecharCaixa(@NonNull String caixaId,
+                            int qtdVendas,
+                            double valorTotal,
+                            long fechadoEmMillis,
+                            @NonNull VoidCallback callback) {
         try {
             Map<String, Object> patch = new HashMap<>();
             patch.put("status",                 CaixaModel.STATUS_FECHADO);
-            patch.put("fechadoEmMillis",         System.currentTimeMillis());
+            patch.put("fechadoEmMillis",         fechadoEmMillis);
             patch.put("qtdVendasFechamento",     qtdVendas);
             patch.put("valorTotalFechamento",    valorTotal);
 
@@ -377,6 +396,98 @@ public class CaixaRepository {
     public interface ListaCaixaCallback {
         void onCaixas(java.util.List<CaixaModel> lista);
         void onErro(String erro);
+    }
+
+    public void listarCaixasComConflito(@Nullable String caixaIdIgnorado,
+                                        long abertoEmMillis,
+                                        long fechadoEmMillis,
+                                        @NonNull ListaCaixaCallback callback) {
+        try {
+            FirestoreSchema.vendasCaixaCol()
+                    .orderBy("abertoEmMillis", Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        java.util.List<CaixaModel> conflitos = new java.util.ArrayList<>();
+                        long fimNovo = fechadoEmMillis > 0L ? fechadoEmMillis : Long.MAX_VALUE;
+
+                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                            if (CaixaModel.ID_LEGADO.equals(doc.getId())) continue;
+                            if (caixaIdIgnorado != null && caixaIdIgnorado.equals(doc.getId())) continue;
+
+                            CaixaModel caixa = doc.toObject(CaixaModel.class);
+                            if (caixa == null) continue;
+                            caixa.setId(doc.getId());
+
+                            long inicioExistente = caixa.getAbertoEmMillis();
+                            long fimExistente = caixa.getFechadoEmMillis() > 0L
+                                    ? caixa.getFechadoEmMillis()
+                                    : Long.MAX_VALUE;
+
+                            boolean conflita = abertoEmMillis < fimExistente && fimNovo > inicioExistente;
+                            if (conflita) conflitos.add(caixa);
+                        }
+
+                        callback.onCaixas(conflitos);
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao verificar conflitos de caixa."));
+        } catch (IllegalStateException e) {
+            callback.onErro("UsuÃ¡rio nÃ£o logado");
+        }
+    }
+
+    public void excluirCaixaSemVendas(@NonNull String caixaId,
+                                      @NonNull VoidCallback callback) {
+        if (CaixaModel.ID_LEGADO.equals(caixaId)) {
+            callback.onErro("O caixa legado nao pode ser excluido.");
+            return;
+        }
+
+        try {
+            FirestoreSchema.vendasCaixaDoc(caixaId)
+                    .get()
+                    .addOnSuccessListener(caixaDoc -> {
+                        if (!caixaDoc.exists()) {
+                            callback.onErro("Caixa nao encontrado.");
+                            return;
+                        }
+
+                        CaixaModel caixa = caixaDoc.toObject(CaixaModel.class);
+                        if (caixa == null) {
+                            callback.onErro("Erro ao converter caixa.");
+                            return;
+                        }
+                        caixa.setId(caixaDoc.getId());
+                        String nomeCaixa = caixa.getNomeCaixa();
+
+                        FirestoreSchema.vendasVendasCol()
+                                .get()
+                                .addOnSuccessListener(vendasSnapshot -> {
+                                    for (DocumentSnapshot vendaDoc : vendasSnapshot.getDocuments()) {
+                                        String vendaCaixaId = vendaDoc.getString("caixaId");
+                                        String vendaNomeCaixa = vendaDoc.getString("nomeCaixa");
+                                        boolean pertenceAoCaixa = caixaId.equals(vendaCaixaId)
+                                                || (nomeCaixa != null && nomeCaixa.equals(vendaNomeCaixa));
+                                        if (pertenceAoCaixa) {
+                                            callback.onErro("Este caixa possui vendas e nao pode ser excluido.");
+                                            return;
+                                        }
+                                    }
+
+                                    FirestoreSchema.vendasCaixaDoc(caixaId)
+                                            .delete()
+                                            .addOnSuccessListener(v -> callback.onSucesso(caixaId))
+                                            .addOnFailureListener(e -> callback.onErro(
+                                                    e.getMessage() != null ? e.getMessage() : "Erro ao excluir caixa."));
+                                })
+                                .addOnFailureListener(e -> callback.onErro(
+                                        e.getMessage() != null ? e.getMessage() : "Erro ao validar vendas do caixa."));
+                    })
+                    .addOnFailureListener(e -> callback.onErro(
+                            e.getMessage() != null ? e.getMessage() : "Erro ao buscar caixa."));
+        } catch (IllegalStateException e) {
+            callback.onErro("UsuÃ¡rio nÃ£o logado");
+        }
     }
 
     /** Atualiza os campos de snapshot (qtdVendasFechamento / valorTotalFechamento) de qualquer caixa. */

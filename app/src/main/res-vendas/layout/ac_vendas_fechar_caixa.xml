@@ -364,6 +364,115 @@
                 </LinearLayout>
 
                 <!-- Botão Abrir Caixa -->
+                <CheckBox
+                    android:id="@+id/cbCaixaRetroativo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Criar caixa antigo ja fechado"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:id="@+id/layoutPeriodoRetroativo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_vendas_card"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Abertura"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtAberturaRetroativa"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--/--/---- --:--"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <ImageButton
+                            android:id="@+id/btnDataAberturaRetroativa"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Data de abertura"
+                            android:src="@drawable/ic_calendar_month_24"
+                            app:tint="@color/colorPrimary" />
+
+                        <ImageButton
+                            android:id="@+id/btnHoraAberturaRetroativa"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Hora de abertura"
+                            android:src="@drawable/ic_schedule_24"
+                            app:tint="@color/colorPrimary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Fechamento"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtFechamentoRetroativo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--/--/---- --:--"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <ImageButton
+                            android:id="@+id/btnDataFechamentoRetroativa"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Data de fechamento"
+                            android:src="@drawable/ic_calendar_month_24"
+                            app:tint="@color/colorPrimary" />
+
+                        <ImageButton
+                            android:id="@+id/btnHoraFechamentoRetroativa"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Hora de fechamento"
+                            android:src="@drawable/ic_schedule_24"
+                            app:tint="@color/colorPrimary" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/btnAbrirCaixa"
                     android:layout_width="match_parent"

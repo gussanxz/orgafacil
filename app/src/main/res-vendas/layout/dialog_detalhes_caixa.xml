@@ -231,6 +231,17 @@
                     app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExcluirDetalhesCaixa"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="EXCLUIR"
+                    android:textColor="@color/colorPrimaryDespesa"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFecharDetalhesCaixa"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="0dp"
